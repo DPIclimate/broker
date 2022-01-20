@@ -1,0 +1,32 @@
+version: '3.1'
+
+services:
+
+  db:
+    image: postgres
+    restart: "no"
+    env_file:
+      - ../config/broker.env
+
+    ports:
+      - "5432:5432"
+
+    volumes:
+      - broker_db:/var/lib/postgresql/data
+      - ../db/init.d:/docker-entrypoint-initdb.d
+
+  restapi:
+    image: broker/restapi
+    restart: "unless-stopped"
+    env_file:
+      - ../config/broker.env
+
+    ports:
+      - "5687:5687"
+
+    volumes:
+      - ../src/python/restapi:/home/broker/app
+
+volumes:
+  broker_db:
+    external: true
