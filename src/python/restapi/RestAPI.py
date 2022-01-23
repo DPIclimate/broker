@@ -1,11 +1,9 @@
-from keyword import kwlist
-from fastapi import FastAPI, Query, HTTPException
+from fastapi import FastAPI, Query, HTTPException, status
 import json
 from typing import Dict, List, Optional
 
-from Models import PhysicalDevice
-import DAO as dao
-
+from pdmodels.Models import PhysicalDevice
+import db.DAO as dao
 
 app = FastAPI()
 
@@ -45,8 +43,8 @@ async def get_physical_device(uid: int) -> PhysicalDevice:
     return dev
 
 
-@app.post("/api/physical/devices/")
-async def create_physical_device(device: PhysicalDevice):
+@app.post("/api/physical/devices/", status_code=status.HTTP_201_CREATED)
+async def create_physical_device(device: PhysicalDevice) -> PhysicalDevice:
     """
     Create a new PhysicalDevice. The new device is returned in the response.
     """

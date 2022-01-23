@@ -25,7 +25,10 @@ services:
       - "5687:5687"
 
     volumes:
-      - ../src/python/restapi:/home/broker/app
+      - ../src/python:/home/broker/python
+
+    working_dir: "/home/broker/python/restapi"
+    entrypoint: [ "/home/broker/.local/bin/uvicorn", "--reload", "--host", "0.0.0.0", "--port", "5687", "RestAPI:app" ]
 
 volumes:
   broker_db:

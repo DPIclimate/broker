@@ -5,7 +5,7 @@ from psycopg2.extensions import adapt, register_adapter, AsIs
 
 from typing import Dict, List
 
-from Models import Location, PhysicalDevice
+from pdmodels.Models import Location, PhysicalDevice
 
 class DAOException(BaseException):
     pass
