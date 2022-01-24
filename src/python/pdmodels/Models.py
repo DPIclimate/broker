@@ -1,22 +1,24 @@
-from datetime import datetime, tzinfo, timezone, timedelta, date
+from datetime import datetime
 from pydantic import BaseModel
-from typing import Optional, Dict, Tuple
+from typing import Optional, Dict
 
 class Location(BaseModel):
     lat: float
     long: float
 
-"""
-create table if not exists physical_devices (
-    uid integer generated always as identity primary key,
-    source_name text not null references sources,
-    name text not null,
-    location point,
-    last_seen timestamptz,
-    properties jsonb not null default '{}'
-);
+    @staticmethod
+    def from_ttn_device(ttn_dev: Dict):
+        dev_loc = None
 
-"""
+        if 'locations' in ttn_dev and 'user' in ttn_dev['locations']:
+            user_loc = ttn_dev['locations']['user']
+            dev_lat = user_loc['latitude']
+            dev_long = user_loc['longitude']
+            dev_loc = Location(lat=dev_lat, long=dev_long)
+
+        return dev_loc
+
+
 class PhysicalDevice(BaseModel):
     uid: Optional[int]
     source_name: str

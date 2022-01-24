@@ -1,18 +1,20 @@
 # Using the alpine-based image avoids the psycopg2/libpq problem the work-around
 # below addresses, but it is very slow to build the pip install step. That image
 # is cached so it only has an effect if the pip install line changes.
-FROM python:3-alpine3.10
+FROM python:3
+#FROM python:3-alpine3.10
 
 # For ubuntu-based images
-#RUN groupadd broker && useradd -m -g broker broker
+RUN groupadd broker && useradd -m -g broker broker
 
 # For alpine-based images
-RUN addgroup -S broker && adduser -S broker -G broker
+#RUN addgroup -S broker && adduser -S broker -G broker
 
 USER broker
+ENV PATH=/home/broker/.local/bin:${PATH}
 
 RUN pip install --user --progress-bar off --upgrade pip
-RUN pip install --user --progress-bar off psycopg2-binary fastapi[all]
+RUN pip install --user --progress-bar off psycopg2-binary fastapi[all] python-dateutil
 
 # Work-around on ubuntu-based image, probably only works on (and required by) M1-based macos.
 # Fix a broken ARM psycopg2-binary installation by copying a later libpq from the system.
