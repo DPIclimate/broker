@@ -1,11 +1,12 @@
 import requests
 import json
+import os
 
 BASE = "https://eu1.cloud.thethings.network/api/v3/applications"
 
 
 headers = {
-    "Authorization":"Bearer NNSXS.UR3CZCE6WQ5CK7SERL7RB22JZ66PC3OWUAWG2BA.73WDPC2GAXC3J56XRZHLHGOG2QZAJ6XF6HKKIXUGP5VLRB7UOWJA",
+    "Authorization":os.environ['TTN_API_TOKEN'],
 }
 
 
@@ -32,7 +33,7 @@ newDeviceData = {"end_device":{
 def get_device_details(applicationID, deviceID):
     # Get details of a particular device
 
-    url = f"{BASE}/{applicationID}/devices/{deviceID}"
+    url = f"{BASE}/{applicationID}/devices/{deviceID}?field_mask=name,description,locations"
     r = requests.get(url, headers=headers)
     r_json = json.loads(r.content)
 

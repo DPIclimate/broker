@@ -1,25 +1,19 @@
 import requests
-#import sys
 
+import BrokerAPI as broker
 import TTNAPI as ttn
-from ..pdmodels.Models import PhysicalDevice, Location
 
-
-_BASE = "http://restapi:5687/api/physical"
-_HEADERS = {
-    "Content-Type": "application/json"
-}
+from pdmodels.Models import PhysicalDevice, Location
 
 
 def main():
-    print(sys.path)
-    return
-
     apps = ttn.get_applications()
     for a in apps['applications']:
         #print(a)
         app_id = a['ids']['application_id']
-        if app_id == 'oai-test-devices' or app_id == 'ndvi-dpi-hemistop' or app_id == 'ndvisoil-dpi-stop5tm':
+        
+        # Skip devices that seem to be dead.
+        if app_id == 'ndvi-dpi-hemistop' or app_id == 'ndvisoil-dpi-stop5tm':
             print(f'skipping {app_id}')
             continue
 
@@ -31,6 +25,12 @@ def main():
 
         for d in devs['end_devices']:
             dev_id = d['ids']['device_id']
+
+            # Only allow this one test device in for now.
+            if app_id == 'oai-test-devices' and dev_id != 'atmega328-v1':
+                print(f'skipping {app_id}')
+                continue
+
             #dev_eui = d['ids']['dev_eui'] if 'dev_eui' in d['ids'] else 'NO DEV_EUI'
             dev_name = d['name'] if 'name' in d else dev_id
             dev_loc = None
@@ -47,21 +47,13 @@ def main():
 
             pd = PhysicalDevice(source_name='ttn', name=dev_name, location=dev_loc, properties=props)
 
-            url=f"{_BASE}/devices/?prop_name=app_id&prop_value={app_id}&prop_name=dev_id&prop_value={dev_id}"
-            r = requests.get(url, headers=_HEADERS)
-            if r.status_code == 200:
-                print(r.json())
-                existing_dev = PhysicalDevice.parse_obj(r.json()[0])
+            try:
+                existing_dev = broker.get_physical_device(app_id, dev_id)
                 print(f'Device exists: {existing_dev}')
-            else:
+            except:
                 print('Adding device to broker')
-                url=f"{_BASE}/devices/"
-                payload = pd.json()
-                r = requests.post(url, headers=_HEADERS, data=payload)
-                print(r.status_code, r.reason, r.text)
+                broker.create_physical_device(pd)
 
-    #print(dev_tups)
-    #db.create_physical_device(dev_tups)
 
 if __name__ == "__main__":
     main()

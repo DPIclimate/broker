@@ -30,6 +30,21 @@ services:
     working_dir: "/home/broker/python/restapi"
     entrypoint: [ "/home/broker/.local/bin/uvicorn", "--reload", "--host", "0.0.0.0", "--port", "5687", "RestAPI:app" ]
 
+  ttn:
+    image: broker/restapi
+    restart: "unless-stopped"
+    env_file:
+      - ../config/broker.env
+
+    ports:
+      - "5688:5688"
+
+    volumes:
+      - ../src/python:/home/broker/python
+
+    working_dir: "/home/broker/python/ttn"
+    entrypoint: [ "/home/broker/.local/bin/uvicorn", "--reload", "--host", "0.0.0.0", "--port", "5688", "WebHook:app" ]
+
 volumes:
   broker_db:
     external: true
