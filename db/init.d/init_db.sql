@@ -27,4 +27,18 @@ create table if not exists mace_messages (
     msg text not null
 );
 
+create table if not exists logical_devices (
+    uid integer generated always as identity primary key,
+    name text not null,
+    location point,
+    last_seen timestamptz,
+    properties jsonb not null default '{}'
+);
+
+create table if not exists physical_logical_map (
+    physical_uid integer not null,
+    logcial_uid integer not null,
+    start_time timestamptz not null default now()
+);
+
 insert into sources values ('ttn'), ('mace');
