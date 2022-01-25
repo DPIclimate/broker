@@ -1,6 +1,6 @@
-import ast, json, os, re
-from queue import Empty
+import json, os, re
 import psycopg2
+from psycopg2 import pool
 from psycopg2.extensions import adapt, register_adapter, AsIs
 
 from typing import Dict, List
@@ -33,10 +33,18 @@ def cast_point(value, cur):
     raise psycopg2.InterfaceError("bad point representation: %r" % value)
 
 
+host = os.getenv('POSTGRES_HOST')
+port = int(os.getenv('POSTGRES_PORT'))
+user = os.getenv('POSTGRES_USER')
+password = os.getenv('POSTGRES_PASSWORD')
+dbname = os.getenv('POSTGRES_DB')
+
+conn_pool = psycopg2.pool.ThreadedConnectionPool(1, 10, host=host, port=port, user=user, password=password, dbname=dbname)
+
+
 def _get_connection():
     """
     Get a database connection. Uses environment variables to get the host/port/user/password/database name.
-    """
     print("Connecting to database...")
     host = os.getenv('POSTGRES_HOST')
     port = int(os.getenv('POSTGRES_PORT'))
@@ -45,6 +53,16 @@ def _get_connection():
     dbname = os.getenv('POSTGRES_DB')
 
     return psycopg2.connect(host=host, port=port, user=user, password=password, dbname=dbname)
+    """
+    conn = conn_pool.getconn()
+    return conn
+
+
+def free_conn(conn) -> None:
+    """
+    Return a connection to the pool.
+    """
+    conn_pool.putconn(conn)
 
 
 def _register_location_adapters():
@@ -62,7 +80,7 @@ def _register_location_adapters():
         POINT = psycopg2.extensions.new_type((point_oid,), "POINT", cast_point)
         psycopg2.extensions.register_type(POINT)
 
-    conn.close()
+    free_conn(conn)
 
 
 # Register the adapter functions before anything else in this module is called.
@@ -92,7 +110,7 @@ def get_all_physical_sources() -> List[PhysicalDevice]:
         for source_name in cursor.fetchall():
             sources.append(source_name[0])
 
-    conn.close()
+    free_conn(conn)
     return sources
 
 
@@ -122,7 +140,7 @@ def create_physical_device(device: PhysicalDevice) -> PhysicalDevice:
         print(f'new device = {dev}')
         conn.commit()
 
-    conn.close()
+    free_conn(conn)
     return dev
 
 
@@ -155,7 +173,7 @@ def get_physical_device(uid: int) -> PhysicalDevice:
         conn.autocommit = True
         dev = _get_physical_device(conn, uid)
 
-    conn.close()
+    free_conn(conn)
     return dev
 
 
@@ -205,7 +223,7 @@ def get_physical_devices(query_args = {}) -> List[PhysicalDevice]:
 
             rows = cursor.fetchmany()
 
-    conn.close()
+    free_conn(conn)
     return devs
 
 
@@ -225,7 +243,7 @@ def update_physical_device(uid: int, device: PhysicalDevice) -> PhysicalDevice:
         if val != current_values[name]:
             update_list.append((name, val))
 
-    if update_list is Empty:
+    if len(update_list) < 1:
         print('No update to device')
         return device
 
@@ -263,7 +281,7 @@ def update_physical_device(uid: int, device: PhysicalDevice) -> PhysicalDevice:
     #print(f'updated device = {updated_device}')
 
     conn.commit()
-    conn.close()
+    free_conn(conn)
     return updated_device
 
 
@@ -277,5 +295,5 @@ def delete_physical_device(uid: int) -> PhysicalDevice:
             cursor.execute('delete from physical_devices where uid = %s', (uid, ))
 
     conn.commit()
-    conn.close()
+    free_conn(conn)
     return dev

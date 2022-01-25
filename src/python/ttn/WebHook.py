@@ -1,11 +1,12 @@
 import dateutil.parser
 
-from fastapi import FastAPI, Query, HTTPException, Response, status
+from fastapi import BackgroundTasks, FastAPI, Response
 from typing import Any, Dict
 
 from pdmodels.Models import PhysicalDevice, Location
 import api.client.BrokerAPI as broker
 import api.client.TTNAPI as ttn
+
 
 app = FastAPI()
 
@@ -42,14 +43,25 @@ Accept-Encoding: gzip
 JSONObject = Dict[str, Any]
 
 
-@app.post("/ttn/webhook/{app_id}/up/{dev_id}", status_code=204)
-async def webhook_endpoint(app_id: str, dev_id: str, msg: JSONObject) -> None:
+@app.post("/ttn/webhook/{app_id}/up/{dev_id}")
+async def webhook_endpoint(app_id: str, dev_id: str, msg: JSONObject, background_tasks: BackgroundTasks) -> None:
     """
     Receive webhook calls from TTN.
     """
 
-    print(f'Received webhook call from {app_id} / {dev_id}')
+    # Process the message later and return an empty response to TTN as soon as
+    # possible to free up the resources there.
+    background_tasks.add_task(process_message, app_id, dev_id, msg)
 
+    # Doing an explicit return of a Response object with the 204 code to avoid
+    # the default FastAPI behaviour of always sending a response body. Even if
+    # a path method returns None, FastAPI will return a body containing "null"
+    # or similar. TTN does nothing with the response, so there is no pointing
+    # sending it one.
+    return Response(status_code=204)
+
+
+def process_message(app_id: str, dev_id: str, msg: JSONObject) -> None:
     #if 'simulated' in msg and msg['simulated']:
     #    print('Ignoring simulated message.')
     #    return
@@ -81,5 +93,3 @@ async def webhook_endpoint(app_id: str, dev_id: str, msg: JSONObject) -> None:
 
         dev = PhysicalDevice(source_name='ttn', name=dev_name, location=dev_loc, last_seen=last_seen, properties=props)
         broker.create_physical_device(dev)
-
-    return Response(status_code=204)
