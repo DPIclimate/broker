@@ -13,8 +13,9 @@ RUN groupadd broker && useradd -m -g broker broker
 USER broker
 ENV PATH=/home/broker/.local/bin:${PATH}
 
-RUN pip install --user --progress-bar off --upgrade pip
-RUN pip install --user --progress-bar off psycopg2-binary fastapi[all] python-dateutil
+# Two quiets here to suppress 'old version of pip' warning, given that is what is being upgraded.
+RUN pip install --quiet --quiet --user --progress-bar off --upgrade pip
+RUN pip install --quiet --user --progress-bar off --upgrade psycopg2-binary fastapi[all] python-dateutil pika
 
 # Work-around on ubuntu-based image, probably only works on (and required by) M1-based macos.
 # Fix a broken ARM psycopg2-binary installation by copying a later libpq from the system.
