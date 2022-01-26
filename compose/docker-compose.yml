@@ -15,14 +15,31 @@ services:
       - broker_db:/var/lib/postgresql/data
       - ../db/init.d:/docker-entrypoint-initdb.d
 
+  mq:
+    hostname: "mq"
+    image: rabbitmq:3-management
+    restart: "no"
+
+    env_file:
+      - ../config/broker.env
+
+    ports:
+      - "5672:5672"
+      - "15672:15672"
+
+
   restapi:
-    image: broker/restapi
+    image: broker/python-base
     restart: "unless-stopped"
     env_file:
       - ../config/broker.env
 
     ports:
       - "5687:5687"
+
+    depends_on:
+      - "db"
+      - "mq"
 
     volumes:
       - ../src/python:/home/broker/python
@@ -31,13 +48,17 @@ services:
     entrypoint: [ "/home/broker/.local/bin/uvicorn", "--reload", "--host", "0.0.0.0", "--port", "5687", "RestAPI:app" ]
 
   ttn:
-    image: broker/restapi
+    image: broker/python-base
     restart: "unless-stopped"
     env_file:
       - ../config/broker.env
 
     ports:
       - "5688:5688"
+
+    depends_on:
+      - "restapi"
+      - "mq"
 
     volumes:
       - ../src/python:/home/broker/python

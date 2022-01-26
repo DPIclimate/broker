@@ -7,6 +7,7 @@ cd $BROKER_ROOT
 cd compose
 docker-compose stop
 cd ..
-docker build -q -t broker/restapi -f images/restapi/Dockerfile .
+docker build -q -t broker/python-base -f images/restapi/Dockerfile .
 cd compose
-docker-compose up
+docker-compose up -d
+docker-compose logs -f
