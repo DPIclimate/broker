@@ -27,6 +27,9 @@ services:
       - "5672:5672"
       - "15672:15672"
 
+    volumes:
+     - mq_data:/var/lib/rabbitmq/mnesia/rabbit@mq
+
 
   restapi:
     image: broker/python-base
@@ -45,9 +48,9 @@ services:
       - ../src/python:/home/broker/python
 
     working_dir: "/home/broker/python/restapi"
-    entrypoint: [ "/home/broker/.local/bin/uvicorn", "--reload", "--host", "0.0.0.0", "--port", "5687", "RestAPI:app" ]
+    entrypoint: [ "/home/broker/.local/bin/uvicorn", "--reload", "--proxy-headers", "--host", "0.0.0.0", "--port", "5687", "RestAPI:app" ]
 
-  ttn:
+  ttn_webhook:
     image: broker/python-base
     restart: "unless-stopped"
     env_file:
@@ -57,15 +60,33 @@ services:
       - "5688:5688"
 
     depends_on:
-      - "restapi"
       - "mq"
 
     volumes:
       - ../src/python:/home/broker/python
 
     working_dir: "/home/broker/python/ttn"
-    entrypoint: [ "/home/broker/.local/bin/uvicorn", "--reload", "--host", "0.0.0.0", "--port", "5688", "WebHook:app" ]
+    entrypoint: [ "/home/broker/.local/bin/uvicorn", "--proxy-headers", "--host", "0.0.0.0", "--port", "5688", "WebHook:app" ]
+
+  ttn_decoder:
+    image: broker/python-base
+    restart: "no"
+    env_file:
+      - ../config/broker.env
+
+    depends_on:
+      - "restapi"
+      - "mq"
+
+    volumes:
+     - ../src/python:/home/broker/python
+
+    working_dir: "/home/broker/python/ttn"
+    entrypoint: [ "python", "AllMsgsWriter.py" ]
 
 volumes:
   broker_db:
+    external: true
+
+  mq_data:
     external: true

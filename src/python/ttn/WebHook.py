@@ -1,57 +1,69 @@
-import dateutil.parser
-
-from fastapi import BackgroundTasks, FastAPI, Response
+import asyncio, datetime, json, logging, os
+from fastapi import FastAPI, Response
 from typing import Any, Dict
 
-from pdmodels.Models import PhysicalDevice, Location
-import api.client.BrokerAPI as broker
-import api.client.TTNAPI as ttn
+import api.client.RabbitMQ as mq
 
+
+logging.basicConfig(level=logging.INFO, format='%(asctime)s %(name)s: %(message)s', datefmt='%Y-%m-%dT%H:%M:%S%z')
+logger = logging.getLogger(__name__)
+
+_cache_dir = f'{os.getenv("HOME")}/ttn_incoming_msgs'
+os.makedirs(name=_cache_dir, mode=0o700, exist_ok=True)
+
+lock = asyncio.Lock()
 
 app = FastAPI()
+ep = None
+mq_ready = False
 
-"""
-POST /ttn/webhook HTTP/1.1
-Host: 110.150.19.96:5688
-User-Agent: TheThingsStack/3.17.0-SNAPSHOT-d76af1e33 (linux/amd64)
-Content-Length: 580
-Content-Type: application/json
-X-Tts-Domain: au1.cloud.thethings.network
-Accept-Encoding: gzip
+def create_queue():
+    global ep
+    ep.queue_declare('ttn_webhook')
 
-{
-    "end_device_ids": {
-        "device_id":"atmega328-v1",
-        "application_ids": {
-            "application_id":"oai-test-devices"
-        },
-        "dev_eui":"70B3D57ED0044DE8",
-        "join_eui":"0000000000000001"
-    },
-    "correlation_ids":["as:up:01FT4AHT6SRP56671NE45SSW0M","rpc:/ttn.lorawan.v3.AppAs/SimulateUplink:00f7e79c-8658-4ecc-877d-eb0fad6c0b31"],
-    "received_at":"2022-01-23T20:37:58.107539052Z",
-    "uplink_message": {
-        "f_port":1,
-        "frm_payload":"BQ==",
-        "rx_metadata":[{"gateway_ids":{"gateway_id":"test"},"rssi":42,"channel_rssi":42,"snr":4.2}],
-        "settings":{"data_rate":{"lora":{"bandwidth":125000,"spreading_factor":7}}}
-    },
-    "simulated":true
-}
-"""
+
+def bind_ok():
+    global mq_ready
+    mq_ready = True
+
+
+@app.on_event("startup")
+async def startup() -> None:
+    global ep, mq_ready
+
+    user = os.environ['RABBITMQ_DEFAULT_USER']
+    passwd = os.environ['RABBITMQ_DEFAULT_PASS']
+    host = os.environ['RABBITMQ_HOST']
+    port = os.environ['RABBITMQ_PORT']
+
+    ep = mq.ExamplePublisher(f'amqp://{user}:{passwd}@{host}:{port}/%2F', on_exchange_ok=create_queue, on_bind_ok=bind_ok)
+    asyncio.create_task(ep.connect())
+
+    while not mq_ready:
+        await asyncio.sleep(0)
+
 
 JSONObject = Dict[str, Any]
 
 
-@app.post("/ttn/webhook/{app_id}/up/{dev_id}")
-async def webhook_endpoint(app_id: str, dev_id: str, msg: JSONObject, background_tasks: BackgroundTasks) -> None:
+@app.post("/ttn/webhook/up")
+async def webhook_endpoint(msg: JSONObject) -> None:
     """
     Receive webhook calls from TTN.
     """
 
-    # Process the message later and return an empty response to TTN as soon as
-    # possible to free up the resources there.
-    background_tasks.add_task(process_message, app_id, dev_id, msg)
+    global ep, lock
+    #if 'simulated' in msg and msg['simulated']:
+    #    print('Ignoring simulated message.')
+    #    return
+
+    async with lock:
+        # Write the message to a local cache directory. Remove the message file once the
+        # message has been written to RabbitMQ on the assumption it will be persisted there.
+        with open(get_cache_filename(msg), 'w') as f:
+            json.dump(msg, f)
+
+        ep.publish_message(msg)
 
     # Doing an explicit return of a Response object with the 204 code to avoid
     # the default FastAPI behaviour of always sending a response body. Even if
@@ -61,35 +73,12 @@ async def webhook_endpoint(app_id: str, dev_id: str, msg: JSONObject, background
     return Response(status_code=204)
 
 
-def process_message(app_id: str, dev_id: str, msg: JSONObject) -> None:
-    #if 'simulated' in msg and msg['simulated']:
-    #    print('Ignoring simulated message.')
-    #    return
+def get_cache_filename(msg: JSONObject) -> str:
+    app_id = msg['end_device_ids']['application_ids']['application_id']
+    dev_id = msg['end_device_ids']['device_id']
 
-    last_seen = None
-
+    received_at = datetime.datetime.now(datetime.timezone.utc)
     if 'received_at' in msg:
-        last_seen = dateutil.parser.isoparse(msg['received_at'])
-    else:
-        print('No received_at field in TTN message.')
+        received_at = msg['received_at']
 
-    try:
-        dev = broker.get_physical_device(app_id, dev_id)
-        print(f'Found device: {dev}')
-
-        if last_seen is not None:
-            dev.last_seen = last_seen
-            dev = broker.update_physical_device(dev)
-            print(f'Updated device: {dev}')
-
-    except:
-        print('Device not found, creating physical device.')
-        ttn_dev = ttn.get_device_details(app_id, dev_id)
-        print(f'Device info from TTN: {ttn_dev}')
-
-        dev_name = ttn_dev['name'] if 'name' in ttn_dev else dev_id
-        dev_loc = Location.from_ttn_device(ttn_dev)
-        props = {'app_id': app_id, 'dev_id': dev_id }
-
-        dev = PhysicalDevice(source_name='ttn', name=dev_name, location=dev_loc, last_seen=last_seen, properties=props)
-        broker.create_physical_device(dev)
+    return f'{_cache_dir}/{app_id}-{dev_id}-{received_at}.json'
