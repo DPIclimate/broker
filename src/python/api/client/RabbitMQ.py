@@ -1,3 +1,11 @@
+#
+# TODO:
+#
+# Add closed connection and re-connection callbacks so callers are aware these
+# things happened. The webhook needs this information to tell it to reprocess
+# cached message files.
+#
+
 from numbers import Integral
 import pika, pika.spec
 from pika.adapters.asyncio_connection import AsyncioConnection

@@ -1,10 +1,20 @@
-import requests
+#
+# TODO:
+#
+# Consider the ability to update a device on TTN based upon broker information, or the
+# other way around. Where is the source of truth?
+#
 
-import BrokerAPI as broker
-import TTNAPI as ttn
+import api.client.BrokerAPI as broker
+import api.client.TTNAPI as ttn
 
 from pdmodels.Models import PhysicalDevice, Location
 
+
+#
+# This import does not need to run periodically because once the broker is running it creates
+# new physical devices itself.
+#
 
 def main():
     apps = ttn.get_applications()

@@ -1,3 +1,11 @@
+#
+# TODO:
+# 
+# Test the behaviour when the REST API is not available or fails (such as if the DB is down).
+# Ensure RabbitMQ messages are not ack'd so they can be re-delivered. Figure out how to get
+# RabbitMQ to re-deliver them.
+#
+
 import datetime
 import dateutil.parser
 
@@ -57,12 +65,10 @@ def callback(channel, method, properties, body):
         dev_id = msg['end_device_ids']['device_id']
 
         dev = broker.get_physical_device(app_id, dev_id)
-        print(f'Found device: {dev}')
 
         if last_seen != None:
             dev.last_seen = last_seen
             dev = broker.update_physical_device(dev)
-            print(f'Updated device: {dev}')
 
     except:
         print('Device not found, creating physical device.')

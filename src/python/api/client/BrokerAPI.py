@@ -1,3 +1,9 @@
+#
+# TODO:
+#
+# Test the behaviour of these methods when the REST API returns errors.
+#
+
 import requests
 
 from pdmodels.Models import PhysicalDevice

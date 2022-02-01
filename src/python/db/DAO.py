@@ -1,3 +1,9 @@
+#
+# TODO:
+#
+# Decide whether re-connection logic lives here or in the callers.
+#
+
 import json, os, re
 import psycopg2
 from psycopg2 import pool
@@ -247,7 +253,7 @@ def update_physical_device(uid: int, device: PhysicalDevice) -> PhysicalDevice:
         print('No update to device')
         return device
 
-    print(update_list)
+    #print(update_list)
 
     add_and = False
     sql = 'update physical_devices set '

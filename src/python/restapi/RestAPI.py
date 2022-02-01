@@ -1,3 +1,10 @@
+#
+# TODO:
+#
+# Test the behaviour of all calls when the DB is down. Ensure they return sensible
+# status codes.
+#
+
 from fastapi import FastAPI, Query, HTTPException, status
 import json
 from typing import Dict, List, Optional
