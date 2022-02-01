@@ -1,3 +1,4 @@
+from numbers import Integral
 import pika, pika.spec
 from pika.adapters.asyncio_connection import AsyncioConnection
 from pika.exchange_type import ExchangeType
@@ -13,7 +14,7 @@ class ExamplePublisher(object):
     EXCHANGE_TYPE = ExchangeType.direct
     ROUTING_KEY = 'example.text'
 
-    def __init__(self, amqp_url, on_exchange_ok=None, on_bind_ok=None, on_message=None):
+    def __init__(self, amqp_url, on_exchange_ok=None, on_bind_ok=None, on_message=None, on_publish_ack=None):
         self._connection = None
         self._channel = None
 
@@ -27,6 +28,7 @@ class ExamplePublisher(object):
         self._on_exchange_ok = on_exchange_ok
         self._on_bind_ok = on_bind_ok
         self._on_message = on_message
+        self._on_publish_ack = on_publish_ack
 
     async def connect(self, delay=0):
         if delay > 0:
@@ -66,6 +68,7 @@ class ExamplePublisher(object):
     def on_channel_open(self, channel):
         logger.info('Channel opened')
         self._channel = channel
+        self._message_number = 0
         logger.info('Adding channel close callback')
         self._channel.add_on_close_callback(self.on_channel_closed)
 
@@ -126,13 +129,16 @@ class ExamplePublisher(object):
         elif confirmation_type == 'nack':
             self._nacked += 1
         self._deliveries.remove(method_frame.method.delivery_tag)
-        logger.info(
-            'Published %i messages, %i have yet to be confirmed, '
-            '%i were acked and %i were nacked', self._message_number,
-            len(self._deliveries), self._acked, self._nacked)
 
+        if self._on_publish_ack is not None:
+            asyncio.create_task(self._on_publish_ack(method_frame.method.delivery_tag))
 
-    def publish_message(self, message):
+        #logger.info(
+        #    'Published %i messages, %i have yet to be confirmed, '
+        #    '%i were acked and %i were nacked', self._message_number,
+        #    len(self._deliveries), self._acked, self._nacked)
+
+    def publish_message(self, message) -> Integral:
         if self._channel is None or not self._channel.is_open:
             return
 
@@ -148,3 +154,8 @@ class ExamplePublisher(object):
         self._message_number += 1
         self._deliveries.append(self._message_number)
         logger.info('Published message # %i', self._message_number)
+        return self._message_number
+
+    def ack(self, delivery_tag: Integral) -> None:
+        if self._connection.is_open and self._channel is not None:
+            self._channel.basic_ack(delivery_tag)

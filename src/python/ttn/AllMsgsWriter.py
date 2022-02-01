@@ -22,7 +22,6 @@ def create_queue():
 def bind_ok():
     global ep
     ep.start_listening('ttn_webhook')
-    mq_ready = True
 
 
 async def main():
@@ -41,6 +40,10 @@ async def main():
 
 
 def callback(channel, method, properties, body):
+    global ep
+
+    delivery_tag = method.delivery_tag
+
     try:
         msg = json.loads(body)
         last_seen = None
@@ -72,6 +75,8 @@ def callback(channel, method, properties, body):
 
         dev = PhysicalDevice(source_name='ttn', name=dev_name, location=dev_loc, last_seen=last_seen, properties=props)
         broker.create_physical_device(dev)
+
+    ep.ack(delivery_tag)
 
 
 if __name__ == '__main__':
