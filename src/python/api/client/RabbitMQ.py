@@ -32,6 +32,7 @@ class ExamplePublisher(object):
         self._message_number = 0
 
         self._stopping = False
+        self.stopped = False
         self._url = amqp_url
         self._on_exchange_ok = on_exchange_ok
         self._on_bind_ok = on_bind_ok
@@ -68,6 +69,19 @@ class ExamplePublisher(object):
 
         if not self._stopping:
             asyncio.create_task(self.connect(5))
+        else:
+            self.stopped = True
+
+    def stop(self) -> None:
+        if self._stopping:
+            return
+
+        self._stopping = True
+        self._channel.close()
+
+    async def close_connection(self) -> None:
+        self._connection.close()
+
 
     def open_channel(self):
         logger.info('Creating a new channel')
@@ -94,8 +108,12 @@ class ExamplePublisher(object):
         logger.warning('Channel %i was closed: %s', channel, reason)
         self._channel = None
 
-        if not (self._connection.is_closed or self._connection.is_closing):
-            self.open_channel()
+        if not self._stopping:
+            if not (self._connection.is_closed or self._connection.is_closing):
+                self.open_channel()
+        else:
+            asyncio.create_task(self.close_connection())
+           
 
     def on_exchange_declareok(self, method):
         logger.info(f'Exchange declared: {method}')
@@ -131,7 +149,7 @@ class ExamplePublisher(object):
 
     def on_delivery_confirmation(self, method_frame):
         confirmation_type = method_frame.method.NAME.split('.')[1].lower()
-        logger.info('Received %s for delivery tag: %i', confirmation_type, method_frame.method.delivery_tag)
+        #logger.info('Received %s for delivery tag: %i', confirmation_type, method_frame.method.delivery_tag)
         if confirmation_type == 'ack':
             self._acked += 1
         elif confirmation_type == 'nack':

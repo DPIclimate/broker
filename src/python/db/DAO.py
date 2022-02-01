@@ -4,7 +4,7 @@
 # Decide whether re-connection logic lives here or in the callers.
 #
 
-import json, os, re
+import json, logging, os, re
 import psycopg2
 from psycopg2 import pool
 from psycopg2.extensions import adapt, register_adapter, AsIs
@@ -12,6 +12,9 @@ from psycopg2.extensions import adapt, register_adapter, AsIs
 from typing import Dict, List
 
 from pdmodels.Models import Location, PhysicalDevice
+
+logging.basicConfig(level=logging.INFO, format='%(asctime)s %(name)s: %(message)s', datefmt='%Y-%m-%dT%H:%M:%S%z')
+logger = logging.getLogger(__name__)
 
 class DAOException(BaseException):
     pass
@@ -36,7 +39,7 @@ def cast_point(value, cur):
         if m is not None:
             return Location(lat=float(m.group(1)),long=m.group(2))
 
-    raise psycopg2.InterfaceError("bad point representation: %r" % value)
+    raise psycopg2.InterfaceError(f'Bad point representation: {value}')
 
 
 host = os.getenv('POSTGRES_HOST')
@@ -45,13 +48,13 @@ user = os.getenv('POSTGRES_USER')
 password = os.getenv('POSTGRES_PASSWORD')
 dbname = os.getenv('POSTGRES_DB')
 
-conn_pool = psycopg2.pool.ThreadedConnectionPool(1, 10, host=host, port=port, user=user, password=password, dbname=dbname)
+conn_pool = pool.ThreadedConnectionPool(1, 10, host=host, port=port, user=user, password=password, dbname=dbname)
 
 
 def _get_connection():
     """
     Get a database connection. Uses environment variables to get the host/port/user/password/database name.
-    print("Connecting to database...")
+    logger.info("Connecting to database...")
     host = os.getenv('POSTGRES_HOST')
     port = int(os.getenv('POSTGRES_PORT'))
     user = os.getenv('POSTGRES_USER')
@@ -141,9 +144,9 @@ def create_physical_device(device: PhysicalDevice) -> PhysicalDevice:
     with _get_connection() as conn, conn.cursor() as cursor:
         cursor.execute("insert into physical_devices (source_name, name, location, last_seen, properties) values (%(source_name)s, %(name)s, %(location)s, %(last_seen)s, %(properties)s) returning uid", dev_fields)
         uid = cursor.fetchone()[0]
-        print(f'insert returned uid = {uid}')
+        logger.info(f'insert returned uid = {uid}')
         dev = _get_physical_device(conn, uid)
-        print(f'new device = {dev}')
+        logger.info(f'new device = {dev}')
         conn.commit()
 
     free_conn(conn)
@@ -211,18 +214,20 @@ def get_physical_devices(query_args = {}) -> List[PhysicalDevice]:
 
                 for name, val in zip(pnames, pvals):
                     clause = ' and ' if add_and else ''
-                    clause = clause + f'properties ->> %({name})s = %({name}_val)s'
-                    args[name] = name
+                    clause = clause + f"properties ->> '{name}' = %({name}_val)s"
+                    #args[name] = name
                     args[f'{name}_val'] = val
                     add_and = True
                     sql = sql + clause
+
+        #logger.info(cursor.mogrify(sql, args))
 
         cursor.execute(sql, args)
         devs = []
         cursor.arraysize = 200
         rows = cursor.fetchmany()
         while len(rows) > 0:
-            #print(f'processing {len(rows)} rows.', flush=True)
+            #logger.info(f'processing {len(rows)} rows.')
             for r in rows:
                 d = PhysicalDevice.parse_obj(_dict_from_row(cursor.description, r))
                 devs.append(d)
@@ -250,10 +255,10 @@ def update_physical_device(uid: int, device: PhysicalDevice) -> PhysicalDevice:
             update_list.append((name, val))
 
     if len(update_list) < 1:
-        print('No update to device')
+        logger.info('No update to device')
         return device
 
-    #print(update_list)
+    #logger.info(update_list)
 
     add_and = False
     sql = 'update physical_devices set '
@@ -277,14 +282,14 @@ def update_physical_device(uid: int, device: PhysicalDevice) -> PhysicalDevice:
 
     sql = sql + f' where uid = {uid}'
 
-    #print(sql)
-    #print(cursor.mogrify(sql, args))
+    #logger.info(sql)
+    #logger.info(cursor.mogrify(sql, args))
 
     with conn.cursor() as cursor:
         cursor.execute(sql, args)
 
     updated_device = _get_physical_device(conn, uid)
-    #print(f'updated device = {updated_device}')
+    #logger.info(f'updated device = {updated_device}')
 
     conn.commit()
     free_conn(conn)
