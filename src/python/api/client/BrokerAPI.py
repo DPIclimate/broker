@@ -16,6 +16,9 @@ _HEADERS = {
 class BrokerAPIException(BaseException):
     pass
 
+#
+# Use these methods to call the REST API.
+#
 
 def create_physical_device(dev: PhysicalDevice) -> PhysicalDevice:
     url=f"{_BASE}/physical/devices/"
@@ -34,6 +37,8 @@ def get_physical_device(app_id: str, dev_id: str) -> PhysicalDevice:
     if r.status_code == 200:
         # This REST call always returns an array of devices, which may be empty if no devices
         # match the query.
+        #
+        # TODO: What if more than one device is returned from the database?
         dev_array = r.json()
         if len(dev_array) == 1:
             dev = PhysicalDevice.parse_obj(r.json()[0])

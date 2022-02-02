@@ -50,6 +50,10 @@ dbname = os.getenv('POSTGRES_DB')
 
 conn_pool = pool.ThreadedConnectionPool(1, 10, host=host, port=port, user=user, password=password, dbname=dbname)
 
+def stop() -> None:
+    logger.info('Closing connection pool.')
+    conn_pool.closeall()    
+
 
 def _get_connection():
     """

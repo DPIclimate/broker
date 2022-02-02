@@ -17,6 +17,9 @@ app = FastAPI()
 
 @app.get("/api/physical/sources/")
 async def get_all_physical_sources() -> List[str]:
+    """
+    Return a list of all physical device sources.
+    """
     return dao.get_all_physical_sources()
 
 

@@ -44,7 +44,7 @@ services:
       - ../src/python:/home/broker/python
 
     working_dir: "/home/broker/python/restapi"
-    entrypoint: [ "/home/broker/.local/bin/uvicorn", "--reload", "--proxy-headers", "--host", "0.0.0.0", "--port", "5687", "RestAPI:app" ]
+    entrypoint: [ "/home/broker/.local/bin/uvicorn", "--proxy-headers", "--host", "0.0.0.0", "--port", "5687", "RestAPI:app" ]
 
   ttn_webhook:
     image: broker/python-base
@@ -71,7 +71,7 @@ services:
       - ../config/broker.env
 
     depends_on:
-      - "restapi"
+      - "db"
       - "mq"
 
     volumes:

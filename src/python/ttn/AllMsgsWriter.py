@@ -23,29 +23,45 @@ import db.DAO as dao
 logging.basicConfig(level=logging.INFO, format='%(asctime)s %(name)s: %(message)s', datefmt='%Y-%m-%dT%H:%M:%S%z')
 logger = logging.getLogger('AllMsgsWriter') # Shows as __main__ if __name__ is used.
 
-ep = None
+mq_client = None
 finish = False
 
 def create_queue():
-    global ep
-    ep.queue_declare('ttn_webhook')
+    global mq_client
+    mq_client.queue_declare('ttn_webhook')
 
 
 def bind_ok():
-    global ep
-    ep.start_listening('ttn_webhook')
+    """
+    This callback means the connection to the message queue is ready to use.
+    """
+    global mq_client
+    mq_client.start_listening('ttn_webhook')
 
 
 def sigterm_handler(sig_no, stack_frame) -> None:
+    """
+    Handle SIGTERM from docker by closing the mq and db connections and setting a
+    flag to tell the main loop to exit.
+    """
     global finish
 
-    logger.info(f'Caught {signal.strsignal(sig_no)}, setting finish to True')
+    logger.info(f'{signal.strsignal(sig_no)}, setting finish to True')
     finish = True
-    ep.stop()
+    dao.stop()
+    mq_client.stop()
 
 
 async def main():
-    global ep, finish
+    """
+    Initiate the connection to RabbitMQ and then idle until asked to stop.
+
+    Because the messages from RabbitMQ arrive via async processing this function
+    has nothing to do after starting connection.
+
+    It would be good to find a better way to do nothing than the current loop.
+    """
+    global mq_client, finish
 
     logger.info('===============================================================')
     logger.info('               STARTING TTN ALLMSGSWRITER')
@@ -56,21 +72,24 @@ async def main():
     host = os.environ['RABBITMQ_HOST']
     port = os.environ['RABBITMQ_PORT']
 
-    ep = mq.ExamplePublisher(f'amqp://{user}:{passwd}@{host}:{port}/%2F', on_exchange_ok=create_queue, on_bind_ok=bind_ok, on_message=callback)
-    asyncio.create_task(ep.connect())
+    mq_client = mq.RabbitMQClient(f'amqp://{user}:{passwd}@{host}:{port}/%2F', on_exchange_ok=create_queue, on_bind_ok=bind_ok, on_message=on_message)
+    asyncio.create_task(mq_client.connect())
 
     while not finish:
         await asyncio.sleep(2)
     
-    while not ep.stopped:
+    while not mq_client.stopped:
         await asyncio.sleep(1)
 
 
-def callback(channel, method, properties, body):
-    global ep, finish
+def on_message(channel, method, properties, body):
+    """
+    This function is called when a message arrives from RabbitMQ.
+    """
+    global mq_client, finish
 
-    # If the finish flag is set, exit without doing anything and do not
-    # ack the message, so it stays on the queue.
+    # If the finish flag is set, exit without doing anything. Do not
+    # ack the message so it stays on the queue.
     if finish:
         return
 
@@ -79,6 +98,8 @@ def callback(channel, method, properties, body):
     try:
         msg = json.loads(body)
         last_seen = None
+        # We should always get a value in the message for this, but default to 'now'
+        # just in case.
         received_at = datetime.datetime.now(datetime.timezone.utc)
 
         if 'received_at' in msg:
@@ -108,9 +129,12 @@ def callback(channel, method, properties, body):
                 dev.last_seen = last_seen
                 dev = dao.update_physical_device(dev.uid, dev)
         else:
+            # Could use the device with the lowest uid because it would have been created first and
+            # later ones are erroneous dupes.
             logger.warning(f'Found {len(devs)} devices: {devs}')
-    
-        ep.ack(delivery_tag)
+
+        # This tells RabbitMQ the message is handled and can be deleted from the queue.    
+        mq_client.ack(delivery_tag)
 
     except BaseException as e:
         print(f'Device not found, creating physical device. Caught: {e}')
@@ -118,6 +142,10 @@ def callback(channel, method, properties, body):
 
 
 if __name__ == '__main__':
+    # Docker sends SIGTERM to tell the process the container is stopping so set
+    # a handler to catch the signal and initiate an orderly shutdown.
     signal.signal(signal.SIGTERM, sigterm_handler)
+
+    # Does not return until SIGTERM is received.
     asyncio.run(main())
     logger.info('Exiting.')

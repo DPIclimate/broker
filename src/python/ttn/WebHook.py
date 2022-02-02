@@ -19,25 +19,54 @@ import api.client.RabbitMQ as mq
 logging.basicConfig(level=logging.INFO, format='%(asctime)s %(name)s: %(message)s', datefmt='%Y-%m-%dT%H:%M:%S%z')
 logger = logging.getLogger(__name__)
 
+#
+# An interesting point about os.makedirs: apparently in more recent versions
+# of python 3.10+ the given permission is only applied to the final directory of the
+# path. Other directories use the users default mode.
+#
+# Because we're creating a directory right under $HOME there are not really
+# any intermediate directories so this is ok and we get all the right permissions.
 _cache_dir = f'{os.getenv("HOME")}/ttn_incoming_msgs'
 os.makedirs(name=_cache_dir, mode=0o700, exist_ok=True)
 
+#
+# This is used to try and guarantee only one operation is happening to the
+# message queue at time.
+#
+# Given we're doing single-threaded async processing rather than multi-threaded
+# processing I'm not sure it's necessary but I'm wondering what would happen if
+# pika has just published a message but hasn't started reading the reply from the
+# server, and then another webhook hit comes in and we try to publish another
+# message to RabbitMQ.
 lock = asyncio.Lock()
 
 app = FastAPI()
-ep = None
+
+mq_client = None
 mq_ready = False
 
+
 def create_queue():
-    global ep
-    ep.queue_declare('ttn_webhook')
+    global mq_client
+    mq_client.queue_declare('ttn_webhook')
 
 
 def bind_ok():
     global mq_ready
     mq_ready = True
 
+    # Now is the time to read messages stored on disk and
+    # send them to RabbitMQ.
+
+
 async def publish_ack(delivery_tag: Integral) -> None:
+    """
+    RabbitMQ is telling us the message is safely stored so we can
+    delete the cache file from disk.
+
+    The message may not have been delivered yet but it should survive
+    a RabbitMQ restart.
+    """
     global lock, unacked_messages
 
     async with lock:
@@ -54,16 +83,20 @@ async def publish_ack(delivery_tag: Integral) -> None:
 
 @app.on_event("startup")
 async def startup() -> None:
-    global ep, mq_ready
+    global mq_client, mq_ready
 
     user = os.environ['RABBITMQ_DEFAULT_USER']
     passwd = os.environ['RABBITMQ_DEFAULT_PASS']
     host = os.environ['RABBITMQ_HOST']
     port = os.environ['RABBITMQ_PORT']
 
-    ep = mq.ExamplePublisher(f'amqp://{user}:{passwd}@{host}:{port}/%2F', on_exchange_ok=create_queue, on_bind_ok=bind_ok, on_publish_ack=publish_ack)
-    asyncio.create_task(ep.connect())
+    mq_client = mq.RabbitMQClient(f'amqp://{user}:{passwd}@{host}:{port}/%2F', on_exchange_ok=create_queue, on_bind_ok=bind_ok, on_publish_ack=publish_ack)
+    asyncio.create_task(mq_client.connect())
 
+    # Wait for the RabbitMQ connection/channel/queue everything to be
+    # ready to use. asyncio.sleep(0) is supposed to be a special case
+    # that allows control to be passed back to the asyncio event loop
+    # quickly.
     while not mq_ready:
         await asyncio.sleep(0)
 
@@ -84,19 +117,19 @@ async def webhook_endpoint(msg: JSONObject) -> None:
     Receive webhook calls from TTN.
     """
 
-    global ep, lock, unacked_messages
+    global mq_client, lock, unacked_messages
     #if 'simulated' in msg and msg['simulated']:
     #    print('Ignoring simulated message.')
     #    return
 
     async with lock:
-        # Write the message to a local cache directory. Remove the message file once the
-        # message has been written to RabbitMQ on the assumption it will be persisted there.
+        # Write the message to a local cache directory. It will be removed
+        # when RabbitMQ acks receipt of the message.
         filename = get_cache_filename(msg)
         with open(filename, 'w') as f:
             json.dump(msg, f)
 
-        delivery_tag = ep.publish_message(msg)
+        delivery_tag = mq_client.publish_message(msg)
         unacked_messages[delivery_tag] = filename
 
     # Doing an explicit return of a Response object with the 204 code to avoid
@@ -108,6 +141,9 @@ async def webhook_endpoint(msg: JSONObject) -> None:
 
 
 def get_cache_filename(msg: JSONObject) -> str:
+    """
+    Generate a fully-qualified filename for a message cache file.
+    """
     app_id = msg['end_device_ids']['application_ids']['application_id']
     dev_id = msg['end_device_ids']['device_id']
 

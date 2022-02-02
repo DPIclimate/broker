@@ -6,6 +6,9 @@
 # cached message files.
 #
 
+# This code is based on the async examples in the pika github repo.
+# See https://github.com/pika/pika/tree/master/examples
+
 from numbers import Integral
 import pika, pika.spec
 from pika.adapters.asyncio_connection import AsyncioConnection
@@ -17,7 +20,7 @@ logging.basicConfig(level=logging.INFO, format='%(asctime)s %(name)s: %(message)
 logger = logging.getLogger(__name__)
 
 
-class ExamplePublisher(object):
+class RabbitMQClient(object):
     EXCHANGE_NAME = 'broker_exchange'
     EXCHANGE_TYPE = ExchangeType.direct
     ROUTING_KEY = 'example.text'
@@ -26,9 +29,9 @@ class ExamplePublisher(object):
         self._connection = None
         self._channel = None
 
-        self._deliveries = []
-        self._acked = 0
-        self._nacked = 0
+        #self._deliveries = []
+        #self._acked = 0
+        #self._nacked = 0
         self._message_number = 0
 
         self._stopping = False
@@ -40,6 +43,10 @@ class ExamplePublisher(object):
         self._on_publish_ack = on_publish_ack
 
     async def connect(self, delay=0):
+        """
+        Initiate a connection to RabbitMQ. The connection is not valid until
+        self.on_connection_open() is called.
+        """
         if delay > 0:
             logger.info(f'Waiting for {delay}s before connection attempt.')
             await asyncio.sleep(delay)
@@ -52,11 +59,21 @@ class ExamplePublisher(object):
             on_close_callback=self.on_connection_closed)
 
     def on_connection_open(self, connection):
+        """
+        Now the connection is open a channel can be opened. Channels
+        are 'virtual connections' where all operations are performed.
+        """
         logger.info('Connection opened')
         self._connection = connection
         self.open_channel()
 
     def on_connection_open_error(self, _unused_connection, err):
+        """
+        Opening a connection failed. If the calling code has not requested
+        a shutdown via self.stop() then try to reconnect.
+
+        Consider backing off the delay to some maximum value.
+        """
         logger.error('Connection open failed: %s', err)
         self._channel = None
 
@@ -64,6 +81,13 @@ class ExamplePublisher(object):
             asyncio.create_task(self.connect(5))
 
     def on_connection_closed(self, _unused_connection, reason):
+        """
+        The connection has closed. If the calling code has not requested
+        a shutdown via self.stop() then try to reconnect assuming the closure
+        is due to an error.
+
+        Consider backing off the delay to some maximum value.
+        """
         logger.warning('Connection closed: %s', reason)
         self._channel = None
 
@@ -73,19 +97,32 @@ class ExamplePublisher(object):
             self.stopped = True
 
     def stop(self) -> None:
+        """
+        Shut down the connection to RabbitMQ.
+
+        Start by closing the channel. The channel closed callback
+        will then ask to close the connection.
+        """
         if self._stopping:
             return
 
         self._stopping = True
         self._channel.close()
 
-    async def close_connection(self) -> None:
+
+    async def _close_connection(self) -> None:
+        """
+        Start closing the connection.
+        
+        This method should not be called from outside this class.
+        """
         self._connection.close()
 
 
     def open_channel(self):
         logger.info('Creating a new channel')
         self._connection.channel(on_open_callback=self.on_channel_open)
+
 
     def on_channel_open(self, channel):
         logger.info('Channel opened')
@@ -112,7 +149,7 @@ class ExamplePublisher(object):
             if not (self._connection.is_closed or self._connection.is_closing):
                 self.open_channel()
         else:
-            asyncio.create_task(self.close_connection())
+            asyncio.create_task(self._close_connection())
            
 
     def on_exchange_declareok(self, method):
@@ -125,6 +162,8 @@ class ExamplePublisher(object):
     def queue_declare(self, queue_name):
         logger.info(f'Declaring queue {queue_name}')
         cb = functools.partial(self.on_queue_declareok, queue_name=queue_name)
+        # Note a durable queue is created so persistent messages can survive a
+        # RabbitMQ server restart.
         self._channel.queue_declare(queue=queue_name, durable=True, callback=cb)
 
     def on_queue_declareok(self, _unused_frame, queue_name):
@@ -138,6 +177,12 @@ class ExamplePublisher(object):
             self._on_bind_ok()
 
     def start_listening(self, queue_name):
+        """
+        Callers use this method to indicate they wish to receive messages.
+
+        The messages will be passed back to the caller via the on_message
+        callback passed to the constructor of this class.
+        """
         logger.info('Adding consumer cancellation callback')
         self._channel.add_on_cancel_callback(self.on_consumer_cancelled)
         self._consumer_tag = self._channel.basic_consume(queue_name, self._on_message)
@@ -148,23 +193,28 @@ class ExamplePublisher(object):
             self._channel.close()
 
     def on_delivery_confirmation(self, method_frame):
-        confirmation_type = method_frame.method.NAME.split('.')[1].lower()
-        #logger.info('Received %s for delivery tag: %i', confirmation_type, method_frame.method.delivery_tag)
-        if confirmation_type == 'ack':
-            self._acked += 1
-        elif confirmation_type == 'nack':
-            self._nacked += 1
-        self._deliveries.remove(method_frame.method.delivery_tag)
+        """
+        pika calls this to notify that RabbitMQ has accepted a published message.
 
+        The caller will be notified via the on_publish_ack callback passed to the
+        constructor of this class.
+        """
         if self._on_publish_ack is not None:
             asyncio.create_task(self._on_publish_ack(method_frame.method.delivery_tag))
 
-        #logger.info(
-        #    'Published %i messages, %i have yet to be confirmed, '
-        #    '%i were acked and %i were nacked', self._message_number,
-        #    len(self._deliveries), self._acked, self._nacked)
 
     def publish_message(self, message) -> Integral:
+        """
+        Publish a message to RabbitMQ.
+
+        The message cannot be considered safely accepted by RabbitMQ until
+        the on_publish_ack callback passed to the constructor of this class
+        has been called.
+
+        All messages are published persistently so they can survive a
+        RabbitMQ server restart. The server is not meant to ack receipt
+        of a message until it has been written to disk.
+        """
         if self._channel is None or not self._channel.is_open:
             return
 
@@ -178,10 +228,14 @@ class ExamplePublisher(object):
                                     json.dumps(message, ensure_ascii=False),
                                     properties)
         self._message_number += 1
-        self._deliveries.append(self._message_number)
-        logger.info('Published message # %i', self._message_number)
         return self._message_number
 
+
     def ack(self, delivery_tag: Integral) -> None:
+        """
+        Ack a message delivered by the on_message callback.
+
+        RabbitMQ will keep a message on the queue until it has been ack'd.
+        """
         if self._connection.is_open and self._channel is not None:
             self._channel.basic_ack(delivery_tag)
