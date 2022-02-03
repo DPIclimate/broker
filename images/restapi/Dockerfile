@@ -29,6 +29,4 @@ RUN pip install --quiet --user --progress-bar off --upgrade psycopg2-binary fast
 
 WORKDIR /home/broker/python/restapi
 
-EXPOSE 5687
-
 ENTRYPOINT [ "/bin/bash" ]
