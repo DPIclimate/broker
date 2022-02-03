@@ -4,14 +4,16 @@
 # Decide whether re-connection logic lives here or in the callers.
 #
 
+from datetime import datetime
 import json, logging, os, re
 import psycopg2
 from psycopg2 import pool
 from psycopg2.extensions import adapt, register_adapter, AsIs
+from psycopg2.extras import Json
 
-from typing import Dict, List
+from typing import Any, Dict, List, Optional
 
-from pdmodels.Models import Location, PhysicalDevice
+from pdmodels.Models import Location, LogicalDevice, PhysicalDevice, PhysicalToLogicalMapping
 
 logging.basicConfig(level=logging.INFO, format='%(asctime)s %(name)s: %(message)s', datefmt='%Y-%m-%dT%H:%M:%S%z')
 logger = logging.getLogger(__name__)
@@ -100,7 +102,7 @@ def _register_location_adapters():
 _register_location_adapters()
 
 
-def _dict_from_row(result_metadata, row) -> list:
+def _dict_from_row(result_metadata, row) -> Dict[str, Any]:
     obj = {}
     for i, col_def in enumerate(result_metadata):
         obj[col_def[0]] = row[i]
@@ -312,3 +314,183 @@ def delete_physical_device(uid: int) -> PhysicalDevice:
     conn.commit()
     free_conn(conn)
     return dev
+
+
+"""
+Logical Device CRUD methods
+
+create table if not exists logical_devices (
+    uid integer generated always as identity primary key,
+    name text not null,
+    location point,
+    last_seen timestamptz,
+    properties jsonb not null default '{}'
+);
+
+"""
+
+def create_logical_device(device: LogicalDevice) -> LogicalDevice:
+    dev_fields = vars(device)
+
+    # psycopg2 will not convert the dict into a JSON string automatically.
+    dev_fields['properties'] = json.dumps(dev_fields['properties'])
+
+    with _get_connection() as conn, conn.cursor() as cursor:
+        cursor.execute("insert into logical_devices (name, location, last_seen, properties) values (%(name)s, %(location)s, %(last_seen)s, %(properties)s) returning uid", dev_fields)
+        uid = cursor.fetchone()[0]
+        logger.info(f'insert returned uid = {uid}')
+        dev = _get_physical_device(conn, uid)
+        logger.info(f'new device = {dev}')
+        conn.commit()
+
+    free_conn(conn)
+    return dev
+
+
+def _get_logical_device(conn, uid: int) -> LogicalDevice:
+    """
+    Query for a logical device in the context of an existing transaction.
+
+    Getting a device via a uid is commonly done by other operations either to check the
+    device exists, or to get a copy of the device before it is modified or deleted.
+
+    This method allows the query to be more lightweight in those circumstances.
+
+    conn: a database connection
+    uid: the uid of the device to get
+    """
+    with conn.cursor() as cursor:
+        sql = 'select uid, name, location, last_seen, properties from logical_devices where uid = %s'
+        cursor.execute(sql, (uid, ))
+        row = cursor.fetchone()
+        if row is not None:
+            dfr = _dict_from_row(cursor.description, row)
+            dev = LogicalDevice.parse_obj(dfr)
+            return dev
+
+        return None
+
+
+def get_logical_device(uid: int) -> LogicalDevice:
+    with _get_connection() as conn:
+        conn.autocommit = True
+        dev = _get_logical_device(conn, uid)
+
+    free_conn(conn)
+    return dev
+
+
+def get_logical_devices(query_args = {}) -> List[LogicalDevice]:
+    with _get_connection() as conn, conn.cursor() as cursor:
+        conn.autocommit = True
+
+        sql = 'select uid, name, location, last_seen, properties from logical_devices'
+        args = {}
+
+        add_where = True
+        add_and = False
+
+        # How badly could putting arbitrary property name/value pairs into the SQL go wrong?
+        if 'prop_name' in query_args and 'prop_value' in query_args:
+            pnames = query_args['prop_name']
+            pvals = query_args['prop_value']
+
+            if pnames is not None and pvals is not None and len(pnames) == len(pvals):
+                if add_where:
+                    sql = sql + ' where '
+
+                for name, val in zip(pnames, pvals):
+                    clause = ' and ' if add_and else ''
+                    clause = clause + f"properties ->> '{name}' = %({name}_val)s"
+                    #args[name] = name
+                    args[f'{name}_val'] = val
+                    add_and = True
+                    sql = sql + clause
+
+        #logger.info(cursor.mogrify(sql, args))
+
+        cursor.execute(sql, args)
+        devs = []
+        cursor.arraysize = 200
+        rows = cursor.fetchmany()
+        while len(rows) > 0:
+            #logger.info(f'processing {len(rows)} rows.')
+            for r in rows:
+                d = LogicalDevice.parse_obj(_dict_from_row(cursor.description, r))
+                devs.append(d)
+
+            rows = cursor.fetchmany()
+
+    free_conn(conn)
+    return devs
+
+
+"""
+Physical to logical device mapping operations
+
+create table if not exists physical_logical_map (
+    physical_uid integer not null,
+    logcial_uid integer not null,
+    start_time timestamptz not null default now()
+);
+
+"""
+def insert_mapping(mapping: PhysicalToLogicalMapping) -> None:
+    """
+    Insert a device mapping.
+    """
+    with _get_connection() as conn, conn.cursor() as cursor:
+        cursor.execute('insert into physical_logical_map (physical_uid, logical_uid, start_time) values (%s, %s, %s)', (mapping.pd.uid, mapping.ld.uid, mapping.start_time))
+        conn.commit()
+
+    free_conn(conn)
+
+
+def get_current_device_mapping(pd: Optional[PhysicalDevice] = None, ld: Optional[LogicalDevice] = None) -> Optional[PhysicalToLogicalMapping]:
+    mapping = None
+
+    if pd is None and ld is None:
+        raise DAOException('A PhysicalDevice or a LogicalDevice must be supplied to find a mapping.')
+
+    with _get_connection() as conn, conn.cursor() as cursor:
+        conn.autocommit = True
+
+        # A single query could get the data from all three tables but it would be unreadable.
+
+        if pd is not None:
+            cursor.execute('select uid, physical_uid, logical_uid, start_time from physical_logical_map where physical_uid = %s order by start_time desc limit 1', (pd.uid, ))
+        else:
+            cursor.execute('select uid, physical_uid, logical_uid, start_time from physical_logical_map where logical_uid = %s order by start_time desc limit 1', (ld.uid, ))
+
+        if cursor.rowcount == 1:
+            m_uid, p_uid, l_uid, start_time = cursor.fetchone()
+
+            pd = _get_physical_device(conn, p_uid)
+            ld = _get_logical_device(conn, l_uid)
+
+            mapping = PhysicalToLogicalMapping(uid=m_uid, pd=pd, ld=ld, start_time=start_time)
+
+    free_conn(conn)
+    return mapping
+
+
+"""
+create table if not exists ttn_messages (
+    uid integer generated always as identity,
+    appid text not null,
+    devid text not null,
+    deveui text not null,
+    ts timestamptz not null,
+    msg jsonb not null,
+    primary key (appid, devid, deveui, ts)
+);
+"""
+def add_ttn_message(app_id: str, dev_id: str, dev_eui: str, ts: datetime, msg):
+    with _get_connection() as conn, conn.cursor() as cursor:
+        try:
+            cursor.execute('insert into ttn_messages (appid, devid, deveui, ts, msg) values (%s, %s, %s, %s, %s)', (app_id, dev_id, dev_eui, ts, Json(msg)))
+        except BaseException as e:
+            logger.warn(f'Failed to insert ttn message to all messages table: {msg}')
+            logger.warn(e)
+
+    free_conn(conn)

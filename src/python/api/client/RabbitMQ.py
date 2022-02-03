@@ -9,38 +9,61 @@
 # This code is based on the async examples in the pika github repo.
 # See https://github.com/pika/pika/tree/master/examples
 
+from multiprocessing import connection
 from numbers import Integral
 import pika, pika.spec
 from pika.adapters.asyncio_connection import AsyncioConnection
 from pika.exchange_type import ExchangeType
 
-import asyncio, functools, json, logging
+import asyncio, functools, json, logging, os
 
 logging.basicConfig(level=logging.INFO, format='%(asctime)s %(name)s: %(message)s', datefmt='%Y-%m-%dT%H:%M:%S%z')
 logger = logging.getLogger(__name__)
 
+_EXCHANGE_NAME = 'broker_exchange'
+_EXCHANGE_TYPE = ExchangeType.direct
+
+# TODO: Find a good way of allowing callers to reference queue names symbolically
+# rather than hard-coding the names. Probably a dict.
+_QUEUE_NAMES = ['ttn_raw', 'physical_timeseries', 'logical_timeseries']
+
+"""
+ttn_raw message is the json as received by the ttn uplink webhook.
+
+physical_timeseries has:
+{'physical_uid': physical_dev_uid, 'timestamp': epoch_timestamp, 'timeseries': [ {'ts_key': value}, ...]}
+
+logical_timeseries has (not sure if physical dev uid is useful, discuss):
+{'physical_uid': physical_dev_uid, 'logical_uid': logical_dev_uid, 'timeseries': [ {'ts_key': value}, ...]}
+
+"""
+
+_user = os.environ['RABBITMQ_DEFAULT_USER']
+_passwd = os.environ['RABBITMQ_DEFAULT_PASS']
+_host = os.environ['RABBITMQ_HOST']
+_port = os.environ['RABBITMQ_PORT']
+
+_amqp_url_str = f'amqp://{_user}:{_passwd}@{_host}:{_port}/%2F'
+
 
 class RabbitMQClient(object):
-    EXCHANGE_NAME = 'broker_exchange'
-    EXCHANGE_TYPE = ExchangeType.direct
-    ROUTING_KEY = 'example.text'
 
-    def __init__(self, amqp_url, on_exchange_ok=None, on_bind_ok=None, on_message=None, on_publish_ack=None):
+    def __init__(self, on_bind_ok=None, on_message=None, on_publish_ack=None):
         self._connection = None
         self._channel = None
 
-        #self._deliveries = []
-        #self._acked = 0
-        #self._nacked = 0
         self._message_number = 0
 
         self._stopping = False
         self.stopped = False
-        self._url = amqp_url
-        self._on_exchange_ok = on_exchange_ok
         self._on_bind_ok = on_bind_ok
         self._on_message = on_message
         self._on_publish_ack = on_publish_ack
+
+        # This is used to track how many queues have been bound during the
+        # startup process. When all queues are bound the on_bind_ok callback
+        # will be called.
+        self._q_bind_count = 0
 
     async def connect(self, delay=0):
         """
@@ -51,9 +74,9 @@ class RabbitMQClient(object):
             logger.info(f'Waiting for {delay}s before connection attempt.')
             await asyncio.sleep(delay)
 
-        logger.info('Connecting to %s', self._url)
+        logger.info('Connecting to %s', _amqp_url_str)
         return AsyncioConnection(
-            pika.URLParameters(self._url),
+            pika.URLParameters(_amqp_url_str),
             on_open_callback=self.on_connection_open,
             on_open_error_callback=self.on_connection_open_error,
             on_close_callback=self.on_connection_closed)
@@ -134,10 +157,10 @@ class RabbitMQClient(object):
         logger.info('Issuing Confirm.Select RPC command')
         self._channel.confirm_delivery(self.on_delivery_confirmation)
 
-        logger.info(f'Declaring exchange {self.EXCHANGE_NAME}')
+        logger.info(f'Declaring exchange {_EXCHANGE_NAME}')
         self._channel.exchange_declare(
-            exchange=self.EXCHANGE_NAME,
-            exchange_type=self.EXCHANGE_TYPE,
+            exchange=_EXCHANGE_NAME,
+            exchange_type=_EXCHANGE_TYPE,
             durable=True,
             callback=self.on_exchange_declareok)
 
@@ -150,30 +173,31 @@ class RabbitMQClient(object):
                 self.open_channel()
         else:
             asyncio.create_task(self._close_connection())
-           
+
 
     def on_exchange_declareok(self, method):
-        logger.info(f'Exchange declared: {method}')
+        self._q_bind_count = 0
+        for queue_name in _QUEUE_NAMES:
+            logger.info(f'Declaring queue {queue_name}')
+            self._channel.queue_declare(queue=queue_name, durable=True, callback=self.on_queue_declareok)
 
-        if self._on_exchange_ok is not None:
-            logger.info('Calling on_exchange_ok callback.')
-            self._on_exchange_ok()
 
     def queue_declare(self, queue_name):
         logger.info(f'Declaring queue {queue_name}')
-        cb = functools.partial(self.on_queue_declareok, queue_name=queue_name)
         # Note a durable queue is created so persistent messages can survive a
         # RabbitMQ server restart.
-        self._channel.queue_declare(queue=queue_name, durable=True, callback=cb)
+        self._channel.queue_declare(queue=queue_name, durable=True, callback=self.on_queue_declareok)
 
-    def on_queue_declareok(self, _unused_frame, queue_name):
-        logger.info('Binding %s to %s with %s', self.EXCHANGE_NAME, queue_name, self.ROUTING_KEY)
-        self._channel.queue_bind(queue_name, self.EXCHANGE_NAME, routing_key=self.ROUTING_KEY, callback=self.on_bindok)
+    def on_queue_declareok(self, q_declare_ok):
+        queue_name = q_declare_ok.method.queue
+        logger.info('Binding %s to %s with %s', _EXCHANGE_NAME, queue_name, queue_name)
+        self._channel.queue_bind(queue_name, _EXCHANGE_NAME, routing_key=queue_name, callback=self.on_bindok)
 
     def on_bindok(self, _unused_frame):
-        logger.info('Queue bound')
-        if self._on_bind_ok is not None:
-            logger.info('Calling on_bind_ok callback.')
+        self._q_bind_count += 1
+
+        if len(_QUEUE_NAMES) == self._q_bind_count and self._on_bind_ok is not None:
+            logger.info('All queues bound, calling on_bind_ok callback.')
             self._on_bind_ok()
 
     def start_listening(self, queue_name):
@@ -203,7 +227,7 @@ class RabbitMQClient(object):
             asyncio.create_task(self._on_publish_ack(method_frame.method.delivery_tag))
 
 
-    def publish_message(self, message) -> Integral:
+    def publish_message(self, routing_key: str, message) -> Integral:
         """
         Publish a message to RabbitMQ.
 
@@ -224,7 +248,7 @@ class RabbitMQClient(object):
             delivery_mode = pika.spec.PERSISTENT_DELIVERY_MODE
             )
 
-        self._channel.basic_publish(self.EXCHANGE_NAME, self.ROUTING_KEY,
+        self._channel.basic_publish(_EXCHANGE_NAME, routing_key,
                                     json.dumps(message, ensure_ascii=False),
                                     properties)
         self._message_number += 1

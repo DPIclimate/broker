@@ -46,11 +46,6 @@ mq_client = None
 mq_ready = False
 
 
-def create_queue():
-    global mq_client
-    mq_client.queue_declare('ttn_webhook')
-
-
 def bind_ok():
     global mq_ready
     mq_ready = True
@@ -73,7 +68,7 @@ async def publish_ack(delivery_tag: Integral) -> None:
         if delivery_tag in unacked_messages:
             filename = unacked_messages.pop(delivery_tag)
             if os.path.isfile(filename):
-                logger.info(f'Removing cache file: {filename}')
+                logger.debug(f'Removing cache file: {filename}')
                 os.remove(filename)
             else:
                 logger.warning(f'cache file {filename} does not exist.')
@@ -85,12 +80,7 @@ async def publish_ack(delivery_tag: Integral) -> None:
 async def startup() -> None:
     global mq_client, mq_ready
 
-    user = os.environ['RABBITMQ_DEFAULT_USER']
-    passwd = os.environ['RABBITMQ_DEFAULT_PASS']
-    host = os.environ['RABBITMQ_HOST']
-    port = os.environ['RABBITMQ_PORT']
-
-    mq_client = mq.RabbitMQClient(f'amqp://{user}:{passwd}@{host}:{port}/%2F', on_exchange_ok=create_queue, on_bind_ok=bind_ok, on_publish_ack=publish_ack)
+    mq_client = mq.RabbitMQClient(on_bind_ok=bind_ok, on_publish_ack=publish_ack)
     asyncio.create_task(mq_client.connect())
 
     # Wait for the RabbitMQ connection/channel/queue everything to be
@@ -129,7 +119,7 @@ async def webhook_endpoint(msg: JSONObject) -> None:
         with open(filename, 'w') as f:
             json.dump(msg, f)
 
-        delivery_tag = mq_client.publish_message(msg)
+        delivery_tag = mq_client.publish_message('ttn_raw', msg)
         unacked_messages[delivery_tag] = filename
 
     # Doing an explicit return of a Response object with the 204 code to avoid

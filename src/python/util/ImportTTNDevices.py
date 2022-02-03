@@ -5,8 +5,8 @@
 # other way around. Where is the source of truth?
 #
 
-import api.client.BrokerAPI as broker
 import api.client.TTNAPI as ttn
+import db.DAO as dao
 
 from pdmodels.Models import PhysicalDevice, Location
 
@@ -41,7 +41,7 @@ def main():
                 print(f'skipping {app_id}')
                 continue
 
-            #dev_eui = d['ids']['dev_eui'] if 'dev_eui' in d['ids'] else 'NO DEV_EUI'
+            dev_eui = d['ids']['dev_eui'].lower() if 'dev_eui' in d['ids'] else 'NO DEV_EUI'
             dev_name = d['name'] if 'name' in d else dev_id
             dev_loc = None
 
@@ -52,17 +52,20 @@ def main():
                 dev_loc = Location(lat=dev_lat, long=dev_long)
 
             props = {}
-            props["app_id"] = app_id
-            props["dev_id"] = dev_id
+            props['app_id'] = app_id
+            props['dev_id'] = dev_id
+
+            # Need the dev_eui for the initial matching to ubidots devices.
+            props['dev_eui'] = dev_eui
 
             pd = PhysicalDevice(source_name='ttn', name=dev_name, location=dev_loc, properties=props)
 
-            try:
-                existing_dev = broker.get_physical_device(app_id, dev_id)
-                print(f'Device exists: {existing_dev}')
-            except:
+            existing_dev_list = dao.get_physical_devices(query_args={'prop_name': ['app_id', 'dev_id'], 'prop_value': [app_id, dev_id]})
+            if len(existing_dev_list) > 0:
+                print(f'Device exists: {existing_dev_list[0]}')
+            else:
                 print('Adding device to broker')
-                broker.create_physical_device(pd)
+                dao.create_physical_device(pd)
 
 
 if __name__ == "__main__":

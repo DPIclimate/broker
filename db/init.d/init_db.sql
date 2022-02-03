@@ -12,12 +12,13 @@ create table if not exists physical_devices (
 );
 
 create table if not exists ttn_messages (
-    uid integer generated always as identity primary key,
+    uid integer generated always as identity,
     appid text not null,
     devid text not null,
     deveui text not null,
     ts timestamptz not null,
-    msg jsonb not null
+    msg jsonb not null,
+    primary key (appid, devid, deveui, ts)
 );
 
 create table if not exists mace_messages (
@@ -36,8 +37,9 @@ create table if not exists logical_devices (
 );
 
 create table if not exists physical_logical_map (
+    uid integer generated always as identity primary key,
     physical_uid integer not null,
-    logcial_uid integer not null,
+    logical_uid integer not null,
     start_time timestamptz not null default now()
 );
 

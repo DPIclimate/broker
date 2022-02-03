@@ -5,14 +5,11 @@
 # Ensure RabbitMQ messages are not ack'd so they can be re-delivered. Figure out how to get
 # RabbitMQ to re-deliver them.
 #
-# See if there is a way to catch docker shutting the process down and close the mq & db
-# connections nicely.
-#
 
 import datetime
 import dateutil.parser
 
-import asyncio, json, logging, os, signal
+import asyncio, json, logging, math, os, signal
 
 from pdmodels.Models import PhysicalDevice, Location
 import api.client.RabbitMQ as mq
@@ -26,17 +23,13 @@ logger = logging.getLogger('AllMsgsWriter') # Shows as __main__ if __name__ is u
 mq_client = None
 finish = False
 
-def create_queue():
-    global mq_client
-    mq_client.queue_declare('ttn_webhook')
-
 
 def bind_ok():
     """
     This callback means the connection to the message queue is ready to use.
     """
     global mq_client
-    mq_client.start_listening('ttn_webhook')
+    mq_client.start_listening('ttn_raw')
 
 
 def sigterm_handler(sig_no, stack_frame) -> None:
@@ -67,17 +60,12 @@ async def main():
     logger.info('               STARTING TTN ALLMSGSWRITER')
     logger.info('===============================================================')
 
-    user = os.environ['RABBITMQ_DEFAULT_USER']
-    passwd = os.environ['RABBITMQ_DEFAULT_PASS']
-    host = os.environ['RABBITMQ_HOST']
-    port = os.environ['RABBITMQ_PORT']
-
-    mq_client = mq.RabbitMQClient(f'amqp://{user}:{passwd}@{host}:{port}/%2F', on_exchange_ok=create_queue, on_bind_ok=bind_ok, on_message=on_message)
+    mq_client = mq.RabbitMQClient(on_bind_ok=bind_ok, on_message=on_message)
     asyncio.create_task(mq_client.connect())
 
     while not finish:
         await asyncio.sleep(2)
-    
+
     while not mq_client.stopped:
         await asyncio.sleep(1)
 
@@ -98,17 +86,22 @@ def on_message(channel, method, properties, body):
     try:
         msg = json.loads(body)
         last_seen = None
-        # We should always get a value in the message for this, but default to 'now'
-        # just in case.
-        received_at = datetime.datetime.now(datetime.timezone.utc)
-
+        # We should always get a value in the message for this, but default to 'now' just in case.
+        received_at = datetime.datetime.now(datetime.timezone.utc).isoformat()
         if 'received_at' in msg:
             received_at = msg['received_at']
-            last_seen = dateutil.parser.isoparse(received_at)
+
+        last_seen = dateutil.parser.isoparse(received_at)
 
         app_id = msg['end_device_ids']['application_ids']['application_id']
         dev_id = msg['end_device_ids']['device_id']
+        dev_eui = msg['end_device_ids']['dev_eui'].lower()
 
+        # Record the message to the all messages table before doing anything else to ensure it
+        # is saved.
+        dao.add_ttn_message(app_id, dev_id, dev_eui, last_seen, msg)
+
+        pd = None
         devs = dao.get_physical_devices(query_args={'prop_name': ['app_id', 'dev_id'], 'prop_value': [app_id, dev_id]})
         if len(devs) < 1:
             logger.info('Device not found, creating physical device.')
@@ -119,19 +112,41 @@ def on_message(channel, method, properties, body):
             dev_loc = Location.from_ttn_device(ttn_dev)
             props = {'app_id': app_id, 'dev_id': dev_id }
 
-            dev = PhysicalDevice(source_name='ttn', name=dev_name, location=dev_loc, last_seen=last_seen, properties=props)
-            dao.create_physical_device(dev)
+            pd = PhysicalDevice(source_name='ttn', name=dev_name, location=dev_loc, last_seen=last_seen, properties=props)
+            pd = dao.create_physical_device(pd)
         elif len(devs) == 1:
-            dev = devs[0]
-            logger.info(f'Updating last_seen for device {dev.name}')
+            pd = devs[0]
+            logger.info(f'Updating last_seen for device {pd.name}')
 
             if last_seen != None:
-                dev.last_seen = last_seen
-                dev = dao.update_physical_device(dev.uid, dev)
+                pd.last_seen = last_seen
+                pd = dao.update_physical_device(pd.uid, pd)
         else:
             # Could use the device with the lowest uid because it would have been created first and
             # later ones are erroneous dupes.
             logger.warning(f'Found {len(devs)} devices: {devs}')
+
+        if pd is not None:
+            # TODO: Run the decoder here, or move all this to another process reading from another queue.
+            uplink_message = msg['uplink_message']
+            if uplink_message is not None:
+                decoded_payload = uplink_message['decoded_payload']
+                if decoded_payload is not None:
+                    ts_vars = []
+                    for k, v in decoded_payload.items():
+                        ts_vars.append({k: v})
+                    
+                    """
+                    physical_timeseries has:
+                    {'physical_uid': physical_dev_uid, , 'timestamp': iso_8601_timestamp, 'timeseries': [ {'ts_key': value}, ...]}
+                    """
+                    p_ts_msg = {'physical_uid': pd.uid, 'timestamp': received_at, 'timeseries': ts_vars}
+
+                    # Should the code try and remember the message until it is delivered to the queue?
+                    # I think that means we need to hold off the ack in this method and only ack the message
+                    # we got from ttn_raw when we get confirmation from the server that it has saved the message
+                    # written to the physical_timeseries queue.
+                    msg_id = mq_client.publish_message('physical_timeseries', p_ts_msg)
 
         # This tells RabbitMQ the message is handled and can be deleted from the queue.    
         mq_client.ack(delivery_tag)

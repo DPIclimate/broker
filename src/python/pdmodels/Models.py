@@ -26,3 +26,18 @@ class PhysicalDevice(BaseModel):
     location: Optional[Location]
     last_seen: Optional[datetime]
     properties = {}
+
+
+class LogicalDevice(BaseModel):
+    uid: Optional[int]
+    name: str
+    location: Optional[Location]
+    last_seen: Optional[datetime]
+    properties = {}
+
+
+class PhysicalToLogicalMapping(BaseModel):
+    uid: Optional[int]
+    pd: PhysicalDevice
+    ld: LogicalDevice
+    start_time: datetime
