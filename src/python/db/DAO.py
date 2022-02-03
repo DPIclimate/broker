@@ -6,12 +6,13 @@
 
 from datetime import datetime
 import json, logging, os, re
+from numbers import Integral
 import psycopg2
 from psycopg2 import pool
 from psycopg2.extensions import adapt, register_adapter, AsIs
 from psycopg2.extras import Json
 
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List, Optional, Union
 
 from pdmodels.Models import Location, LogicalDevice, PhysicalDevice, PhysicalToLogicalMapping
 
@@ -446,21 +447,29 @@ def insert_mapping(mapping: PhysicalToLogicalMapping) -> None:
     free_conn(conn)
 
 
-def get_current_device_mapping(pd: Optional[PhysicalDevice] = None, ld: Optional[LogicalDevice] = None) -> Optional[PhysicalToLogicalMapping]:
+def get_current_device_mapping(pd: Optional[Union[PhysicalDevice, Integral]] = None, ld: Optional[Union[LogicalDevice, Integral]] = None) -> Optional[PhysicalToLogicalMapping]:
     mapping = None
 
     if pd is None and ld is None:
-        raise DAOException('A PhysicalDevice or a LogicalDevice must be supplied to find a mapping.')
+        raise DAOException('A PhysicalDevice or a LogicalDevice (or an uid for one of them) must be supplied to find a mapping.')
+
+    p_uid = None
+    if pd is not None:
+        p_uid = pd.uid if isinstance(pd, PhysicalDevice) else pd
+
+    l_uid = None
+    if ld is not None:
+        l_uid = ld.uid if isinstance(ld, LogicalDevice) else ld
 
     with _get_connection() as conn, conn.cursor() as cursor:
         conn.autocommit = True
 
         # A single query could get the data from all three tables but it would be unreadable.
 
-        if pd is not None:
-            cursor.execute('select uid, physical_uid, logical_uid, start_time from physical_logical_map where physical_uid = %s order by start_time desc limit 1', (pd.uid, ))
+        if p_uid is not None:
+            cursor.execute('select uid, physical_uid, logical_uid, start_time from physical_logical_map where physical_uid = %s order by start_time desc limit 1', (p_uid, ))
         else:
-            cursor.execute('select uid, physical_uid, logical_uid, start_time from physical_logical_map where logical_uid = %s order by start_time desc limit 1', (ld.uid, ))
+            cursor.execute('select uid, physical_uid, logical_uid, start_time from physical_logical_map where logical_uid = %s order by start_time desc limit 1', (l_uid, ))
 
         if cursor.rowcount == 1:
             m_uid, p_uid, l_uid, start_time = cursor.fetchone()

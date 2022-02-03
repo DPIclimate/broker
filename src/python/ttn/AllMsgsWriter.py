@@ -99,6 +99,9 @@ def on_message(channel, method, properties, body):
 
         # Record the message to the all messages table before doing anything else to ensure it
         # is saved.
+        #
+        # TODO: If this is a dup an exception gets thrown and all the rest of the processing
+        # is ignored. That may be the right thing to do, but have a think about it!
         dao.add_ttn_message(app_id, dev_id, dev_eui, last_seen, msg)
 
         pd = None
@@ -152,8 +155,8 @@ def on_message(channel, method, properties, body):
         mq_client.ack(delivery_tag)
 
     except BaseException as e:
-        print(f'Device not found, creating physical device. Caught: {e}')
-
+        print(f'Caught: {e}')
+        print(e)
 
 
 if __name__ == '__main__':
