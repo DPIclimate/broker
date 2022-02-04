@@ -1,0 +1,24 @@
+sequenceDiagram
+    autonumber
+    participant TTN
+    participant TWH as TTN Webhook
+    participant MQr as MQ[ttn_raw]
+    participant TDC as TTN Decoder
+    participant DB
+    participant MQp as MQ[physical_timeseries]
+    TTN->>+TWH: uplink
+    TWH->>TWH: write message to local file
+    TWH-)MQr: {message as received}
+    MQr->>MQr: persist message
+    MQr--)TWH: {ack}
+    TWH->>TWH: delete local file
+    MQr-)TDC: {message as received}
+    TDC->>DB: store raw message
+    TDC->>DB: get physical device
+    DB-->>TDC: physical device
+    TDC->>DB: update physical device last_seen
+    TDC-)MQp: {physical device id, timestamp, data points}
+    TDC--)MQr: {ack}
+    MQr->>MQr: delete persisted message
+    MQp->>MQp: persist message
+    MQp--)TDC: {ack} IGNORED
