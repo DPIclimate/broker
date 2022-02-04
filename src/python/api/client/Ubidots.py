@@ -97,9 +97,32 @@ def get_all_devices() -> List[LogicalDevice]:
     return devices
 
 
+def post_device_data(label: str, body) -> None:
+    """
+    Post timeseries data to an Ubidots device.
+
+    label must be the device label, not the device id.
+    body must be a dict in the format of:
+        {
+        'battery': {'value': 3.6, 'timestamp': 1643934748392},
+        'humidity': {'value': 37.17, 'timestamp': 1643934748392},
+        'temperature': {'value': 37.17, 'timestamp': 1643934748392}
+        }
+    """
+    url = f'{BASE_1_6}/devices/{label}'
+    hdrs = headers
+    hdrs['Content-Type'] = 'application/json'
+    body_str = json.dumps(body)
+    r = requests.post(url, headers=hdrs, data=body_str)
+    if r.status_code != 200:
+        logger.warning(url)
+        logger.warning(r)
+
+
 def main():
-    devs = get_all_devices()
-    print(len(devs))
+    #devs = get_all_devices()
+    #print(len(devs))
+    pass
 
 
 if __name__ == '__main__':

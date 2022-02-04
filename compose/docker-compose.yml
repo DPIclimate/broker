@@ -98,6 +98,23 @@ services:
     entrypoint: [ "python", "-m", "logical_mapper.LogicalMapper" ]
 
 
+  delivery:
+    image: broker/python-base
+    restart: "no"
+    env_file:
+      - ../config/broker.env
+
+    depends_on:
+      - "db"
+      - "mq"
+
+    volumes:
+     - ../src/python:/home/broker/python
+
+    working_dir: "/home/broker/python"
+    entrypoint: [ "python", "-m", "delivery.UbidotsWriter" ]
+
+
 volumes:
   broker_db:
     external: true

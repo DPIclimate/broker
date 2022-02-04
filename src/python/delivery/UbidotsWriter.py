@@ -1,31 +1,21 @@
 """
-The logical mapper receives messages from the physical_timeseries queue
-and determines which logical device they should be sent to.
-
-If no logical device is mapped to the physical device, a new logical device
-is created.
-
-The message has the logical device id added to it and published to the
-logical_timeseries queue where it can be picked up by delivery services.
-
-It is up to the delivery services to decide what to do when they receive
-a message for a newly created logical device.
-
-For example, delivery services for IoT platforms such as ThingsBoard or
-Ubidots should create corresponding devices in those services and add
-information to the logical device properties object allowing the logical
-device to be associated with the IoT platform device.
+This program receives logical device timeseries messages and forwards them
+on to Ubidots.
 """
+
+import datetime
+import dateutil.parser
 
 import asyncio, json, logging, math, os, signal
 
-from pdmodels.Models import PhysicalDevice, Location, LogicalDevice, PhysicalToLogicalMapping
+from pdmodels.Models import LogicalDevice
 import api.client.RabbitMQ as mq
+import api.client.Ubidots as ubidots
 
 import db.DAO as dao
 
 logging.basicConfig(level=logging.INFO, format='%(asctime)s %(name)s: %(message)s', datefmt='%Y-%m-%dT%H:%M:%S%z')
-logger = logging.getLogger('LogicalMapper') # Shows as __main__ if __name__ is used.
+logger = logging.getLogger(__name__) # Shows as __main__ if __name__ is used.
 
 mq_client = None
 finish = False
@@ -36,7 +26,7 @@ def bind_ok():
     This callback means the connection to the message queue is ready to use.
     """
     global mq_client
-    mq_client.start_listening('physical_timeseries')
+    mq_client.start_listening('logical_timeseries')
 
 
 def sigterm_handler(sig_no, stack_frame) -> None:
@@ -64,7 +54,7 @@ async def main():
     global mq_client, finish
 
     logger.info('===============================================================')
-    logger.info('               STARTING LOGICAL MAPPER')
+    logger.info('               STARTING UBIDOTS WRITER')
     logger.info('===============================================================')
 
     mq_client = mq.RabbitMQClient(on_bind_ok=bind_ok, on_message=on_message)
@@ -81,13 +71,27 @@ def on_message(channel, method, properties, body):
     """
     This function is called when a message arrives from RabbitMQ.
 
-    ttn_raw message is the json as received by the ttn uplink webhook.
-
-    physical_timeseries has:
-    {'physical_uid': physical_dev_uid, 'timestamp': iso_8601_timestamp, 'timeseries': [ {'ts_key': value}, ...]}
-
     logical_timeseries has (not sure if physical dev uid is useful, discuss):
-    {'physical_uid': physical_dev_uid, 'logical_uid': logical_dev_uid, , 'timestamp': iso_8601_timestamp, 'timeseries': [ {'ts_key': value}, ...]}
+    {
+        "physical_uid": 27,
+        "logical_uid": 16,
+        "timestamp": "2022-02-04T00:32:28.392595503Z",
+        "timeseries": [
+            {"name": "battery", "value": 3.5},
+            {"name": "humidity", "value": 95.11},
+            {"name": "temperature", "value": 4.87}
+        ]
+    }
+
+    This needs to be transformed to:
+
+    {
+        'battery': {'value': 3.6, 'timestamp': 1643934748392},
+        'humidity': {'value': 37.17, 'timestamp': 1643934748392},
+        'temperature': {'value': 37.17, 'timestamp': 1643934748392}
+    }
+
+    So get the logical device from the db via the id in the message, and convert the iso-8601 timestamp to an epoch-style timestamp.
     """
 
     global mq_client, finish
@@ -102,19 +106,40 @@ def on_message(channel, method, properties, body):
     try:
         msg = json.loads(body)
 
-        mapping = dao.get_current_device_mapping(msg['physical_uid'])
-        if mapping is not None:
-            #logger.info(f'Forwarding message from {mapping.pd.name} --> {mapping.ld.name}: {msg["timestamp"]} {msg["timeseries"]}')
-            msg['logical_uid'] = mapping.ld.uid
-            mq_client.publish_message('logical_timeseries', msg)
-        else:
-            logger.warn(f'No mapping found, must create logical device for physical device uid: {msg["physical_uid"]}.')
+        l_uid = msg['logical_uid']
 
-        # This tells RabbitMQ the message is handled and can be deleted from the queue.    
-        mq_client.ack(delivery_tag)
+        # Temporary hack to only process messages from David's netvox.
+        if l_uid != 159:
+            mq_client.ack(delivery_tag)
+            return
+
+        ld = dao.get_logical_device(l_uid)
+        if ld is None:
+            logging.warning(f'Could not find logical device for message: {body}')
+            mq_client.ack(delivery_tag)
+            return
+            
+        ts_float = dateutil.parser.isoparse(msg['timestamp']).timestamp()
+        # datetime.timestamp() returns a float where the ms are to the right of the
+        # decimal point. This should get us an integer value in ms.
+        ts = math.floor(ts_float * 1000)
+
+        body_dict = {}
+        for v in msg['timeseries']:
+            body_dict[v['name']] = {'value': v['value'], 'timestamp': ts}
+
+        # It seems the ubidots device LABEL must be used here. I tried it
+        # with the device id and it didn't work. I did get a 200 response,
+        # so I don't know what Ubidots did with the data.
+        ubidots_dev_label = ld.properties['label']
+        ubidots.post_device_data(ubidots_dev_label, body_dict)
 
     except BaseException as e:
         logger.warning(f'Caught: {e}')
+
+    # This tells RabbitMQ the message is handled and can be deleted from the queue.    
+    mq_client.ack(delivery_tag)
+
 
 
 if __name__ == '__main__':
