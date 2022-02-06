@@ -8,17 +8,24 @@ sequenceDiagram
     participant MQp as MQ[physical_timeseries]
     TTN->>+TWH: uplink
     TWH->>TWH: write message to local file
-    TWH-)MQr: {message as received}
+    TWH-)+MQr: {message as received}
+    TWH->>-TTN: 204 No Content
     MQr->>MQr: persist message
-    MQr--)TWH: {ack}
+    MQr-)TWH: {ack}
     TWH->>TWH: delete local file
-    MQr-)TDC: {message as received}
+    MQr-)+TDC: {message as received}
+    deactivate MQr
+    activate DB
     TDC->>DB: store raw message
     TDC->>DB: get physical device
     DB-->>TDC: physical device
     TDC->>DB: update physical device last_seen
-    TDC-)MQp: {physical device id, timestamp, data points}
-    TDC--)MQr: {ack}
+    deactivate DB
+    TDC-)+MQp: {physical device id, timestamp, data points}
+    activate MQr
+    TDC-)MQr: {ack}
+    deactivate TDC
     MQr->>MQr: delete persisted message
+    deactivate MQr
     MQp->>MQp: persist message
-    MQp--)TDC: {ack} IGNORED
+    MQp-)-TDC: {ack} IGNORED
