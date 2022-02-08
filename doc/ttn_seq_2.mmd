@@ -4,7 +4,7 @@ sequenceDiagram
     participant DM as Device Mapper
     participant DB
     participant MQl as MQ[logical_timeseries]
-    participant ur as Ubidots Writer
+    participant uw as Ubidots Writer
     activate MQp
     MQp-)DM: {physical device id, timestamp, data points}
     activate DM
@@ -24,14 +24,14 @@ sequenceDiagram
     MQl-)DM: {ack} IGNORED
     deactivate MQl
     activate MQl
-    activate ur
-    MQl-)ur: {physical device id, logical device id, timestamp, data points}
+    activate uw
+    MQl-)uw: {physical device id, logical device id, timestamp, data points}
     activate DB
-    ur->>DB: get logical device
-    DB-->>ur: logical device
+    uw->>DB: get logical device
+    DB-->>uw: logical device
     deactivate DB
-    ur->>Ubidots: POST timeseries to device
-    ur-)MQl: {ack}
-    deactivate ur
+    uw->>Ubidots: POST timeseries to device
+    uw-)MQl: {ack}
+    deactivate uw
     MQl->>MQl: delete persisted message
     deactivate MQl
