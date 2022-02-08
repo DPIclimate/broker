@@ -1,7 +1,6 @@
 from typing import List
-from urllib import response
 import requests
-import asyncio, datetime, functools, json, logging, os, time
+import datetime, json, logging, os, time
 
 from pdmodels.Models import Location, LogicalDevice
 
@@ -17,7 +16,7 @@ headers = {
 }
 
 """
-Example Ubidots JSON device definition:
+Example Ubidots JSON device definition FROM THE 2.0 API! The field names are different between the 1.6 and 2.0 APIs.
 
 {
     "url": "https://industrial.api.ubidots.com/api/v2.0/devices/613e9bdbf4c81a040178e28c",
@@ -54,6 +53,27 @@ Example Ubidots JSON device definition:
     "variablesCount": 24
 }
 """
+
+def _dict_to_logical_device(ubidots_dict) -> LogicalDevice:
+    """
+    This method assumes the JSON returned from an API 2.0 call.
+    """
+    logger.info(f'dict from ubidots: {ubidots_dict}')
+
+    last_seen = datetime.datetime.now(datetime.timezone.utc)
+    if 'lastActivity' in ubidots_dict:
+        last_seen_sec = ubidots_dict['lastActivity'] / 1000
+        last_seen = datetime.datetime.fromtimestamp(last_seen_sec)
+
+    location = None
+    if 'properties' in ubidots_dict:
+        if '_location_fixed' in ubidots_dict['properties']:
+            uloc = ubidots_dict['properties']['_location_fixed']
+            location = Location(lat=uloc['lat'], long=uloc['lng'])
+
+    return LogicalDevice(name=ubidots_dict['name'], last_seen=last_seen, location=location, properties=ubidots_dict)
+
+
 def get_all_devices() -> List[LogicalDevice]:
     page = 1
     devices = []
@@ -71,20 +91,7 @@ def get_all_devices() -> List[LogicalDevice]:
         logger.info(f'Adding {len(response_obj["results"])} devices to array.')
 
         for u in response_obj['results']:
-            last_seen_sec = u['lastActivity'] / 1000
-            last_seen = datetime.datetime.fromtimestamp(last_seen_sec)
-
-            location = None
-            if '_location_fixed' in u['properties']:
-                uloc = u['properties']['_location_fixed']
-                location = Location(lat=uloc['lat'], long=uloc['lng'])
-
-            log_dev = LogicalDevice(name=u['name'], last_seen=last_seen, location=location, properties=u)
-            #if location is not None:
-            #    print(json.dumps(u, indent=2))
-            #    print(log_dev)
-
-            devices.append(log_dev)
+            devices.append(_dict_to_logical_device(u))
 
         if response_obj['next'] is None:
             break
@@ -95,6 +102,18 @@ def get_all_devices() -> List[LogicalDevice]:
         time.sleep(1)
 
     return devices
+
+
+def get_device(label: str) -> LogicalDevice:
+        url = f'{BASE_2_0}/devices/~{label}'
+        r = requests.get(url, headers=headers)
+        logger.info(r.status_code)
+        if r.status_code != 200:
+            logger.warn(f'devices/{label} received response: {r.status_code}: {r.reason}')
+            return None
+
+        response_obj = json.loads(r.content)
+        return _dict_to_logical_device(response_obj)
 
 
 def post_device_data(label: str, body) -> None:

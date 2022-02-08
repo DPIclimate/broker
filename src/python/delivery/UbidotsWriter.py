@@ -96,12 +96,13 @@ def on_message(channel, method, properties, body):
 
     global mq_client, finish
 
-    # If the finish flag is set, exit without doing anything. Do not
-    # ack the message so it stays on the queue.
-    if finish:
-        return
-
     delivery_tag = method.delivery_tag
+
+    # If the finish flag is set, reject the message so RabbitMQ will re-queue it
+    # and return early.
+    if finish:
+        mq_client._channel.basic_reject(delivery_tag)
+        return
 
     try:
         msg = json.loads(body)
@@ -118,28 +119,68 @@ def on_message(channel, method, properties, body):
             logging.warning(f'Could not find logical device for message: {body}')
             mq_client.ack(delivery_tag)
             return
-            
+
+        #logger.info(f'Logical device from mapping: {ld}')
+
         ts_float = dateutil.parser.isoparse(msg['timestamp']).timestamp()
         # datetime.timestamp() returns a float where the ms are to the right of the
         # decimal point. This should get us an integer value in ms.
         ts = math.floor(ts_float * 1000)
 
-        body_dict = {}
+        ubidots_payload = {}
         for v in msg['timeseries']:
-            body_dict[v['name']] = {'value': v['value'], 'timestamp': ts}
+            ubidots_payload[v['name']] = {'value': v['value'], 'timestamp': ts}
 
-        # It seems the ubidots device LABEL must be used here. I tried it
-        # with the device id and it didn't work. I did get a 200 response,
-        # so I don't know what Ubidots did with the data.
+        # It seems the ubidots device LABEL must be used here, probably because
+        # the POST is using the 1.6 API.
+
+        # TODO: Put the Ubidots device JSON into a key within properties so it
+        # is one level down. That way other end-points can store their own
+        # metadata under their own key.
+
+        new_device = False
+        if not 'label' in ld.properties:
+            # If the label is not in the logical device properties it most likely
+            # means the logical device is newly created by the mapper. Look at the
+            # physical device source to decide what the label should be, and remember
+            # to read the Ubidots device back after writing the timeseries data so
+            # the device info can be stored in the logical device properties.
+            logger.info('No Ubidots label found in logical device.')
+            pd = dao.get_physical_device(msg['physical_uid'])
+            if pd is None:
+                logging.warning(f'Could not find physical device for message: {body}')
+                mq_client.ack(delivery_tag)
+                return
+
+            new_device = True
+            if pd.source_name == 'ttn':
+                ld.properties['label'] = pd.properties['dev_eui']
+                logger.info(f'Using physical device eui for label: {ld.properties["label"]}')
+            else:
+                logging.warning(f'TODO: work with {pd.source_name} devices!')
+                mq_client.ack(delivery_tag)
+                return
+
         ubidots_dev_label = ld.properties['label']
-        ubidots.post_device_data(ubidots_dev_label, body_dict)
+        ubidots.post_device_data(ubidots_dev_label, ubidots_payload)
+
+        if new_device:
+            # Update the newly created logical device properties with the information
+            # returned from Ubidots, but nothing else. We don't want to overwite the
+            # last_seen value because that should be set to the timestamp from the
+            # message, which was done in the mapper process.
+            logger.info('Updating new logical device properties from Ubidots.')
+            ud = ubidots.get_device(ubidots_dev_label)
+            if ud is not None:
+                ld.properties = ud.properties
+                logger.info(f'updated ld: {ld}')
+                dao.update_logical_device(ld.uid, ld)
 
     except BaseException as e:
         logger.warning(f'Caught: {e}')
 
     # This tells RabbitMQ the message is handled and can be deleted from the queue.    
     mq_client.ack(delivery_tag)
-
 
 
 if __name__ == '__main__':

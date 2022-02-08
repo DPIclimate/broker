@@ -102,12 +102,13 @@ def on_message(channel, method, properties, body):
     """
     global mq_client, finish
 
-    # If the finish flag is set, exit without doing anything. Do not
-    # ack the message so it stays on the queue.
-    if finish:
-        return
-
     delivery_tag = method.delivery_tag
+
+    # If the finish flag is set, reject the message so RabbitMQ will re-queue it
+    # and return early.
+    if finish:
+        mq_client._channel.basic_reject(delivery_tag)
+        return
 
     try:
         msg = json.loads(body)
@@ -140,7 +141,7 @@ def on_message(channel, method, properties, body):
 
             dev_name = ttn_dev['name'] if 'name' in ttn_dev else dev_id
             dev_loc = Location.from_ttn_device(ttn_dev)
-            props = {'app_id': app_id, 'dev_id': dev_id }
+            props = {'app_id': app_id, 'dev_id': dev_id, 'dev_eui': dev_eui}
 
             pd = PhysicalDevice(source_name='ttn', name=dev_name, location=dev_loc, last_seen=last_seen, properties=props)
             pd = dao.create_physical_device(pd)
@@ -173,13 +174,15 @@ def on_message(channel, method, properties, body):
                         """
                         p_ts_msg = {'physical_uid': pd.uid, 'timestamp': received_at, 'timeseries': ts_vars}
 
+                        logger.info(f'{received_at}|{app_id}|{dev_id}|{ts_vars}')
+
                         # Should the code try and remember the message until it is delivered to the queue?
                         # I think that means we need to hold off the ack in this method and only ack the message
                         # we got from ttn_raw when we get confirmation from the server that it has saved the message
                         # written to the physical_timeseries queue.
                         msg_id = mq_client.publish_message('physical_timeseries', p_ts_msg)
                 else:
-                    logger.warning('No decoded payload in message.')
+                    logger.warning(f'No decoded payload in message: {body}')
 
         # This tells RabbitMQ the message is handled and can be deleted from the queue.    
         mq_client.ack(delivery_tag)

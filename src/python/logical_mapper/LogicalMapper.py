@@ -17,9 +17,9 @@ information to the logical device properties object allowing the logical
 device to be associated with the IoT platform device.
 """
 
-import asyncio, json, logging, math, os, signal
+import asyncio, datetime, json, logging, signal
 
-from pdmodels.Models import PhysicalDevice, Location, LogicalDevice, PhysicalToLogicalMapping
+from pdmodels.Models import LogicalDevice, PhysicalToLogicalMapping
 import api.client.RabbitMQ as mq
 
 import db.DAO as dao
@@ -80,35 +80,47 @@ async def main():
 def on_message(channel, method, properties, body):
     """
     This function is called when a message arrives from RabbitMQ.
-
-    ttn_raw message is the json as received by the ttn uplink webhook.
-
-    physical_timeseries has:
-    {'physical_uid': physical_dev_uid, 'timestamp': iso_8601_timestamp, 'timeseries': [ {'ts_key': value}, ...]}
-
-    logical_timeseries has (not sure if physical dev uid is useful, discuss):
-    {'physical_uid': physical_dev_uid, 'logical_uid': logical_dev_uid, , 'timestamp': iso_8601_timestamp, 'timeseries': [ {'ts_key': value}, ...]}
     """
 
     global mq_client, finish
 
-    # If the finish flag is set, exit without doing anything. Do not
-    # ack the message so it stays on the queue.
-    if finish:
-        return
-
     delivery_tag = method.delivery_tag
+
+    # If the finish flag is set, reject the message so RabbitMQ will re-queue it
+    # and return early.
+    if finish:
+        mq_client._channel.basic_reject(delivery_tag)
+        return
 
     try:
         msg = json.loads(body)
 
-        mapping = dao.get_current_device_mapping(msg['physical_uid'])
-        if mapping is not None:
-            #logger.info(f'Forwarding message from {mapping.pd.name} --> {mapping.ld.name}: {msg["timestamp"]} {msg["timeseries"]}')
-            msg['logical_uid'] = mapping.ld.uid
-            mq_client.publish_message('logical_timeseries', msg)
-        else:
-            logger.warn(f'No mapping found, must create logical device for physical device uid: {msg["physical_uid"]}.')
+        p_uid = msg['physical_uid']
+        mapping = dao.get_current_device_mapping(p_uid)
+        if mapping is None:
+            logger.info(f'No mapping found, creating logical device for physical device uid: {p_uid}.')
+            pd = dao.get_physical_device(p_uid)
+            if pd is None:
+                logger.warning(f'Physical device not found, cannot continue, dropping message.')
+                # Reject the message, do not requeue.
+                mq_client._channel.basic_reject(delivery_tag, False)
+                return
+            
+            # Create a logical device and mapping so the message can be published to the logical_timeseries
+            # queue. The logical device will be minimal - the same name and location as the physical device.
+            # The processes reading the logical_timeseries queue and sending the data onto IoT platforms
+            # are responsible for creating the device on the platform and updating the logical device
+            # properties with the information they need to recognise the device in future.
+            ld = LogicalDevice(name=pd.name, location=pd.location, last_seen=pd.last_seen)
+            logger.info(f'Creating logical device {ld}')
+            ld = dao.create_logical_device(ld)
+            mapping = PhysicalToLogicalMapping(pd=pd, ld=ld, start_time=datetime.datetime.now(datetime.timezone.utc))
+            logger.info(f'Creating mapping {mapping}')
+            dao.insert_mapping(mapping)
+
+        #logger.info(f'Forwarding message from {mapping.pd.name} --> {mapping.ld.name}: {msg["timestamp"]} {msg["timeseries"]}')
+        msg['logical_uid'] = mapping.ld.uid
+        mq_client.publish_message('logical_timeseries', msg)
 
         # This tells RabbitMQ the message is handled and can be deleted from the queue.    
         mq_client.ack(delivery_tag)

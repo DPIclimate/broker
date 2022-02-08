@@ -340,7 +340,7 @@ def create_logical_device(device: LogicalDevice) -> LogicalDevice:
         cursor.execute("insert into logical_devices (name, location, last_seen, properties) values (%(name)s, %(location)s, %(last_seen)s, %(properties)s) returning uid", dev_fields)
         uid = cursor.fetchone()[0]
         logger.info(f'insert returned uid = {uid}')
-        dev = _get_physical_device(conn, uid)
+        dev = _get_logical_device(conn, uid)
         logger.info(f'new device = {dev}')
         conn.commit()
 
@@ -424,6 +424,64 @@ def get_logical_devices(query_args = {}) -> List[LogicalDevice]:
 
     free_conn(conn)
     return devs
+
+
+def update_logical_device(uid: int, device: LogicalDevice) -> LogicalDevice:
+    with _get_connection() as conn:
+        current_device = _get_logical_device(conn, uid)
+        if current_device is None:
+            raise DAOException
+
+    current_values = vars(current_device)
+
+    update_list = []
+    for name, val in vars(device).items():
+        if name == 'uid':
+            continue
+
+        if val != current_values[name]:
+            update_list.append((name, val))
+
+    if len(update_list) < 1:
+        logger.info('No update to device')
+        return device
+
+    #logger.info(update_list)
+
+    add_and = False
+    sql = 'update logical_devices set '
+    args = {}
+
+    """
+    Look into this syntax given we are building the query with arbitrary column names.
+
+    cur.execute(sql.SQL("insert into %s values (%%s)") % [sql.Identifier("my_table")], [42])
+    """
+    for name, val in update_list:
+        clause = ' and ' if add_and else ''
+        clause = clause + f'{name} = %({name}_val)s'
+        args[name] = name
+
+        # psycopg2 will not convert the dict into a JSON string automatically.
+        nval = val if name != 'properties' else json.dumps(val)
+        args[f'{name}_val'] = nval
+        add_and = True
+        sql = sql + clause
+
+    sql = sql + f' where uid = {uid}'
+
+    #logger.info(sql)
+
+    with conn.cursor() as cursor:
+        #logger.info(cursor.mogrify(sql, args))
+        cursor.execute(sql, args)
+
+    updated_device = _get_logical_device(conn, uid)
+    logger.info(f'updated device = {updated_device}')
+
+    conn.commit()
+    free_conn(conn)
+    return updated_device
 
 
 """
