@@ -139,7 +139,7 @@ def on_message(channel, method, properties, body):
         # metadata under their own key.
 
         new_device = False
-        if not 'label' in ld.properties:
+        if not 'ubidots' in ld.properties or not 'label' in ld.properties['ubidots']:
             # If the label is not in the logical device properties it most likely
             # means the logical device is newly created by the mapper. Look at the
             # physical device source to decide what the label should be, and remember
@@ -153,18 +153,43 @@ def on_message(channel, method, properties, body):
                 return
 
             new_device = True
+            ld.properties['ubidots'] = {}
             if pd.source_name == 'ttn':
-                ld.properties['label'] = pd.properties['dev_eui']
-                logger.info(f'Using physical device eui for label: {ld.properties["label"]}')
+                ld.properties['ubidots']['label'] = pd.properties['dev_eui']
+                logger.info(f'Using physical device eui for label: {ld.properties["ubidots"]["label"]}')
             else:
                 logging.warning(f'TODO: work with {pd.source_name} devices!')
                 mq_client.ack(delivery_tag)
                 return
 
-        ubidots_dev_label = ld.properties['label']
+        ubidots_dev_label = ld.properties['ubidots']['label']
         ubidots.post_device_data(ubidots_dev_label, ubidots_payload)
 
         if new_device:
+            # Update the new Ubidots device with info from the source device and/or the
+            # broker.
+            logger.info('Updating Ubidots device with information from source device.')
+            patch_obj = {'name': pd.name}
+            patch_obj['properties'] = {}
+
+            # Prefer the logical device location, fall back to the mapped physical device
+            # location, if any.
+            loc = ld.location if ld.location is not None else pd.location
+            if loc is not None:
+                patch_obj['properties'] |= {'_location_type': 'manual', '_location_fixed': {'lat': loc.lat, 'lng': loc.long}}
+
+            if pd.source_name == 'ttn':
+                if 'ttn' in pd.properties:
+                    ttn_props = pd.properties['ttn']
+                    if 'description' in ttn_props:
+                        patch_obj['description'] = ttn_props['description']
+
+                    if 'attributes' in ttn_props and 'uid' in ttn_props['attributes']:
+                        cfg = {'dpi-uid': {'text': 'DPI UID', 'type': 'text', 'description': 'The uid from the DPI QR code used to activate the device.'}}
+                        patch_obj['properties'] |= {'_config': cfg, 'dpi-uid': ttn_props['attributes']['uid']}
+
+            ubidots.update_device(ubidots_dev_label, patch_obj)
+
             # Update the newly created logical device properties with the information
             # returned from Ubidots, but nothing else. We don't want to overwite the
             # last_seen value because that should be set to the timestamp from the
@@ -172,9 +197,14 @@ def on_message(channel, method, properties, body):
             logger.info('Updating new logical device properties from Ubidots.')
             ud = ubidots.get_device(ubidots_dev_label)
             if ud is not None:
-                ld.properties = ud.properties
+                # Note that ud is a LogicalDevice, not the object that is returned
+                # from an Ubidots REST API call. So ud.properties is not the Ubidots
+                # device properties, but the entire Ubidots device definition as we
+                # want to store it in our logical device table properties column.
+                ld.properties['ubidots'] = ud.properties['ubidots']
                 logger.info(f'updated ld: {ld}')
                 dao.update_logical_device(ld.uid, ld)
+
 
     except BaseException as e:
         logger.warning(f'Caught: {e}')

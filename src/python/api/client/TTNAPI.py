@@ -33,7 +33,7 @@ newDeviceData = {"end_device":{
 def get_device_details(applicationID, deviceID):
     # Get details of a particular device
 
-    url = f"{BASE}/{applicationID}/devices/{deviceID}?field_mask=name,description,locations"
+    url = f"{BASE}/{applicationID}/devices/{deviceID}?field_mask=name,description,locations,attributes"
     r = requests.get(url, headers=headers)
     r_json = json.loads(r.content)
 

@@ -141,7 +141,7 @@ def on_message(channel, method, properties, body):
 
             dev_name = ttn_dev['name'] if 'name' in ttn_dev else dev_id
             dev_loc = Location.from_ttn_device(ttn_dev)
-            props = {'app_id': app_id, 'dev_id': dev_id, 'dev_eui': dev_eui}
+            props = {'app_id': app_id, 'dev_id': dev_id, 'dev_eui': dev_eui, 'ttn': ttn_dev}
 
             pd = PhysicalDevice(source_name='ttn', name=dev_name, location=dev_loc, last_seen=last_seen, properties=props)
             pd = dao.create_physical_device(pd)

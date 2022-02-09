@@ -1,39 +1,75 @@
 Ubidots returns different JSON for a device depending on whether you call the 1.6 or 2.0 API endpoints:
 
-$ curl -H 'X-Auth-Token: XYZ' -H 'Content-Type: application/json' 'https://industrial.api.ubidots.com/api/v1.6/devices/006bc37f343cad30'
+The location is stored in the properties but also exposed as either 'position' (1.6) or 'location' (2.0).
+
+1.6:
 {
-  "id": "6201c757d4fc750d4bb07100",
+  "id": "620306d436478d0cd431c055",
   "organization_data": null,
   "organization": null,
   "is_active": true,
   "owner": "https://industrial.api.ubidots.com/api/v1.6/users/8413",
   "label": "006bc37f343cad30",
-  "name": "006bc37f343cad30",
-  "url": "https://industrial.api.ubidots.com/api/v1.6/datasources/6201c757d4fc750d4bb07100",
-  "context": {},
+  "name": "oai-tipping-gauge",
+  "url": "https://industrial.api.ubidots.com/api/v1.6/datasources/620306d436478d0cd431c055",
+  "context": {
+    "_config": {
+      "dpi-uid": {
+        "text": "DPI UID",
+        "type": "text",
+        "description": "The uid from the DPI QR code used to activate the device."
+      }
+    },
+    "dpi-uid": "A4RF3C",
+    "_location_type": "manual",
+    "_location_fixed": {
+      "lat": -33.322246,
+      "lng": 149.0857
+    }
+  },
   "tags": [],
-  "created_at": "2022-02-08T01:28:55.466471Z",
+  "created_at": "2022-02-09T00:12:04.718021Z",
   "number_of_variables": 2,
-  "last_activity": 1644283891838,
-  "description": "",
-  "position": null,
-  "variables_url": "https://industrial.api.ubidots.com/api/v1.6/datasources/6201c757d4fc750d4bb07100/variables"
+  "last_activity": 1644365568961,
+  "description": "Tipping rain gauge used for firmware development testing.",
+  "position": {
+    "lat": -33.322246,
+    "lng": 149.0857
+  },
+  "variables_url": "https://industrial.api.ubidots.com/api/v1.6/datasources/620306d436478d0cd431c055/variables"
 }
 
-$ curl -H 'X-Auth-Token: XYZ' -H 'Content-Type: application/json' 'https://industrial.api.ubidots.com/api/v2.0/devices/~006bc37f343cad30'
+2.0:
 {
-  "url": "https://industrial.api.ubidots.com/api/v2.0/devices/6201c757d4fc750d4bb07100",
-  "id": "6201c757d4fc750d4bb07100",
+  "url": "https://industrial.api.ubidots.com/api/v2.0/devices/620306d436478d0cd431c055",
+  "id": "620306d436478d0cd431c055",
   "organization": null,
   "label": "006bc37f343cad30",
-  "name": "006bc37f343cad30",
-  "description": "",
+  "name": "oai-tipping-gauge",
+  "description": "Tipping rain gauge used for firmware development testing.",
   "tags": [],
-  "properties": {},
+  "properties": {
+    "_config": {
+      "dpi-uid": {
+        "text": "DPI UID",
+        "type": "text",
+        "description": "The uid from the DPI QR code used to activate the device."
+      }
+    },
+    "dpi-uid": "A4RF3C",
+    "_location_type": "manual",
+    "_location_fixed": {
+      "lat": -33.322246,
+      "lng": 149.0857
+    }
+  },
   "isActive": true,
-  "lastActivity": 1644283891838,
-  "createdAt": "2022-02-08T01:28:55.466471Z",
-  "location": null,
-  "variables": "https://industrial.api.ubidots.com/api/v2.0/devices/6201c757d4fc750d4bb07100/variables",
+  "lastActivity": 1644365568961,
+  "createdAt": "2022-02-09T00:12:04.718021Z",
+  "location": {
+    "lat": -33.322246,
+    "lng": 149.0857
+  },
+  "variables": "https://industrial.api.ubidots.com/api/v2.0/devices/620306d436478d0cd431c055/variables",
   "variablesCount": 2
 }

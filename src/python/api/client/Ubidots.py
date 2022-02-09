@@ -71,7 +71,7 @@ def _dict_to_logical_device(ubidots_dict) -> LogicalDevice:
             uloc = ubidots_dict['properties']['_location_fixed']
             location = Location(lat=uloc['lat'], long=uloc['lng'])
 
-    return LogicalDevice(name=ubidots_dict['name'], last_seen=last_seen, location=location, properties=ubidots_dict)
+    return LogicalDevice(name=ubidots_dict['name'], last_seen=last_seen, location=location, properties={'ubidots': ubidots_dict})
 
 
 def get_all_devices() -> List[LogicalDevice]:
@@ -136,6 +136,12 @@ def post_device_data(label: str, body) -> None:
     if r.status_code != 200:
         logger.warning(url)
         logger.warning(r)
+
+
+def update_device(label: str, patch_obj) -> None:
+    url = f'{BASE_2_0}/devices/~{label}'
+    response = requests.patch(url, headers=headers, json=patch_obj)
+    print(f'PATCH response: {response.status_code}: {response.reason}')
 
 
 def main():
