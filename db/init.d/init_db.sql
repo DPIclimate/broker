@@ -13,6 +13,7 @@ create table if not exists physical_devices (
 
 create table if not exists ttn_messages (
     uid integer generated always as identity,
+    correlation_id uuid unique not null,
     appid text not null,
     devid text not null,
     deveui text not null,

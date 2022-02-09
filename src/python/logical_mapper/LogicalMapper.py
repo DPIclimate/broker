@@ -19,13 +19,13 @@ device to be associated with the IoT platform device.
 
 import asyncio, datetime, json, logging, signal
 
+import BrokerConstants
 from pdmodels.Models import LogicalDevice, PhysicalToLogicalMapping
 import api.client.RabbitMQ as mq
-
 import db.DAO as dao
 
 logging.basicConfig(level=logging.INFO, format='%(asctime)s %(name)s: %(message)s', datefmt='%Y-%m-%dT%H:%M:%S%z')
-logger = logging.getLogger('LogicalMapper') # Shows as __main__ if __name__ is used.
+logger = logging.getLogger(__name__)
 
 mq_client = None
 finish = False
@@ -95,7 +95,7 @@ def on_message(channel, method, properties, body):
     try:
         msg = json.loads(body)
 
-        p_uid = msg['physical_uid']
+        p_uid = msg[BrokerConstants.PHYSICAL_DEVICE_UID_KEY]
         mapping = dao.get_current_device_mapping(p_uid)
         if mapping is None:
             logger.info(f'No mapping found, creating logical device for physical device uid: {p_uid}.')
@@ -105,13 +105,14 @@ def on_message(channel, method, properties, body):
                 # Reject the message, do not requeue.
                 mq_client._channel.basic_reject(delivery_tag, False)
                 return
-            
+
             # Create a logical device and mapping so the message can be published to the logical_timeseries
             # queue. The logical device will be minimal - the same name and location as the physical device.
             # The processes reading the logical_timeseries queue and sending the data onto IoT platforms
             # are responsible for creating the device on the platform and updating the logical device
             # properties with the information they need to recognise the device in future.
-            ld = LogicalDevice(name=pd.name, location=pd.location, last_seen=pd.last_seen)
+            props = {'creation_correlation_id': msg[BrokerConstants.CORRELATION_ID_KEY]}
+            ld = LogicalDevice(name=pd.name, location=pd.location, last_seen=pd.last_seen, properties=props)
             logger.info(f'Creating logical device {ld}')
             ld = dao.create_logical_device(ld)
             mapping = PhysicalToLogicalMapping(pd=pd, ld=ld, start_time=datetime.datetime.now(datetime.timezone.utc))
@@ -119,7 +120,7 @@ def on_message(channel, method, properties, body):
             dao.insert_mapping(mapping)
 
         #logger.info(f'Forwarding message from {mapping.pd.name} --> {mapping.ld.name}: {msg["timestamp"]} {msg["timeseries"]}')
-        msg['logical_uid'] = mapping.ld.uid
+        msg[BrokerConstants.LOGICAL_DEVICE_UID_KEY] = mapping.ld.uid
         mq_client.publish_message('logical_timeseries', msg)
 
         # This tells RabbitMQ the message is handled and can be deleted from the queue.    

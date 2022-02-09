@@ -3,11 +3,11 @@ This program receives logical device timeseries messages and forwards them
 on to Ubidots.
 """
 
-import datetime
 import dateutil.parser
 
 import asyncio, json, logging, math, os, signal
 
+import BrokerConstants
 from pdmodels.Models import LogicalDevice
 import api.client.RabbitMQ as mq
 import api.client.Ubidots as ubidots
@@ -15,7 +15,7 @@ import api.client.Ubidots as ubidots
 import db.DAO as dao
 
 logging.basicConfig(level=logging.INFO, format='%(asctime)s %(name)s: %(message)s', datefmt='%Y-%m-%dT%H:%M:%S%z')
-logger = logging.getLogger(__name__) # Shows as __main__ if __name__ is used.
+logger = logging.getLogger(__name__)
 
 mq_client = None
 finish = False
@@ -106,8 +106,9 @@ def on_message(channel, method, properties, body):
 
     try:
         msg = json.loads(body)
+        logger.info(f'Accepted message {msg}')
 
-        l_uid = msg['logical_uid']
+        l_uid = msg[BrokerConstants.LOGICAL_DEVICE_UID_KEY]
 
         # Temporary hack to only process messages from David's netvox.
         if l_uid != 159:
@@ -128,8 +129,8 @@ def on_message(channel, method, properties, body):
         ts = math.floor(ts_float * 1000)
 
         ubidots_payload = {}
-        for v in msg['timeseries']:
-            ubidots_payload[v['name']] = {'value': v['value'], 'timestamp': ts}
+        for v in msg[BrokerConstants.TIMESERIES_KEY]:
+            ubidots_payload[v['name']] = {'value': v['value'], 'timestamp': ts, 'context': {BrokerConstants.CORRELATION_ID_KEY: msg[BrokerConstants.CORRELATION_ID_KEY]}}
 
         # It seems the ubidots device LABEL must be used here, probably because
         # the POST is using the 1.6 API.
@@ -146,7 +147,7 @@ def on_message(channel, method, properties, body):
             # to read the Ubidots device back after writing the timeseries data so
             # the device info can be stored in the logical device properties.
             logger.info('No Ubidots label found in logical device.')
-            pd = dao.get_physical_device(msg['physical_uid'])
+            pd = dao.get_physical_device(msg[BrokerConstants.PHYSICAL_DEVICE_UID_KEY])
             if pd is None:
                 logging.warning(f'Could not find physical device for message: {body}')
                 mq_client.ack(delivery_tag)
@@ -178,6 +179,10 @@ def on_message(channel, method, properties, body):
             if loc is not None:
                 patch_obj['properties'] |= {'_location_type': 'manual', '_location_fixed': {'lat': loc.lat, 'lng': loc.long}}
 
+            # We could include the correlation id of the message that caused the device to be created
+            # in the same format as the QR code id below, but I'm not sure that's useful and it might clutter
+            # up the Ubidots UI.
+
             if pd.source_name == 'ttn':
                 if 'ttn' in pd.properties:
                     ttn_props = pd.properties['ttn']
@@ -202,9 +207,7 @@ def on_message(channel, method, properties, body):
                 # device properties, but the entire Ubidots device definition as we
                 # want to store it in our logical device table properties column.
                 ld.properties['ubidots'] = ud.properties['ubidots']
-                logger.info(f'updated ld: {ld}')
                 dao.update_logical_device(ld.uid, ld)
-
 
     except BaseException as e:
         logger.warning(f'Caught: {e}')

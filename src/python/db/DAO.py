@@ -14,6 +14,7 @@ from psycopg2.extras import Json
 
 from typing import Any, Dict, List, Optional, Union
 
+import BrokerConstants
 from pdmodels.Models import Location, LogicalDevice, PhysicalDevice, PhysicalToLogicalMapping
 
 logging.basicConfig(level=logging.INFO, format='%(asctime)s %(name)s: %(message)s', datefmt='%Y-%m-%dT%H:%M:%S%z')
@@ -552,10 +553,13 @@ create table if not exists ttn_messages (
     primary key (appid, devid, deveui, ts)
 );
 """
-def add_ttn_message(app_id: str, dev_id: str, dev_eui: str, ts: datetime, msg):
+def add_ttn_message(app_id: str, dev_id: str, dev_eui: str, ts: datetime, msg_with_cid):
+    cid = msg_with_cid[BrokerConstants.CORRELATION_ID_KEY]
+    msg = msg_with_cid[BrokerConstants.RAW_MESSAGE_KEY]
+
     with _get_connection() as conn, conn.cursor() as cursor:
         try:
-            cursor.execute('insert into ttn_messages (appid, devid, deveui, ts, msg) values (%s, %s, %s, %s, %s)', (app_id, dev_id, dev_eui, ts, Json(msg)))
+            cursor.execute('insert into ttn_messages (correlation_id, appid, devid, deveui, ts, msg) values (%s, %s, %s, %s, %s, %s)', (cid, app_id, dev_id, dev_eui, ts, Json(msg)))
         except BaseException as e:
             logger.warn(f'Failed to insert ttn message to all messages table: {msg}')
             logger.warn(e)

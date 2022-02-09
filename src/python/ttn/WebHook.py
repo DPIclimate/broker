@@ -8,11 +8,12 @@
 # over the new connection.
 #
 
-import asyncio, datetime, json, logging, os
+import asyncio, datetime, json, logging, os, uuid
 from numbers import Integral
 from fastapi import FastAPI, Response
 from typing import Any, Dict
 
+import BrokerConstants
 import api.client.RabbitMQ as mq
 
 
@@ -115,11 +116,17 @@ async def webhook_endpoint(msg: JSONObject) -> None:
     async with lock:
         # Write the message to a local cache directory. It will be removed
         # when RabbitMQ acks receipt of the message.
+        msg_with_cid = {BrokerConstants.CORRELATION_ID_KEY: str(uuid.uuid4()), BrokerConstants.RAW_MESSAGE_KEY: msg}
+        logger.info(f'Accepted message {msg_with_cid}')
         filename = get_cache_filename(msg)
         with open(filename, 'w') as f:
             json.dump(msg, f)
 
-        delivery_tag = mq_client.publish_message('ttn_raw', msg)
+        delivery_tag = mq_client.publish_message('ttn_raw', msg_with_cid)
+
+        # FIXME: Can't have this dict growing endlessly if RabbitMQ
+        # is down. Perhaps rename the file here to the delivery_tag
+        # and then we don't need to track it.
         unacked_messages[delivery_tag] = filename
 
     # Doing an explicit return of a Response object with the 204 code to avoid

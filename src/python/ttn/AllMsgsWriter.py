@@ -12,6 +12,7 @@ import dateutil.parser
 import asyncio, json, logging, math, os, signal
 from typing import Optional
 
+import BrokerConstants
 from pdmodels.Models import PhysicalDevice, Location
 import api.client.RabbitMQ as mq
 import api.client.TTNAPI as ttn
@@ -19,7 +20,7 @@ import api.client.TTNAPI as ttn
 import db.DAO as dao
 
 logging.basicConfig(level=logging.INFO, format='%(asctime)s %(name)s: %(message)s', datefmt='%Y-%m-%dT%H:%M:%S%z')
-logger = logging.getLogger('AllMsgsWriter') # Shows as __main__ if __name__ is used.
+logger = logging.getLogger(__name__)
 
 mq_client = None
 finish = False
@@ -111,7 +112,10 @@ def on_message(channel, method, properties, body):
         return
 
     try:
-        msg = json.loads(body)
+        msg_with_cid = json.loads(body)
+        logger.info(f'Accepted message {msg_with_cid}')
+
+        msg = msg_with_cid[BrokerConstants.RAW_MESSAGE_KEY]
 
         app_id = msg['end_device_ids']['application_ids']['application_id']
         dev_id = msg['end_device_ids']['device_id']
@@ -130,7 +134,7 @@ def on_message(channel, method, properties, body):
         # Record the message to the all messages table before doing anything else to ensure it
         # is saved. Dups are not saved - the primary key of the table won't allow them. The
         # subsequent exception is caught be the db code so isn't seen here.
-        dao.add_ttn_message(app_id, dev_id, dev_eui, last_seen, msg)
+        dao.add_ttn_message(app_id, dev_id, dev_eui, last_seen, msg_with_cid)
 
         pd = None
         devs = dao.get_physical_devices(query_args={'prop_name': ['app_id', 'dev_id'], 'prop_value': [app_id, dev_id]})
@@ -141,7 +145,13 @@ def on_message(channel, method, properties, body):
 
             dev_name = ttn_dev['name'] if 'name' in ttn_dev else dev_id
             dev_loc = Location.from_ttn_device(ttn_dev)
-            props = {'app_id': app_id, 'dev_id': dev_id, 'dev_eui': dev_eui, 'ttn': ttn_dev}
+            props = {
+                'app_id': app_id,
+                'dev_id': dev_id,
+                'dev_eui': dev_eui,
+                'ttn': ttn_dev,
+                'creation_correlation_id': msg_with_cid[BrokerConstants.CORRELATION_ID_KEY]
+            }
 
             pd = PhysicalDevice(source_name='ttn', name=dev_name, location=dev_loc, last_seen=last_seen, properties=props)
             pd = dao.create_physical_device(pd)
@@ -168,13 +178,11 @@ def on_message(channel, method, properties, body):
                         for k, v in decoded_payload.items():
                             ts_vars.append({'name': k, 'value': v})
 
-                        """
-                        physical_timeseries has:
-                        {'physical_uid': physical_dev_uid, , 'timestamp': iso_8601_timestamp, 'timeseries': [ {'ts_key': value}, ...]}
-                        """
-                        p_ts_msg = {'physical_uid': pd.uid, 'timestamp': received_at, 'timeseries': ts_vars}
-
-                        logger.info(f'{received_at}|{app_id}|{dev_id}|{ts_vars}')
+                        p_ts_msg = {
+                            BrokerConstants.CORRELATION_ID_KEY: msg_with_cid[BrokerConstants.CORRELATION_ID_KEY],
+                            BrokerConstants.PHYSICAL_DEVICE_UID_KEY: pd.uid,
+                            BrokerConstants.TIMESTAMP_KEY: received_at,
+                            BrokerConstants.TIMESERIES_KEY: ts_vars}
 
                         # Should the code try and remember the message until it is delivered to the queue?
                         # I think that means we need to hold off the ack in this method and only ack the message
