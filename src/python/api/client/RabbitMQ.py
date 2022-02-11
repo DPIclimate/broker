@@ -27,16 +27,6 @@ _EXCHANGE_TYPE = ExchangeType.direct
 # rather than hard-coding the names. Probably a dict.
 _QUEUE_NAMES = ['ttn_raw', 'physical_timeseries', 'logical_timeseries']
 
-"""
-ttn_raw message is the json as received by the ttn uplink webhook.
-
-physical_timeseries has:
-{'physical_uid': physical_dev_uid, 'timestamp': iso_8601_timestamp, 'timeseries': [ {'ts_key': value}, ...]}
-
-logical_timeseries has (not sure if physical dev uid is useful, discuss):
-{'physical_uid': physical_dev_uid, 'logical_uid': logical_dev_uid, , 'timestamp': iso_8601_timestamp, 'timeseries': [ {'ts_key': value}, ...]}
-"""
-
 _user = os.environ['RABBITMQ_DEFAULT_USER']
 _passwd = os.environ['RABBITMQ_DEFAULT_PASS']
 _host = os.environ['RABBITMQ_HOST']

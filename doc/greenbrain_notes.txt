@@ -1,0 +1,58 @@
+API docs: https://api.greenbrain.net.au/v3/docs
+
+Login:
+
+curl -d '{"username":"x","password":"y"}' -H 'Content-Type: application/json' https://api.greenbrain.net.au/v3/auth/login
+Response: {"token":"abc...xyz","accountId":nnnn}
+
+Get a list of everything:
+curl -H "Authorization: bearer $GB_TOKEN" -H 'Content-Type: application/json' https://api.greenbrain.net.au/v3/bootstrap
+
+The bootstrap call must be made to discover what 'stations' exist. Stations have a station type
+which we might be able to match to Ubidots device types. Stations have locations, created/updated at,
+and an array of sensor groups. A sensor group seems to correspond to what we think of as a phyiscal device.
+
+A customer has 'systems' (a site?) that has 'stations' (like an ICT node?) that has 'sensor groups' such
+as an envpro, which has 'sensors' corresponding to single measurements such as soil moisture at 10cm.
+
+Within a sensor group there are multiple sensor types, such as soilMoistureContent. Within the sensor type is an array
+of sensors - for an EnvPro there is a sensor per depth 10cm, 20cm...
+
+A sensor group reading from the API endpoint https://api.greenbrain.net.au/v3/sensor-groups/{id}/latest looks like:
+
+{
+  "system": {
+    "id": 1896,
+    "name": "Griffith Research Station",
+    "timezone": "Australia/Sydney"
+  },
+  "station": {
+    "id": 9889,
+    "name": "A Chard heavy",
+    "timezone": null
+  },
+  "sensorGroup": {
+    "id": 19640,
+    "name": "A Chardonnay heavy Enviropo "
+  },
+  "sensorTypes": {
+    "soilMoistureContent": {
+      "id": 2,
+      "name": "Soil Moisture Content",
+      "sensors": [
+        {
+          "id": 163834,
+          "name": "10cm",
+          "unit": "%",
+          "value": 40.06,
+          "time": "2022-02-09T22:00:00.000"
+        },
+        {
+          "id": 163835,
+          "name": "20cm",
+          "unit": "%",
+          "value": 43.93,
+          "time": "2022-02-09T22:00:00.000"
+        },
+...
+

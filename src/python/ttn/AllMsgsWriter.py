@@ -112,10 +112,12 @@ def on_message(channel, method, properties, body):
         return
 
     try:
+        # The message from the webhook process already has the correlation id in it.
         msg_with_cid = json.loads(body)
         logger.info(f'Accepted message {msg_with_cid}')
 
         msg = msg_with_cid[BrokerConstants.RAW_MESSAGE_KEY]
+        correlation_id = msg_with_cid[BrokerConstants.CORRELATION_ID_KEY]
 
         app_id = msg['end_device_ids']['application_ids']['application_id']
         dev_id = msg['end_device_ids']['device_id']
@@ -131,66 +133,74 @@ def on_message(channel, method, properties, body):
 
         last_seen = dateutil.parser.isoparse(received_at)
 
-        # Record the message to the all messages table before doing anything else to ensure it
-        # is saved. Dups are not saved - the primary key of the table won't allow them. The
-        # subsequent exception is caught be the db code so isn't seen here.
-        dao.add_ttn_message(app_id, dev_id, dev_eui, last_seen, msg_with_cid)
+        source_ids = {
+            # These values are split out to make SQL queries more readable and hopefully faster.
+            'app_id': app_id,
+            'dev_id': dev_id,
+            'dev_eui': dev_eui,
+        }
 
-        pd = None
-        devs = dao.get_physical_devices(query_args={'prop_name': ['app_id', 'dev_id'], 'prop_value': [app_id, dev_id]})
-        if len(devs) < 1:
+        # Record the message to the all messages table before doing anything else to ensure it
+        # is saved.
+        dao.add_raw_message(BrokerConstants.TTN, last_seen, correlation_id, msg)
+
+        pd = dao.get_pyhsical_device_using_source_ids(BrokerConstants.TTN, source_ids)
+        if pd is None:
             logger.info('Device not found, creating physical device.')
             ttn_dev = ttn.get_device_details(app_id, dev_id)
             print(f'Device info from TTN: {ttn_dev}')
 
             dev_name = ttn_dev['name'] if 'name' in ttn_dev else dev_id
             dev_loc = Location.from_ttn_device(ttn_dev)
-            props = {
+            source_ids = {
+                # These values are split out to make SQL queries more readable and hopefully faster.
                 'app_id': app_id,
                 'dev_id': dev_id,
                 'dev_eui': dev_eui,
-                'ttn': ttn_dev,
-                'creation_correlation_id': msg_with_cid[BrokerConstants.CORRELATION_ID_KEY]
             }
 
-            pd = PhysicalDevice(source_name='ttn', name=dev_name, location=dev_loc, last_seen=last_seen, properties=props)
-            pd = dao.create_physical_device(pd)
-        elif len(devs) == 1:
-            pd = devs[0]
-            #logger.info(f'Updating last_seen for device {pd.name}')
+            props = {
+                BrokerConstants.TTN: ttn_dev,
+                BrokerConstants.CREATION_CORRELATION_ID_KEY: correlation_id
+            }
 
+            pd = PhysicalDevice(source_name=BrokerConstants.TTN, name=dev_name, location=dev_loc, last_seen=last_seen, source_ids=source_ids, properties=props)
+            pd = dao.create_physical_device(pd)
+        else:
+            #logger.info(f'Updating last_seen for device {pd.name}')
             if last_seen != None:
                 pd.last_seen = last_seen
                 pd = dao.update_physical_device(pd.uid, pd)
-        else:
-            # Could use the device with the lowest uid because it would have been created first and
-            # later ones are erroneous dupes.
-            logger.warning(f'Found {len(devs)} devices: {devs}')
 
-        if pd is not None:
-            # TODO: Run the decoder here, or move all this to another process reading from another queue.
-            uplink_message = msg['uplink_message']
-            if uplink_message is not None:
-                if 'decoded_payload' in uplink_message:
-                    decoded_payload = uplink_message['decoded_payload']
-                    if decoded_payload is not None:
-                        ts_vars = []
-                        for k, v in decoded_payload.items():
-                            ts_vars.append({'name': k, 'value': v})
+        if pd is None:
+            logger.error(f'Physical device not found, message processing ends now. {correlation_id}')
+            mq_client.ack(delivery_tag)
+            return
 
-                        p_ts_msg = {
-                            BrokerConstants.CORRELATION_ID_KEY: msg_with_cid[BrokerConstants.CORRELATION_ID_KEY],
-                            BrokerConstants.PHYSICAL_DEVICE_UID_KEY: pd.uid,
-                            BrokerConstants.TIMESTAMP_KEY: received_at,
-                            BrokerConstants.TIMESERIES_KEY: ts_vars}
+        # TODO: Run the decoder here, or move all this to another process reading from another queue.
+        uplink_message = msg['uplink_message'] if 'uplink_message' in msg else None
+        if uplink_message is not None:
+            if 'decoded_payload' in uplink_message:
+                decoded_payload = uplink_message['decoded_payload']
+                if decoded_payload is not None:
+                    ts_vars = []
+                    for k, v in decoded_payload.items():
+                        ts_vars.append({'name': k, 'value': v})
 
-                        # Should the code try and remember the message until it is delivered to the queue?
-                        # I think that means we need to hold off the ack in this method and only ack the message
-                        # we got from ttn_raw when we get confirmation from the server that it has saved the message
-                        # written to the physical_timeseries queue.
-                        msg_id = mq_client.publish_message('physical_timeseries', p_ts_msg)
-                else:
-                    logger.warning(f'No decoded payload in message: {body}')
+                    p_ts_msg = {
+                        BrokerConstants.CORRELATION_ID_KEY: correlation_id,
+                        BrokerConstants.PHYSICAL_DEVICE_UID_KEY: pd.uid,
+                        BrokerConstants.TIMESTAMP_KEY: received_at,
+                        BrokerConstants.TIMESERIES_KEY: ts_vars
+                    }
+
+                    # Should the code try and remember the message until it is delivered to the queue?
+                    # I think that means we need to hold off the ack in this method and only ack the message
+                    # we got from ttn_raw when we get confirmation from the server that it has saved the message
+                    # written to the physical_timeseries queue.
+                    msg_id = mq_client.publish_message('physical_timeseries', p_ts_msg)
+            else:
+                logger.warning(f'No decoded payload in message: {body}')
 
         # This tells RabbitMQ the message is handled and can be deleted from the queue.    
         mq_client.ack(delivery_tag)

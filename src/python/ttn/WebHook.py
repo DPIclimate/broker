@@ -116,6 +116,7 @@ async def webhook_endpoint(msg: JSONObject) -> None:
     async with lock:
         # Write the message to a local cache directory. It will be removed
         # when RabbitMQ acks receipt of the message.
+        # NOTE: The string representation of the UUID is put into the message, not the UUID object.
         msg_with_cid = {BrokerConstants.CORRELATION_ID_KEY: str(uuid.uuid4()), BrokerConstants.RAW_MESSAGE_KEY: msg}
         logger.info(f'Accepted message {msg_with_cid}')
         filename = get_cache_filename(msg)

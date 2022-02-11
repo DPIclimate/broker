@@ -5,3 +5,12 @@ PHYSICAL_DEVICE_UID_KEY = 'p_uid'
 LOGICAL_DEVICE_UID_KEY = 'l_uid'
 TIMESTAMP_KEY = 'timestamp'
 TIMESERIES_KEY = 'timeseries'
+
+# Source names
+TTN = 'ttn'
+GREENBRAIN = 'greenbrain'
+
+
+CREATION_CORRELATION_ID_KEY = 'creation_correlation_id'
+SENSOR_GROUP_ID_KEY = 'sensor_group_id'
+LAST_MESSAGE_HASH_KEY = 'last_message_hash'

@@ -123,21 +123,31 @@ def on_message(channel, method, properties, body):
 
         #logger.info(f'Logical device from mapping: {ld}')
 
-        ts_float = dateutil.parser.isoparse(msg['timestamp']).timestamp()
+        # TODO: Find or create a class to hide all the Python datetime horrors.
+        ts_float = dateutil.parser.isoparse(msg[BrokerConstants.TIMESTAMP_KEY]).timestamp()
         # datetime.timestamp() returns a float where the ms are to the right of the
         # decimal point. This should get us an integer value in ms.
         ts = math.floor(ts_float * 1000)
 
         ubidots_payload = {}
         for v in msg[BrokerConstants.TIMESERIES_KEY]:
-            ubidots_payload[v['name']] = {'value': v['value'], 'timestamp': ts, 'context': {BrokerConstants.CORRELATION_ID_KEY: msg[BrokerConstants.CORRELATION_ID_KEY]}}
+            dot_ts = ts
+            # Override the default message timestamp if one of the dot entries has its
+            # own timestamp.
+            if BrokerConstants.TIMESTAMP_KEY in v:
+                dot_ts_float = dateutil.parser.isoparse(msg[BrokerConstants.TIMESTAMP_KEY]).timestamp()
+                dot_ts = math.floor(dot_ts_float * 1000)
 
-        # It seems the ubidots device LABEL must be used here, probably because
-        # the POST is using the 1.6 API.
+            ubidots_payload[v['name']] = {
+                'value': v['value'],
+                'timestamp': dot_ts,
+                'context': {
+                    BrokerConstants.CORRELATION_ID_KEY: msg[BrokerConstants.CORRELATION_ID_KEY]
+                }
+            }
 
-        # TODO: Put the Ubidots device JSON into a key within properties so it
-        # is one level down. That way other end-points can store their own
-        # metadata under their own key.
+        # TODO: Add some way to abstract the source-specific details of creating the Ubidots device.
+        # Anywhere this code has something like 'if pd.source_name...' it should be handled better.
 
         new_device = False
         if not 'ubidots' in ld.properties or not 'label' in ld.properties['ubidots']:
@@ -155,9 +165,16 @@ def on_message(channel, method, properties, body):
 
             new_device = True
             ld.properties['ubidots'] = {}
-            if pd.source_name == 'ttn':
+            if pd.source_name == BrokerConstants.TTN:
                 ld.properties['ubidots']['label'] = pd.properties['dev_eui']
                 logger.info(f'Using physical device eui for label: {ld.properties["ubidots"]["label"]}')
+            elif pd.source_name == BrokerConstants.GREENBRAIN:
+                logger.info('Using system-station-sensor-group ids as label')
+                system_id = pd.source_ids['system_id']
+                station_id = pd.source_ids['station_id']
+                sensor_group_id = pd.source_ids['sensor_group_id']
+                ubi_label = f'{system_id}-{station_id}-{sensor_group_id}'
+                ld.properties['ubidots']['label'] = ubi_label
             else:
                 logging.warning(f'TODO: work with {pd.source_name} devices!')
                 mq_client.ack(delivery_tag)
@@ -183,9 +200,9 @@ def on_message(channel, method, properties, body):
             # in the same format as the QR code id below, but I'm not sure that's useful and it might clutter
             # up the Ubidots UI.
 
-            if pd.source_name == 'ttn':
-                if 'ttn' in pd.properties:
-                    ttn_props = pd.properties['ttn']
+            if pd.source_name == BrokerConstants.TTN:
+                if BrokerConstants.TTN in pd.properties:
+                    ttn_props = pd.properties[BrokerConstants.TTN]
                     if 'description' in ttn_props:
                         patch_obj['description'] = ttn_props['description']
 
@@ -193,6 +210,8 @@ def on_message(channel, method, properties, body):
                         cfg = {'dpi-uid': {'text': 'DPI UID', 'type': 'text', 'description': 'The uid from the DPI QR code used to activate the device.'}}
                         patch_obj['properties'] |= {'_config': cfg, 'dpi-uid': ttn_props['attributes']['uid']}
 
+                # TODO: What about Green Brain devices?
+                
             ubidots.update_device(ubidots_dev_label, patch_obj)
 
             # Update the newly created logical device properties with the information
