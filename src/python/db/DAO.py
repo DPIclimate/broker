@@ -264,55 +264,60 @@ def update_physical_device(uid: int, device: PhysicalDevice) -> PhysicalDevice:
         free_conn(conn)
         raise DAOException
 
-    current_values = vars(current_device)
+    try:
+        current_values = vars(current_device)
 
-    update_col_names = []
-    update_col_values = []
-    col_value_placeholders = ''
-    first = True
-    for name, val in vars(device).items():
-        if name == 'uid':
-            continue
+        update_col_names = []
+        update_col_values = []
+        col_value_placeholders = ''
+        first = True
+        for name, val in vars(device).items():
+            if name == 'uid':
+                continue
 
-        if val != current_values[name]:
-            update_col_names.append(name)
-            update_col_values.append(val if name not in ('source_ids', 'properties') else Json(val))
+            #logger.info(f'Checking {name}, {val} == {current_values[name]}?')
+            if val != current_values[name]:
+                update_col_names.append(f'{name} = %s')
+                #logger.info(f'Adding {name} to update list.')
+                update_col_values.append(val if name not in ('source_ids', 'properties') else Json(val))
 
-            if not first:
-                col_value_placeholders = col_value_placeholders + ','
+                if not first:
+                    col_value_placeholders = col_value_placeholders + ','
 
-            first = False
-            col_value_placeholders = col_value_placeholders + "%s"
+                first = False
+                col_value_placeholders = col_value_placeholders + "%s"
 
-    if len(update_col_names) < 1:
-        #logger.info('No update to device')
+        if len(update_col_names) < 1:
+            #logger.info('No update to device')
+            conn.commit()
+            free_conn(conn)
+            return device
+
+        update_col_values.append(uid)
+
+        logger.info(update_col_names)
+        logger.info(update_col_values)
+
+        sql = f'''update physical_devices set {','.join(update_col_names)} where uid = %s'''
+
+        """
+        Look into this syntax given we are building the query with arbitrary column names.
+        cur.execute(sql.SQL("insert into %s values (%%s)") % [sql.Identifier("my_table")], [42])
+        """
+
+        logger.info(sql)
+
+        with conn.cursor() as cursor:
+            logger.info(cursor.mogrify(sql, update_col_values))
+            cursor.execute(sql, update_col_values)
+
+        updated_device = _get_physical_device(conn, uid)
+        #logger.info(f'updated device = {updated_device}')
+
         conn.commit()
-        free_conn(conn)
-        return device
+    except:
+        logger.error('Caught database exception.')
 
-    update_col_values.append(uid)
-
-    logger.info(update_col_names)
-    logger.info(update_col_values)
-
-    sql = f'''update physical_devices set ({','.join(update_col_names)}) = ({col_value_placeholders}) where uid = %s'''
-
-
-    """
-    Look into this syntax given we are building the query with arbitrary column names.
-    cur.execute(sql.SQL("insert into %s values (%%s)") % [sql.Identifier("my_table")], [42])
-    """
-
-    logger.info(sql)
-
-    with conn.cursor() as cursor:
-        logger.info(cursor.mogrify(sql, update_col_values))
-        cursor.execute(sql, update_col_values)
-
-    updated_device = _get_physical_device(conn, uid)
-    #logger.info(f'updated device = {updated_device}')
-
-    conn.commit()
     free_conn(conn)
     return updated_device
 

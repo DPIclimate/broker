@@ -80,7 +80,6 @@ def download_bootstrap_info():
         if r.status_code == 200:
             body_obj = r.json()
             _accounts[user]['auth'] = body_obj
-            logger.info(body_obj)
         else:
             raise r
 
@@ -370,7 +369,7 @@ async def main():
 
     while not finish:
         poll()
-        await asyncio.sleep(60 * 5)
+        await asyncio.sleep(60 * 30)
 
     while not mq_client.stopped:
         await asyncio.sleep(1)

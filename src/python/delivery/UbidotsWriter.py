@@ -109,12 +109,6 @@ def on_message(channel, method, properties, body):
         logger.info(f'Accepted message {msg}')
 
         l_uid = msg[BrokerConstants.LOGICAL_DEVICE_UID_KEY]
-
-        # Temporary hack to only process messages from David's netvox.
-        if l_uid != 159:
-            mq_client.ack(delivery_tag)
-            return
-
         ld = dao.get_logical_device(l_uid)
         if ld is None:
             logging.warning(f'Could not find logical device for message: {body}')
@@ -166,7 +160,7 @@ def on_message(channel, method, properties, body):
             new_device = True
             ld.properties['ubidots'] = {}
             if pd.source_name == BrokerConstants.TTN:
-                ld.properties['ubidots']['label'] = pd.properties['dev_eui']
+                ld.properties['ubidots']['label'] = pd.source_ids['dev_eui']
                 logger.info(f'Using physical device eui for label: {ld.properties["ubidots"]["label"]}')
             elif pd.source_name == BrokerConstants.GREENBRAIN:
                 logger.info('Using system-station-sensor-group ids as label')

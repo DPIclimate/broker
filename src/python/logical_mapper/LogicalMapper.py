@@ -118,12 +118,21 @@ def on_message(channel, method, properties, body):
             mapping = PhysicalToLogicalMapping(pd=pd, ld=ld, start_time=datetime.datetime.now(datetime.timezone.utc))
             logger.info(f'Creating mapping {mapping}')
             dao.insert_mapping(mapping)
+        else:
+            # Temporary so we can check the TTN app_id while testing.
+            pd = dao.get_physical_device(p_uid)
 
-        #logger.info(f'Forwarding message from {mapping.pd.name} --> {mapping.ld.name}: {msg["timestamp"]} {msg["timeseries"]}')
-        msg[BrokerConstants.LOGICAL_DEVICE_UID_KEY] = mapping.ld.uid
-        mq_client.publish_message('logical_timeseries', msg)
+        # Don't publish most TTN traffic yet.
+        publish = pd.source_name != 'ttn' or pd.source_ids['app_id'] == 'oai-test-devices'
 
-        # This tells RabbitMQ the message is handled and can be deleted from the queue.    
+        if publish:
+            #logger.info(f'Forwarding message from {mapping.pd.name} --> {mapping.ld.name}: {msg["timestamp"]} {msg["timeseries"]}')
+            msg[BrokerConstants.LOGICAL_DEVICE_UID_KEY] = mapping.ld.uid
+            mq_client.publish_message('logical_timeseries', msg)
+        else:
+            logger.info(f'Skipping message from {pd.source_ids}')
+
+        # This tells RabbitMQ the message is handled and can be deleted from the queue.
         mq_client.ack(delivery_tag)
 
     except BaseException as e:
