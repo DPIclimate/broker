@@ -9,23 +9,14 @@
 # This code is based on the async examples in the pika github repo.
 # See https://github.com/pika/pika/tree/master/examples
 
-from multiprocessing import connection
-from numbers import Integral
 import pika, pika.spec
 from pika.adapters.asyncio_connection import AsyncioConnection
 from pika.exchange_type import ExchangeType
 
-import asyncio, functools, json, logging, os
+import asyncio, json, logging, os
 
 logging.basicConfig(level=logging.INFO, format='%(asctime)s %(name)s: %(message)s', datefmt='%Y-%m-%dT%H:%M:%S%z')
 logger = logging.getLogger(__name__)
-
-_EXCHANGE_NAME = 'broker_exchange'
-_EXCHANGE_TYPE = ExchangeType.direct
-
-# TODO: Find a good way of allowing callers to reference queue names symbolically
-# rather than hard-coding the names. Probably a dict.
-_QUEUE_NAMES = ['ttn_raw', 'physical_timeseries', 'logical_timeseries']
 
 _user = os.environ['RABBITMQ_DEFAULT_USER']
 _passwd = os.environ['RABBITMQ_DEFAULT_PASS']
@@ -35,24 +26,19 @@ _port = os.environ['RABBITMQ_PORT']
 _amqp_url_str = f'amqp://{_user}:{_passwd}@{_host}:{_port}/%2F'
 
 
-class RabbitMQClient(object):
-
-    def __init__(self, on_bind_ok=None, on_message=None, on_publish_ack=None):
+class RabbitMQConnection(object):
+    """ ======================================================================
+    A RabbitMQConnection wraps a RabbitMQ connection and includes code to
+    re-open the connection if it closes or the open fails.
+    ====================================================================== """
+    def __init__(self, channels):
         self._connection = None
-        self._channel = None
-
-        self._message_number = 0
-
         self._stopping = False
         self.stopped = False
-        self._on_bind_ok = on_bind_ok
-        self._on_message = on_message
-        self._on_publish_ack = on_publish_ack
 
-        # This is used to track how many queues have been bound during the
-        # startup process. When all queues are bound the on_bind_ok callback
-        # will be called.
-        self._q_bind_count = 0
+        self.channels = channels
+        logger.info(f'given channels {self.channels}')
+
 
     async def connect(self, delay=0):
         """
@@ -70,6 +56,7 @@ class RabbitMQClient(object):
             on_open_error_callback=self.on_connection_open_error,
             on_close_callback=self.on_connection_closed)
 
+
     def on_connection_open(self, connection):
         """
         Now the connection is open a channel can be opened. Channels
@@ -77,7 +64,11 @@ class RabbitMQClient(object):
         """
         logger.info('Connection opened')
         self._connection = connection
-        self.open_channel()
+
+        for z in self.channels:
+            logger.info(f'Opening channel {z}, of type {type(z)}')
+            z.open(self._connection)
+
 
     def on_connection_open_error(self, _unused_connection, err):
         """
@@ -87,10 +78,9 @@ class RabbitMQClient(object):
         Consider backing off the delay to some maximum value.
         """
         logger.error('Connection open failed: %s', err)
-        self._channel = None
-
         if not self._stopping:
             asyncio.create_task(self.connect(5))
+
 
     def on_connection_closed(self, _unused_connection, reason):
         """
@@ -101,12 +91,11 @@ class RabbitMQClient(object):
         Consider backing off the delay to some maximum value.
         """
         logger.warning('Connection closed: %s', reason)
-        self._channel = None
-
         if not self._stopping:
             asyncio.create_task(self.connect(5))
         else:
             self.stopped = True
+
 
     def stop(self) -> None:
         """
@@ -115,108 +104,61 @@ class RabbitMQClient(object):
         Start by closing the channel. The channel closed callback
         will then ask to close the connection.
         """
-        if self._stopping:
+        if self._stopping or self.stopped:
             return
 
         self._stopping = True
-        self._channel.close()
 
-
-    async def _close_connection(self) -> None:
-        """
-        Start closing the connection.
-        
-        This method should not be called from outside this class.
-        """
+        # This closes the channels automatically.
         self._connection.close()
 
 
-    def open_channel(self):
-        logger.info('Creating a new channel')
-        self._connection.channel(on_open_callback=self.on_channel_open)
+class TxChannel(object):
+    """ ======================================================================
+    A TxChannel wraps a RabbitMQ channel devoted to publishing messages to a
+    single exchange.
+    ====================================================================== """
+    def __init__(self, exchange_name, exchange_type, on_publish_ack=None):
+        self._exchange_name = exchange_name
+        self._exchange_type = exchange_type
+        self._on_publish_ack = on_publish_ack
+
+        self._channel = None
+        self._message_number = 0
+        self.is_open = False
+
+
+    def open(self, connection) -> None:
+        connection.channel(on_open_callback=self.on_channel_open)
 
 
     def on_channel_open(self, channel):
-        logger.info('Channel opened')
+        logger.warning(f'Opened tx channel {channel} to server {_amqp_url_str}')
         self._channel = channel
         self._message_number = 0
-        logger.info('Adding channel close callback')
         self._channel.add_on_close_callback(self.on_channel_closed)
-
-        logger.info('Issuing Confirm.Select RPC command')
         self._channel.confirm_delivery(self.on_delivery_confirmation)
 
-        logger.info(f'Declaring exchange {_EXCHANGE_NAME}')
+        logger.info(f'Declaring exchange {self._exchange_name}')
         self._channel.exchange_declare(
-            exchange=_EXCHANGE_NAME,
-            exchange_type=_EXCHANGE_TYPE,
+            exchange=self._exchange_name,
+            exchange_type=self._exchange_type,
             durable=True,
             callback=self.on_exchange_declareok)
 
-    def on_channel_closed(self, channel, reason):
-        logger.warning('Channel %i was closed: %s', channel, reason)
-        self._channel = None
 
-        if not self._stopping:
-            if not (self._connection.is_closed or self._connection.is_closing):
-                self.open_channel()
-        else:
-            asyncio.create_task(self._close_connection())
+    def on_channel_closed(self, channel, reason):
+        logger.warning(f'Channel {channel} to exchange {self._exchange_name} was closed: {reason}')
+        self._channel = None
+        self.is_open = False
 
 
     def on_exchange_declareok(self, method):
-        self._q_bind_count = 0
-        for queue_name in _QUEUE_NAMES:
-            logger.info(f'Declaring queue {queue_name}')
-            self._channel.queue_declare(queue=queue_name, durable=True, callback=self.on_queue_declareok)
+        logger.info(f'Exchange {self._exchange_name} declared ok, ready to send.')
+        self.is_open = True
 
 
-    def queue_declare(self, queue_name):
-        logger.info(f'Declaring queue {queue_name}')
-        # Note a durable queue is created so persistent messages can survive a
-        # RabbitMQ server restart.
-        self._channel.queue_declare(queue=queue_name, durable=True, callback=self.on_queue_declareok)
-
-    def on_queue_declareok(self, q_declare_ok):
-        queue_name = q_declare_ok.method.queue
-        logger.info('Binding %s to %s with %s', _EXCHANGE_NAME, queue_name, queue_name)
-        self._channel.queue_bind(queue_name, _EXCHANGE_NAME, routing_key=queue_name, callback=self.on_bindok)
-
-    def on_bindok(self, _unused_frame):
-        self._q_bind_count += 1
-
-        if len(_QUEUE_NAMES) == self._q_bind_count and self._on_bind_ok is not None:
-            logger.info('All queues bound, calling on_bind_ok callback.')
-            self._on_bind_ok()
-
-    def start_listening(self, queue_name):
-        """
-        Callers use this method to indicate they wish to receive messages.
-
-        The messages will be passed back to the caller via the on_message
-        callback passed to the constructor of this class.
-        """
-        logger.info('Adding consumer cancellation callback')
-        self._channel.add_on_cancel_callback(self.on_consumer_cancelled)
-        self._consumer_tag = self._channel.basic_consume(queue_name, self._on_message)
-
-    def on_consumer_cancelled(self, method_frame):
-        logger.info('Consumer was cancelled remotely, shutting down: %r', method_frame)
-        if self._channel:
-            self._channel.close()
-
-    def on_delivery_confirmation(self, method_frame):
-        """
-        pika calls this to notify that RabbitMQ has accepted a published message.
-
-        The caller will be notified via the on_publish_ack callback passed to the
-        constructor of this class.
-        """
-        if self._on_publish_ack is not None:
-            asyncio.create_task(self._on_publish_ack(method_frame.method.delivery_tag))
-
-
-    def publish_message(self, routing_key: str, message) -> Integral:
+    def publish_message(self, routing_key: str, message) -> int:
         """
         Publish a message to RabbitMQ.
 
@@ -237,18 +179,84 @@ class RabbitMQClient(object):
             delivery_mode = pika.spec.PERSISTENT_DELIVERY_MODE
             )
 
-        self._channel.basic_publish(_EXCHANGE_NAME, routing_key,
+        self._channel.basic_publish(self._exchange_name, routing_key,
                                     json.dumps(message, ensure_ascii=False),
                                     properties)
         self._message_number += 1
         return self._message_number
 
 
-    def ack(self, delivery_tag: Integral) -> None:
+    def on_delivery_confirmation(self, method_frame):
         """
-        Ack a message delivered by the on_message callback.
+        pika calls this to notify that RabbitMQ has accepted a published message.
 
-        RabbitMQ will keep a message on the queue until it has been ack'd.
+        The caller will be notified via the on_publish_ack callback passed to the
+        constructor of this class.
         """
-        if self._connection.is_open and self._channel is not None:
-            self._channel.basic_ack(delivery_tag)
+        if self._on_publish_ack is not None:
+            asyncio.create_task(self._on_publish_ack(method_frame.method.delivery_tag))
+
+
+class RxChannel(object):
+    """ ======================================================================
+    An RxChannel wraps a RabbitMQ channel devoted to receiving messages from a
+    single exchange. A durable queue is declared.
+
+    routing_key is not required for fanout exchanges, but must be set for
+    direct exchanges.
+    ====================================================================== """
+    def __init__(self, exchange_name, exchange_type, queue_name, on_message, routing_key=None):
+        self._exchange_name = exchange_name
+        self._exchange_type = exchange_type
+        self._queue_name = queue_name
+        self._routing_key = routing_key
+        self._on_message = on_message
+
+        self._channel = None
+        self.is_open = False
+
+
+    def open(self, connection) -> None:
+        connection.channel(on_open_callback=self.on_channel_open)
+
+
+    def on_channel_open(self, channel):
+        logger.warning(f'Opened rx channel {channel} to server {_amqp_url_str}')
+        self._channel = channel
+        self._channel.add_on_close_callback(self.on_channel_closed)
+
+        logger.info(f'Declaring exchange {self._exchange_name}')
+        self._channel.exchange_declare(
+            exchange=self._exchange_name,
+            exchange_type=self._exchange_type,
+            durable=True,
+            callback=self.on_exchange_declareok)
+
+
+    def on_channel_closed(self, channel, reason):
+        logger.warning(f'Channel {channel} to exchange {self._exchange_name} was closed: {reason}')
+        self._channel = None
+        self.is_open = False
+
+
+    def on_exchange_declareok(self, method):
+        logger.info(f'Exchange {self._exchange_name} declared ok, declaring queue {self._queue_name}.')
+        self._channel.queue_declare(queue=self._queue_name, durable=True, callback=self.on_queue_declareok)
+
+
+    def on_queue_declareok(self, q_declare_ok):
+        logger.info(f'Binding queue {self._queue_name} to exchange {self._exchange_name} with routing key {self._routing_key}')
+        self._channel.queue_bind(self._queue_name, self._exchange_name, routing_key=self._routing_key, callback=self.on_bindok)
+
+
+    def on_bindok(self, _unused_frame):
+        logger.info('Adding channel cancellation callback, start listening for messages.')
+        self._channel.add_on_cancel_callback(self.on_consumer_cancelled)
+        self._consumer_tag = self._channel.basic_consume(self._queue_name, self._on_message)
+        self.is_open = True
+
+    def on_consumer_cancelled(self, method_frame):
+        logger.info('Consumer was cancelled remotely, shutting down: %r', method_frame)
+        if self._channel and self._channel.is_open:
+            self._channel.close()
+            self.is_open = False

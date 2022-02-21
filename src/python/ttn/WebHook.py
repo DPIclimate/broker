@@ -9,9 +9,11 @@
 #
 
 import asyncio, datetime, json, logging, os, uuid
-from numbers import Integral
 from fastapi import FastAPI, Response
 from typing import Any, Dict
+
+import pika, pika.spec
+from pika.exchange_type import ExchangeType
 
 import BrokerConstants
 import api.client.RabbitMQ as mq
@@ -44,18 +46,19 @@ lock = asyncio.Lock()
 app = FastAPI()
 
 mq_client = None
-mq_ready = False
+tx_channel = None
+#mq_ready = False
 
-
+"""
 def bind_ok():
     global mq_ready
     mq_ready = True
 
     # Now is the time to read messages stored on disk and
     # send them to RabbitMQ.
+"""
 
-
-async def publish_ack(delivery_tag: Integral) -> None:
+async def publish_ack(delivery_tag: int) -> None:
     """
     RabbitMQ is telling us the message is safely stored so we can
     delete the cache file from disk.
@@ -69,7 +72,7 @@ async def publish_ack(delivery_tag: Integral) -> None:
         if delivery_tag in unacked_messages:
             filename = unacked_messages.pop(delivery_tag)
             if os.path.isfile(filename):
-                logger.debug(f'Removing cache file: {filename}')
+                logger.info(f'Removing cache file: {filename} due to ack for msg {delivery_tag}')
                 os.remove(filename)
             else:
                 logger.warning(f'cache file {filename} does not exist.')
@@ -79,16 +82,16 @@ async def publish_ack(delivery_tag: Integral) -> None:
 
 @app.on_event("startup")
 async def startup() -> None:
-    global mq_client, mq_ready
+    global mq_client, tx_channel
 
-    mq_client = mq.RabbitMQClient(on_bind_ok=bind_ok, on_publish_ack=publish_ack)
+    tx_channel = mq.TxChannel(exchange_name='broker_exchange', exchange_type=ExchangeType.direct, on_publish_ack=publish_ack)
+    mq_client = mq.RabbitMQConnection([tx_channel])
     asyncio.create_task(mq_client.connect())
 
-    # Wait for the RabbitMQ connection/channel/queue everything to be
-    # ready to use. asyncio.sleep(0) is supposed to be a special case
-    # that allows control to be passed back to the asyncio event loop
-    # quickly.
-    while not mq_ready:
+    # Wait for the RabbitMQ connection & channel to be ready to use.
+    # asyncio.sleep(0) is supposed to be a special case that allows
+    # control to be passed back to the asyncio event loop quickly.
+    while not tx_channel.is_open:
         await asyncio.sleep(0)
 
 
@@ -108,7 +111,7 @@ async def webhook_endpoint(msg: JSONObject) -> None:
     Receive webhook calls from TTN.
     """
 
-    global mq_client, lock, unacked_messages
+    global tx_channel, lock, unacked_messages
     #if 'simulated' in msg and msg['simulated']:
     #    print('Ignoring simulated message.')
     #    return
@@ -117,13 +120,21 @@ async def webhook_endpoint(msg: JSONObject) -> None:
         # Write the message to a local cache directory. It will be removed
         # when RabbitMQ acks receipt of the message.
         # NOTE: The string representation of the UUID is put into the message, not the UUID object.
-        msg_with_cid = {BrokerConstants.CORRELATION_ID_KEY: str(uuid.uuid4()), BrokerConstants.RAW_MESSAGE_KEY: msg}
-        logger.info(f'Accepted message {msg_with_cid}')
+        correlation_id = str(uuid.uuid4())
+        msg_with_cid = {BrokerConstants.CORRELATION_ID_KEY: correlation_id, BrokerConstants.RAW_MESSAGE_KEY: msg}
+        end_device_ids = msg['end_device_ids']
+        dev_id = end_device_ids['device_id']
+        app_ids = end_device_ids['application_ids']
+        app_id = app_ids['application_id']
+
+        logger.info(f'Accepted message from {app_id}:{dev_id}, correlation_id: {correlation_id}')
+
         filename = get_cache_filename(msg)
         with open(filename, 'w') as f:
             json.dump(msg, f)
 
-        delivery_tag = mq_client.publish_message('ttn_raw', msg_with_cid)
+        delivery_tag = tx_channel.publish_message('ttn_raw', msg_with_cid)
+        logger.info(f'Published message {delivery_tag} to RabbitMQ')
 
         # FIXME: Can't have this dict growing endlessly if RabbitMQ
         # is down. Perhaps rename the file here to the delivery_tag

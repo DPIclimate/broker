@@ -9,6 +9,7 @@ import asyncio, json, logging, math, os, signal
 
 import BrokerConstants
 from pdmodels.Models import LogicalDevice
+from pika.exchange_type import ExchangeType
 import api.client.RabbitMQ as mq
 import api.client.Ubidots as ubidots
 
@@ -17,16 +18,9 @@ import db.DAO as dao
 logging.basicConfig(level=logging.INFO, format='%(asctime)s %(name)s: %(message)s', datefmt='%Y-%m-%dT%H:%M:%S%z')
 logger = logging.getLogger(__name__)
 
+rx_channel = None
 mq_client = None
 finish = False
-
-
-def bind_ok():
-    """
-    This callback means the connection to the message queue is ready to use.
-    """
-    global mq_client
-    mq_client.start_listening('logical_timeseries')
 
 
 def sigterm_handler(sig_no, stack_frame) -> None:
@@ -51,14 +45,18 @@ async def main():
 
     It would be good to find a better way to do nothing than the current loop.
     """
-    global mq_client, finish
+    global mq_client, rx_channel, finish
 
     logger.info('===============================================================')
     logger.info('               STARTING UBIDOTS WRITER')
     logger.info('===============================================================')
 
-    mq_client = mq.RabbitMQClient(on_bind_ok=bind_ok, on_message=on_message)
+    rx_channel = mq.RxChannel('broker_exchange', exchange_type=ExchangeType.direct, queue_name='ubidots_logical_msg_queue', on_message=on_message, routing_key='logical_timeseries')
+    mq_client = mq.RabbitMQConnection(channels=[rx_channel])
     asyncio.create_task(mq_client.connect())
+
+    while not rx_channel.is_open:
+        await asyncio.sleep(0)
 
     while not finish:
         await asyncio.sleep(2)
@@ -94,14 +92,14 @@ def on_message(channel, method, properties, body):
     So get the logical device from the db via the id in the message, and convert the iso-8601 timestamp to an epoch-style timestamp.
     """
 
-    global mq_client, finish
+    global rx_channel, finish
 
     delivery_tag = method.delivery_tag
 
     # If the finish flag is set, reject the message so RabbitMQ will re-queue it
     # and return early.
     if finish:
-        mq_client._channel.basic_reject(delivery_tag)
+        rx_channel._channel.basic_reject(delivery_tag)
         return
 
     try:
@@ -112,7 +110,7 @@ def on_message(channel, method, properties, body):
         ld = dao.get_logical_device(l_uid)
         if ld is None:
             logging.warning(f'Could not find logical device for message: {body}')
-            mq_client.ack(delivery_tag)
+            rx_channel._channel.basic_ack(delivery_tag)
             return
 
         #logger.info(f'Logical device from mapping: {ld}')
@@ -140,8 +138,15 @@ def on_message(channel, method, properties, body):
                 }
             }
 
+        #
         # TODO: Add some way to abstract the source-specific details of creating the Ubidots device.
         # Anywhere this code has something like 'if pd.source_name...' it should be handled better.
+        #
+        # One idea is that once the broker is live (and if Ubidots supports this) we can stop the
+        # logical mapper for a short while and do a bulk relabel of all Ubidots devices to some
+        # scheme that does not require source-specific information, change this code, and restart
+        # the logical mapper.
+        #
 
         new_device = False
         if not 'ubidots' in ld.properties or not 'label' in ld.properties['ubidots']:
@@ -154,7 +159,7 @@ def on_message(channel, method, properties, body):
             pd = dao.get_physical_device(msg[BrokerConstants.PHYSICAL_DEVICE_UID_KEY])
             if pd is None:
                 logging.warning(f'Could not find physical device for message: {body}')
-                mq_client.ack(delivery_tag)
+                rx_channel._channel.basic_ack(delivery_tag)
                 return
 
             new_device = True
@@ -171,7 +176,7 @@ def on_message(channel, method, properties, body):
                 ld.properties['ubidots']['label'] = ubi_label
             else:
                 logging.warning(f'TODO: work with {pd.source_name} devices!')
-                mq_client.ack(delivery_tag)
+                rx_channel._channel.basic_ack(delivery_tag)
                 return
 
         ubidots_dev_label = ld.properties['ubidots']['label']
@@ -226,7 +231,7 @@ def on_message(channel, method, properties, body):
         logger.warning(f'Caught: {e}')
 
     # This tells RabbitMQ the message is handled and can be deleted from the queue.    
-    mq_client.ack(delivery_tag)
+    rx_channel._channel.basic_ack(delivery_tag)
 
 
 if __name__ == '__main__':

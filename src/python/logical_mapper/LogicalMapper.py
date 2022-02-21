@@ -21,22 +21,17 @@ import asyncio, datetime, json, logging, signal
 
 import BrokerConstants
 from pdmodels.Models import LogicalDevice, PhysicalToLogicalMapping
+from pika.exchange_type import ExchangeType
 import api.client.RabbitMQ as mq
 import db.DAO as dao
 
 logging.basicConfig(level=logging.INFO, format='%(asctime)s %(name)s: %(message)s', datefmt='%Y-%m-%dT%H:%M:%S%z')
 logger = logging.getLogger(__name__)
 
+rx_channel = None
+tx_channel = None
 mq_client = None
 finish = False
-
-
-def bind_ok():
-    """
-    This callback means the connection to the message queue is ready to use.
-    """
-    global mq_client
-    mq_client.start_listening('physical_timeseries')
 
 
 def sigterm_handler(sig_no, stack_frame) -> None:
@@ -44,7 +39,7 @@ def sigterm_handler(sig_no, stack_frame) -> None:
     Handle SIGTERM from docker by closing the mq and db connections and setting a
     flag to tell the main loop to exit.
     """
-    global finish
+    global finish, mq_client
 
     logger.info(f'{signal.strsignal(sig_no)}, setting finish to True')
     finish = True
@@ -61,14 +56,20 @@ async def main():
 
     It would be good to find a better way to do nothing than the current loop.
     """
-    global mq_client, finish
+    global mq_client, rx_channel, tx_channel, finish
 
     logger.info('===============================================================')
     logger.info('               STARTING LOGICAL MAPPER')
     logger.info('===============================================================')
 
-    mq_client = mq.RabbitMQClient(on_bind_ok=bind_ok, on_message=on_message)
+    rx_channel = mq.RxChannel('broker_exchange', exchange_type=ExchangeType.direct, queue_name='lm_physical_msg_queue', on_message=on_message, routing_key='physical_timeseries')
+    tx_channel = mq.TxChannel(exchange_name='broker_exchange', exchange_type=ExchangeType.direct)
+    mq_client = mq.RabbitMQConnection(channels=[rx_channel, tx_channel])
+
     asyncio.create_task(mq_client.connect())
+
+    while not (rx_channel.is_open and tx_channel.is_open):
+        await asyncio.sleep(0)
 
     while not finish:
         await asyncio.sleep(2)
@@ -82,14 +83,14 @@ def on_message(channel, method, properties, body):
     This function is called when a message arrives from RabbitMQ.
     """
 
-    global mq_client, finish
+    global rx_channel, tx_channel, finish
 
     delivery_tag = method.delivery_tag
 
     # If the finish flag is set, reject the message so RabbitMQ will re-queue it
     # and return early.
     if finish:
-        mq_client._channel.basic_reject(delivery_tag)
+        rx_channel._channel.basic_reject(delivery_tag)
         return
 
     try:
@@ -103,7 +104,7 @@ def on_message(channel, method, properties, body):
             if pd is None:
                 logger.warning(f'Physical device not found, cannot continue, dropping message.')
                 # Reject the message, do not requeue.
-                mq_client._channel.basic_reject(delivery_tag, False)
+                rx_channel._channel.basic_reject(delivery_tag, False)
                 return
 
             # Create a logical device and mapping so the message can be published to the logical_timeseries
@@ -128,12 +129,12 @@ def on_message(channel, method, properties, body):
         if publish:
             #logger.info(f'Forwarding message from {mapping.pd.name} --> {mapping.ld.name}: {msg["timestamp"]} {msg["timeseries"]}')
             msg[BrokerConstants.LOGICAL_DEVICE_UID_KEY] = mapping.ld.uid
-            mq_client.publish_message('logical_timeseries', msg)
+            tx_channel.publish_message('logical_timeseries', msg)
         else:
-            logger.info(f'Skipping message from {pd.source_ids}')
+            logger.info(f'Skipping message from {pd.source_ids}, correlation_id: {msg[BrokerConstants.CORRELATION_ID_KEY]}')
 
         # This tells RabbitMQ the message is handled and can be deleted from the queue.
-        mq_client.ack(delivery_tag)
+        rx_channel._channel.basic_ack(delivery_tag)
 
     except BaseException as e:
         logger.warning(f'Caught: {e}')
