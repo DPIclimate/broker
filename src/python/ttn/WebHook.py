@@ -9,10 +9,10 @@
 #
 
 import asyncio, datetime, json, logging, os, uuid
-from fastapi import FastAPI, Response
+from fastapi import BackgroundTasks, FastAPI, Response
+from pathlib import Path
 from typing import Any, Dict
 
-import pika, pika.spec
 from pika.exchange_type import ExchangeType
 
 import BrokerConstants
@@ -22,15 +22,8 @@ import api.client.RabbitMQ as mq
 logging.basicConfig(level=logging.INFO, format='%(asctime)s %(name)s: %(message)s', datefmt='%Y-%m-%dT%H:%M:%S%z')
 logger = logging.getLogger(__name__)
 
-#
-# An interesting point about os.makedirs: apparently in more recent versions
-# of python 3.10+ the given permission is only applied to the final directory of the
-# path. Other directories use the users default mode.
-#
-# Because we're creating a directory right under $HOME there are not really
-# any intermediate directories so this is ok and we get all the right permissions.
-_cache_dir = f'{os.getenv("HOME")}/ttn_incoming_msgs'
-os.makedirs(name=_cache_dir, mode=0o700, exist_ok=True)
+_cache_dir = Path(f'{os.getenv("HOME")}/ttn_incoming_msgs')
+_cache_dir.mkdir(exist_ok=True)
 
 #
 # This is used to try and guarantee only one operation is happening to the
@@ -47,16 +40,53 @@ app = FastAPI()
 
 mq_client = None
 tx_channel = None
-#mq_ready = False
 
-"""
-def bind_ok():
-    global mq_ready
-    mq_ready = True
+# A dict of delivery_tag -> filename for keeping track of which
+# messages have not been ack'd by RabbitMQ. When a delivery
+# confirmation arrives it means we can delete that cache file
+# from disk. The delivery confirmation only means RabbitMQ has
+# received the message and persisted it, not that that it has
+# been received or ack'd by the queue reader(s).
+unacked_messages = {}
 
-    # Now is the time to read messages stored on disk and
-    # send them to RabbitMQ.
-"""
+JSONObject = Dict[str, Any]
+
+async def publish_msg(msg_with_cid: JSONObject) -> None:
+    global lock, tx_channel, unacked_messages
+    filename = get_cache_filename(msg_with_cid[BrokerConstants.RAW_MESSAGE_KEY])
+
+    if tx_channel.is_open:
+        async with lock:
+            delivery_tag = tx_channel.publish_message('ttn_raw', msg_with_cid)
+            logger.info(f'Published message {delivery_tag} to RabbitMQ')
+
+            # FIXME: Can't have this dict growing endlessly if RabbitMQ
+            # is down. Perhaps rename the file here to the delivery_tag
+            # and then we don't need to track it.
+            unacked_messages[delivery_tag] = filename
+
+
+async def process_msg_files() -> None:
+    logger.info(f'Looking for message files in {_cache_dir}')
+
+    if mq_client.state == mq.State.CLOSING or mq_client.state == mq.State.CLOSED:
+        logger.info('Cannot process message files when MQ connection is closed.')
+        return
+
+    while mq_client.state != mq.State.OPEN:
+        await asyncio.sleep(0)
+
+    for msg_file in _cache_dir.iterdir():
+        if msg_file.is_file() and msg_file.suffix == '.json':
+            with open(msg_file, 'r') as f:
+                msg = json.load(f)
+                await publish_msg(msg)
+
+
+async def tx_channel_ready(obj) -> None:
+    logger.info('tx channel ready.')
+    asyncio.create_task(process_msg_files())
+
 
 async def publish_ack(delivery_tag: int) -> None:
     """
@@ -72,7 +102,7 @@ async def publish_ack(delivery_tag: int) -> None:
         if delivery_tag in unacked_messages:
             filename = unacked_messages.pop(delivery_tag)
             if os.path.isfile(filename):
-                logger.debug(f'Removing cache file: {filename} due to ack for msg {delivery_tag}')
+                logger.info(f'Removing cache file: {filename} due to ack for msg {delivery_tag}')
                 os.remove(filename)
             else:
                 logger.warning(f'cache file {filename} does not exist.')
@@ -84,62 +114,46 @@ async def publish_ack(delivery_tag: int) -> None:
 async def startup() -> None:
     global mq_client, tx_channel
 
-    tx_channel = mq.TxChannel(exchange_name='ttn_exchange', exchange_type=ExchangeType.direct, on_publish_ack=publish_ack)
+    tx_channel = mq.TxChannel(exchange_name='ttn_exchange', exchange_type=ExchangeType.direct, on_ready=tx_channel_ready, on_publish_ack=publish_ack)
     mq_client = mq.RabbitMQConnection([tx_channel])
     asyncio.create_task(mq_client.connect())
 
     # Wait for the RabbitMQ connection & channel to be ready to use.
     # asyncio.sleep(0) is supposed to be a special case that allows
     # control to be passed back to the asyncio event loop quickly.
-    while not tx_channel.is_open:
-        await asyncio.sleep(0)
+    #while not tx_channel.is_open:
+    #    await asyncio.sleep(0)
 
-
-JSONObject = Dict[str, Any]
-
-# A dict of delivery_tag -> filename for keeping track of which
-# messages have not been ack'd by RabbitMQ. When a delivery
-# confirmation arrives it means we can delete that cache file
-# from disk. The delivery confirmation only means RabbitMQ has
-# received the message and persisted it, not that that it has
-# been received or ack'd by the queue reader(s).
-unacked_messages = {}
 
 @app.post("/ttn/webhook/up")
-async def webhook_endpoint(msg: JSONObject) -> None:
+async def webhook_endpoint(msg: JSONObject, background_tasks: BackgroundTasks) -> None:
     """
     Receive webhook calls from TTN.
     """
 
-    global tx_channel, lock, unacked_messages
+    global tx_channel, lock
     #if 'simulated' in msg and msg['simulated']:
     #    print('Ignoring simulated message.')
     #    return
 
-    async with lock:
-        # Write the message to a local cache directory. It will be removed
-        # when RabbitMQ acks receipt of the message.
-        # NOTE: The string representation of the UUID is put into the message, not the UUID object.
-        correlation_id = str(uuid.uuid4())
-        msg_with_cid = {BrokerConstants.CORRELATION_ID_KEY: correlation_id, BrokerConstants.RAW_MESSAGE_KEY: msg}
-        end_device_ids = msg['end_device_ids']
-        dev_id = end_device_ids['device_id']
-        app_ids = end_device_ids['application_ids']
-        app_id = app_ids['application_id']
+    # Write the message to a local cache directory. It will be removed
+    # when RabbitMQ acks receipt of the message.
+    # NOTE: The string representation of the UUID is put into the message, not the UUID object.
+    correlation_id = str(uuid.uuid4())
+    msg_with_cid = {BrokerConstants.CORRELATION_ID_KEY: correlation_id, BrokerConstants.RAW_MESSAGE_KEY: msg}
+    end_device_ids = msg['end_device_ids']
+    dev_id = end_device_ids['device_id']
+    app_ids = end_device_ids['application_ids']
+    app_id = app_ids['application_id']
 
-        logger.info(f'Accepted message from {app_id}:{dev_id}, correlation_id: {correlation_id}')
+    logger.info(f'Accepted message from {app_id}:{dev_id}, correlation_id: {correlation_id}')
 
-        filename = get_cache_filename(msg)
-        with open(filename, 'w') as f:
-            json.dump(msg, f)
+    filename = get_cache_filename(msg)
+    with open(filename, 'w') as f:
+        json.dump(msg_with_cid, f)
 
-        delivery_tag = tx_channel.publish_message('ttn_raw', msg_with_cid)
-        logger.info(f'Published message {delivery_tag} to RabbitMQ')
-
-        # FIXME: Can't have this dict growing endlessly if RabbitMQ
-        # is down. Perhaps rename the file here to the delivery_tag
-        # and then we don't need to track it.
-        unacked_messages[delivery_tag] = filename
+    if tx_channel.is_open:
+        background_tasks.add_task(publish_msg, msg_with_cid)
 
     # Doing an explicit return of a Response object with the 204 code to avoid
     # the default FastAPI behaviour of always sending a response body. Even if

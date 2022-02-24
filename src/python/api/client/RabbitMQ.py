@@ -14,6 +14,7 @@ from pika.adapters.asyncio_connection import AsyncioConnection
 from pika.exchange_type import ExchangeType
 
 import asyncio, json, logging, os
+from enum import Enum, auto
 
 logging.basicConfig(level=logging.INFO, format='%(asctime)s %(name)s: %(message)s', datefmt='%Y-%m-%dT%H:%M:%S%z')
 logger = logging.getLogger(__name__)
@@ -25,6 +26,12 @@ _port = os.environ['RABBITMQ_PORT']
 
 _amqp_url_str = f'amqp://{_user}:{_passwd}@{_host}:{_port}/%2F'
 
+class State(Enum):
+    OPENING = auto()
+    OPEN = auto()
+    CLOSING = auto()
+    CLOSED = auto()
+
 
 class RabbitMQConnection(object):
     """ ======================================================================
@@ -33,6 +40,8 @@ class RabbitMQConnection(object):
     ====================================================================== """
     def __init__(self, channels):
         self._connection = None
+        self.state = State.OPENING
+
         self._stopping = False
         self.stopped = False
 
@@ -45,6 +54,7 @@ class RabbitMQConnection(object):
         Initiate a connection to RabbitMQ. The connection is not valid until
         self.on_connection_open() is called.
         """
+        self.state = State.OPENING
         if delay > 0:
             logger.info(f'Waiting for {delay}s before connection attempt.')
             await asyncio.sleep(delay)
@@ -64,6 +74,7 @@ class RabbitMQConnection(object):
         """
         logger.info('Connection opened')
         self._connection = connection
+        self.state = State.OPEN
 
         for z in self.channels:
             logger.info(f'Opening channel {z}, of type {type(z)}')
@@ -80,6 +91,8 @@ class RabbitMQConnection(object):
         logger.error('Connection open failed: %s', err)
         if not self._stopping:
             asyncio.create_task(self.connect(5))
+        else:
+            self.state = State.CLOSED
 
 
     def on_connection_closed(self, _unused_connection, reason):
@@ -91,9 +104,13 @@ class RabbitMQConnection(object):
         Consider backing off the delay to some maximum value.
         """
         logger.warning('Connection closed: %s', reason)
+        for z in self.channels:
+            z.is_open = False
+
         if not self._stopping:
             asyncio.create_task(self.connect(5))
         else:
+            self.state = State.CLOSED
             self.stopped = True
 
 
@@ -108,6 +125,7 @@ class RabbitMQConnection(object):
             return
 
         self._stopping = True
+        self.state = State.CLOSING
 
         # This closes the channels automatically.
         self._connection.close()
@@ -118,9 +136,10 @@ class TxChannel(object):
     A TxChannel wraps a RabbitMQ channel devoted to publishing messages to a
     single exchange.
     ====================================================================== """
-    def __init__(self, exchange_name, exchange_type, on_publish_ack=None):
+    def __init__(self, exchange_name, exchange_type, on_ready=None, on_publish_ack=None):
         self._exchange_name = exchange_name
         self._exchange_type = exchange_type
+        self._on_ready = on_ready
         self._on_publish_ack = on_publish_ack
 
         self._channel = None
@@ -156,6 +175,8 @@ class TxChannel(object):
     def on_exchange_declareok(self, method):
         logger.info(f'Exchange {self._exchange_name} declared ok, ready to send.')
         self.is_open = True
+        if self._on_ready is not None:
+            asyncio.create_task(self._on_ready(self))
 
 
     def publish_message(self, routing_key: str, message) -> int:
