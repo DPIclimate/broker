@@ -60,8 +60,8 @@ async def main():
 
     # Cannot put these assignments up the top because you cannot do a forward
     # declaration of a function in Python (in this case, on_message).
-    rx_channel = mq.RxChannel('broker_exchange', exchange_type=ExchangeType.direct, queue_name='ttn_msg_handler', on_message=on_message, routing_key='ttn_raw')
-    tx_channel = mq.TxChannel(exchange_name='broker_exchange', exchange_type=ExchangeType.direct)
+    rx_channel = mq.RxChannel('ttn_exchange', exchange_type=ExchangeType.direct, queue_name='ttn_raw', on_message=on_message, routing_key='ttn_raw')
+    tx_channel = mq.TxChannel(exchange_name=BrokerConstants.PHYSICAL_TIMESERIES_EXCHANGE_NAME, exchange_type=ExchangeType.fanout)
     mq_client = mq.RabbitMQConnection(channels=[rx_channel, tx_channel])
     asyncio.create_task(mq_client.connect())
 

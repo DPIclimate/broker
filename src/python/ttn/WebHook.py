@@ -72,7 +72,7 @@ async def publish_ack(delivery_tag: int) -> None:
         if delivery_tag in unacked_messages:
             filename = unacked_messages.pop(delivery_tag)
             if os.path.isfile(filename):
-                logger.info(f'Removing cache file: {filename} due to ack for msg {delivery_tag}')
+                logger.debug(f'Removing cache file: {filename} due to ack for msg {delivery_tag}')
                 os.remove(filename)
             else:
                 logger.warning(f'cache file {filename} does not exist.')
@@ -84,7 +84,7 @@ async def publish_ack(delivery_tag: int) -> None:
 async def startup() -> None:
     global mq_client, tx_channel
 
-    tx_channel = mq.TxChannel(exchange_name='broker_exchange', exchange_type=ExchangeType.direct, on_publish_ack=publish_ack)
+    tx_channel = mq.TxChannel(exchange_name='ttn_exchange', exchange_type=ExchangeType.direct, on_publish_ack=publish_ack)
     mq_client = mq.RabbitMQConnection([tx_channel])
     asyncio.create_task(mq_client.connect())
 

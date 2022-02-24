@@ -5,10 +5,9 @@ on to Ubidots.
 
 import dateutil.parser
 
-import asyncio, json, logging, math, os, signal
+import asyncio, json, logging, math, signal
 
 import BrokerConstants
-from pdmodels.Models import LogicalDevice
 from pika.exchange_type import ExchangeType
 import api.client.RabbitMQ as mq
 import api.client.Ubidots as ubidots
@@ -28,7 +27,7 @@ def sigterm_handler(sig_no, stack_frame) -> None:
     Handle SIGTERM from docker by closing the mq and db connections and setting a
     flag to tell the main loop to exit.
     """
-    global finish
+    global finish, mq_client
 
     logger.info(f'{signal.strsignal(sig_no)}, setting finish to True')
     finish = True
@@ -51,7 +50,7 @@ async def main():
     logger.info('               STARTING UBIDOTS WRITER')
     logger.info('===============================================================')
 
-    rx_channel = mq.RxChannel('broker_exchange', exchange_type=ExchangeType.direct, queue_name='ubidots_logical_msg_queue', on_message=on_message, routing_key='logical_timeseries')
+    rx_channel = mq.RxChannel(BrokerConstants.LOGICAL_TIMESERIES_EXCHANGE_NAME, exchange_type=ExchangeType.fanout, queue_name='ubidots_logical_msg_queue', on_message=on_message, routing_key='logical_timeseries')
     mq_client = mq.RabbitMQConnection(channels=[rx_channel])
     asyncio.create_task(mq_client.connect())
 

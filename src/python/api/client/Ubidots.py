@@ -79,6 +79,7 @@ def get_all_devices() -> List[LogicalDevice]:
     devices = []
 
     while True:
+        time.sleep(0.3)
         url = f'{BASE_2_0}/devices/?page={page}'
         r = requests.get(url, headers=headers)
         logger.info(r.status_code)
@@ -106,6 +107,7 @@ def get_all_devices() -> List[LogicalDevice]:
 
 def get_device(label: str) -> LogicalDevice:
         url = f'{BASE_2_0}/devices/~{label}'
+        time.sleep(0.3)
         r = requests.get(url, headers=headers)
         logger.info(r.status_code)
         if r.status_code != 200:
@@ -132,6 +134,7 @@ def post_device_data(label: str, body) -> None:
     hdrs = headers
     hdrs['Content-Type'] = 'application/json'
     body_str = json.dumps(body)
+    time.sleep(0.3)
     r = requests.post(url, headers=hdrs, data=body_str)
     if r.status_code != 200:
         logger.warning(url)
@@ -140,6 +143,7 @@ def post_device_data(label: str, body) -> None:
 
 def update_device(label: str, patch_obj) -> None:
     url = f'{BASE_2_0}/devices/~{label}'
+    time.sleep(0.3)
     response = requests.patch(url, headers=headers, json=patch_obj)
     print(f'PATCH response: {response.status_code}: {response.reason}')
 

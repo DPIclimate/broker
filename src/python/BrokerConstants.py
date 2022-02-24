@@ -14,3 +14,6 @@ GREENBRAIN = 'greenbrain'
 CREATION_CORRELATION_ID_KEY = 'creation_correlation_id'
 SENSOR_GROUP_ID_KEY = 'sensor_group_id'
 LAST_MESSAGE_HASH_KEY = 'last_message_hash'
+
+PHYSICAL_TIMESERIES_EXCHANGE_NAME = 'pts_exchange'
+LOGICAL_TIMESERIES_EXCHANGE_NAME = 'lts_exchange'

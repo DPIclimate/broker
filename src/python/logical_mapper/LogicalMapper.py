@@ -62,8 +62,8 @@ async def main():
     logger.info('               STARTING LOGICAL MAPPER')
     logger.info('===============================================================')
 
-    rx_channel = mq.RxChannel('broker_exchange', exchange_type=ExchangeType.direct, queue_name='lm_physical_msg_queue', on_message=on_message, routing_key='physical_timeseries')
-    tx_channel = mq.TxChannel(exchange_name='broker_exchange', exchange_type=ExchangeType.direct)
+    rx_channel = mq.RxChannel(exchange_name=BrokerConstants.PHYSICAL_TIMESERIES_EXCHANGE_NAME, exchange_type=ExchangeType.fanout, queue_name='lm_physical_timeseries', on_message=on_message)
+    tx_channel = mq.TxChannel(exchange_name=BrokerConstants.LOGICAL_TIMESERIES_EXCHANGE_NAME, exchange_type=ExchangeType.fanout)
     mq_client = mq.RabbitMQConnection(channels=[rx_channel, tx_channel])
 
     asyncio.create_task(mq_client.connect())

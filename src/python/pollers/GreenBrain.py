@@ -27,10 +27,10 @@ TODO: Abstract out some common patterns these services have into classes that ca
 """
 import asyncio, datetime, dateutil.parser, hashlib, json, logging, os, pathlib, re, requests, signal, uuid
 from glob import glob
-from numbers import Integral
 import BrokerConstants
 import db.DAO as dao
 from pdmodels.Models import Location, PhysicalDevice
+from pika.exchange_type import ExchangeType
 import api.client.RabbitMQ as mq
 
 
@@ -180,16 +180,16 @@ def poll() -> None:
                     r = requests.get(f'{_BASE_URL}/sensor-groups/{sg_id}/latest', headers=h)
                     if r.status_code == 200:
                         process_sensor_group(station, sg_id, r.text, r.json())
-
-                        # Return early while testing.
-                        return
                     else:
                         logger.error(r)
+
+                # Return early while testing, just do one station.
+                return
 
 
 # Passing in as text so we can use regexps to quickly find some things.
 def process_sensor_group(station, sensor_group_id, text, json_obj) -> None:
-    global _sensor_group_reponse_hashes
+    global _sensor_group_reponse_hashes, tx_channel
 
     #
     # Check the hash of the current message against the hash of the previously
@@ -311,17 +311,20 @@ def process_sensor_group(station, sensor_group_id, text, json_obj) -> None:
     # I think that means we need to hold off the ack in this method and only ack the message
     # we got from ttn_raw when we get confirmation from the server that it has saved the message
     # written to the physical_timeseries queue.
-    msg_id = mq_client.publish_message('physical_timeseries', p_ts_msg)
+    msg_id = tx_channel.publish_message('physical_timeseries', p_ts_msg)
 
 
 finish = False
+tx_channel = None
+mq_client = None
+
 
 def sigterm_handler(sig_no, stack_frame) -> None:
     """
     Handle SIGTERM from docker by closing the mq and db connections and setting a
     flag to tell the main loop to exit.
     """
-    global finish
+    global finish, mq_client
 
     logger.info(f'{signal.strsignal(sig_no)}, setting finish to True')
     finish = True
@@ -329,29 +332,21 @@ def sigterm_handler(sig_no, stack_frame) -> None:
     mq_client.stop()
 
 
-mq_client = None
-mq_ready = False
-
-def bind_ok():
-    global mq_ready
-    mq_ready = True
-
-
-async def publish_ack(delivery_tag: Integral) -> None:
+async def publish_ack(delivery_tag: int) -> None:
     pass
 
 
 async def start_mq() -> None:
-    global mq_client
-    
-    mq_client = mq.RabbitMQClient(on_bind_ok=bind_ok, on_publish_ack=publish_ack)
+    global mq_client, tx_channel
+
+    tx_channel = mq.TxChannel(exchange_name=BrokerConstants.PHYSICAL_TIMESERIES_EXCHANGE_NAME, exchange_type=ExchangeType.fanout)
+    mq_client = mq.RabbitMQConnection(channels=[tx_channel])
     asyncio.create_task(mq_client.connect())
 
-    # Wait for the RabbitMQ connection/channel/queue everything to be
-    # ready to use. asyncio.sleep(0) is supposed to be a special case
-    # that allows control to be passed back to the asyncio event loop
-    # quickly.
-    while not mq_ready:
+    # Wait for the RabbitMQ connection & channel to be ready to use.
+    # asyncio.sleep(0) is supposed to be a special case that allows
+    # control to be passed back to the asyncio event loop quickly.
+    while not tx_channel.is_open:
         await asyncio.sleep(0)
 
 
