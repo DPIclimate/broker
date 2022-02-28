@@ -37,6 +37,20 @@ create table if not exists raw_messages (
     text_msg text
 );
 
+create table if not exists device_notes (
+    uid integer generated always as identity primary key,
+    physical_uid integer references physical_devices(uid),
+    ts timestamptz not null default now(),
+    note text not null
+);
+
+create table if not exists device_blobs (
+    uid integer generated always as identity primary key,
+    physical_uid integer references physical_devices(uid),
+    ts timestamptz not null default now(),
+    data bytea not null
+);
+
 create table if not exists logical_devices (
     uid integer generated always as identity primary key,
     name text not null,

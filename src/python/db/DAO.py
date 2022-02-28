@@ -9,16 +9,15 @@
 #
 
 from datetime import datetime
-import json, logging, os, re
+import json, logging, re
 from numbers import Integral
 import psycopg2
 from psycopg2 import pool
-from psycopg2.extensions import adapt, register_adapter, AsIs
+from psycopg2.extensions import register_adapter, AsIs
 from psycopg2.extras import Json
 
 from typing import Any, Dict, List, Optional, Union
 
-import BrokerConstants
 from pdmodels.Models import Location, LogicalDevice, PhysicalDevice, PhysicalToLogicalMapping
 
 logging.basicConfig(level=logging.INFO, format='%(asctime)s %(name)s: %(message)s', datefmt='%Y-%m-%dT%H:%M:%S%z')
@@ -50,17 +49,11 @@ def cast_point(value, cur):
     raise psycopg2.InterfaceError(f'Bad point representation: {value}')
 
 
-host = os.getenv('POSTGRES_HOST')
-port = int(os.getenv('POSTGRES_PORT'))
-user = os.getenv('POSTGRES_USER')
-password = os.getenv('POSTGRES_PASSWORD')
-dbname = os.getenv('POSTGRES_DB')
-
-conn_pool = pool.ThreadedConnectionPool(1, 10, host=host, port=port, user=user, password=password, dbname=dbname)
+conn_pool = pool.ThreadedConnectionPool(1, 10)
 
 def stop() -> None:
     logger.info('Closing connection pool.')
-    conn_pool.closeall()    
+    conn_pool.closeall()
 
 
 def _get_connection():
@@ -269,34 +262,23 @@ def update_physical_device(uid: int, device: PhysicalDevice) -> PhysicalDevice:
 
         update_col_names = []
         update_col_values = []
-        col_value_placeholders = ''
-        first = True
         for name, val in vars(device).items():
             if name == 'uid':
                 continue
 
-            #logger.info(f'Checking {name}, {val} == {current_values[name]}?')
             if val != current_values[name]:
                 update_col_names.append(f'{name} = %s')
-                #logger.info(f'Adding {name} to update list.')
                 update_col_values.append(val if name not in ('source_ids', 'properties') else Json(val))
 
-                if not first:
-                    col_value_placeholders = col_value_placeholders + ','
-
-                first = False
-                col_value_placeholders = col_value_placeholders + "%s"
-
         if len(update_col_names) < 1:
-            #logger.info('No update to device')
             conn.commit()
             free_conn(conn)
             return device
 
         update_col_values.append(uid)
 
-        logger.info(update_col_names)
-        logger.info(update_col_values)
+        #logger.info(update_col_names)
+        #logger.info(update_col_values)
 
         sql = f'''update physical_devices set {','.join(update_col_names)} where uid = %s'''
 
@@ -305,10 +287,10 @@ def update_physical_device(uid: int, device: PhysicalDevice) -> PhysicalDevice:
         cur.execute(sql.SQL("insert into %s values (%%s)") % [sql.Identifier("my_table")], [42])
         """
 
-        logger.info(sql)
+        #logger.info(sql)
 
         with conn.cursor() as cursor:
-            logger.info(cursor.mogrify(sql, update_col_values))
+            #logger.info(cursor.mogrify(sql, update_col_values))
             cursor.execute(sql, update_col_values)
 
         updated_device = _get_physical_device(conn, uid)
@@ -334,6 +316,17 @@ def delete_physical_device(uid: int) -> PhysicalDevice:
     conn.commit()
     free_conn(conn)
     return dev
+
+
+def create_physical_device_note(uid: int, note: str) -> None:
+    try:
+        with _get_connection() as conn, conn.cursor() as cursor:
+            cursor.execute('insert into device_notes (physical_uid, note) values (%s, %s)', [uid, note])
+    except psycopg2.DatabaseError as error:
+        print(error)
+        raise error
+    finally:
+        free_conn(conn)
 
 
 """
@@ -445,56 +438,42 @@ def update_logical_device(uid: int, device: LogicalDevice) -> LogicalDevice:
         free_conn(conn)
         raise DAOException
 
-    current_values = vars(current_device)
+    try:
+        current_values = vars(current_device)
 
-    update_list = []
-    for name, val in vars(device).items():
-        if name == 'uid':
-            continue
+        update_col_names = []
+        update_col_values = []
+        for name, val in vars(device).items():
+            if name == 'uid':
+                continue
 
-        if val != current_values[name]:
-            update_list.append((name, val))
+            if val != current_values[name]:
+                update_col_names.append(f'{name} = %s')
+                update_col_values.append(val if name not in ('source_ids', 'properties') else Json(val))
 
-    if len(update_list) < 1:
-        #logger.info('No update to device')
+        if len(update_col_names) < 1:
+            conn.commit()
+            free_conn(conn)
+            return device
+
+        update_col_values.append(uid)
+
+        #logger.info(update_col_names)
+        #logger.info(update_col_values)
+
+        sql = f'''update logical_devices set {','.join(update_col_names)} where uid = %s'''
+
+        with conn.cursor() as cursor:
+            #logger.info(cursor.mogrify(sql, update_col_values))
+            cursor.execute(sql, update_col_values)
+
+        updated_device = _get_logical_device(conn, uid)
+        #logger.info(f'updated device = {updated_device}')
+
         conn.commit()
-        free_conn(conn)
-        return device
+    except:
+        logger.error('Caught database error while updating logical device.')
 
-    #logger.info(update_list)
-
-    add_and = False
-    sql = 'update logical_devices set '
-    args = {}
-
-    """
-    Look into this syntax given we are building the query with arbitrary column names.
-
-    cur.execute(sql.SQL("insert into %s values (%%s)") % [sql.Identifier("my_table")], [42])
-    """
-    for name, val in update_list:
-        clause = ' and ' if add_and else ''
-        clause = clause + f'{name} = %({name}_val)s'
-        args[name] = name
-
-        # psycopg2 will not convert the dict into a JSON string automatically.
-        nval = val if name != 'properties' else json.dumps(val)
-        args[f'{name}_val'] = nval
-        add_and = True
-        sql = sql + clause
-
-    sql = sql + f' where uid = {uid}'
-
-    #logger.info(sql)
-
-    with conn.cursor() as cursor:
-        #logger.info(cursor.mogrify(sql, args))
-        cursor.execute(sql, args)
-
-    updated_device = _get_logical_device(conn, uid)
-    logger.info(f'updated device = {updated_device}')
-
-    conn.commit()
     free_conn(conn)
     return updated_device
 
