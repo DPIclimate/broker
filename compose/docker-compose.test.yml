@@ -15,6 +15,8 @@ services:
     hostname: "mq"
     image: rabbitmq:3-management
     restart: "no"
+    logging:
+      driver: "none"
     env_file:
       - .env
 
@@ -73,29 +75,17 @@ services:
     entrypoint: [ "python", "-m", "logical_mapper.LogicalMapper" ]
 
 
-  delivery:
+  x:
     image: broker/python-base
     restart: "no"
     env_file:
       - .env
+    environment:
+      - PYTHONPATH=/home/broker/broker/src/python:/home/broker/broker/test/python
     depends_on:
       - "db"
       - "mq"
     volumes:
-      - ../src/python:/home/broker/python
-    working_dir: "/home/broker/python"
-    entrypoint: [ "python", "-m", "delivery.UbidotsWriter" ]
-
-
-  pollers:
-    image: broker/python-base
-    restart: "no"
-    env_file:
-      - .env
-    depends_on:
-      - "db"
-      - "mq"
-    volumes:
-      - ../src/python:/home/broker/python
-    working_dir: "/home/broker/python"
-    entrypoint: [ "python", "-m", "pollers.GreenBrain" ]
+      - ..:/home/broker/broker
+    working_dir: "/home/broker/broker"
+    entrypoint: [ "./forever.sh" ]

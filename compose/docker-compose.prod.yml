@@ -1,0 +1,27 @@
+version: '3.1'
+
+services:
+  db:
+    volumes:
+      - broker_db:/var/lib/postgresql/data
+
+  mq:
+    ports:
+      - "15672:15672"
+    volumes:
+      - mq_data:/var/lib/rabbitmq/mnesia/rabbit@mq
+
+  restapi:
+    ports:
+      - "5687:5687"
+
+  ttn_webhook:
+    ports:
+      - "5688:5688"
+
+volumes:
+  broker_db:
+    external: true
+
+  mq_data:
+    external: true
