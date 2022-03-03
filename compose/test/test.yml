@@ -1,0 +1,23 @@
+version: '3.1'
+
+services:
+
+  mq:
+    logging:
+      driver: "none"
+
+
+  x:
+    image: broker/python-base
+    restart: "no"
+    env_file:
+      - .env
+    environment:
+      - PYTHONPATH=/home/broker/broker/src/python:/home/broker/broker/test/python
+    depends_on:
+      - "db"
+      - "mq"
+    volumes:
+      - ..:/home/broker/broker
+    working_dir: "/home/broker/broker"
+    entrypoint: [ "./forever.sh" ]

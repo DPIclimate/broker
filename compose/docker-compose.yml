@@ -85,17 +85,3 @@ services:
       - ../src/python:/home/broker/python
     working_dir: "/home/broker/python"
     entrypoint: [ "python", "-m", "delivery.UbidotsWriter" ]
-
-
-  pollers:
-    image: broker/python-base
-    restart: "no"
-    env_file:
-      - .env
-    depends_on:
-      - "db"
-      - "mq"
-    volumes:
-      - ../src/python:/home/broker/python
-    working_dir: "/home/broker/python"
-    entrypoint: [ "python", "-m", "pollers.GreenBrain" ]

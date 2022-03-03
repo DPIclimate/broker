@@ -224,7 +224,7 @@ def on_message(channel, method, properties, body):
                 # device properties, but the entire Ubidots device definition as we
                 # want to store it in our logical device table properties column.
                 ld.properties['ubidots'] = ud.properties['ubidots']
-                dao.update_logical_device(ld.uid, ld)
+                dao.update_logical_device(ld)
 
     except BaseException as e:
         logger.warning(f'Caught: {e}')

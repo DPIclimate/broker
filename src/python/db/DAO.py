@@ -1,14 +1,15 @@
 from datetime import datetime
-import logging, re
+import logging, re, warnings
 from numbers import Integral
 import psycopg2
 from psycopg2 import pool
+import psycopg2.errors
 from psycopg2.extensions import register_adapter, AsIs
-from psycopg2.extras import Json
+from psycopg2.extras import Json, register_uuid
 
 from typing import Any, Dict, List, Optional, Union
 
-from pdmodels.Models import Location, LogicalDevice, PhysicalDevice, PhysicalToLogicalMapping
+from pdmodels.Models import DeviceNote, Location, LogicalDevice, PhysicalDevice, PhysicalToLogicalMapping
 
 logging.basicConfig(level=logging.INFO, format='%(asctime)s %(name)s: %(message)s', datefmt='%Y-%m-%dT%H:%M:%S%z')
 logger = logging.getLogger(__name__)
@@ -60,7 +61,7 @@ def _get_connection():
         if conn_pool is None:
             logger.info('Creating connection pool, registering type converters.')
             conn_pool = pool.ThreadedConnectionPool(1, 5)
-            _register_location_adapters()
+            _register_type_adapters()
 
         conn = conn_pool.getconn()
         logger.debug(f'Taking conn {conn}')
@@ -85,7 +86,7 @@ def free_conn(conn) -> None:
     conn_pool.putconn(conn)
 
 
-def _register_location_adapters():
+def _register_type_adapters():
     """
     Register adapter functions to handle Location <-> SQL Point data types.
     """
@@ -101,6 +102,7 @@ def _register_location_adapters():
         psycopg2.extensions.register_type(POINT)
 
     free_conn(conn)
+    register_uuid()
 
 
 def _dict_from_row(result_metadata, row) -> Dict[str, Any]:
@@ -143,10 +145,6 @@ def create_physical_device(device: PhysicalDevice) -> PhysicalDevice:
         for k, v in vars(device).items():
             dev_fields[k] = v if k not in ('source_ids', 'properties') else Json(v)
 
-        # psycopg2 requires the psycopyg2.extras.Json function to convert a dict
-        # into a Postgres jsonb object.
-        #dev_fields['source_ids'] = Json(dev_fields['source_ids'])
-        #dev_fields['properties'] = Json(dev_fields['properties'])
         with _get_connection() as conn, conn.cursor() as cursor:
             #logger.info(cursor.mogrify("insert into physical_devices (source_name, name, location, last_seen, source_ids, properties) values (%(source_name)s, %(name)s, %(location)s, %(last_seen)s, %(source_ids)s, %(properties)s) returning uid", dev_fields))
             cursor.execute("insert into physical_devices (source_name, name, location, last_seen, source_ids, properties) values (%(source_name)s, %(name)s, %(location)s, %(last_seen)s, %(source_ids)s, %(properties)s) returning uid", dev_fields)
@@ -247,7 +245,6 @@ def get_physical_devices(query_args = {}) -> List[PhysicalDevice]:
                     for name, val in zip(pnames, pvals):
                         clause = ' and ' if add_and else ''
                         clause = clause + f"properties ->> '{name}' = %({name}_val)s"
-                        #args[name] = name
                         args[f'{name}_val'] = val
                         add_and = True
                         sql = sql + clause
@@ -273,22 +270,18 @@ def get_physical_devices(query_args = {}) -> List[PhysicalDevice]:
         free_conn(conn)
 
 
-def update_physical_device(uid: int, device: PhysicalDevice) -> PhysicalDevice:
+def update_physical_device(device: PhysicalDevice) -> PhysicalDevice:
     try:
-        updated_device = None
         with _get_connection() as conn:
-            updated_device = _get_physical_device(conn, uid)
+            updated_device = _get_physical_device(conn, device.uid)
             if updated_device is None:
-                raise DAOException(f'update_physical_device: device not found: {uid}')
+                raise DAOException(f'update_physical_device: device not found: {device.uid}')
 
             current_values = vars(updated_device)
 
             update_col_names = []
             update_col_values = []
             for name, val in vars(device).items():
-                if name == 'uid':
-                    continue
-
                 if val != current_values[name]:
                     update_col_names.append(f'{name} = %s')
                     update_col_values.append(val if name not in ('source_ids', 'properties') else Json(val))
@@ -296,25 +289,23 @@ def update_physical_device(uid: int, device: PhysicalDevice) -> PhysicalDevice:
             logger.debug(update_col_names)
             logger.debug(update_col_values)
 
-            if len(update_col_names) > 0:
-                update_col_values.append(uid)
+            if len(update_col_names) < 1:
+                return device
 
-                sql = f'''update physical_devices set {','.join(update_col_names)} where uid = %s'''
+            update_col_values.append(device.uid)
 
-                """
-                Look into this syntax given we are building the query with arbitrary column names.
-                cur.execute(sql.SQL("insert into %s values (%%s)") % [sql.Identifier("my_table")], [42])
-                """
+            sql = f'''update physical_devices set {','.join(update_col_names)} where uid = %s'''
 
-                logger.debug(sql)
+            """
+            Look into this syntax given we are building the query with arbitrary column names.
+            cur.execute(sql.SQL("insert into %s values (%%s)") % [sql.Identifier("my_table")], [42])
+            """
 
-                with conn.cursor() as cursor:
-                    logger.debug(cursor.mogrify(sql, update_col_values))
-                    cursor.execute(sql, update_col_values)
+            with conn.cursor() as cursor:
+                logger.debug(cursor.mogrify(sql, update_col_values))
+                cursor.execute(sql, update_col_values)
 
-                updated_device = _get_physical_device(conn, uid)
-
-        return updated_device
+            return _get_physical_device(conn, device.uid)
 
     except Exception as err:
         raise err if isinstance(err, DAOException) else DAOException('update_physical_device failed.', err)
@@ -347,6 +338,21 @@ def create_physical_device_note(uid: int, note: str) -> None:
         free_conn(conn)
 
 
+def get_physical_device_notes(uid: int) -> List[DeviceNote]:
+    try:
+        notes = []
+        with _get_connection() as conn, conn.cursor() as cursor:
+            cursor.execute('select ts, note from device_notes where physical_uid = %s order by ts asc', [uid])
+            for ts, note in cursor:
+                notes.append(DeviceNote(ts=ts, note=note))
+
+        return notes
+    except Exception as err:
+        raise err if isinstance(err, DAOException) else DAOException('create_physical_device_note failed.', err)
+    finally:
+        free_conn(conn)
+
+
 """
 Logical Device CRUD methods
 """
@@ -354,14 +360,14 @@ Logical Device CRUD methods
 def create_logical_device(device: LogicalDevice) -> LogicalDevice:
     try:
         dev = None
-        dev_fields = vars(device)
-        dev_fields['properties'] = Json(dev_fields['properties'])
+        dev_fields = {}
+        for k, v in vars(device).items():
+            dev_fields[k] = v if k != 'properties' else Json(v)
 
         with _get_connection() as conn, conn.cursor() as cursor:
             cursor.execute("insert into logical_devices (name, location, last_seen, properties) values (%(name)s, %(location)s, %(last_seen)s, %(properties)s) returning uid", dev_fields)
             uid = cursor.fetchone()[0]
             dev = _get_logical_device(conn, uid)
-            logger.info(f'new device = {dev}')
 
         return dev
     except Exception as err:
@@ -382,21 +388,16 @@ def _get_logical_device(conn, uid: int) -> LogicalDevice:
     conn: a database connection
     uid: the uid of the device to get
     """
-    try:
-        dev = None
-        with conn.cursor() as cursor:
-            sql = 'select uid, name, location, last_seen, properties from logical_devices where uid = %s'
-            cursor.execute(sql, (uid, ))
-            row = cursor.fetchone()
-            if row is not None:
-                dfr = _dict_from_row(cursor.description, row)
-                dev = LogicalDevice.parse_obj(dfr)
+    dev = None
+    with conn.cursor() as cursor:
+        sql = 'select uid, name, location, last_seen, properties from logical_devices where uid = %s'
+        cursor.execute(sql, (uid, ))
+        row = cursor.fetchone()
+        if row is not None:
+            dfr = _dict_from_row(cursor.description, row)
+            dev = LogicalDevice.parse_obj(dfr)
 
-        return dev
-    except Exception as err:
-        raise DAOException('_get_logical_device failed.', err)
-    finally:
-        free_conn(conn)
+    return dev
 
 
 def get_logical_device(uid: int) -> LogicalDevice:
@@ -458,46 +459,52 @@ def get_logical_devices(query_args = {}) -> List[LogicalDevice]:
         free_conn(conn)
 
 
-def update_logical_device(uid: int, device: LogicalDevice) -> LogicalDevice:
+def update_logical_device(device: LogicalDevice) -> LogicalDevice:
     try:
         with _get_connection() as conn:
-            current_device = _get_logical_device(conn, uid)
+            current_device = _get_logical_device(conn, device.uid)
             if current_device is None:
-                conn.commit()
-                raise DAOException(f'update_logical_device: device {uid} not found.')
+                raise DAOException(f'update_logical_device: device {device.uid} not found.')
 
             current_values = vars(current_device)
 
             update_col_names = []
             update_col_values = []
             for name, val in vars(device).items():
-                if name == 'uid':
-                    continue
-
                 if val != current_values[name]:
                     update_col_names.append(f'{name} = %s')
                     update_col_values.append(val if name != 'properties' else Json(val))
 
             if len(update_col_names) < 1:
-                conn.commit()
                 return device
 
-            update_col_values.append(uid)
-
-            #logger.info(update_col_names)
-            #logger.info(update_col_values)
+            update_col_values.append(device.uid)
 
             sql = f'''update logical_devices set {','.join(update_col_names)} where uid = %s'''
 
             with conn.cursor() as cursor:
-                #logger.info(cursor.mogrify(sql, update_col_values))
+                logger.debug(cursor.mogrify(sql, update_col_values))
                 cursor.execute(sql, update_col_values)
 
-            updated_device = _get_logical_device(conn, uid)
-            #logger.info(f'updated device = {updated_device}')
+            updated_device = _get_logical_device(conn, device.uid)
             return updated_device
     except Exception as err:
         raise err if isinstance(err, DAOException) else DAOException('get_logical_device failed.', err)
+    finally:
+        free_conn(conn)
+
+
+def delete_logical_device(uid: int) -> LogicalDevice:
+    try:
+        with _get_connection() as conn:
+            dev = _get_logical_device(conn, uid)
+            if dev is not None:
+                with conn.cursor() as cursor:
+                    cursor.execute('delete from logical_devices where uid = %s', (uid, ))
+
+        return dev
+    except Exception as err:
+        raise err if isinstance(err, DAOException) else DAOException('delete_logical_device failed.', err)
     finally:
         free_conn(conn)
 
@@ -520,7 +527,7 @@ def insert_mapping(mapping: PhysicalToLogicalMapping) -> None:
         with _get_connection() as conn, conn.cursor() as cursor:
             cursor.execute('insert into physical_logical_map (physical_uid, logical_uid, start_time) values (%s, %s, %s)', (mapping.pd.uid, mapping.ld.uid, mapping.start_time))
     except Exception as err:
-        raise DAOException('get_current_device_mapping failed.', err)
+        raise DAOException('insert_mapping failed.', err)
     finally:
         free_conn(conn)
 
@@ -530,6 +537,9 @@ def get_current_device_mapping(pd: Optional[Union[PhysicalDevice, Integral]] = N
 
     if pd is None and ld is None:
         raise DAOException('A PhysicalDevice or a LogicalDevice (or an uid for one of them) must be supplied to find a mapping.')
+
+    if pd is not None and ld is not None:
+        raise DAOException('Both pd and ld were provided, only give one.')
 
     p_uid = None
     if pd is not None:
@@ -566,17 +576,24 @@ def get_current_device_mapping(pd: Optional[Union[PhysicalDevice, Integral]] = N
         free_conn(conn)
 
 
-def add_raw_message(source_name: str, ts: datetime, correlation_uuid: str, msg, is_json=True):
+def add_raw_json_message(source_name: str, ts: datetime, correlation_uuid: str, msg, uid: int=None):
     try:
         with _get_connection() as conn, conn.cursor() as cursor:
-            logger.info('Writing raw message to db.')
-            # These statements will throw an exception if the database has become unavailable since the last
-            # successful use of a connection.
-            if is_json:
-                cursor.execute('insert into raw_messages (source_name, correlation_id, ts, json_msg) values (%s, %s, %s, %s)', (source_name, correlation_uuid, ts, Json(msg)))
-            else:
-                cursor.execute('insert into raw_messages (source_name, correlation_id, ts, text_msg) values (%s, %s, %s, %s)', (source_name, correlation_uuid, ts, msg))
+            cursor.execute('insert into raw_messages (source_name, physical_uid, correlation_id, ts, json_msg) values (%s, %s, %s, %s, %s)', (source_name, uid, correlation_uuid, ts, Json(msg)))
+    except psycopg2.errors.UniqueViolation as err:
+        warnings.warn(f'Tried to add duplicate raw message: {source_name} {ts} {correlation_uuid} {msg}')
     except Exception as err:
-        raise DAOException('add_raw_message failed.', err)
+        raise DAOException('add_raw_json_message failed.', err)
+    finally:
+        free_conn(conn)
+
+def add_raw_text_message(source_name: str, ts: datetime, correlation_uuid: str, msg, uid: int=None):
+    try:
+        with _get_connection() as conn, conn.cursor() as cursor:
+            cursor.execute('insert into raw_messages (source_name, physical_uid, correlation_id, ts, text_msg) values (%s, %s, %s, %s, %s)', (source_name, uid, correlation_uuid, ts, msg))
+    except psycopg2.errors.UniqueViolation as err:
+        warnings.warn(f'Tried to add duplicate raw message: {source_name} {ts} {correlation_uuid} {msg}')
+    except Exception as err:
+        raise DAOException('add_raw_text_message failed.', err)
     finally:
         free_conn(conn)

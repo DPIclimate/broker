@@ -24,9 +24,9 @@ import db.DAO as dao
 logging.basicConfig(level=logging.INFO, format='%(asctime)s %(name)s: %(message)s', datefmt='%Y-%m-%dT%H:%M:%S%z')
 logger = logging.getLogger(__name__)
 
-rx_channel = None
-tx_channel = None
-mq_client = None
+rx_channel: mq.RxChannel = None
+tx_channel: mq.TxChannel = None
+mq_client: mq.RabbitMQConnection = None
 finish = False
 
 
@@ -125,7 +125,7 @@ def on_message(channel, method, properties, body):
         dev_id = msg['end_device_ids']['device_id']
         dev_eui = msg['end_device_ids']['dev_eui'].lower()
 
-        logger.info(f'Accepted message from {app_id}:{dev_id}, correlation_id: {correlation_id}')
+        #logger.info(f'Accepted message from {app_id}:{dev_id}, correlation_id: {correlation_id}')
 
         last_seen = None
 
@@ -145,8 +145,8 @@ def on_message(channel, method, properties, body):
         }
 
         # Record the message to the all messages table before doing anything else to ensure it
-        # is saved.
-        dao.add_raw_message(BrokerConstants.TTN, last_seen, correlation_id, msg)
+        # is saved. Attempts to add duplicate messages are ignored in the DAO.
+        dao.add_raw_json_message(BrokerConstants.TTN, last_seen, correlation_id, msg)
 
         pd = dao.get_pyhsical_device_using_source_ids(BrokerConstants.TTN, source_ids)
         if pd is None:
@@ -172,9 +172,9 @@ def on_message(channel, method, properties, body):
             pd = dao.create_physical_device(pd)
         else:
             #logger.info(f'Updating last_seen for device {pd.name}')
-            if last_seen != None:
+            if last_seen is not None:
                 pd.last_seen = last_seen
-                pd = dao.update_physical_device(pd.uid, pd)
+                pd = dao.update_physical_device(pd)
 
         if pd is None:
             logger.error(f'Physical device not found, message processing ends now. {correlation_id}')
@@ -208,9 +208,9 @@ def on_message(channel, method, properties, body):
 
         # This tells RabbitMQ the message is handled and can be deleted from the queue.    
         rx_channel._channel.basic_ack(delivery_tag)
-
-    except BaseException as e:
-        logger.warning(e)
+        logger.info('Acking message from ttn_raw.')
+    except dao.DAOException as e:
+        rx_channel._channel.basic_reject(delivery_tag)
 
 
 if __name__ == '__main__':

@@ -1,4 +1,4 @@
-from datetime import datetime
+from datetime import datetime, timezone
 from pydantic import BaseModel
 from typing import Optional, Dict
 
@@ -25,8 +25,8 @@ class PhysicalDevice(BaseModel):
     name: str
     location: Optional[Location]
     last_seen: Optional[datetime]
-    source_ids = {}
-    properties = {}
+    source_ids: Dict = {}
+    properties: Dict = {}
 
 
 class LogicalDevice(BaseModel):
@@ -40,4 +40,9 @@ class LogicalDevice(BaseModel):
 class PhysicalToLogicalMapping(BaseModel):
     pd: PhysicalDevice
     ld: LogicalDevice
-    start_time: datetime
+    start_time: datetime = datetime.now(tz=timezone.utc)
+
+
+class DeviceNote(BaseModel):
+    ts: datetime
+    note: str

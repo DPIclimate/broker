@@ -227,7 +227,7 @@ def process_sensor_group(station, sensor_group_id, text, json_obj) -> None:
     #
 
     correlation_id = str(uuid.uuid4())
-    dao.add_raw_message(BrokerConstants.GREENBRAIN, max_ts, correlation_id, json_obj)
+    dao.add_raw_json_message(BrokerConstants.GREENBRAIN, max_ts, correlation_id, json_obj)
 
     #
     # Create the physical device if it does not exist, or update the last_seen time if it does.
@@ -264,7 +264,7 @@ def process_sensor_group(station, sensor_group_id, text, json_obj) -> None:
     else:
         pd.last_seen = max_ts
         pd.properties[BrokerConstants.LAST_MESSAGE_HASH_KEY] = hash
-        pd = dao.update_physical_device(pd.uid, pd)
+        pd = dao.update_physical_device(pd)
 
     #
     # Publish a message to the physical_timeseries queue.

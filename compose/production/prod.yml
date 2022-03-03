@@ -19,6 +19,19 @@ services:
     ports:
       - "5688:5688"
 
+  pollers:
+    image: broker/python-base
+    restart: "no"
+    env_file:
+      - .env
+    depends_on:
+      - "db"
+      - "mq"
+    volumes:
+      - ../src/python:/home/broker/python
+    working_dir: "/home/broker/python"
+    entrypoint: [ "python", "-m", "pollers.GreenBrain" ]
+
 volumes:
   broker_db:
     external: true
