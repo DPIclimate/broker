@@ -1,7 +1,7 @@
-import datetime, time, unittest, uuid
+import copy, datetime, time, unittest, uuid
 from typing import Tuple
 
-import db.DAO as dao
+import api.client.DAO as dao
 from pdmodels.Models import PhysicalDevice, PhysicalToLogicalMapping, Location, LogicalDevice
 from typing import Tuple
 
@@ -56,16 +56,39 @@ class TestDAO(unittest.TestCase):
         # Create an otherwise similar device from a different source to verify
         # the source_name is taken into account by the dao method.
         dev.source_name = 'greenbrain'
-        dao.create_physical_device(dev)
+        gb_dev = dao.create_physical_device(dev)
 
-        got_dev = dao.get_pyhsical_device_using_source_ids('ttn', {'appId': 'x'})
-        self.assertEqual(new_dev, got_dev)
+        got_devs = dao.get_pyhsical_devices_using_source_ids('ttn', {'appId': 'x'})
+        self.assertEqual(len(got_devs), 1)
+        self.assertEqual(new_dev, got_devs[0])
 
-        got_dev = dao.get_pyhsical_device_using_source_ids('ttn', {'devId': 'y'})
-        self.assertEqual(new_dev, got_dev)
+        got_devs = dao.get_pyhsical_devices_using_source_ids('ttn', {'devId': 'y'})
+        self.assertEqual(len(got_devs), 1)
+        self.assertEqual(new_dev, got_devs[0])
 
-        got_dev = dao.get_pyhsical_device_using_source_ids('ttn', {'devId': 'x'})
-        self.assertIsNone(got_dev)
+        got_devs = dao.get_pyhsical_devices_using_source_ids('ttn', {'devId': 'x'})
+        self.assertEqual(len(got_devs), 0)
+
+        # Confirm multiple devices are returned for a common source id attribute.
+        dev.source_name = 'ttn'
+        dev.source_ids['devId'] = 'z'
+        new_dev2 = dao.create_physical_device(dev)
+        got_devs = dao.get_pyhsical_devices_using_source_ids('ttn', {'appId': 'x'})
+        self.assertEqual(len(got_devs), 2)
+        self.assertEqual(new_dev, got_devs[0])
+        self.assertEqual(new_dev2, got_devs[1])
+
+        # Confirm a more specific set of attributes works.
+        got_devs = dao.get_pyhsical_devices_using_source_ids('ttn', {'appId': 'x', 'devId': 'y'})
+        self.assertEqual(len(got_devs), 1)
+        self.assertEqual(new_dev, got_devs[0])
+
+        # Confirm the source selector works - already tested above but doesn't hurt to
+        # see we can get other device sources.
+        got_devs = dao.get_pyhsical_devices_using_source_ids('greenbrain', {'appId': 'x'})
+        self.assertEqual(len(got_devs), 1)
+        self.assertEqual(gb_dev, got_devs[0])
+
 
     def test_update_physical_device(self):
         dev, new_dev = self._create_default_physical_device()
@@ -82,9 +105,9 @@ class TestDAO(unittest.TestCase):
         updated_dev = dao.update_physical_device(new_dev)
         self.assertEqual(updated_dev, new_dev)
 
-        # Confirm a DAOException is raised if an invalid uid is given to update.
+        # Confirm a DAODeviceNotFound is raised if an invalid uid is given to update.
         new_dev.uid = -1
-        self.assertRaises(dao.DAOException, dao.update_physical_device, new_dev)
+        self.assertRaises(dao.DAODeviceNotFound, dao.update_physical_device, new_dev)
 
     def test_delete_physical_device(self):
         dev, new_dev = self._create_default_physical_device()
@@ -165,9 +188,9 @@ class TestDAO(unittest.TestCase):
         updated_dev = dao.update_logical_device(new_dev)
         self.assertEqual(updated_dev, new_dev)
 
-        # Confirm a DAOException is raised if an invalid uid is given to update.
+        # Confirm a DAODeviceNotFound is raised if an invalid uid is given to update.
         new_dev.uid = -1
-        self.assertRaises(dao.DAOException, dao.update_logical_device, new_dev)
+        self.assertRaises(dao.DAODeviceNotFound, dao.update_logical_device, new_dev)
 
     def test_delete_logical_device(self):
         dev, new_dev = self._create_default_logical_device()
@@ -193,6 +216,18 @@ class TestDAO(unittest.TestCase):
         time.sleep(0.001)
         mapping.start_time=self.now()
         dao.insert_mapping(mapping)
+
+        pdx = copy.deepcopy(new_pdev)
+        pdx.uid = -1
+        mapping = PhysicalToLogicalMapping(pd=pdx, ld=new_ldev, start_time=self.now())
+        # This should fail due to invalid physical uid.
+        self.assertRaises(dao.DAODeviceNotFound, dao.insert_mapping, mapping)
+
+        ldx = copy.deepcopy(new_ldev)
+        ldx.uid = -1
+        mapping = PhysicalToLogicalMapping(pd=new_pdev, ld=ldx, start_time=self.now())
+        # This should fail due to invalid logical uid.
+        self.assertRaises(dao.DAODeviceNotFound, dao.insert_mapping, mapping)
 
     def test_get_current_device_mapping(self):
         pdev, new_pdev = self._create_default_physical_device()

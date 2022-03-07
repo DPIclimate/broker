@@ -19,7 +19,7 @@ from pika.exchange_type import ExchangeType
 import api.client.RabbitMQ as mq
 import api.client.TTNAPI as ttn
 
-import db.DAO as dao
+import api.client.DAO as dao
 
 logging.basicConfig(level=logging.INFO, format='%(asctime)s %(name)s: %(message)s', datefmt='%Y-%m-%dT%H:%M:%S%z')
 logger = logging.getLogger(__name__)
@@ -148,8 +148,8 @@ def on_message(channel, method, properties, body):
         # is saved. Attempts to add duplicate messages are ignored in the DAO.
         dao.add_raw_json_message(BrokerConstants.TTN, last_seen, correlation_id, msg)
 
-        pd = dao.get_pyhsical_device_using_source_ids(BrokerConstants.TTN, source_ids)
-        if pd is None:
+        pds = dao.get_pyhsical_devices_using_source_ids(BrokerConstants.TTN, source_ids)
+        if len(pds) < 1:
             logger.info('Device not found, creating physical device.')
             ttn_dev = ttn.get_device_details(app_id, dev_id)
             print(f'Device info from TTN: {ttn_dev}')
@@ -171,6 +171,7 @@ def on_message(channel, method, properties, body):
             pd = PhysicalDevice(source_name=BrokerConstants.TTN, name=dev_name, location=dev_loc, last_seen=last_seen, source_ids=source_ids, properties=props)
             pd = dao.create_physical_device(pd)
         else:
+            pd = pds[0]
             #logger.info(f'Updating last_seen for device {pd.name}')
             if last_seen is not None:
                 pd.last_seen = last_seen

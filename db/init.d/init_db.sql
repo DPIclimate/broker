@@ -68,8 +68,8 @@ create table if not exists logical_devices (
 create table if not exists physical_logical_map (
     -- Having all columns in the primary key means there cannot be two
     -- mapping rows for the same devices at the same time.
-    physical_uid integer not null,
-    logical_uid integer not null,
+    physical_uid integer not null references physical_devices(uid),
+    logical_uid integer not null references logical_devices(uid),
     start_time timestamptz not null default now(),
     primary key(physical_uid, logical_uid, start_time)
 );

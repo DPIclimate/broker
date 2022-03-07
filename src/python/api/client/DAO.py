@@ -16,8 +16,19 @@ logger = logging.getLogger(__name__)
 
 class DAOException(Exception):
     def __init__(self, msg: str = None, wrapped: Exception = None):
-        self.msg: str = str
+        self.msg: str = msg
         self.wrapped: Exception = wrapped
+
+# This is raised in update methods when the entity to be updated does not exist.
+class DAODeviceNotFound(DAOException):
+    pass
+
+# This is raised if Postgres raises a unique constraint exception. It is useful
+# for the REST API to know this was the problem rather than some general database
+# problem, and allows calling code to not have to examine the Postgres exception
+# directly.
+class DAOUniqeConstraintException(DAOException):
+    pass
 
 
 def adapt_location(location: Location):
@@ -196,22 +207,21 @@ def get_physical_device(uid: int) -> PhysicalDevice:
         free_conn(conn)
 
 
-def get_pyhsical_device_using_source_ids(source_name: str, source_ids: Dict[str, str]) -> Optional[PhysicalDevice]:
+def get_pyhsical_devices_using_source_ids(source_name: str, source_ids: Dict[str, str]) -> List[PhysicalDevice]:
     try:
-        dev = None
+        devs = []
         with _get_connection() as conn, conn.cursor() as cursor:
-            sql = 'select uid, source_name, name, location, last_seen, source_ids, properties from physical_devices where source_name = %s and source_ids @> %s'
+            sql = 'select uid, source_name, name, location, last_seen, source_ids, properties from physical_devices where source_name = %s and source_ids @> %s order by uid asc'
             args = (source_name, Json(source_ids))
             #logger.info(cursor.mogrify(sql, args))
             cursor.execute(sql, args)
-            if cursor.rowcount > 0:
-                r = cursor.fetchone()
+            for r in cursor:
                 dfr = _dict_from_row(cursor.description, r)
-                dev = PhysicalDevice.parse_obj(dfr)
+                devs.append(PhysicalDevice.parse_obj(dfr))
 
-        return dev
+        return devs
     except Exception as err:
-        raise err if isinstance(err, DAOException) else DAOException('get_pyhsical_device_using_source_ids failed.', err)
+        raise err if isinstance(err, DAOException) else DAOException('get_pyhsical_devices_using_source_ids failed.', err)
     finally:
         free_conn(conn)
 
@@ -275,7 +285,7 @@ def update_physical_device(device: PhysicalDevice) -> PhysicalDevice:
         with _get_connection() as conn:
             updated_device = _get_physical_device(conn, device.uid)
             if updated_device is None:
-                raise DAOException(f'update_physical_device: device not found: {device.uid}')
+                raise DAODeviceNotFound(f'update_physical_device: device not found: {device.uid}')
 
             current_values = vars(updated_device)
 
@@ -306,8 +316,10 @@ def update_physical_device(device: PhysicalDevice) -> PhysicalDevice:
                 cursor.execute(sql, update_col_values)
 
             return _get_physical_device(conn, device.uid)
-
+    except DAODeviceNotFound as daonf:
+        raise daonf
     except Exception as err:
+        print(err)
         raise err if isinstance(err, DAOException) else DAOException('update_physical_device failed.', err)
     finally:
         free_conn(conn)
@@ -464,7 +476,7 @@ def update_logical_device(device: LogicalDevice) -> LogicalDevice:
         with _get_connection() as conn:
             current_device = _get_logical_device(conn, device.uid)
             if current_device is None:
-                raise DAOException(f'update_logical_device: device {device.uid} not found.')
+                raise DAODeviceNotFound(f'update_logical_device: device {device.uid} not found.')
 
             current_values = vars(current_device)
 
@@ -488,6 +500,8 @@ def update_logical_device(device: LogicalDevice) -> LogicalDevice:
 
             updated_device = _get_logical_device(conn, device.uid)
             return updated_device
+    except DAODeviceNotFound as daonf:
+        raise daonf
     except Exception as err:
         raise err if isinstance(err, DAOException) else DAOException('get_logical_device failed.', err)
     finally:
@@ -526,7 +540,12 @@ def insert_mapping(mapping: PhysicalToLogicalMapping) -> None:
     try:
         with _get_connection() as conn, conn.cursor() as cursor:
             cursor.execute('insert into physical_logical_map (physical_uid, logical_uid, start_time) values (%s, %s, %s)', (mapping.pd.uid, mapping.ld.uid, mapping.start_time))
+    except psycopg2.errors.ForeignKeyViolation as fkerr:
+        raise DAODeviceNotFound(f'insert_mapping foreign key error with mapping {mapping.pd.uid} -> {mapping.ld.uid}.', fkerr)
+    except psycopg2.errors.UniqueViolation as err:
+        raise DAOUniqeConstraintException(f'Mapping already exists: {mapping.pd.uid} -> {mapping.ld.uid}, starting at {mapping.start_time}.', err)
     except Exception as err:
+        print(type(err), err)
         raise DAOException('insert_mapping failed.', err)
     finally:
         free_conn(conn)

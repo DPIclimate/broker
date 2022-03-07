@@ -28,7 +28,7 @@ TODO: Abstract out some common patterns these services have into classes that ca
 import asyncio, datetime, dateutil.parser, hashlib, json, logging, os, pathlib, re, requests, signal, uuid
 from glob import glob
 import BrokerConstants
-import db.DAO as dao
+import api.client.DAO as dao
 from pdmodels.Models import Location, PhysicalDevice
 from pika.exchange_type import ExchangeType
 import api.client.RabbitMQ as mq
@@ -237,8 +237,8 @@ def process_sensor_group(station, sensor_group_id, text, json_obj) -> None:
         BrokerConstants.SENSOR_GROUP_ID_KEY: sensor_group_id
     }
 
-    pd = dao.get_pyhsical_device_using_source_ids(BrokerConstants.GREENBRAIN, source_ids)
-    if pd is None:
+    pds = dao.get_pyhsical_devices_using_source_ids(BrokerConstants.GREENBRAIN, source_ids)
+    if len(pds) < 1:
         logger.info(f'Physical device not found for sensor group {sensor_group_id}, creating a new one.')
         name = json_obj['sensorGroup']['name']
         
@@ -262,9 +262,10 @@ def process_sensor_group(station, sensor_group_id, text, json_obj) -> None:
         pd = PhysicalDevice(source_name=BrokerConstants.GREENBRAIN, name=name, location=location, last_seen=max_ts, source_ids=source_ids, properties=props)
         pd = dao.create_physical_device(pd)
     else:
+        pd = pds[0]
         pd.last_seen = max_ts
         pd.properties[BrokerConstants.LAST_MESSAGE_HASH_KEY] = hash
-        pd = dao.update_physical_device(pd)
+        pd = dao.update_physical_device(pds)
 
     #
     # Publish a message to the physical_timeseries queue.
@@ -299,7 +300,7 @@ def process_sensor_group(station, sensor_group_id, text, json_obj) -> None:
                 dot[BrokerConstants.TIMESTAMP_KEY] = dot_ts.isoformat()
 
             dots.append(dot)
-    
+
     p_ts_msg = {
         BrokerConstants.CORRELATION_ID_KEY: correlation_id,
         BrokerConstants.PHYSICAL_DEVICE_UID_KEY: pd.uid,

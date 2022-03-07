@@ -12,7 +12,7 @@ from pika.exchange_type import ExchangeType
 import api.client.RabbitMQ as mq
 import api.client.Ubidots as ubidots
 
-import db.DAO as dao
+import api.client.DAO as dao
 
 logging.basicConfig(level=logging.INFO, format='%(asctime)s %(name)s: %(message)s', datefmt='%Y-%m-%dT%H:%M:%S%z')
 logger = logging.getLogger(__name__)
