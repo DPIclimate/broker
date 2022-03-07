@@ -1,9 +1,13 @@
-import copy, datetime, time, unittest, uuid
+import copy, datetime, logging, time, unittest, uuid
 from typing import Tuple
 
 import api.client.DAO as dao
 from pdmodels.Models import PhysicalDevice, PhysicalToLogicalMapping, Location, LogicalDevice
 from typing import Tuple
+
+logging.basicConfig(level=logging.INFO, format='%(asctime)s %(name)s: %(message)s', datefmt='%Y-%m-%dT%H:%M:%S%z')
+logger = logging.getLogger(__name__)
+logging.captureWarnings(True)
 
 class TestDAO(unittest.TestCase):
 

@@ -265,7 +265,7 @@ def process_sensor_group(station, sensor_group_id, text, json_obj) -> None:
         pd = pds[0]
         pd.last_seen = max_ts
         pd.properties[BrokerConstants.LAST_MESSAGE_HASH_KEY] = hash
-        pd = dao.update_physical_device(pds)
+        pd = dao.update_physical_device(pd)
 
     #
     # Publish a message to the physical_timeseries queue.

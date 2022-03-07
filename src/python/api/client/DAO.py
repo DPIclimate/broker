@@ -13,6 +13,7 @@ from pdmodels.Models import DeviceNote, Location, LogicalDevice, PhysicalDevice,
 
 logging.basicConfig(level=logging.INFO, format='%(asctime)s %(name)s: %(message)s', datefmt='%Y-%m-%dT%H:%M:%S%z')
 logger = logging.getLogger(__name__)
+logging.captureWarnings(True)
 
 class DAOException(Exception):
     def __init__(self, msg: str = None, wrapped: Exception = None):

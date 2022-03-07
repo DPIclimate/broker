@@ -4,9 +4,6 @@
 # Find a way to make the cached message files persistent between runs of the container
 # so it can read them and send them to RabbitMQ on startup.
 #
-# Also read through the files after a RabbitMQ re-connection to send pending messages
-# over the new connection.
-#
 
 import asyncio, datetime, json, logging, os, uuid
 from fastapi import BackgroundTasks, FastAPI, Response
