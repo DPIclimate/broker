@@ -4,7 +4,7 @@ from typing import Tuple
 import api.client.DAO as dao
 import requests
 
-from pdmodels.Models import PhysicalDevice, PhysicalToLogicalMapping, Location, LogicalDevice
+from pdmodels.Models import DeviceNote, PhysicalDevice, PhysicalToLogicalMapping, Location, LogicalDevice
 from typing import Tuple
 
 logging.basicConfig(level=logging.INFO, format='%(asctime)s %(name)s: %(message)s', datefmt='%Y-%m-%dT%H:%M:%S%z')
@@ -16,7 +16,7 @@ _HEADERS = {
     "Accept": "application/json"
 }
 
-class TestDAO(unittest.TestCase):
+class TestRESTAPI(unittest.TestCase):
 
     def setUp(self):
         try:
@@ -183,6 +183,52 @@ class TestDAO(unittest.TestCase):
         self.assertEqual(r.status_code, 200)
         self.assertIsNone(r.json())
 
+    def test_create_device_note(self):
+        dev, new_dev = self._create_default_physical_device()
+
+        note1 = DeviceNote(note="Note1")
+        url=f'{_BASE}/physical/devices/notes/{new_dev.uid}'
+        r = requests.post(url, headers=_HEADERS, data=note1.json())
+        self.assertEqual(r.status_code, 201)
+
+        url=f'{_BASE}/physical/devices/notes/{-1}'
+        r = requests.post(url, headers=_HEADERS, data=note1.json())
+        self.assertEqual(r.status_code, 404)
+
+    def test_get_device_notes(self):
+        dev, new_dev = self._create_default_physical_device()
+
+        note1 = DeviceNote(note="Note1")
+        note2 = DeviceNote(note="Note2")
+        note3 = DeviceNote(note="Note3")
+
+        url=f'{_BASE}/physical/devices/notes/{new_dev.uid}'
+        r = requests.post(url, headers=_HEADERS, data=note1.json())
+        self.assertEqual(r.status_code, 201)
+
+        time.sleep(0.01)
+        r = requests.post(url, headers=_HEADERS, data=note2.json())
+        self.assertEqual(r.status_code, 201)
+
+        time.sleep(0.01)
+        r = requests.post(url, headers=_HEADERS, data=note3.json())
+        self.assertEqual(r.status_code, 201)
+
+        # Confirm multiple notes are returned in ascending timestamp order.
+        r = requests.get(url)
+        self.assertEqual(r.status_code, 200)
+        notes = [DeviceNote.parse_obj(n) for n in r.json()]
+        self.assertIsNotNone(notes)
+        self.assertEqual(len(notes), 3)
+        self.assertLess(notes[0].ts, notes[1].ts)
+        self.assertLess(notes[1].ts, notes[2].ts)
+
+        # Confirm an empty array is returned for an invalid device id.
+        url=f'{_BASE}/physical/devices/notes/{-1}'
+        r = requests.get(url)
+        self.assertEqual(r.status_code, 200)
+        self.assertEqual(len(r.json()), 0)
+
     """--------------------------------------------------------------------------
     LOGICAL DEVICES
     --------------------------------------------------------------------------"""
@@ -309,3 +355,71 @@ class TestDAO(unittest.TestCase):
         payload = mapping.json()
         r = requests.post(url, headers=_HEADERS, data=payload)
         self.assertEqual(r.status_code, 404)
+
+    def test_get_mapping_from_physical(self):
+        pdev, new_pdev = self._create_default_physical_device()
+        ldev, new_ldev = self._create_default_logical_device()
+        mapping = PhysicalToLogicalMapping(pd=new_pdev, ld=new_ldev, start_time=self.now())
+
+        url=f'{_BASE}/mappings/'
+        payload = mapping.json()
+        r = requests.post(url, headers=_HEADERS, data=payload)
+        self.assertEqual(r.status_code, 201)
+
+        # Confirm getting the mapping works.
+        r = requests.get(f'{_BASE}/mappings/from_physical/{new_pdev.uid}')
+        self.assertEqual(r.status_code, 200)
+        m = PhysicalToLogicalMapping.parse_obj(r.json())
+        self.assertEqual(mapping, m)
+
+        # Confirm getting an invalid map returns 404
+        r = requests.get(f'{_BASE}/mappings/from_physical/{-1}')
+        self.assertEqual(r.status_code, 404)
+
+        # Confirm the latest mapping is returned.
+        time.sleep(0.001)
+        mapping2 = copy.deepcopy(mapping)
+        mapping2.start_time=self.now()
+        self.assertNotEqual(mapping, mapping2)
+        payload = mapping2.json()
+        r = requests.post(url, headers=_HEADERS, data=payload)
+        self.assertEqual(r.status_code, 201)
+
+        r = requests.get(f'{_BASE}/mappings/from_physical/{new_pdev.uid}')
+        self.assertEqual(r.status_code, 200)
+        m = PhysicalToLogicalMapping.parse_obj(r.json())
+        self.assertEqual(mapping2, m)
+
+    def test_get_mapping_from_logical(self):
+        pdev, new_pdev = self._create_default_physical_device()
+        ldev, new_ldev = self._create_default_logical_device()
+        mapping = PhysicalToLogicalMapping(pd=new_pdev, ld=new_ldev, start_time=self.now())
+
+        url=f'{_BASE}/mappings/'
+        payload = mapping.json()
+        r = requests.post(url, headers=_HEADERS, data=payload)
+        self.assertEqual(r.status_code, 201)
+
+        # Confirm getting the mapping works.
+        r = requests.get(f'{_BASE}/mappings/from_logical/{new_ldev.uid}')
+        self.assertEqual(r.status_code, 200)
+        m = PhysicalToLogicalMapping.parse_obj(r.json())
+        self.assertEqual(mapping, m)
+
+        # Confirm getting an invalid map returns 404
+        r = requests.get(f'{_BASE}/mappings/from_logical/{-1}')
+        self.assertEqual(r.status_code, 404)
+
+        # Confirm the latest mapping is returned.
+        time.sleep(0.001)
+        mapping2 = copy.deepcopy(mapping)
+        mapping2.start_time=self.now()
+        self.assertNotEqual(mapping, mapping2)
+        payload = mapping2.json()
+        r = requests.post(url, headers=_HEADERS, data=payload)
+        self.assertEqual(r.status_code, 201)
+
+        r = requests.get(f'{_BASE}/mappings/from_logical/{new_ldev.uid}')
+        self.assertEqual(r.status_code, 200)
+        m = PhysicalToLogicalMapping.parse_obj(r.json())
+        self.assertEqual(mapping2, m)

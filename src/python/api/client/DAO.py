@@ -345,6 +345,8 @@ def create_physical_device_note(uid: int, note: str) -> None:
     try:
         with _get_connection() as conn, conn.cursor() as cursor:
             cursor.execute('insert into device_notes (physical_uid, note) values (%s, %s)', [uid, note])
+    except psycopg2.errors.ForeignKeyViolation as fkerr:
+        raise DAODeviceNotFound(f'create_physical_device_note foreign key error for device {uid}.', fkerr)
     except Exception as err:
         raise err if isinstance(err, DAOException) else DAOException('create_physical_device_note failed.', err)
     finally:
@@ -552,7 +554,7 @@ def insert_mapping(mapping: PhysicalToLogicalMapping) -> None:
         free_conn(conn)
 
 
-def get_current_device_mapping(pd: Optional[Union[PhysicalDevice, Integral]] = None, ld: Optional[Union[LogicalDevice, Integral]] = None) -> Optional[PhysicalToLogicalMapping]:
+def get_current_device_mapping(pd: Optional[Union[PhysicalDevice, int]] = None, ld: Optional[Union[LogicalDevice, int]] = None) -> Optional[PhysicalToLogicalMapping]:
     mapping = None
 
     if pd is None and ld is None:

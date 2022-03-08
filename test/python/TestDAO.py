@@ -128,7 +128,7 @@ class TestDAO(unittest.TestCase):
         dao.create_physical_device_note(new_dev.uid, 'Note 1')
         dao.create_physical_device_note(new_dev.uid, 'Note 2')
 
-        self.assertRaises(dao.DAOException, dao.create_physical_device_note, -1, 'Note 1')
+        self.assertRaises(dao.DAODeviceNotFound, dao.create_physical_device_note, -1, 'Note 1')
 
     def test_get_physical_device_notes(self):
         dev, new_dev = self._create_default_physical_device()

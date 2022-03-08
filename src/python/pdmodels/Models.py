@@ -44,5 +44,5 @@ class PhysicalToLogicalMapping(BaseModel):
 
 
 class DeviceNote(BaseModel):
-    ts: datetime
+    ts: Optional[datetime]
     note: str

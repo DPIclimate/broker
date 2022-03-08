@@ -9,7 +9,7 @@ from fastapi import FastAPI, Query, HTTPException, Request, Response, status
 import json
 from typing import Dict, List, Optional
 
-from pdmodels.Models import PhysicalDevice, LogicalDevice, PhysicalToLogicalMapping
+from pdmodels.Models import DeviceNote, PhysicalDevice, LogicalDevice, PhysicalToLogicalMapping
 import api.client.DAO as dao
 
 app = FastAPI()
@@ -119,6 +119,30 @@ async def delete_physical_device(uid: int) -> PhysicalDevice:
 
 
 """--------------------------------------------------------------------------
+DEVICE NOTES
+--------------------------------------------------------------------------"""
+@app.post("/api/physical/devices/notes/{uid}", status_code=status.HTTP_201_CREATED)
+async def create_physical_device_note(uid: int, note: DeviceNote, request: Request, response: Response) -> None:
+    """
+    Create a new note for a PhysicalDevice.
+    """
+    try:
+        dao.create_physical_device_note(uid, note.note)
+        #response.headers['Location'] = f'{request.url}{pd.uid}'
+    except dao.DAODeviceNotFound as err:
+        raise HTTPException(status_code=404, detail=err.msg)
+    except dao.DAOException as err:
+        raise HTTPException(status_code=500, detail=err.msg)
+
+
+@app.get("/api/physical/devices/notes/{uid}")
+async def get_physical_device_notes(uid: int) -> List[DeviceNote]:
+    try:
+        return dao.get_physical_device_notes(uid)
+    except dao.DAOException as err:
+        raise HTTPException(status_code=500, detail=err.msg)
+
+"""--------------------------------------------------------------------------
 LOGICAL DEVICES
 --------------------------------------------------------------------------"""
 
@@ -174,6 +198,10 @@ async def delete_logical_device(uid: int) -> LogicalDevice:
         raise HTTPException(status_code=500, detail=err.msg)
 
 
+"""--------------------------------------------------------------------------
+DEVICE MAPPINGS
+--------------------------------------------------------------------------"""
+
 @app.post("/api/mappings/", status_code=status.HTTP_201_CREATED)
 async def insert_mapping(mapping: PhysicalToLogicalMapping) -> None:
     try:
@@ -182,5 +210,27 @@ async def insert_mapping(mapping: PhysicalToLogicalMapping) -> None:
         raise HTTPException(status_code=404, detail=daonf.msg)
     except dao.DAOUniqeConstraintException as err:
         raise HTTPException(status_code=400, detail=err.msg)
+    except dao.DAOException as err:
+        raise HTTPException(status_code=500, detail=err.msg)
+
+@app.get("/api/mappings/from_physical/{uid}")
+async def get_mapping_from_physical_uid(uid: int) -> PhysicalToLogicalMapping:
+    try:
+        mapping = dao.get_current_device_mapping(pd=uid)
+        if mapping is None:
+            raise HTTPException(status_code=404, detail=f'Device mapping for physical device {uid} not found.')
+
+        return mapping
+    except dao.DAOException as err:
+        raise HTTPException(status_code=500, detail=err.msg)
+
+@app.get("/api/mappings/from_logical/{uid}")
+async def get_mapping_from_logical_uid(uid: int) -> PhysicalToLogicalMapping:
+    try:
+        mapping = dao.get_current_device_mapping(ld=uid)
+        if mapping is None:
+            raise HTTPException(status_code=404, detail=f'Device mapping for logical device {uid} not found.')
+
+        return mapping
     except dao.DAOException as err:
         raise HTTPException(status_code=500, detail=err.msg)
