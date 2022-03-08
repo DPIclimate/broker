@@ -182,10 +182,10 @@ def on_message(channel, method, properties, body):
         ubidots.post_device_data(ubidots_dev_label, ubidots_payload)
 
         if new_device:
-            # Update the new Ubidots device with info from the source device and/or the
+            # Update the Ubidots device with info from the source device and/or the
             # broker.
             logger.info('Updating Ubidots device with information from source device.')
-            patch_obj = {'name': pd.name}
+            patch_obj = {'name': ld.name}
             patch_obj['properties'] = {}
 
             # Prefer the logical device location, fall back to the mapped physical device
@@ -209,20 +209,16 @@ def on_message(channel, method, properties, body):
                         patch_obj['properties'] |= {'_config': cfg, 'dpi-uid': ttn_props['attributes']['uid']}
 
                 # TODO: What about Green Brain devices?
-                
+
             ubidots.update_device(ubidots_dev_label, patch_obj)
 
             # Update the newly created logical device properties with the information
             # returned from Ubidots, but nothing else. We don't want to overwite the
             # last_seen value because that should be set to the timestamp from the
             # message, which was done in the mapper process.
-            logger.info('Updating new logical device properties from Ubidots.')
+            logger.info('Updating logical device properties from Ubidots.')
             ud = ubidots.get_device(ubidots_dev_label)
             if ud is not None:
-                # Note that ud is a LogicalDevice, not the object that is returned
-                # from an Ubidots REST API call. So ud.properties is not the Ubidots
-                # device properties, but the entire Ubidots device definition as we
-                # want to store it in our logical device table properties column.
                 ld.properties['ubidots'] = ud.properties['ubidots']
                 dao.update_logical_device(ld)
 
