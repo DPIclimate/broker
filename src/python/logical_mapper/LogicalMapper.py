@@ -124,7 +124,7 @@ def on_message(channel, method, properties, body):
             pd = dao.get_physical_device(p_uid)
 
         # Don't publish most TTN traffic yet.
-        broker_apps = ["oai-test-devices", "ndvi-dpi-hemistop", "ndvisoil-dpi-stop5tm"]
+        broker_apps = ['oai-test-devices', 'ndvi-dpi-hemistop', 'ndvisoil-dpi-stop5tm', 'stoneleigh-strega']
         publish = pd.source_name != 'ttn' or pd.source_ids['app_id'] in broker_apps
         if publish:
             #logger.info(f'Forwarding message from {mapping.pd.name} --> {mapping.ld.name}: {msg["timestamp"]} {msg["timeseries"]}')
