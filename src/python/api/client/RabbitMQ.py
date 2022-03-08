@@ -9,7 +9,7 @@
 # This code is based on the async examples in the pika github repo.
 # See https://github.com/pika/pika/tree/master/examples
 
-import pika, pika.spec
+import pika, pika.channel, pika.spec
 from pika.adapters.asyncio_connection import AsyncioConnection
 from pika.exchange_type import ExchangeType
 
@@ -142,7 +142,7 @@ class TxChannel(object):
         self._on_ready = on_ready
         self._on_publish_ack = on_publish_ack
 
-        self._channel = None
+        self._channel: pika.channel.Channel = None
         self._message_number = 0
         self.is_open = False
 
@@ -233,7 +233,7 @@ class RxChannel(object):
         self._routing_key = routing_key
         self._on_message = on_message
 
-        self._channel = None
+        self._channel: pika.channel.Channel = None
         self.is_open = False
 
 
@@ -275,6 +275,7 @@ class RxChannel(object):
         self._channel.add_on_cancel_callback(self.on_consumer_cancelled)
         self._consumer_tag = self._channel.basic_consume(self._queue_name, self._on_message)
         self.is_open = True
+
 
     def on_consumer_cancelled(self, method_frame):
         logger.info('Consumer was cancelled remotely, shutting down: %r', method_frame)
