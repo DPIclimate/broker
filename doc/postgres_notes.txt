@@ -1,0 +1,3 @@
+# How to add a key to a JSON object:
+
+update physical_devices set source_ids = jsonb_set(source_ids, '{decoder_name}', '"temphumid-netvox-r718a"', true) where uid = 572;

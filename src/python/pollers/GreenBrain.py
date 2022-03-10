@@ -37,8 +37,16 @@ import api.client.RabbitMQ as mq
 logging.basicConfig(level=logging.INFO, format='%(asctime)s %(name)s: %(message)s', datefmt='%Y-%m-%dT%H:%M:%S%z')
 logger = logging.getLogger(__name__)
 
-_users = os.environ['GREENBRAIN_USERS'].split(',')
-_passwords = os.environ['GREENBRAIN_PASSWORDS'].split(',')
+_users = []
+_passwords = []
+
+_users_val = os.getenv('GREENBRAIN_USERS')
+if _users_val is not None and len(_users_val) > 0:
+    _users = _users_val.split(',')
+
+_passwords_val = os.getenv('GREENBRAIN_PASSWORDS')
+if _passwords_val is not None:
+    _passwords = _passwords_val.split(',')
 
 _accounts = {}
 
@@ -182,9 +190,6 @@ def poll() -> None:
                         process_sensor_group(station, sg_id, r.text, r.json())
                     else:
                         logger.error(r)
-
-                # Return early while testing, just do one station.
-                return
 
 
 # Passing in as text so we can use regexps to quickly find some things.
@@ -365,17 +370,20 @@ async def main():
 
     while not finish:
         poll()
-        await asyncio.sleep(60 * 30)
+        await asyncio.sleep(60 * 60)
 
     while not mq_client.stopped:
         await asyncio.sleep(1)
 
 
 if __name__ == '__main__':
-    # Docker sends SIGTERM to tell the process the container is stopping so set
-    # a handler to catch the signal and initiate an orderly shutdown.
-    signal.signal(signal.SIGTERM, sigterm_handler)
+    if _users is None or len(_users) < 1:
+        logger.info('No users defined, exiting.')
+    else:
+        # Docker sends SIGTERM to tell the process the container is stopping so set
+        # a handler to catch the signal and initiate an orderly shutdown.
+        signal.signal(signal.SIGTERM, sigterm_handler)
 
-    # Does not return until SIGTERM is received.
-    asyncio.run(main())
-    logger.info('Exiting.')
+        # Does not return until SIGTERM is received.
+        asyncio.run(main())
+        logger.info('Exiting.')

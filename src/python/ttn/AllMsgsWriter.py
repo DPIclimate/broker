@@ -7,7 +7,7 @@
 import datetime
 import dateutil.parser
 
-import asyncio, json, logging, requests, signal
+import asyncio, json, logging, os, requests, signal
 from typing import Optional
 
 import BrokerConstants
@@ -27,6 +27,9 @@ tx_channel: mq.TxChannel = None
 mq_client: mq.RabbitMQConnection = None
 finish = False
 
+_enabled_apps = os.getenv('TTN_ENABLED_APPS')
+if _enabled_apps is not None and len(_enabled_apps) > 0:
+    _enabled_apps = _enabled_apps.split(',')
 
 def sigterm_handler(sig_no, stack_frame) -> None:
     """
@@ -199,36 +202,50 @@ def on_message(channel, method, properties, body):
                 #logger.info(data)
                 r = requests.post('http://ttn_decoder:3001/', headers=_decoder_req_headers, data=data)
                 if r.status_code != 200:
-                    logger.error(f'Decoding failed for {correlation_id}')
+                    logger.error(f'Decoding failed for {app_id}:{dev_id} {correlation_id}')
                 else:
-                    locally_decoded_payload = r.json()
-                    logger.info(f'Decoded payload: {locally_decoded_payload}')
+                    decoded_payload = r.json()
+                    if 'data' in decoded_payload:
+                        decoded_payload = decoded_payload['data']
+                        logger.info(f'Broker decoded payload: {decoded_payload}')
+                    else:
+                        logger.warn(f'No data element in {decoded_payload}')
+
             except Exception as err:
                 logger.warning('Caught exception while attempting local decoding of message.')
                 logger.warning(err)
 
+            if decoded_payload is not None and 'decoded_payload' in uplink_message:
+                uplink_decode = uplink_message['decoded_payload']
+                logger.info(f'ttn decode: {uplink_decode}')
+                logger.info(f'Checking if local and ttn decode are the same: {decoded_payload == uplink_decode}')
+
             if decoded_payload is None and 'decoded_payload' in uplink_message:
                 logger.info('Using decoded_payload from uplink_message')
                 decoded_payload = uplink_message['decoded_payload']
-                if decoded_payload is not None:
-                    ts_vars = []
-                    for k, v in decoded_payload.items():
-                        ts_vars.append({'name': k, 'value': v})
 
-                    p_ts_msg = {
-                        BrokerConstants.CORRELATION_ID_KEY: correlation_id,
-                        BrokerConstants.PHYSICAL_DEVICE_UID_KEY: pd.uid,
-                        BrokerConstants.TIMESTAMP_KEY: received_at,
-                        BrokerConstants.TIMESERIES_KEY: ts_vars
-                    }
+            if decoded_payload is not None:
+                ts_vars = []
+                for k, v in decoded_payload.items():
+                    ts_vars.append({'name': k, 'value': v})
 
+                p_ts_msg = {
+                    BrokerConstants.CORRELATION_ID_KEY: correlation_id,
+                    BrokerConstants.PHYSICAL_DEVICE_UID_KEY: pd.uid,
+                    BrokerConstants.TIMESTAMP_KEY: received_at,
+                    BrokerConstants.TIMESERIES_KEY: ts_vars
+                }
+
+                if _enabled_apps is None or app_id in _enabled_apps:
                     # Should the code try and remember the message until it is delivered to the queue?
                     # I think that means we need to hold off the ack in this method and only ack the message
                     # we got from ttn_raw when we get confirmation from the server that it has saved the message
                     # written to the physical_timeseries queue.
                     msg_id = tx_channel.publish_message('physical_timeseries', p_ts_msg)
-            else:
-                logger.warning(f'No decoded payload in message: {body}')
+                else:
+                    logger.info(f'Not publishing from disabled app {app_id}.')
+        else:
+            logger.warning(f'No decoded payload for message: {body}')
 
         # This tells RabbitMQ the message is handled and can be deleted from the queue.    
         rx_channel._channel.basic_ack(delivery_tag)

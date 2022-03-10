@@ -25,11 +25,18 @@ app.post('/', (req, res) => {
     const device = data.device;
     const ttnMsg = data.message;
     var decoderName = device.properties.ttn.ids.application_ids.application_id;
-    if (device.properties.hasOwnProperty("decoder_name")) {
-        decoderName = device.properties.decoder_name;
+    if (device.source_ids.hasOwnProperty("decoder_name")) {
+        decoderName = device.source_ids.decoder_name;
     }
 
-    eval(fs.readFileSync(`../ttn_formatters/uplink/${decoderName}.js`, 'utf8'));
+    decoderFilename = `../ttn_formatters/uplink/${decoderName}.js`;
+    try {
+        fs.accessSync(decoderFilename, fs.constants.R_OK);
+    } catch(err) {
+        throw new Error(`Decoder not found: ${decoderFilename}`)
+    }
+
+    eval(fs.readFileSync(decoderFilename, 'utf8'));
 
     var msgOk = false;
     if (ttnMsg.hasOwnProperty("uplink_message")) {
@@ -47,7 +54,8 @@ app.post('/', (req, res) => {
 
     var input = {
         bytes: Buffer.from(payload_raw, 'base64'),
-        fPort: port
+        fPort: port,
+        device: device
     };
 
     var val = decodeUplink(input);
