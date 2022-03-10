@@ -6,16 +6,41 @@
 #
 
 from fastapi import FastAPI, Query, HTTPException, Request, Response, status
-import json
+from fastapi.responses import JSONResponse
+import json, logging, os, sys
 from typing import Dict, List, Optional
 
 from pdmodels.Models import DeviceNote, PhysicalDevice, LogicalDevice, PhysicalToLogicalMapping
 import api.client.DAO as dao
 
-app = FastAPI()
+app = FastAPI(title='IoT Device Broker', version="1.0.0")
 
+logging.basicConfig(level=logging.INFO, format='%(asctime)s %(name)s: %(message)s', datefmt='%Y-%m-%dT%H:%M:%S%z')
+logger = logging.getLogger(__name__)
 
-@app.get("/api/physical/sources/")
+"""
+An example of how we might do not-very-good authentication for the
+REST API. The point is, it is simple to wrap every call with a
+function to check the caller credentials.
+
+auth_token = os.getenv('RESTAPI_TOKEN')
+if auth_token is None or len(auth_token) < 1:
+    logger.error('auth_token not set.')
+    sys.exit(1)
+
+@app.middleware("http")
+async def check_auth_header(request: Request, call_next):
+    if not 'X-Auth-Token' in request.headers:
+        return JSONResponse(status_code=401)
+
+    token = request.headers['X-Auth-Token']
+    if token != auth_token:
+        return JSONResponse(status_code=401)
+
+    return await call_next(request)
+"""
+
+@app.get("/api/physical/sources/", tags=['physical devices'])
 async def get_all_physical_sources() -> List[str]:
     """
     Return a list of all physical device sources.
@@ -26,15 +51,13 @@ async def get_all_physical_sources() -> List[str]:
         raise HTTPException(status_code=500, detail=err.msg)
 
 
-@app.get("/api/physical/devices/")
+@app.get("/api/physical/devices/", tags=['physical devices'])
 async def query_physical_devices(
     source: str | None = None,
     source_id_name: List[str] | None = Query(None),
     source_id_value: List[str] | None = Query(None)) -> List[PhysicalDevice]:
     """
-    Query PhysicalDevices. The query parameters are:
-
-    source: should be one of the device sources such as ttn or mace.
+    Query PhysicalDevices.
     """
 
     # locals() returns a dict of the local variables. In this case it's like kwargs which is what the
@@ -64,7 +87,7 @@ async def query_physical_devices(
 
 
 
-@app.get("/api/physical/devices/{uid}")
+@app.get("/api/physical/devices/{uid}", tags=['physical devices'])
 async def get_physical_device(uid: int) -> PhysicalDevice:
     """
     Get the PhysicalDevice specified by uid.
@@ -79,7 +102,7 @@ async def get_physical_device(uid: int) -> PhysicalDevice:
         raise HTTPException(status_code=500, detail=err.msg)
 
 
-@app.post("/api/physical/devices/", status_code=status.HTTP_201_CREATED)
+@app.post("/api/physical/devices/", tags=['physical devices'], status_code=status.HTTP_201_CREATED)
 async def create_physical_device(device: PhysicalDevice, request: Request, response: Response) -> PhysicalDevice:
     """
     Create a new PhysicalDevice. The new device is returned in the response.
@@ -92,7 +115,7 @@ async def create_physical_device(device: PhysicalDevice, request: Request, respo
         raise HTTPException(status_code=500, detail=err.msg)
 
 
-@app.patch("/api/physical/devices/")
+@app.patch("/api/physical/devices/", tags=['physical devices'])
 async def update_physical_device(device: PhysicalDevice) -> PhysicalDevice:
     """
     Update a PhysicalDevice. The updated device is returned in the respose.
@@ -107,7 +130,7 @@ async def update_physical_device(device: PhysicalDevice) -> PhysicalDevice:
 
 
 
-@app.delete("/api/physical/devices/{uid}")
+@app.delete("/api/physical/devices/{uid}", tags=['physical devices'])
 async def delete_physical_device(uid: int) -> PhysicalDevice:
     """
     Delete a PhysicalDevice. The deleted device is returned in the response.
@@ -121,7 +144,7 @@ async def delete_physical_device(uid: int) -> PhysicalDevice:
 """--------------------------------------------------------------------------
 DEVICE NOTES
 --------------------------------------------------------------------------"""
-@app.post("/api/physical/devices/notes/{uid}", status_code=status.HTTP_201_CREATED)
+@app.post("/api/physical/devices/notes/{uid}", tags=['physical devices'], status_code=status.HTTP_201_CREATED)
 async def create_physical_device_note(uid: int, note: DeviceNote, request: Request, response: Response) -> None:
     """
     Create a new note for a PhysicalDevice.
@@ -135,7 +158,7 @@ async def create_physical_device_note(uid: int, note: DeviceNote, request: Reque
         raise HTTPException(status_code=500, detail=err.msg)
 
 
-@app.get("/api/physical/devices/notes/{uid}")
+@app.get("/api/physical/devices/notes/{uid}", tags=['physical devices'])
 async def get_physical_device_notes(uid: int) -> List[DeviceNote]:
     try:
         return dao.get_physical_device_notes(uid)
@@ -146,7 +169,7 @@ async def get_physical_device_notes(uid: int) -> List[DeviceNote]:
 LOGICAL DEVICES
 --------------------------------------------------------------------------"""
 
-@app.post("/api/logical/devices/", status_code=status.HTTP_201_CREATED)
+@app.post("/api/logical/devices/", tags=['logical devices'], status_code=status.HTTP_201_CREATED)
 async def create_logical_device(device: LogicalDevice, request: Request, response: Response) -> LogicalDevice:
     """
     Create a new LogicalDevice. The new device is returned in the response.
@@ -159,7 +182,7 @@ async def create_logical_device(device: LogicalDevice, request: Request, respons
         raise HTTPException(status_code=500, detail=err.msg)
 
 
-@app.get("/api/logical/devices/{uid}")
+@app.get("/api/logical/devices/{uid}", tags=['logical devices'])
 async def get_logical_device(uid: int) -> LogicalDevice:
     """
     Get the LogicalDevice specified by uid.
@@ -174,7 +197,7 @@ async def get_logical_device(uid: int) -> LogicalDevice:
         raise HTTPException(status_code=500, detail=err.msg)
 
 
-@app.patch("/api/logical/devices/")
+@app.patch("/api/logical/devices/", tags=['logical devices'])
 async def update_logical_device(device: LogicalDevice) -> LogicalDevice:
     """
     Update a LogicalDevice. The updated device is returned in the respose.
@@ -187,7 +210,7 @@ async def update_logical_device(device: LogicalDevice) -> LogicalDevice:
         raise HTTPException(status_code=500, detail=err.msg)
 
 
-@app.delete("/api/logical/devices/{uid}")
+@app.delete("/api/logical/devices/{uid}", tags=['logical devices'])
 async def delete_logical_device(uid: int) -> LogicalDevice:
     """
     Delete a LogicalDevice. The deleted device is returned in the response.
@@ -202,7 +225,7 @@ async def delete_logical_device(uid: int) -> LogicalDevice:
 DEVICE MAPPINGS
 --------------------------------------------------------------------------"""
 
-@app.post("/api/mappings/", status_code=status.HTTP_201_CREATED)
+@app.post("/api/mappings/", tags=['device mapping'], status_code=status.HTTP_201_CREATED)
 async def insert_mapping(mapping: PhysicalToLogicalMapping) -> None:
     try:
         dao.insert_mapping(mapping)
@@ -213,7 +236,7 @@ async def insert_mapping(mapping: PhysicalToLogicalMapping) -> None:
     except dao.DAOException as err:
         raise HTTPException(status_code=500, detail=err.msg)
 
-@app.get("/api/mappings/from_physical/{uid}")
+@app.get("/api/mappings/from_physical/{uid}", tags=['device mapping'], response_model=PhysicalToLogicalMapping)
 async def get_mapping_from_physical_uid(uid: int) -> PhysicalToLogicalMapping:
     try:
         mapping = dao.get_current_device_mapping(pd=uid)
@@ -224,7 +247,7 @@ async def get_mapping_from_physical_uid(uid: int) -> PhysicalToLogicalMapping:
     except dao.DAOException as err:
         raise HTTPException(status_code=500, detail=err.msg)
 
-@app.get("/api/mappings/from_logical/{uid}")
+@app.get("/api/mappings/from_logical/{uid}", tags=['device mapping'], response_model=PhysicalToLogicalMapping)
 async def get_mapping_from_logical_uid(uid: int) -> PhysicalToLogicalMapping:
     try:
         mapping = dao.get_current_device_mapping(ld=uid)

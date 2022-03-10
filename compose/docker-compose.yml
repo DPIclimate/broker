@@ -45,7 +45,7 @@ services:
     entrypoint: [ "/home/broker/.local/bin/uvicorn", "--proxy-headers", "--host", "0.0.0.0", "--port", "5688", "WebHook:app" ]
 
 
-  ttn_decoder:
+  ttn_processor:
     image: broker/python-base
     restart: "no"
     env_file:
@@ -53,11 +53,22 @@ services:
     depends_on:
       - "db"
       - "mq"
+      - "ttn_decoder"
     volumes:
       - ../src/python:/home/broker/python
     working_dir: "/home/broker/python/ttn"
     entrypoint: [ "python", "AllMsgsWriter.py" ]
 
+  ttn_decoder:
+    image: broker/ttn_decoder
+    restart: "no"
+    env_file:
+      - .env
+    volumes:
+      - ../src/js/ttn_decoder/src:/usr/src/ttn_decoder/src
+      - ../../ttn-formatters/:/usr/src/ttn_formatters
+    working_dir: "/usr/src/ttn_decoder"
+    entrypoint: [ "node", "src" ]
 
   lm:
     image: broker/python-base

@@ -2,9 +2,18 @@ version: '3.1'
 
 services:
 
-  mq:
-    logging:
-      driver: "none"
+#  mq:
+#    logging:
+#      driver: "none"
+
+  ttn_decoder:
+    ports:
+      - "127.0.0.1:3001:3001"
+
+
+  restapi:
+    ports:
+      - "127.0.0.1:5687:5687"
 
 
   x:

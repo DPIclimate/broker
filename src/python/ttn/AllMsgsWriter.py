@@ -2,14 +2,12 @@
 # TODO:
 # 
 # Test the behaviour when the DB is not available or fails.
-# Ensure RabbitMQ messages are not ack'd so they can be re-delivered. Figure out how to get
-# RabbitMQ to re-deliver them.
 #
 
 import datetime
 import dateutil.parser
 
-import asyncio, json, logging, signal
+import asyncio, json, logging, requests, signal
 from typing import Optional
 
 import BrokerConstants
@@ -99,6 +97,10 @@ def get_received_at(msg) -> Optional[str]:
 
     return received_at
 
+_decoder_req_headers = {
+    'Content-type': 'application/json',
+    'Accept': 'application/json'
+}
 
 def on_message(channel, method, properties, body):
     """
@@ -182,10 +184,31 @@ def on_message(channel, method, properties, body):
             rx_channel._channel.basic_ack(delivery_tag)
             return
 
-        # TODO: Run the decoder here, or move all this to another process reading from another queue.
         uplink_message = msg['uplink_message'] if 'uplink_message' in msg else None
         if uplink_message is not None:
-            if 'decoded_payload' in uplink_message:
+            decoded_payload = None
+            try:
+                def serialise_datetime(obj):
+                    if isinstance(obj, datetime.datetime):
+                        return obj.isoformat()
+                    logger.warning(f'Cannot serialise {type(obj)}, {obj}')
+                    return "NO CONVERSION"
+
+                #pd.properties['decoder_name'] = 'temphumid-netvox-r718a'
+                data = json.dumps({'device':pd.dict(), 'message':msg}, default=serialise_datetime)
+                #logger.info(data)
+                r = requests.post('http://ttn_decoder:3001/', headers=_decoder_req_headers, data=data)
+                if r.status_code != 200:
+                    logger.error(f'Decoding failed for {correlation_id}')
+                else:
+                    locally_decoded_payload = r.json()
+                    logger.info(f'Decoded payload: {locally_decoded_payload}')
+            except Exception as err:
+                logger.warning('Caught exception while attempting local decoding of message.')
+                logger.warning(err)
+
+            if decoded_payload is None and 'decoded_payload' in uplink_message:
+                logger.info('Using decoded_payload from uplink_message')
                 decoded_payload = uplink_message['decoded_payload']
                 if decoded_payload is not None:
                     ts_vars = []
