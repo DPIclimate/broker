@@ -14,8 +14,7 @@ import api.client.Ubidots as ubidots
 
 import api.client.DAO as dao
 
-logging.basicConfig(level=logging.INFO, format='%(asctime)s %(name)s: %(message)s', datefmt='%Y-%m-%dT%H:%M:%S%z')
-logger = logging.getLogger(__name__)
+logging.basicConfig(level=logging.INFO, format=BrokerConstants.LOGGER_FORMAT, datefmt='%Y-%m-%dT%H:%M:%S%z')
 
 rx_channel = None
 mq_client = None
@@ -29,7 +28,7 @@ def sigterm_handler(sig_no, stack_frame) -> None:
     """
     global finish, mq_client
 
-    logger.info(f'{signal.strsignal(sig_no)}, setting finish to True')
+    logging.info(f'{signal.strsignal(sig_no)}, setting finish to True')
     finish = True
     dao.stop()
     mq_client.stop()
@@ -46,9 +45,9 @@ async def main():
     """
     global mq_client, rx_channel, finish
 
-    logger.info('===============================================================')
-    logger.info('               STARTING UBIDOTS WRITER')
-    logger.info('===============================================================')
+    logging.info('===============================================================')
+    logging.info('               STARTING UBIDOTS WRITER')
+    logging.info('===============================================================')
 
     rx_channel = mq.RxChannel(BrokerConstants.LOGICAL_TIMESERIES_EXCHANGE_NAME, exchange_type=ExchangeType.fanout, queue_name='ubidots_logical_msg_queue', on_message=on_message, routing_key='logical_timeseries')
     mq_client = mq.RabbitMQConnection(channels=[rx_channel])
@@ -103,16 +102,16 @@ def on_message(channel, method, properties, body):
 
     try:
         msg = json.loads(body)
-        logger.info(f'Accepted message {msg}')
+        logging.debug(f'Accepted message {msg}')
 
         l_uid = msg[BrokerConstants.LOGICAL_DEVICE_UID_KEY]
         ld = dao.get_logical_device(l_uid)
         if ld is None:
-            logging.warning(f'Could not find logical device for message: {body}')
+            logging.error(f'Could not find logical device, dropping message: {body}')
             rx_channel._channel.basic_ack(delivery_tag)
             return
 
-        #logger.info(f'Logical device from mapping: {ld}')
+        #logging.info(f'Logical device from mapping: {ld}')
 
         # TODO: Find or create a class to hide all the Python datetime horrors.
         ts_float = dateutil.parser.isoparse(msg[BrokerConstants.TIMESTAMP_KEY]).timestamp()
@@ -154,10 +153,10 @@ def on_message(channel, method, properties, body):
             # physical device source to decide what the label should be, and remember
             # to read the Ubidots device back after writing the timeseries data so
             # the device info can be stored in the logical device properties.
-            logger.info('No Ubidots label found in logical device.')
+            logging.info('No Ubidots label found in logical device.')
             pd = dao.get_physical_device(msg[BrokerConstants.PHYSICAL_DEVICE_UID_KEY])
             if pd is None:
-                logging.warning(f'Could not find physical device for message: {body}')
+                logging.error(f'Could not find physical device, dropping message: {body}')
                 rx_channel._channel.basic_ack(delivery_tag)
                 return
 
@@ -165,9 +164,9 @@ def on_message(channel, method, properties, body):
             ld.properties['ubidots'] = {}
             if pd.source_name == BrokerConstants.TTN:
                 ld.properties['ubidots']['label'] = pd.source_ids['dev_eui']
-                logger.info(f'Using physical device eui for label: {ld.properties["ubidots"]["label"]}')
+                logging.info(f'Using physical device eui for label: {ld.properties["ubidots"]["label"]}')
             elif pd.source_name == BrokerConstants.GREENBRAIN:
-                logger.info('Using system-station-sensor-group ids as label')
+                logging.info('Using system-station-sensor-group ids as label')
                 system_id = pd.source_ids['system_id']
                 station_id = pd.source_ids['station_id']
                 sensor_group_id = pd.source_ids['sensor_group_id']
@@ -184,7 +183,7 @@ def on_message(channel, method, properties, body):
         if new_device:
             # Update the Ubidots device with info from the source device and/or the
             # broker.
-            logger.info('Updating Ubidots device with information from source device.')
+            logging.info('Updating Ubidots device with information from source device.')
             patch_obj = {'name': ld.name}
             patch_obj['properties'] = {}
 
@@ -216,17 +215,19 @@ def on_message(channel, method, properties, body):
             # returned from Ubidots, but nothing else. We don't want to overwite the
             # last_seen value because that should be set to the timestamp from the
             # message, which was done in the mapper process.
-            logger.info('Updating logical device properties from Ubidots.')
+            logging.info('Updating logical device properties from Ubidots.')
             ud = ubidots.get_device(ubidots_dev_label)
             if ud is not None:
                 ld.properties['ubidots'] = ud.properties['ubidots']
                 dao.update_logical_device(ld)
 
-    except BaseException as e:
-        logger.warning(f'Caught: {e}')
+        # This tells RabbitMQ the message is handled and can be deleted from the queue.    
+        rx_channel._channel.basic_ack(delivery_tag)
 
-    # This tells RabbitMQ the message is handled and can be deleted from the queue.    
-    rx_channel._channel.basic_ack(delivery_tag)
+    except BaseException as e:
+        logging.exception('Error while processing message.')
+        rx_channel._channel.basic_reject(delivery_tag)
+
 
 
 if __name__ == '__main__':
@@ -236,4 +237,4 @@ if __name__ == '__main__':
 
     # Does not return until SIGTERM is received.
     asyncio.run(main())
-    logger.info('Exiting.')
+    logging.info('Exiting.')

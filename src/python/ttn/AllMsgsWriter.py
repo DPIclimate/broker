@@ -19,8 +19,7 @@ import api.client.TTNAPI as ttn
 
 import api.client.DAO as dao
 
-logging.basicConfig(level=logging.INFO, format='%(asctime)s %(name)s: %(message)s', datefmt='%Y-%m-%dT%H:%M:%S%z')
-logger = logging.getLogger(__name__)
+logging.basicConfig(level=logging.INFO, format=BrokerConstants.LOGGER_FORMAT, datefmt='%Y-%m-%dT%H:%M:%S%z')
 
 rx_channel: mq.RxChannel = None
 tx_channel: mq.TxChannel = None
@@ -38,7 +37,7 @@ def sigterm_handler(sig_no, stack_frame) -> None:
     """
     global finish, mq_client
 
-    logger.info(f'{signal.strsignal(sig_no)}, setting finish to True')
+    logging.debug(f'{signal.strsignal(sig_no)}, setting finish to True')
     finish = True
     dao.stop()
     mq_client.stop()
@@ -55,9 +54,9 @@ async def main():
     """
     global mq_client, rx_channel, tx_channel, finish
 
-    logger.info('===============================================================')
-    logger.info('               STARTING TTN ALLMSGSWRITER')
-    logger.info('===============================================================')
+    logging.info('===============================================================')
+    logging.info('               STARTING TTN ALLMSGSWRITER')
+    logging.info('===============================================================')
 
     # Cannot put these assignments up the top because you cannot do a forward
     # declaration of a function in Python (in this case, on_message).
@@ -130,14 +129,14 @@ def on_message(channel, method, properties, body):
         dev_id = msg['end_device_ids']['device_id']
         dev_eui = msg['end_device_ids']['dev_eui'].lower()
 
-        #logger.info(f'Accepted message from {app_id}:{dev_id}, correlation_id: {correlation_id}')
+        #logging.info(f'Accepted message from {app_id}:{dev_id}, correlation_id: {correlation_id}')
 
         last_seen = None
 
         received_at = get_received_at(msg)
         # We should always get a value in the message for this, but default to 'now' just in case.
         if received_at is None:
-            logger.warning(f'Defaulting received_at to \'now\' bcause it was not found in a message from device {app_id}/{dev_id}.')
+            logging.warning(f'Defaulting received_at to \'now\' bcause it was not found in a message from device {app_id}/{dev_id}.')
             received_at = datetime.datetime.now(datetime.timezone.utc).isoformat()
 
         last_seen = dateutil.parser.isoparse(received_at)
@@ -155,9 +154,9 @@ def on_message(channel, method, properties, body):
 
         pds = dao.get_pyhsical_devices_using_source_ids(BrokerConstants.TTN, source_ids)
         if len(pds) < 1:
-            logger.info('Device not found, creating physical device.')
+            logging.info('Device not found, creating physical device.')
             ttn_dev = ttn.get_device_details(app_id, dev_id)
-            print(f'Device info from TTN: {ttn_dev}')
+            logging.info(f'Device info from TTN: {ttn_dev}')
 
             dev_name = ttn_dev['name'] if 'name' in ttn_dev else dev_id
             dev_loc = Location.from_ttn_device(ttn_dev)
@@ -177,13 +176,13 @@ def on_message(channel, method, properties, body):
             pd = dao.create_physical_device(pd)
         else:
             pd = pds[0]
-            #logger.info(f'Updating last_seen for device {pd.name}')
+            #logging.info(f'Updating last_seen for device {pd.name}')
             if last_seen is not None:
                 pd.last_seen = last_seen
                 pd = dao.update_physical_device(pd)
 
         if pd is None:
-            logger.error(f'Physical device not found, message processing ends now. {correlation_id}')
+            logging.error(f'Physical device not found, message processing ends now. {correlation_id}')
             rx_channel._channel.basic_ack(delivery_tag)
             return
 
@@ -194,34 +193,34 @@ def on_message(channel, method, properties, body):
                 def serialise_datetime(obj):
                     if isinstance(obj, datetime.datetime):
                         return obj.isoformat()
-                    logger.warning(f'Cannot serialise {type(obj)}, {obj}')
+                    logging.warning(f'Cannot serialise {type(obj)}, {obj}')
                     return "NO CONVERSION"
 
                 #pd.properties['decoder_name'] = 'temphumid-netvox-r718a'
                 data = json.dumps({'device':pd.dict(), 'message':msg}, default=serialise_datetime)
-                #logger.info(data)
+                logging.debug(data)
                 r = requests.post('http://ttn_decoder:3001/', headers=_decoder_req_headers, data=data)
                 if r.status_code != 200:
-                    logger.error(f'Decoding failed for {app_id}:{dev_id} {correlation_id}')
+                    logging.error(f'Decoding failed for {app_id}:{dev_id} {correlation_id}')
                 else:
                     decoded_payload = r.json()
                     if 'data' in decoded_payload:
                         decoded_payload = decoded_payload['data']
-                        logger.info(f'Broker decoded payload: {decoded_payload}')
+                        logging.debug(f'Broker decoded payload: {decoded_payload}')
                     else:
-                        logger.warn(f'No data element in {decoded_payload}')
+                        logging.warn(f'No data element in {decoded_payload}')
 
             except Exception as err:
-                logger.warning('Caught exception while attempting local decoding of message.')
-                logger.warning(err)
+                logging.exception('Local decoding of message failed.')
 
+            # This is a temporary check to confirm local decoders are working.
             if decoded_payload is not None and 'decoded_payload' in uplink_message:
                 uplink_decode = uplink_message['decoded_payload']
-                logger.info(f'ttn decode: {uplink_decode}')
-                logger.info(f'Checking if local and ttn decode are the same: {decoded_payload == uplink_decode}')
+                logging.debug(f'ttn decode: {uplink_decode}')
+                logging.debug(f'Checking if local and ttn decode are the same: {decoded_payload == uplink_decode}')
 
             if decoded_payload is None and 'decoded_payload' in uplink_message:
-                logger.info('Using decoded_payload from uplink_message')
+                logging.warning('Using decoded_payload from uplink_message')
                 decoded_payload = uplink_message['decoded_payload']
 
             if decoded_payload is not None:
@@ -243,14 +242,17 @@ def on_message(channel, method, properties, body):
                     # written to the physical_timeseries queue.
                     msg_id = tx_channel.publish_message('physical_timeseries', p_ts_msg)
                 else:
-                    logger.info(f'Not publishing from disabled app {app_id}.')
+                    logging.debug(f'Not publishing from disabled app {app_id}.')
+            else:
+                logging.warning(f'No payload could be decoded from message {correlation_id}')
         else:
-            logger.warning(f'No decoded payload for message: {body}')
+            logging.warning(f'No uplink_message in: {body}')
 
         # This tells RabbitMQ the message is handled and can be deleted from the queue.    
         rx_channel._channel.basic_ack(delivery_tag)
-        logger.info('Acking message from ttn_raw.')
+        logging.debug('Acking message from ttn_raw.')
     except dao.DAOException as e:
+        logging.exception('Error while processing message.')
         rx_channel._channel.basic_reject(delivery_tag)
 
 
@@ -261,4 +263,4 @@ if __name__ == '__main__':
 
     # Does not return until SIGTERM is received.
     asyncio.run(main())
-    logger.info('Exiting.')
+    logging.info('Exiting.')

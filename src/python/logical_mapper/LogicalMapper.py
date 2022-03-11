@@ -25,8 +25,7 @@ from pika.exchange_type import ExchangeType
 import api.client.RabbitMQ as mq
 import api.client.DAO as dao
 
-logging.basicConfig(level=logging.INFO, format='%(asctime)s %(name)s: %(message)s', datefmt='%Y-%m-%dT%H:%M:%S%z')
-logger = logging.getLogger(__name__)
+logging.basicConfig(level=logging.INFO, format=BrokerConstants.LOGGER_FORMAT, datefmt='%Y-%m-%dT%H:%M:%S%z')
 
 rx_channel = None
 tx_channel = None
@@ -41,7 +40,7 @@ def sigterm_handler(sig_no, stack_frame) -> None:
     """
     global finish, mq_client
 
-    logger.info(f'{signal.strsignal(sig_no)}, setting finish to True')
+    logging.info(f'{signal.strsignal(sig_no)}, setting finish to True')
     finish = True
     dao.stop()
     mq_client.stop()
@@ -58,9 +57,9 @@ async def main():
     """
     global mq_client, rx_channel, tx_channel, finish
 
-    logger.info('===============================================================')
-    logger.info('               STARTING LOGICAL MAPPER')
-    logger.info('===============================================================')
+    logging.info('===============================================================')
+    logging.info('               STARTING LOGICAL MAPPER')
+    logging.info('===============================================================')
 
     rx_channel = mq.RxChannel(exchange_name=BrokerConstants.PHYSICAL_TIMESERIES_EXCHANGE_NAME, exchange_type=ExchangeType.fanout, queue_name='lm_physical_timeseries', on_message=on_message)
     tx_channel = mq.TxChannel(exchange_name=BrokerConstants.LOGICAL_TIMESERIES_EXCHANGE_NAME, exchange_type=ExchangeType.fanout)
@@ -99,10 +98,10 @@ def on_message(channel, method, properties, body):
         p_uid = msg[BrokerConstants.PHYSICAL_DEVICE_UID_KEY]
         mapping = dao.get_current_device_mapping(p_uid)
         if mapping is None:
-            logger.info(f'No mapping found, creating logical device for physical device uid: {p_uid}.')
+            logging.info(f'No mapping found, creating logical device for physical device uid: {p_uid}.')
             pd = dao.get_physical_device(p_uid)
             if pd is None:
-                logger.warning(f'Physical device not found, cannot continue, dropping message.')
+                logging.error(f'Physical device not found, cannot continue, dropping message.')
                 # Reject the message, do not requeue.
                 rx_channel._channel.basic_reject(delivery_tag, False)
                 return
@@ -114,10 +113,10 @@ def on_message(channel, method, properties, body):
             # properties with the information they need to recognise the device in future.
             props = {'creation_correlation_id': msg[BrokerConstants.CORRELATION_ID_KEY]}
             ld = LogicalDevice(name=pd.name, location=pd.location, last_seen=pd.last_seen, properties=props)
-            logger.info(f'Creating logical device {ld}')
+            logging.info(f'Creating logical device {ld}')
             ld = dao.create_logical_device(ld)
             mapping = PhysicalToLogicalMapping(pd=pd, ld=ld, start_time=datetime.datetime.now(datetime.timezone.utc))
-            logger.info(f'Creating mapping {mapping}')
+            logging.info(f'Creating mapping {mapping}')
             dao.insert_mapping(mapping)
         else:
             # Temporary so we can check the TTN app_id while testing.
@@ -127,17 +126,18 @@ def on_message(channel, method, properties, body):
         broker_apps = ['oai-test-devices', 'ndvi-dpi-hemistop', 'ndvisoil-dpi-stop5tm', 'stoneleigh-strega']
         publish = pd.source_name != 'ttn' or pd.source_ids['app_id'] in broker_apps
         if publish:
-            #logger.info(f'Forwarding message from {mapping.pd.name} --> {mapping.ld.name}: {msg["timestamp"]} {msg["timeseries"]}')
+            #logging.info(f'Forwarding message from {mapping.pd.name} --> {mapping.ld.name}: {msg["timestamp"]} {msg["timeseries"]}')
             msg[BrokerConstants.LOGICAL_DEVICE_UID_KEY] = mapping.ld.uid
             tx_channel.publish_message('logical_timeseries', msg)
         else:
-            logger.info(f'Skipping message from {pd.source_ids}, correlation_id: {msg[BrokerConstants.CORRELATION_ID_KEY]}')
+            logging.debug(f'Skipping message from {pd.source_ids}, correlation_id: {msg[BrokerConstants.CORRELATION_ID_KEY]}')
 
         # This tells RabbitMQ the message is handled and can be deleted from the queue.
         rx_channel._channel.basic_ack(delivery_tag)
 
     except BaseException as e:
-        logger.warning(f'Caught: {e}')
+        logging.exception('Error while processing message')
+        rx_channel._channel.basic_reject(delivery_tag)
 
 
 if __name__ == '__main__':
@@ -147,4 +147,4 @@ if __name__ == '__main__':
 
     # Does not return until SIGTERM is received.
     asyncio.run(main())
-    logger.info('Exiting.')
+    logging.info('Exiting.')

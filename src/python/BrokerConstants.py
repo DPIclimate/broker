@@ -17,3 +17,5 @@ LAST_MESSAGE_HASH_KEY = 'last_message_hash'
 
 PHYSICAL_TIMESERIES_EXCHANGE_NAME = 'pts_exchange'
 LOGICAL_TIMESERIES_EXCHANGE_NAME = 'lts_exchange'
+
+LOGGER_FORMAT='%(asctime)s|%(levelname)-7s|%(module)s|%(message)s'

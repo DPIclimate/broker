@@ -1,0 +1,35 @@
+{
+    "version": 1,
+    "formatters": {
+        "broker_std": {
+            "format": "%(asctime)s|%(levelname)-7s|%(module)s|%(message)s",
+            "datefmt": "%Y-%m-%dT%H:%M:%S%z"
+        },
+        "broker_cid": {
+            "format": "%(asctime)s|%(levelname)-7s|%(module)s|%(broker_correlation_id)s|%(message)s",
+            "datefmt": "%Y-%m-%dT%H:%M:%S%z"
+        }
+    },
+    "handlers": {
+        "console_std": {
+            "class": "logging.StreamHandler",
+            "level": "INFO",
+            "formatter": "broker_std"
+        },
+        "console_cid": {
+            "class": "logging.StreamHandler",
+            "level": "DEBUG",
+            "formatter": "broker_cid"
+        }
+    },
+    "loggers": {
+        "root": {
+            "handlers": ["console_std"],
+            "level": "INFO"
+        },
+        "with_cid": {
+            "handlers": ["console_cid"],
+            "level": "DEBUG"
+        }
+    }
+}

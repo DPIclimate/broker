@@ -16,9 +16,6 @@ from pika.exchange_type import ExchangeType
 import asyncio, json, logging, os
 from enum import Enum, auto
 
-logging.basicConfig(level=logging.INFO, format='%(asctime)s %(name)s: %(message)s', datefmt='%Y-%m-%dT%H:%M:%S%z')
-logger = logging.getLogger(__name__)
-
 _user = os.environ['RABBITMQ_DEFAULT_USER']
 _passwd = os.environ['RABBITMQ_DEFAULT_PASS']
 _host = os.environ['RABBITMQ_HOST']
@@ -46,7 +43,7 @@ class RabbitMQConnection(object):
         self.stopped = False
 
         self.channels = channels
-        logger.info(f'given channels {self.channels}')
+        logging.debug(f'given channels {self.channels}')
 
 
     async def connect(self, delay=0):
@@ -56,10 +53,10 @@ class RabbitMQConnection(object):
         """
         self.state = State.OPENING
         if delay > 0:
-            logger.info(f'Waiting for {delay}s before connection attempt.')
+            logging.debug(f'Waiting for {delay}s before connection attempt.')
             await asyncio.sleep(delay)
 
-        logger.info('Connecting to %s', _amqp_url_str)
+        logging.info('Connecting to %s', _amqp_url_str)
         return AsyncioConnection(
             pika.URLParameters(_amqp_url_str),
             on_open_callback=self.on_connection_open,
@@ -72,12 +69,12 @@ class RabbitMQConnection(object):
         Now the connection is open a channel can be opened. Channels
         are 'virtual connections' where all operations are performed.
         """
-        logger.info('Connection opened')
+        logging.info('Connection opened')
         self._connection = connection
         self.state = State.OPEN
 
         for z in self.channels:
-            logger.info(f'Opening channel {z}, of type {type(z)}')
+            logging.info(f'Opening channel {z}, of type {type(z)}')
             z.open(self._connection)
 
 
@@ -88,9 +85,9 @@ class RabbitMQConnection(object):
 
         Consider backing off the delay to some maximum value.
         """
-        logger.error('Connection open failed: %s', err)
+        logging.error('Connection open failed: %s', err)
         if not self._stopping:
-            asyncio.create_task(self.connect(5))
+            asyncio.create_task(self.connect(60))
         else:
             self.state = State.CLOSED
 
@@ -103,12 +100,12 @@ class RabbitMQConnection(object):
 
         Consider backing off the delay to some maximum value.
         """
-        logger.warning('Connection closed: %s', reason)
+        logging.warning('Connection closed: %s', reason)
         for z in self.channels:
             z.is_open = False
 
         if not self._stopping:
-            asyncio.create_task(self.connect(5))
+            asyncio.create_task(self.connect(60))
         else:
             self.state = State.CLOSED
             self.stopped = True
@@ -152,13 +149,13 @@ class TxChannel(object):
 
 
     def on_channel_open(self, channel):
-        logger.warning(f'Opened tx channel {channel} to server {_amqp_url_str}')
+        logging.debug(f'Opened tx channel {channel} to server {_amqp_url_str}')
         self._channel = channel
         self._message_number = 0
         self._channel.add_on_close_callback(self.on_channel_closed)
         self._channel.confirm_delivery(self.on_delivery_confirmation)
 
-        logger.info(f'Declaring exchange {self._exchange_name}')
+        logging.debug(f'Declaring exchange {self._exchange_name}')
         self._channel.exchange_declare(
             exchange=self._exchange_name,
             exchange_type=self._exchange_type,
@@ -167,13 +164,13 @@ class TxChannel(object):
 
 
     def on_channel_closed(self, channel, reason):
-        logger.warning(f'Channel {channel} to exchange {self._exchange_name} was closed: {reason}')
+        logging.debug(f'Channel {channel} to exchange {self._exchange_name} was closed: {reason}')
         self._channel = None
         self.is_open = False
 
 
     def on_exchange_declareok(self, method):
-        logger.info(f'Exchange {self._exchange_name} declared ok, ready to send.')
+        logging.info(f'Exchange {self._exchange_name} declared ok, ready to send.')
         self.is_open = True
         if self._on_ready is not None:
             asyncio.create_task(self._on_ready(self))
@@ -242,11 +239,11 @@ class RxChannel(object):
 
 
     def on_channel_open(self, channel):
-        logger.warning(f'Opened rx channel {channel} to server {_amqp_url_str}')
+        logging.debug(f'Opened rx channel {channel} to server {_amqp_url_str}')
         self._channel = channel
         self._channel.add_on_close_callback(self.on_channel_closed)
 
-        logger.info(f'Declaring exchange {self._exchange_name}')
+        logging.debug(f'Declaring exchange {self._exchange_name}')
         self._channel.exchange_declare(
             exchange=self._exchange_name,
             exchange_type=self._exchange_type,
@@ -255,30 +252,30 @@ class RxChannel(object):
 
 
     def on_channel_closed(self, channel, reason):
-        logger.warning(f'Channel {channel} to exchange {self._exchange_name} was closed: {reason}')
+        logging.warning(f'Channel {channel} to exchange {self._exchange_name} was closed: {reason}')
         self._channel = None
         self.is_open = False
 
 
     def on_exchange_declareok(self, method):
-        logger.info(f'Exchange {self._exchange_name} declared ok, declaring queue {self._queue_name}.')
+        logging.debug(f'Exchange {self._exchange_name} declared ok, declaring queue {self._queue_name}.')
         self._channel.queue_declare(queue=self._queue_name, durable=True, callback=self.on_queue_declareok)
 
 
     def on_queue_declareok(self, q_declare_ok):
-        logger.info(f'Binding queue {self._queue_name} to exchange {self._exchange_name} with routing key {self._routing_key}')
+        logging.debug(f'Binding queue {self._queue_name} to exchange {self._exchange_name} with routing key {self._routing_key}')
         self._channel.queue_bind(self._queue_name, self._exchange_name, routing_key=self._routing_key, callback=self.on_bindok)
 
 
     def on_bindok(self, _unused_frame):
-        logger.info('Adding channel cancellation callback, start listening for messages.')
+        logging.info('Adding channel cancellation callback, start listening for messages.')
         self._channel.add_on_cancel_callback(self.on_consumer_cancelled)
         self._consumer_tag = self._channel.basic_consume(self._queue_name, self._on_message)
         self.is_open = True
 
 
     def on_consumer_cancelled(self, method_frame):
-        logger.info('Consumer was cancelled remotely, shutting down: %r', method_frame)
+        logging.warning('Consumer was cancelled remotely, shutting down: %r', method_frame)
         if self._channel and self._channel.is_open:
             self._channel.close()
             self.is_open = False

@@ -4,9 +4,6 @@ import datetime, json, logging, os, time
 
 from pdmodels.Models import Location, LogicalDevice
 
-logging.basicConfig(level=logging.INFO, format='%(asctime)s %(name)s: %(message)s', datefmt='%Y-%m-%dT%H:%M:%S%z')
-logger = logging.getLogger(__name__)
-
 BASE_1_6 = "https://industrial.api.ubidots.com/api/v1.6"
 BASE_2_0 = "https://industrial.api.ubidots.com/api/v2.0"
 
@@ -58,7 +55,7 @@ def _dict_to_logical_device(ubidots_dict) -> LogicalDevice:
     """
     This method assumes the JSON returned from an API 2.0 call.
     """
-    logger.info(f'dict from ubidots: {ubidots_dict}')
+    logging.debug(f'dict from ubidots: {ubidots_dict}')
 
     last_seen = datetime.datetime.now(datetime.timezone.utc)
     if 'lastActivity' in ubidots_dict:
@@ -82,14 +79,13 @@ def get_all_devices() -> List[LogicalDevice]:
         time.sleep(0.3)
         url = f'{BASE_2_0}/devices/?page={page}'
         r = requests.get(url, headers=headers)
-        logger.info(r.status_code)
         if r.status_code != 200:
-            logger.warn(f'devices/ received response: {r.status_code}: {r.reason}')
-            logger.warn('Returning before all devices were retrieved.')
+            logging.warn(f'devices/ received response: {r.status_code}: {r.reason}')
+            logging.warn('Returning before all devices were retrieved.')
             break
 
         response_obj = json.loads(r.content)
-        logger.info(f'Adding {len(response_obj["results"])} devices to array.')
+        logging.debug(f'Adding {len(response_obj["results"])} devices to array.')
 
         for u in response_obj['results']:
             devices.append(_dict_to_logical_device(u))
@@ -99,9 +95,6 @@ def get_all_devices() -> List[LogicalDevice]:
             
         page += 1
 
-        # Don't upset ubidots with too many calls per second.
-        time.sleep(1)
-
     return devices
 
 
@@ -109,9 +102,8 @@ def get_device(label: str) -> LogicalDevice:
         url = f'{BASE_2_0}/devices/~{label}'
         time.sleep(0.3)
         r = requests.get(url, headers=headers)
-        logger.info(r.status_code)
         if r.status_code != 200:
-            logger.warn(f'devices/{label} received response: {r.status_code}: {r.reason}')
+            logging.warn(f'devices/~{label} received response: {r.status_code}: {r.reason}')
             return None
 
         response_obj = json.loads(r.content)
@@ -137,20 +129,18 @@ def post_device_data(label: str, body) -> None:
     time.sleep(0.3)
     r = requests.post(url, headers=hdrs, data=body_str)
     if r.status_code != 200:
-        logger.warning(url)
-        logger.warning(r)
+        logging.warning(f'POST {url}: {r.status_code}: {r.reason}')
 
 
 def update_device(label: str, patch_obj) -> None:
     url = f'{BASE_2_0}/devices/~{label}'
     time.sleep(0.3)
     response = requests.patch(url, headers=headers, json=patch_obj)
-    print(f'PATCH response: {response.status_code}: {response.reason}')
+    if response.status_code != 200:
+        logging.warning(f'PATCH response: {response.status_code}: {response.reason}')
 
 
 def main():
-    #devs = get_all_devices()
-    #print(len(devs))
     pass
 
 

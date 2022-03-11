@@ -6,17 +6,12 @@
 #
 
 from fastapi import FastAPI, Query, HTTPException, Request, Response, status
-from fastapi.responses import JSONResponse
-import json, logging, os, sys
-from typing import Dict, List, Optional
+from typing import Dict, List
 
 from pdmodels.Models import DeviceNote, PhysicalDevice, LogicalDevice, PhysicalToLogicalMapping
 import api.client.DAO as dao
 
 app = FastAPI(title='IoT Device Broker', version="1.0.0")
-
-logging.basicConfig(level=logging.INFO, format='%(asctime)s %(name)s: %(message)s', datefmt='%Y-%m-%dT%H:%M:%S%z')
-logger = logging.getLogger(__name__)
 
 """
 An example of how we might do not-very-good authentication for the

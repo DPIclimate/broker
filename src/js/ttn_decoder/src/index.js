@@ -41,7 +41,7 @@ app.post('/', (req, res) => {
     var msgOk = false;
     if (ttnMsg.hasOwnProperty("uplink_message")) {
         const uplink_message = ttnMsg.uplink_message;
-        if (uplink_message.hasOwnProperty("frm_payload") && uplink_message.hasOwnProperty("f_port") && uplink_message.hasOwnProperty("received_at")) {
+        if (uplink_message.hasOwnProperty("frm_payload") && uplink_message.hasOwnProperty("f_port")) {
             port = uplink_message.f_port;
             payload_raw = uplink_message.frm_payload;
             msgOk = true;
@@ -49,7 +49,7 @@ app.post('/', (req, res) => {
     }
 
     if (msgOk != true) {
-        throw new Error('Invalid message.');
+        throw new Error('Did not find port and payload information in message.');
     }
 
     var input = {

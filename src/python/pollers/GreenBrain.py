@@ -12,7 +12,7 @@ It can specify it's period, have an init function and an execute (or poll) funct
 
    Keep the most recent poll response hash in the physical device properties so we can see
    which values are new. Every 'dot' from Green Brain has its own timestamp and not all
-   of them are the same - for instance the logger status values can fall behind, so using
+   of them are the same - for instance the logging status values can fall behind, so using
    timestamps is difficult.
 
    Perhaps we need to keep the entire most recent response so if the hashes do differ we
@@ -33,9 +33,7 @@ from pdmodels.Models import Location, PhysicalDevice
 from pika.exchange_type import ExchangeType
 import api.client.RabbitMQ as mq
 
-
-logging.basicConfig(level=logging.INFO, format='%(asctime)s %(name)s: %(message)s', datefmt='%Y-%m-%dT%H:%M:%S%z')
-logger = logging.getLogger(__name__)
+logging.basicConfig(level=logging.INFO, format=BrokerConstants.LOGGER_FORMAT, datefmt='%Y-%m-%dT%H:%M:%S%z')
 
 _users = []
 _passwords = []
@@ -71,16 +69,16 @@ _sensor_group_reponse_hashes = {}
 def download_bootstrap_info():
     global _accounts
     cached = False
-    b_json = pathlib.Path('b.json')
+    b_json = pathlib.Path(f'{os.getenv("HOME")}/bootstrap.json')
     if b_json.exists() and b_json.is_file():
-        logger.info(f'Loading cached info from {str(b_json)}')
+        logging.info(f'Loading cached info from {str(b_json)}')
         with open(b_json, 'r') as f:
             _accounts = json.load(f)
         cached = True
 
     url = f'{_BASE_URL}/auth/login'
     for user, password in zip(_users, _passwords):
-        logger.info(f'Authenticating user {user}')
+        logging.info(f'Authenticating user {user}')
         if user not in _accounts:
             _accounts[user] = {}
 
@@ -89,19 +87,23 @@ def download_bootstrap_info():
             body_obj = r.json()
             _accounts[user]['auth'] = body_obj
         else:
-            raise r
+            logging.error(f'Authentication for user {user} failed.')
 
     if cached:
         return
     
     for username, account in _accounts.items():
-        logger.info(f'Downloading info for user {username}')
+        logging.info(f'Downloading info for user {username}')
+        if 'auth' not in account:
+            logging.warning(f'Skippong unauthenticated user {username}')
+            continue
+
         token = account['auth']['token']
         h = {'Authorization': f'bearer {token}', 'Accept': 'application/json'}
 
         # The bootstrap call returns all the station and device information for
         # the account. This is where the physical devices will be found.
-        logger.info('bootstrap')
+        logging.info('Downloading bootstrap information for user {username}')
         r = requests.get(f'{_BASE_URL}/bootstrap', headers=h)
         if r.status_code == 200:
             account['bootstrap'] = r.json()
@@ -115,7 +117,7 @@ def download_bootstrap_info():
         # The -types and -models API calls provide descriptive information
         # for the various ids that are returned in the bootstrap object,
         # like lookup tables in a database.
-        logger.info('station-types')
+        logging.info('station-types')
         r = requests.get(f'{_BASE_URL}/station-types', headers=h)
         if r.status_code == 200:
             account['station_types'] = {}
@@ -126,7 +128,7 @@ def download_bootstrap_info():
         else:
             raise r
 
-        logger.info('sensor-group-types')
+        logging.info('sensor-group-types')
         r = requests.get(f'{_BASE_URL}/sensor-group-types', headers=h)
         if r.status_code == 200:
             sgt_list = r.json()
@@ -136,7 +138,7 @@ def download_bootstrap_info():
         else:
             raise r
 
-        logger.info('sensor-group-models')
+        logging.info('sensor-group-models')
         r = requests.get(f'{_BASE_URL}/sensor-group-models', headers=h)
         if r.status_code == 200:
             account['sensor_group_models'] = {}
@@ -146,7 +148,7 @@ def download_bootstrap_info():
         else:
             raise r
 
-        logger.info('sensor-types')
+        logging.info('sensor-types')
         r = requests.get(f'{_BASE_URL}/sensor-types', headers=h)
         if r.status_code == 200:
             account['sensor_types'] = {}
@@ -156,8 +158,8 @@ def download_bootstrap_info():
         else:
             raise r
 
-        logger.info('Saving downloaded information.')
-        with open("a.json", 'w') as f:
+        logging.info('Saving downloaded information.')
+        with open(b_json, 'w') as f:
             json.dump(_accounts, f)
 
 
@@ -173,23 +175,27 @@ def initialise_message_hashes() -> None:
 
 
 def poll() -> None:
-    logger.info('Start of poll cycle')
+    logging.info('Start of poll cycle')
     for account in _accounts.values():              # Green Brain account level, eg a.b@xyz.com
+        if 'auth' not in account:
+            logging.warning('Skipping unauthenticated user.')
+            continue
+
         token = account['auth']['token']
         h = {'Authorization': f'bearer {token}', 'Accept': 'application/json'}
         bootstrap = account['bootstrap']
         for system in bootstrap['systems']:         # Systems are sites, such as Griffith Research Station.
-            logger.info(f'System: {system["name"]}')
+            logging.info(f'System: {system["name"]}')
             for station in system['stations']:      # Stations are data logging nodes such as an ICT node.
-                logger.info(f'Station: {station["name"]}')
+                logging.info(f'Station: {station["name"]}')
                 for sg in station['sensorGroups']:  # Sensor groups are devices attached to stations, eg an env pro
                     sg_id = sg['id']
-                    logger.info(f'Sensor group: {sg_id}: {sg["name"]}')
+                    logging.debug(f'Sensor group: {sg_id}: {sg["name"]}')
                     r = requests.get(f'{_BASE_URL}/sensor-groups/{sg_id}/latest', headers=h)
                     if r.status_code == 200:
                         process_sensor_group(station, sg_id, r.text, r.json())
                     else:
-                        logger.error(r)
+                        logging.error(r)
 
 
 # Passing in as text so we can use regexps to quickly find some things.
@@ -207,7 +213,7 @@ def process_sensor_group(station, sensor_group_id, text, json_obj) -> None:
     sg_id_str = str(sensor_group_id)
     if sg_id_str in _sensor_group_reponse_hashes:
         if _sensor_group_reponse_hashes[sg_id_str] == hash:
-            logger.info(f'Response for sensor group {sg_id_str} has not changed since the last poll.')
+            logging.info(f'Response for sensor group {sg_id_str} has not changed since the last poll.')
             return
 
     _sensor_group_reponse_hashes[sg_id_str] = hash
@@ -244,7 +250,7 @@ def process_sensor_group(station, sensor_group_id, text, json_obj) -> None:
 
     pds = dao.get_pyhsical_devices_using_source_ids(BrokerConstants.GREENBRAIN, source_ids)
     if len(pds) < 1:
-        logger.info(f'Physical device not found for sensor group {sensor_group_id}, creating a new one.')
+        logging.info(f'Physical device not found for sensor group {sensor_group_id}, creating a new one.')
         name = json_obj['sensorGroup']['name']
         
         try:
@@ -332,7 +338,7 @@ def sigterm_handler(sig_no, stack_frame) -> None:
     """
     global finish, mq_client
 
-    logger.info(f'{signal.strsignal(sig_no)}, setting finish to True')
+    logging.info(f'{signal.strsignal(sig_no)}, setting finish to True')
     finish = True
     dao.stop()
     mq_client.stop()
@@ -359,9 +365,9 @@ async def start_mq() -> None:
 async def main():
     global mq_client, finish
 
-    logger.info('===============================================================')
-    logger.info('               STARTING GREENBRAIN POLLER')
-    logger.info('===============================================================')
+    logging.info('===============================================================')
+    logging.info('               STARTING GREENBRAIN POLLER')
+    logging.info('===============================================================')
 
     await start_mq()
 
@@ -378,7 +384,7 @@ async def main():
 
 if __name__ == '__main__':
     if _users is None or len(_users) < 1:
-        logger.info('No users defined, exiting.')
+        logging.info('No users defined, exiting.')
     else:
         # Docker sends SIGTERM to tell the process the container is stopping so set
         # a handler to catch the signal and initiate an orderly shutdown.
@@ -386,4 +392,4 @@ if __name__ == '__main__':
 
         # Does not return until SIGTERM is received.
         asyncio.run(main())
-        logger.info('Exiting.')
+        logging.info('Exiting.')

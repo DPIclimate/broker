@@ -1,6 +1,5 @@
 from datetime import datetime
 import logging, re, warnings
-from numbers import Integral
 import psycopg2
 from psycopg2 import pool
 import psycopg2.errors
@@ -11,8 +10,6 @@ from typing import Any, Dict, List, Optional, Union
 
 from pdmodels.Models import DeviceNote, Location, LogicalDevice, PhysicalDevice, PhysicalToLogicalMapping
 
-logging.basicConfig(level=logging.INFO, format='%(asctime)s %(name)s: %(message)s', datefmt='%Y-%m-%dT%H:%M:%S%z')
-logger = logging.getLogger(__name__)
 logging.captureWarnings(True)
 
 class DAOException(Exception):
@@ -58,7 +55,7 @@ conn_pool = None
 
 
 def stop() -> None:
-    logger.info('Closing connection pool.')
+    logging.info('Closing connection pool.')
     conn_pool.closeall()
 
 
@@ -71,12 +68,12 @@ def _get_connection():
         # Try lazy initialisation the connection pool and Location/point
         # converter to give the db as much time as possible to start.
         if conn_pool is None:
-            logger.info('Creating connection pool, registering type converters.')
+            logging.info('Creating connection pool, registering type converters.')
             conn_pool = pool.ThreadedConnectionPool(1, 5)
             _register_type_adapters()
 
         conn = conn_pool.getconn()
-        logger.debug(f'Taking conn {conn}')
+        logging.debug(f'Taking conn {conn}')
         return conn
     except psycopg2.Error as err:
         raise DAOException('_get_connection() failed.', err)
@@ -91,7 +88,7 @@ def free_conn(conn) -> None:
     if conn is None:
         return
 
-    logger.debug(f'Returning conn {conn}')
+    logging.debug(f'Returning conn {conn}')
     if conn.closed == 0:
         conn.autocommit = False
 
@@ -158,7 +155,7 @@ def create_physical_device(device: PhysicalDevice) -> PhysicalDevice:
             dev_fields[k] = v if k not in ('source_ids', 'properties') else Json(v)
 
         with _get_connection() as conn, conn.cursor() as cursor:
-            #logger.info(cursor.mogrify("insert into physical_devices (source_name, name, location, last_seen, source_ids, properties) values (%(source_name)s, %(name)s, %(location)s, %(last_seen)s, %(source_ids)s, %(properties)s) returning uid", dev_fields))
+            #logging.info(cursor.mogrify("insert into physical_devices (source_name, name, location, last_seen, source_ids, properties) values (%(source_name)s, %(name)s, %(location)s, %(last_seen)s, %(source_ids)s, %(properties)s) returning uid", dev_fields))
             cursor.execute("insert into physical_devices (source_name, name, location, last_seen, source_ids, properties) values (%(source_name)s, %(name)s, %(location)s, %(last_seen)s, %(source_ids)s, %(properties)s) returning uid", dev_fields)
             uid = cursor.fetchone()[0]
             dev = _get_physical_device(conn, uid)
@@ -214,7 +211,7 @@ def get_pyhsical_devices_using_source_ids(source_name: str, source_ids: Dict[str
         with _get_connection() as conn, conn.cursor() as cursor:
             sql = 'select uid, source_name, name, location, last_seen, source_ids, properties from physical_devices where source_name = %s and source_ids @> %s order by uid asc'
             args = (source_name, Json(source_ids))
-            #logger.info(cursor.mogrify(sql, args))
+            #logging.info(cursor.mogrify(sql, args))
             cursor.execute(sql, args)
             for r in cursor:
                 dfr = _dict_from_row(cursor.description, r)
@@ -260,14 +257,14 @@ def get_physical_devices(query_args = {}) -> List[PhysicalDevice]:
                         add_and = True
                         sql = sql + clause
 
-            #logger.info(cursor.mogrify(sql, args))
+            #logging.info(cursor.mogrify(sql, args))
 
             cursor.execute(sql, args)
             devs = []
             cursor.arraysize = 200
             rows = cursor.fetchmany()
             while len(rows) > 0:
-                #logger.info(f'processing {len(rows)} rows.')
+                #logging.info(f'processing {len(rows)} rows.')
                 for r in rows:
                     d = PhysicalDevice.parse_obj(_dict_from_row(cursor.description, r))
                     devs.append(d)
@@ -297,8 +294,8 @@ def update_physical_device(device: PhysicalDevice) -> PhysicalDevice:
                     update_col_names.append(f'{name} = %s')
                     update_col_values.append(val if name not in ('source_ids', 'properties') else Json(val))
 
-            logger.debug(update_col_names)
-            logger.debug(update_col_values)
+            logging.debug(update_col_names)
+            logging.debug(update_col_values)
 
             if len(update_col_names) < 1:
                 return device
@@ -313,14 +310,13 @@ def update_physical_device(device: PhysicalDevice) -> PhysicalDevice:
             """
 
             with conn.cursor() as cursor:
-                logger.debug(cursor.mogrify(sql, update_col_values))
+                logging.debug(cursor.mogrify(sql, update_col_values))
                 cursor.execute(sql, update_col_values)
 
             return _get_physical_device(conn, device.uid)
     except DAODeviceNotFound as daonf:
         raise daonf
     except Exception as err:
-        print(err)
         raise err if isinstance(err, DAOException) else DAOException('update_physical_device failed.', err)
     finally:
         free_conn(conn)
@@ -454,13 +450,13 @@ def get_logical_devices(query_args = {}) -> List[LogicalDevice]:
                         add_and = True
                         sql = sql + clause
 
-            #logger.info(cursor.mogrify(sql, args))
+            #logging.info(cursor.mogrify(sql, args))
 
             cursor.execute(sql, args)
             cursor.arraysize = 200
             rows = cursor.fetchmany()
             while len(rows) > 0:
-                #logger.info(f'processing {len(rows)} rows.')
+                #logging.info(f'processing {len(rows)} rows.')
                 for r in rows:
                     d = LogicalDevice.parse_obj(_dict_from_row(cursor.description, r))
                     devs.append(d)
@@ -498,7 +494,7 @@ def update_logical_device(device: LogicalDevice) -> LogicalDevice:
             sql = f'''update logical_devices set {','.join(update_col_names)} where uid = %s'''
 
             with conn.cursor() as cursor:
-                logger.debug(cursor.mogrify(sql, update_col_values))
+                logging.debug(cursor.mogrify(sql, update_col_values))
                 cursor.execute(sql, update_col_values)
 
             updated_device = _get_logical_device(conn, device.uid)
@@ -548,7 +544,7 @@ def insert_mapping(mapping: PhysicalToLogicalMapping) -> None:
     except psycopg2.errors.UniqueViolation as err:
         raise DAOUniqeConstraintException(f'Mapping already exists: {mapping.pd.uid} -> {mapping.ld.uid}, starting at {mapping.start_time}.', err)
     except Exception as err:
-        print(type(err), err)
+        logging.debug(type(err), err)
         raise DAOException('insert_mapping failed.', err)
     finally:
         free_conn(conn)
