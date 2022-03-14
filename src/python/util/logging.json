@@ -1,12 +1,13 @@
 {
     "version": 1,
+    "disable_existing_loggers": true,
     "formatters": {
         "broker_std": {
             "format": "%(asctime)s|%(levelname)-7s|%(module)s|%(message)s",
             "datefmt": "%Y-%m-%dT%H:%M:%S%z"
         },
         "broker_cid": {
-            "format": "%(asctime)s|%(levelname)-7s|%(module)s|%(broker_correlation_id)s|%(message)s",
+            "format": "%(asctime)s|%(levelname)-7s|%(broker_correlation_id)s|%(module)s|%(message)s",
             "datefmt": "%Y-%m-%dT%H:%M:%S%z"
         }
     },
@@ -18,18 +19,19 @@
         },
         "console_cid": {
             "class": "logging.StreamHandler",
-            "level": "DEBUG",
+            "level": "INFO",
             "formatter": "broker_cid"
         }
     },
+    "root": {
+        "handlers": ["console_std"],
+        "level": "INFO"
+    },
     "loggers": {
-        "root": {
-            "handlers": ["console_std"],
-            "level": "INFO"
-        },
         "with_cid": {
             "handlers": ["console_cid"],
-            "level": "DEBUG"
+            "level": "INFO",
+            "propagate": false
         }
     }
 }

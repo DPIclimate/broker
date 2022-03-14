@@ -136,7 +136,7 @@ async def webhook_endpoint(msg: JSONObject, background_tasks: BackgroundTasks) -
     app_ids = end_device_ids['application_ids']
     app_id = app_ids['application_id']
 
-    lu.cid_logger.debug(f'Accepted message from {app_id}:{dev_id}', extra=msg_with_cid)
+    lu.cid_logger.info(f'Accepted message from {app_id}:{dev_id}', extra=msg_with_cid)
 
     filename = get_cache_filename(msg)
     with open(filename, 'w') as f:

@@ -24,8 +24,7 @@ from pdmodels.Models import LogicalDevice, PhysicalToLogicalMapping
 from pika.exchange_type import ExchangeType
 import api.client.RabbitMQ as mq
 import api.client.DAO as dao
-
-logging.basicConfig(level=logging.INFO, format=BrokerConstants.LOGGER_FORMAT, datefmt='%Y-%m-%dT%H:%M:%S%z')
+import util.LoggingUtil as lu
 
 rx_channel = None
 tx_channel = None
@@ -98,10 +97,10 @@ def on_message(channel, method, properties, body):
         p_uid = msg[BrokerConstants.PHYSICAL_DEVICE_UID_KEY]
         mapping = dao.get_current_device_mapping(p_uid)
         if mapping is None:
-            logging.info(f'No mapping found, creating logical device for physical device uid: {p_uid}.')
+            lu.cid_logger.info(f'No mapping found, creating logical device for physical device uid: {p_uid}.', extra=msg)
             pd = dao.get_physical_device(p_uid)
             if pd is None:
-                logging.error(f'Physical device not found, cannot continue, dropping message.')
+                lu.cid_logger.error(f'Physical device not found, cannot continue, dropping message.', extra=msg)
                 # Reject the message, do not requeue.
                 rx_channel._channel.basic_reject(delivery_tag, False)
                 return
@@ -113,14 +112,16 @@ def on_message(channel, method, properties, body):
             # properties with the information they need to recognise the device in future.
             props = {'creation_correlation_id': msg[BrokerConstants.CORRELATION_ID_KEY]}
             ld = LogicalDevice(name=pd.name, location=pd.location, last_seen=pd.last_seen, properties=props)
-            logging.info(f'Creating logical device {ld}')
+            lu.cid_logger.info(f'Creating logical device {ld}', extra=msg)
             ld = dao.create_logical_device(ld)
             mapping = PhysicalToLogicalMapping(pd=pd, ld=ld, start_time=datetime.datetime.now(datetime.timezone.utc))
-            logging.info(f'Creating mapping {mapping}')
+            lu.cid_logger.info(f'Creating mapping {mapping}', extra=msg)
             dao.insert_mapping(mapping)
         else:
             # Temporary so we can check the TTN app_id while testing.
             pd = dao.get_physical_device(p_uid)
+
+        lu.cid_logger.info(f'Accepted message from {pd.name}', extra=msg)
 
         # Don't publish most TTN traffic yet.
         broker_apps = ['oai-test-devices', 'ndvi-dpi-hemistop', 'ndvisoil-dpi-stop5tm', 'stoneleigh-strega']
@@ -130,7 +131,7 @@ def on_message(channel, method, properties, body):
             msg[BrokerConstants.LOGICAL_DEVICE_UID_KEY] = mapping.ld.uid
             tx_channel.publish_message('logical_timeseries', msg)
         else:
-            logging.debug(f'Skipping message from {pd.source_ids}, correlation_id: {msg[BrokerConstants.CORRELATION_ID_KEY]}')
+            lu.cid_logger.debug(f'Skipping message from {pd.source_ids}', extra=msg)
 
         # This tells RabbitMQ the message is handled and can be deleted from the queue.
         rx_channel._channel.basic_ack(delivery_tag)

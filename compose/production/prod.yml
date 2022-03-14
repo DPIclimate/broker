@@ -13,11 +13,11 @@ services:
 
   restapi:
     ports:
-      - "5687:5687"
+      - "127.0.0.1:5687:5687"
 
   ttn_webhook:
     ports:
-      - "5688:5688"
+      - "127.0.0.1:5688:5688"
 
   pollers:
     image: broker/python-base

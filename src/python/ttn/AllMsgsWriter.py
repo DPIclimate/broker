@@ -19,7 +19,7 @@ import api.client.TTNAPI as ttn
 
 import api.client.DAO as dao
 
-logging.basicConfig(level=logging.INFO, format=BrokerConstants.LOGGER_FORMAT, datefmt='%Y-%m-%dT%H:%M:%S%z')
+import util.LoggingUtil as lu
 
 rx_channel: mq.RxChannel = None
 tx_channel: mq.TxChannel = None
@@ -129,14 +129,13 @@ def on_message(channel, method, properties, body):
         dev_id = msg['end_device_ids']['device_id']
         dev_eui = msg['end_device_ids']['dev_eui'].lower()
 
-        #logging.info(f'Accepted message from {app_id}:{dev_id}, correlation_id: {correlation_id}')
+        lu.cid_logger.info(f'Accepted message from {app_id}:{dev_id}', extra=msg_with_cid)
 
         last_seen = None
-
         received_at = get_received_at(msg)
         # We should always get a value in the message for this, but default to 'now' just in case.
         if received_at is None:
-            logging.warning(f'Defaulting received_at to \'now\' bcause it was not found in a message from device {app_id}/{dev_id}.')
+            lu.cid_logger.warning(f'Defaulting received_at to \'now\' bcause it was not found in a message from device {app_id}/{dev_id}.', extra=msg_with_cid)
             received_at = datetime.datetime.now(datetime.timezone.utc).isoformat()
 
         last_seen = dateutil.parser.isoparse(received_at)
@@ -154,9 +153,9 @@ def on_message(channel, method, properties, body):
 
         pds = dao.get_pyhsical_devices_using_source_ids(BrokerConstants.TTN, source_ids)
         if len(pds) < 1:
-            logging.info('Device not found, creating physical device.')
+            lu.cid_logger.info('Device not found, creating physical device.', extra=msg_with_cid)
             ttn_dev = ttn.get_device_details(app_id, dev_id)
-            logging.info(f'Device info from TTN: {ttn_dev}')
+            lu.cid_logger.info(f'Device info from TTN: {ttn_dev}', extra=msg_with_cid)
 
             dev_name = ttn_dev['name'] if 'name' in ttn_dev else dev_id
             dev_loc = Location.from_ttn_device(ttn_dev)
@@ -182,7 +181,7 @@ def on_message(channel, method, properties, body):
                 pd = dao.update_physical_device(pd)
 
         if pd is None:
-            logging.error(f'Physical device not found, message processing ends now. {correlation_id}')
+            lu.cid_logger.error(f'Physical device not found, message processing ends now. {correlation_id}', extra=msg_with_cid)
             rx_channel._channel.basic_ack(delivery_tag)
             return
 
@@ -193,34 +192,34 @@ def on_message(channel, method, properties, body):
                 def serialise_datetime(obj):
                     if isinstance(obj, datetime.datetime):
                         return obj.isoformat()
-                    logging.warning(f'Cannot serialise {type(obj)}, {obj}')
+                    lu.cid_logger.warning(f'Cannot serialise {type(obj)}, {obj}', extra=msg_with_cid)
                     return "NO CONVERSION"
 
                 #pd.properties['decoder_name'] = 'temphumid-netvox-r718a'
                 data = json.dumps({'device':pd.dict(), 'message':msg}, default=serialise_datetime)
-                logging.debug(data)
+                lu.cid_logger.debug(data, extra=msg_with_cid)
                 r = requests.post('http://ttn_decoder:3001/', headers=_decoder_req_headers, data=data)
                 if r.status_code != 200:
-                    logging.error(f'Decoding failed for {app_id}:{dev_id} {correlation_id}')
+                    lu.cid_logger.error(f'Decoding failed for {app_id}:{dev_id} {correlation_id}', extra=msg_with_cid)
                 else:
                     decoded_payload = r.json()
                     if 'data' in decoded_payload:
                         decoded_payload = decoded_payload['data']
-                        logging.debug(f'Broker decoded payload: {decoded_payload}')
+                        lu.cid_logger.debug(f'Broker decoded payload: {decoded_payload}', extra=msg_with_cid)
                     else:
-                        logging.warn(f'No data element in {decoded_payload}')
+                        lu.cid_logger.warn(f'No data element in {decoded_payload}', extra=msg_with_cid)
 
             except Exception as err:
-                logging.exception('Local decoding of message failed.')
+                lu.cid_logger.exception('Local decoding of message failed.', extra=msg_with_cid)
 
             # This is a temporary check to confirm local decoders are working.
             if decoded_payload is not None and 'decoded_payload' in uplink_message:
                 uplink_decode = uplink_message['decoded_payload']
-                logging.debug(f'ttn decode: {uplink_decode}')
-                logging.debug(f'Checking if local and ttn decode are the same: {decoded_payload == uplink_decode}')
+                lu.cid_logger.debug(f'ttn decode: {uplink_decode}', extra=msg_with_cid)
+                lu.cid_logger.debug(f'Checking if local and ttn decode are the same: {decoded_payload == uplink_decode}', extra=msg_with_cid)
 
             if decoded_payload is None and 'decoded_payload' in uplink_message:
-                logging.warning('Using decoded_payload from uplink_message')
+                lu.cid_logger.warning('Using decoded_payload from uplink_message', extra=msg_with_cid)
                 decoded_payload = uplink_message['decoded_payload']
 
             if decoded_payload is not None:
@@ -240,17 +239,18 @@ def on_message(channel, method, properties, body):
                     # I think that means we need to hold off the ack in this method and only ack the message
                     # we got from ttn_raw when we get confirmation from the server that it has saved the message
                     # written to the physical_timeseries queue.
+                    #lu.cid_logger.debug(f'Publishing to physical messages exchange: {json.dumps(p_ts_msg)}', extra=msg_with_cid)
                     msg_id = tx_channel.publish_message('physical_timeseries', p_ts_msg)
                 else:
-                    logging.debug(f'Not publishing from disabled app {app_id}.')
+                    lu.cid_logger.debug(f'Not publishing from disabled app {app_id}.', extra=msg_with_cid)
             else:
-                logging.warning(f'No payload could be decoded from message {correlation_id}')
+                lu.cid_logger.warning(f'No payload could be decoded from message {correlation_id}', extra=msg_with_cid)
         else:
-            logging.warning(f'No uplink_message in: {body}')
+            lu.cid_logger.warning(f'No uplink_message in: {body}', extra=msg_with_cid)
 
         # This tells RabbitMQ the message is handled and can be deleted from the queue.    
         rx_channel._channel.basic_ack(delivery_tag)
-        logging.debug('Acking message from ttn_raw.')
+        lu.cid_logger.debug('Acking message from ttn_raw.', extra=msg_with_cid)
     except dao.DAOException as e:
         logging.exception('Error while processing message.')
         rx_channel._channel.basic_reject(delivery_tag)

@@ -13,8 +13,7 @@ import api.client.RabbitMQ as mq
 import api.client.Ubidots as ubidots
 
 import api.client.DAO as dao
-
-logging.basicConfig(level=logging.INFO, format=BrokerConstants.LOGGER_FORMAT, datefmt='%Y-%m-%dT%H:%M:%S%z')
+import util.LoggingUtil as lu
 
 rx_channel = None
 mq_client = None
@@ -102,16 +101,13 @@ def on_message(channel, method, properties, body):
 
     try:
         msg = json.loads(body)
-        logging.debug(f'Accepted message {msg}')
-
         l_uid = msg[BrokerConstants.LOGICAL_DEVICE_UID_KEY]
+        lu.cid_logger.info(f'Accepted message from logical device id {l_uid}', extra=msg)
         ld = dao.get_logical_device(l_uid)
         if ld is None:
-            logging.error(f'Could not find logical device, dropping message: {body}')
+            lu.cid_logger.error(f'Could not find logical device, dropping message: {body}', extra=msg)
             rx_channel._channel.basic_ack(delivery_tag)
             return
-
-        #logging.info(f'Logical device from mapping: {ld}')
 
         # TODO: Find or create a class to hide all the Python datetime horrors.
         ts_float = dateutil.parser.isoparse(msg[BrokerConstants.TIMESTAMP_KEY]).timestamp()
@@ -153,10 +149,10 @@ def on_message(channel, method, properties, body):
             # physical device source to decide what the label should be, and remember
             # to read the Ubidots device back after writing the timeseries data so
             # the device info can be stored in the logical device properties.
-            logging.info('No Ubidots label found in logical device.')
+            lu.cid_logger.info('No Ubidots label found in logical device.', extra=msg)
             pd = dao.get_physical_device(msg[BrokerConstants.PHYSICAL_DEVICE_UID_KEY])
             if pd is None:
-                logging.error(f'Could not find physical device, dropping message: {body}')
+                lu.cid_logger.error(f'Could not find physical device, dropping message: {body}', extra=msg)
                 rx_channel._channel.basic_ack(delivery_tag)
                 return
 
@@ -164,16 +160,16 @@ def on_message(channel, method, properties, body):
             ld.properties['ubidots'] = {}
             if pd.source_name == BrokerConstants.TTN:
                 ld.properties['ubidots']['label'] = pd.source_ids['dev_eui']
-                logging.info(f'Using physical device eui for label: {ld.properties["ubidots"]["label"]}')
+                lu.cid_logger.info(f'Using physical device eui for label: {ld.properties["ubidots"]["label"]}', extra=msg)
             elif pd.source_name == BrokerConstants.GREENBRAIN:
-                logging.info('Using system-station-sensor-group ids as label')
+                lu.cid_logger.info('Using system-station-sensor-group ids as label', extra=msg)
                 system_id = pd.source_ids['system_id']
                 station_id = pd.source_ids['station_id']
                 sensor_group_id = pd.source_ids['sensor_group_id']
                 ubi_label = f'{system_id}-{station_id}-{sensor_group_id}'
                 ld.properties['ubidots']['label'] = ubi_label
             else:
-                logging.warning(f'TODO: work with {pd.source_name} devices!')
+                lu.cid_logger.warning(f'TODO: work with {pd.source_name} devices!', extra=msg)
                 rx_channel._channel.basic_ack(delivery_tag)
                 return
 
@@ -183,7 +179,7 @@ def on_message(channel, method, properties, body):
         if new_device:
             # Update the Ubidots device with info from the source device and/or the
             # broker.
-            logging.info('Updating Ubidots device with information from source device.')
+            lu.cid_logger.info('Updating Ubidots device with information from source device.', extra=msg)
             patch_obj = {'name': ld.name}
             patch_obj['properties'] = {}
 
@@ -215,7 +211,7 @@ def on_message(channel, method, properties, body):
             # returned from Ubidots, but nothing else. We don't want to overwite the
             # last_seen value because that should be set to the timestamp from the
             # message, which was done in the mapper process.
-            logging.info('Updating logical device properties from Ubidots.')
+            lu.cid_logger.info('Updating logical device properties from Ubidots.', extra=msg)
             ud = ubidots.get_device(ubidots_dev_label)
             if ud is not None:
                 ld.properties['ubidots'] = ud.properties['ubidots']
@@ -227,7 +223,6 @@ def on_message(channel, method, properties, body):
     except BaseException as e:
         logging.exception('Error while processing message.')
         rx_channel._channel.basic_reject(delivery_tag)
-
 
 
 if __name__ == '__main__':
