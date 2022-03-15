@@ -207,7 +207,7 @@ def on_message(channel, method, properties, body):
                         decoded_payload = decoded_payload['data']
                         lu.cid_logger.debug(f'Broker decoded payload: {decoded_payload}', extra=msg_with_cid)
                     else:
-                        lu.cid_logger.warn(f'No data element in {decoded_payload}', extra=msg_with_cid)
+                        lu.cid_logger.warning(f'No data element in {decoded_payload}', extra=msg_with_cid)
 
             except Exception as err:
                 lu.cid_logger.exception('Local decoding of message failed.', extra=msg_with_cid)

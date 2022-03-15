@@ -17,10 +17,9 @@ information to the logical device properties object allowing the logical
 device to be associated with the IoT platform device.
 """
 
-import asyncio, datetime, json, logging, signal
+import asyncio, json, logging, signal
 
 import BrokerConstants
-from pdmodels.Models import LogicalDevice, PhysicalToLogicalMapping
 from pika.exchange_type import ExchangeType
 import api.client.RabbitMQ as mq
 import api.client.DAO as dao
@@ -95,39 +94,28 @@ def on_message(channel, method, properties, body):
         msg = json.loads(body)
 
         p_uid = msg[BrokerConstants.PHYSICAL_DEVICE_UID_KEY]
-        mapping = dao.get_current_device_mapping(p_uid)
-        if mapping is None:
-            lu.cid_logger.info(f'No mapping found, creating logical device for physical device uid: {p_uid}.', extra=msg)
-            pd = dao.get_physical_device(p_uid)
-            if pd is None:
-                lu.cid_logger.error(f'Physical device not found, cannot continue, dropping message.', extra=msg)
-                # Reject the message, do not requeue.
-                rx_channel._channel.basic_reject(delivery_tag, False)
-                return
-
-            # Create a logical device and mapping so the message can be published to the logical_timeseries
-            # queue. The logical device will be minimal - the same name and location as the physical device.
-            # The processes reading the logical_timeseries queue and sending the data onto IoT platforms
-            # are responsible for creating the device on the platform and updating the logical device
-            # properties with the information they need to recognise the device in future.
-            props = {'creation_correlation_id': msg[BrokerConstants.CORRELATION_ID_KEY]}
-            ld = LogicalDevice(name=pd.name, location=pd.location, last_seen=pd.last_seen, properties=props)
-            lu.cid_logger.info(f'Creating logical device {ld}', extra=msg)
-            ld = dao.create_logical_device(ld)
-            mapping = PhysicalToLogicalMapping(pd=pd, ld=ld, start_time=datetime.datetime.now(datetime.timezone.utc))
-            lu.cid_logger.info(f'Creating mapping {mapping}', extra=msg)
-            dao.insert_mapping(mapping)
-        else:
-            # Temporary so we can check the TTN app_id while testing.
-            pd = dao.get_physical_device(p_uid)
+        pd = dao.get_physical_device(p_uid)
+        if pd is None:
+            lu.cid_logger.error(f'Physical device not found, cannot continue. Dropping message.', extra=msg)
+            # Ack the message, even though we cannot process it. We don't want it redelivered.
+            # We can change this to a Nack if that would provide extra context somewhere.
+            rx_channel._channel.basic_ack(delivery_tag)
+            return
 
         lu.cid_logger.info(f'Accepted message from {pd.name}', extra=msg)
 
+        mapping = dao.get_current_device_mapping(p_uid)
+        if mapping is None:
+            lu.cid_logger.warning(f'No device mapping found for {pd.source_ids}, cannot continue. Dropping message.', extra=msg)
+            # Ack the message, even though we cannot process it. We don't want it redelivered.
+            # We can change this to a Nack if that would provide extra context somewhere.
+            rx_channel._channel.basic_ack(delivery_tag)
+            return
+
         # Don't publish most TTN traffic yet.
-        broker_apps = ['oai-test-devices', 'ndvi-dpi-hemistop', 'ndvisoil-dpi-stop5tm', 'stoneleigh-strega']
+        broker_apps = ['linpar-ict', 'oai-test-devices', 'ndvi-dpi-hemistop', 'ndvisoil-dpi-stop5tm', 'stoneleigh-strega', 'tankwater-ellenex-5m']
         publish = pd.source_name != 'ttn' or pd.source_ids['app_id'] in broker_apps
         if publish:
-            #logging.info(f'Forwarding message from {mapping.pd.name} --> {mapping.ld.name}: {msg["timestamp"]} {msg["timeseries"]}')
             msg[BrokerConstants.LOGICAL_DEVICE_UID_KEY] = mapping.ld.uid
             tx_channel.publish_message('logical_timeseries', msg)
         else:
