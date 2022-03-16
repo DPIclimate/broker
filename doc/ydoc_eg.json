@@ -1,0 +1,52 @@
+{
+    "device": {
+        "sn": 108172923,
+        "name": "House Paddock Rip 3 ",
+        "v": "4.4B6",
+        "imei": 352909081729234,
+        "sim": 89882280666027703515
+    },
+    "channels": [
+        {
+            "code": "P1",
+            "name": "Par1",
+            "unit": ""
+        },
+        {
+            "code": "P1*",
+            "name": "Par1*",
+            "unit": ""
+        },
+        {
+            "code": "SB",
+            "name": "Signal",
+            "unit": "bars"
+        },
+        {
+            "code": "SDB",
+            "name": "Signal strength",
+            "unit": "dBm"
+        },
+        {
+            "code": "AVGVi",
+            "name": "Average voltage",
+            "unit": "V"
+        },
+        {}
+    ],
+    "data": [
+        {
+            "$ts": 220316092245,
+            "$msg": "TEST_MSG"
+        },
+        {
+            "$ts": 220316092245,
+            "P1": "0*T",
+            "P1*": "0*T",
+            "SB": 2,
+            "SDB": -84,
+            "AVGVi": 3.31
+        },
+        {}
+    ]
+}

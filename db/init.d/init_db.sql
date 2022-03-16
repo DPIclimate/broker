@@ -76,4 +76,4 @@ create table if not exists physical_logical_map (
 
 create index if not exists pd_src_id_idx on physical_devices using GIN (source_ids);
 
-insert into sources values ('ttn'), ('greenbrain');
+insert into sources values ('ttn'), ('greenbrain'), ('ydoc');

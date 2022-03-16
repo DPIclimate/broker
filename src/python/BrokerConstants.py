@@ -9,7 +9,7 @@ TIMESERIES_KEY = 'timeseries'
 # Source names
 TTN = 'ttn'
 GREENBRAIN = 'greenbrain'
-
+YDOC = 'ydoc'
 
 CREATION_CORRELATION_ID_KEY = 'creation_correlation_id'
 SENSOR_GROUP_ID_KEY = 'sensor_group_id'

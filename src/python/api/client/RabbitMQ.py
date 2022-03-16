@@ -56,7 +56,7 @@ class RabbitMQConnection(object):
             logging.debug(f'Waiting for {delay}s before connection attempt.')
             await asyncio.sleep(delay)
 
-        logging.info('Connecting to %s', _amqp_url_str)
+        logging.info(f'Connecting to {_host} as {_user}')
         return AsyncioConnection(
             pika.URLParameters(_amqp_url_str),
             on_open_callback=self.on_connection_open,

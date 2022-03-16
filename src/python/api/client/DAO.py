@@ -56,7 +56,8 @@ conn_pool = None
 
 def stop() -> None:
     logging.info('Closing connection pool.')
-    conn_pool.closeall()
+    if conn_pool is not None:
+        conn_pool.closeall()
 
 
 def _get_connection():
