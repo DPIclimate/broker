@@ -216,8 +216,8 @@ def on_message(channel, method, properties, body):
             if decoded_payload is not None and 'decoded_payload' in uplink_message:
                 uplink_decode = uplink_message['decoded_payload']
                 lu.cid_logger.debug(f'ttn decode: {uplink_decode}', extra=msg_with_cid)
-                lu.cid_logger.debug(f'Checking if local and ttn decode are the same: {decoded_payload == uplink_decode}', extra=msg_with_cid)
-
+                if decoded_payload != uplink_decode:
+                    lu.cid_logger.warning(f'Local and ttn decode are different. {decoded_payload}, {uplink_decode}', extra=msg_with_cid)
             if decoded_payload is None and 'decoded_payload' in uplink_message:
                 lu.cid_logger.warning('Using decoded_payload from uplink_message', extra=msg_with_cid)
                 decoded_payload = uplink_message['decoded_payload']

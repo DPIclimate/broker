@@ -119,7 +119,7 @@ def on_message(channel, method, properties, body):
             msg[BrokerConstants.LOGICAL_DEVICE_UID_KEY] = mapping.ld.uid
             tx_channel.publish_message('logical_timeseries', msg)
         else:
-            lu.cid_logger.debug(f'Skipping message from {pd.source_ids}', extra=msg)
+            lu.cid_logger.warning(f'Skipping message from {pd.source_ids}', extra=msg)
 
         # This tells RabbitMQ the message is handled and can be deleted from the queue.
         rx_channel._channel.basic_ack(delivery_tag)
