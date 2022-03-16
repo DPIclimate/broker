@@ -10,14 +10,14 @@ services:
     volumes:
       - ../db/init.d:/docker-entrypoint-initdb.d
 
-
   mq:
     hostname: "mq"
     image: rabbitmq:3-management
     restart: "no"
     env_file:
       - .env
-
+    volumes:
+      - ../config/rabbitmq/enabled_plugins:/etc/rabbitmq/enabled_plugins
 
   restapi:
     image: broker/python-base
@@ -31,7 +31,6 @@ services:
     working_dir: "/home/broker/python/restapi"
     entrypoint: [ "/home/broker/.local/bin/uvicorn", "--proxy-headers", "--host", "0.0.0.0", "--port", "5687", "RestAPI:app" ]
 
-
   ttn_webhook:
     image: broker/python-base
     restart: "no"
@@ -43,7 +42,6 @@ services:
       - ../src/python:/home/broker/python
     working_dir: "/home/broker/python/ttn"
     entrypoint: [ "/home/broker/.local/bin/uvicorn", "--proxy-headers", "--host", "0.0.0.0", "--port", "5688", "WebHook:app" ]
-
 
   ttn_processor:
     image: broker/python-base
@@ -70,6 +68,19 @@ services:
     working_dir: "/usr/src/ttn_decoder"
     entrypoint: [ "node", "src" ]
 
+  ydoc:
+    image: broker/python-base
+    restart: "no"
+    env_file:
+      - .env
+    depends_on:
+      - "mq"
+      - "db"
+    volumes:
+      - ../src/python:/home/broker/python
+    working_dir: "/home/broker/python"
+    entrypoint: [ "python", "-m", "ydoc.YDOC" ]
+
   lm:
     image: broker/python-base
     restart: "no"
@@ -82,7 +93,6 @@ services:
       - ../src/python:/home/broker/python
     working_dir: "/home/broker/python"
     entrypoint: [ "python", "-m", "logical_mapper.LogicalMapper" ]
-
 
   delivery:
     image: broker/python-base
