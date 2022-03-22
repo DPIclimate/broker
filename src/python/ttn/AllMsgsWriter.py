@@ -168,7 +168,8 @@ def on_message(channel, method, properties, body):
 
             props = {
                 BrokerConstants.TTN: ttn_dev,
-                BrokerConstants.CREATION_CORRELATION_ID_KEY: correlation_id
+                BrokerConstants.CREATION_CORRELATION_ID_KEY: correlation_id,
+                BrokerConstants.LAST_MSG: msg
             }
 
             pd = PhysicalDevice(source_name=BrokerConstants.TTN, name=dev_name, location=dev_loc, last_seen=last_seen, source_ids=source_ids, properties=props)
@@ -178,6 +179,7 @@ def on_message(channel, method, properties, body):
             #logging.info(f'Updating last_seen for device {pd.name}')
             if last_seen is not None:
                 pd.last_seen = last_seen
+                pd.properties[BrokerConstants.LAST_MSG] = msg
                 pd = dao.update_physical_device(pd)
 
         if pd is None:

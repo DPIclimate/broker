@@ -1,4 +1,4 @@
-import copy, datetime, logging, time, unittest, uuid
+import copy, datetime, logging, time, unittest, uuid, warnings
 from typing import Tuple
 
 import api.client.DAO as dao
@@ -26,27 +26,29 @@ class TestDAO(unittest.TestCase):
 
     def test_get_all_physical_sources(self):
         sources = dao.get_all_physical_sources()
-        self.assertEqual(sources, ['greenbrain', 'ttn'])
+        self.assertEqual(sources, ['greenbrain', 'ttn', 'ydoc'])
 
     def now(self):
         return datetime.datetime.now(tz=datetime.timezone.utc)
 
-    def _create_default_physical_device(self) -> Tuple[PhysicalDevice, PhysicalDevice]:
+    def _create_physical_device(self, dev: PhysicalDevice = None) -> Tuple[PhysicalDevice, PhysicalDevice]:
         last_seen = self.now()
-        dev = PhysicalDevice(source_name='ttn', name='Test Device', location=Location(lat=3, long=-31), last_seen=last_seen,
-            source_ids={'appId': 'x', 'devId': 'y'},
-            properties={'appId': 'x', 'devId': 'y', 'other': 'z'})
+        if dev is None:
+            dev = PhysicalDevice(source_name='ttn', name='Test Device', location=Location(lat=3, long=-31), last_seen=last_seen,
+                source_ids={'appId': 'x', 'devId': 'y'},
+                properties={'appId': 'x', 'devId': 'y', 'other': 'z'})
+
         return (dev, dao.create_physical_device(dev))
 
     def test_create_physical_device(self):
-        dev, new_dev = self._create_default_physical_device()
+        dev, new_dev = self._create_physical_device()
 
         # Don't fail the equality assertion due to the uid being None in dev.
         dev.uid = new_dev.uid
         self.assertEqual(dev, new_dev)
 
     def test_get_physical_device(self):
-        dev, new_dev = self._create_default_physical_device()
+        dev, new_dev = self._create_physical_device()
 
         got_dev = dao.get_physical_device(new_dev.uid)
         self.assertEqual(new_dev, got_dev)
@@ -55,7 +57,7 @@ class TestDAO(unittest.TestCase):
         self.assertIsNone(dev)
 
     def test_get_physical_device_using_source_ids(self):
-        dev, new_dev = self._create_default_physical_device()
+        dev, new_dev = self._create_physical_device()
 
         # Create an otherwise similar device from a different source to verify
         # the source_name is taken into account by the dao method.
@@ -95,7 +97,7 @@ class TestDAO(unittest.TestCase):
 
 
     def test_update_physical_device(self):
-        dev, new_dev = self._create_default_physical_device()
+        dev, new_dev = self._create_physical_device()
 
         # Confirm no update works.
         updated_dev = dao.update_physical_device(new_dev)
@@ -114,7 +116,7 @@ class TestDAO(unittest.TestCase):
         self.assertRaises(dao.DAODeviceNotFound, dao.update_physical_device, new_dev)
 
     def test_delete_physical_device(self):
-        dev, new_dev = self._create_default_physical_device()
+        dev, new_dev = self._create_physical_device()
         self.assertEqual(dao.delete_physical_device(new_dev.uid), new_dev)
 
         # Confirm the device was deleted.
@@ -124,14 +126,14 @@ class TestDAO(unittest.TestCase):
         self.assertIsNone(dao.delete_physical_device(new_dev.uid))
 
     def test_create_physical_device_note(self):
-        dev, new_dev = self._create_default_physical_device()
+        dev, new_dev = self._create_physical_device()
         dao.create_physical_device_note(new_dev.uid, 'Note 1')
         dao.create_physical_device_note(new_dev.uid, 'Note 2')
 
         self.assertRaises(dao.DAODeviceNotFound, dao.create_physical_device_note, -1, 'Note 1')
 
     def test_get_physical_device_notes(self):
-        dev, new_dev = self._create_default_physical_device()
+        dev, new_dev = self._create_physical_device()
         dao.create_physical_device_note(new_dev.uid, 'Note 1')
         time.sleep(0.001)
         dao.create_physical_device_note(new_dev.uid, 'Note 2')
@@ -154,10 +156,11 @@ class TestDAO(unittest.TestCase):
         notes = dao.get_physical_device_notes(-1)
         self.assertEqual(len(notes), 0)
 
-    def _create_default_logical_device(self) -> Tuple[LogicalDevice, LogicalDevice]:
-        last_seen = self.now()
-        dev = LogicalDevice(name='Test Device', location=Location(lat=3, long=-31), last_seen=last_seen,
-            properties={'appId': 'x', 'devId': 'y', 'other': 'z'})
+    def _create_default_logical_device(self, dev=None) -> Tuple[LogicalDevice, LogicalDevice]:
+        if dev is None:
+            last_seen = self.now()
+            dev = LogicalDevice(name='Test Device', location=Location(lat=3, long=-31), last_seen=last_seen,
+                properties={'appId': 'x', 'devId': 'y', 'other': 'z'})
 
         return (dev, dao.create_logical_device(dev))
 
@@ -207,7 +210,7 @@ class TestDAO(unittest.TestCase):
         self.assertIsNone(dao.delete_logical_device(new_dev.uid))
 
     def test_insert_mapping(self):
-        pdev, new_pdev = self._create_default_physical_device()
+        pdev, new_pdev = self._create_physical_device()
         ldev, new_ldev = self._create_default_logical_device()
         mapping = PhysicalToLogicalMapping(pd=new_pdev, ld=new_ldev, start_time=self.now())
 
@@ -234,7 +237,7 @@ class TestDAO(unittest.TestCase):
         self.assertRaises(dao.DAODeviceNotFound, dao.insert_mapping, mapping)
 
     def test_get_current_device_mapping(self):
-        pdev, new_pdev = self._create_default_physical_device()
+        pdev, new_pdev = self._create_physical_device()
         ldev, new_ldev = self._create_default_logical_device()
 
         # No mapping yet, confirm all forms of call return None.
@@ -263,15 +266,148 @@ class TestDAO(unittest.TestCase):
         # Confirm mapping a new physical device to the same logical device overrides the
         # original mapping.
         time.sleep(0.001)
-        pdev2, new_pdev2 = self._create_default_physical_device()
+        pdev2, new_pdev2 = self._create_physical_device()
 
         mapping2 = PhysicalToLogicalMapping(pd=new_pdev2, ld=new_ldev, start_time=self.now())
         dao.insert_mapping(mapping2)
 
-        self.assertEqual(mapping2, dao.get_current_device_mapping(pd=new_pdev2.uid))
-        self.assertEqual(mapping2, dao.get_current_device_mapping(pd=new_pdev2))
-        self.assertEqual(mapping2, dao.get_current_device_mapping(ld=new_ldev.uid))
-        self.assertEqual(mapping2, dao.get_current_device_mapping(ld=new_ldev))
+        # This test must fail if multiple mappings are found, because there should not be
+        # multiple mappings. In practice the system will return the latest mapping but failing
+        # here shows the mapping end_date is not being updated.
+        with warnings.catch_warnings(record=True) as w:
+            warnings.simplefilter('error')
+
+            self.assertEqual(mapping2, dao.get_current_device_mapping(pd=new_pdev2.uid))
+            self.assertEqual(mapping2, dao.get_current_device_mapping(pd=new_pdev2))
+            self.assertEqual(mapping2, dao.get_current_device_mapping(ld=new_ldev.uid))
+            self.assertEqual(mapping2, dao.get_current_device_mapping(ld=new_ldev))
+
+    def test_end_mapping(self):
+        pdev, new_pdev = self._create_physical_device()
+        ldev, new_ldev = self._create_default_logical_device()
+
+        mapping1 = PhysicalToLogicalMapping(pd=new_pdev, ld=new_ldev, start_time=self.now())
+        dao.insert_mapping(mapping1)
+
+        mappings = dao.get_unmapped_physical_devices()
+        self.assertEqual(len(mappings), 0)
+
+        dao.end_mapping(pd=new_pdev.uid)
+        mappings = dao.get_unmapped_physical_devices()
+        self.assertEqual(len(mappings), 1)
+
+        pdev2 = copy.deepcopy(pdev)
+        pdev2.name = 'D2'
+        pdev2, new_pdev2 = self._create_physical_device(dev=pdev2)
+        mapping2 = PhysicalToLogicalMapping(pd=new_pdev2, ld=new_ldev, start_time=self.now())
+
+        dao.insert_mapping(mapping2)
+        mappings = dao.get_unmapped_physical_devices()
+        self.assertEqual(len(mappings), 1)
+
+        dao.end_mapping(ld=new_ldev.uid)
+        mappings = dao.get_unmapped_physical_devices()
+        self.assertEqual(len(mappings), 2)
+
+        # Avoid a unique key constraint due to identical timestamps.
+        time.sleep(0.001)
+        mapping1.start_time = self.now()
+        dao.insert_mapping(mapping1)
+        dao.end_mapping(pd=new_pdev)
+        mappings = dao.get_unmapped_physical_devices()
+        self.assertEqual(len(mappings), 2)
+
+        mapping2.start_time = self.now()
+        dao.insert_mapping(mapping2)
+        mappings = dao.get_unmapped_physical_devices()
+        self.assertEqual(len(mappings), 1)
+
+        dao.end_mapping(ld=new_ldev)
+        mappings = dao.get_unmapped_physical_devices()
+        self.assertEqual(len(mappings), 2)
+
+    def compare_mappings_ignore_end_time(self, m1: PhysicalToLogicalMapping, m2: PhysicalToLogicalMapping) -> bool:
+        return m1.pd == m2.pd and m1.ld == m2.ld and m1.start_time == m2.start_time
+
+    def test_get_mappings(self):
+        pdev, new_pdev = self._create_physical_device()
+        ldev, new_ldev = self._create_default_logical_device()
+        mapping1 = PhysicalToLogicalMapping(pd=new_pdev, ld=new_ldev, start_time=self.now())
+        dao.insert_mapping(mapping1)
+
+        pdev2 = copy.deepcopy(pdev)
+        pdev2.name = 'D2'
+        pdev2, new_pdev2 = self._create_physical_device(dev=pdev2)
+        time.sleep(0.1)
+        mapping2 = PhysicalToLogicalMapping(pd=new_pdev2, ld=new_ldev, start_time=self.now())
+        dao.insert_mapping(mapping2)
+
+        # Avoid a unique key constraint due to identical timestamps.
+        time.sleep(0.1)
+        mapping3 = PhysicalToLogicalMapping(pd=new_pdev, ld=new_ldev, start_time=self.now())
+        dao.insert_mapping(mapping3)
+
+        mappings = dao.get_logical_device_mappings(new_ldev)
+        self.assertEqual(len(mappings), 3)
+
+        self.assertTrue(self.compare_mappings_ignore_end_time(mappings[0], mapping3))
+        self.assertTrue(self.compare_mappings_ignore_end_time(mappings[1], mapping2))
+        self.assertTrue(self.compare_mappings_ignore_end_time(mappings[2], mapping1))
+
+    def test_get_unmapped_devices(self):
+        pdev, new_pdev = self._create_physical_device()
+        ldev, new_ldev = self._create_default_logical_device()
+
+        # confirm a physical device can be mapped to a logical device.        
+        mapping1 = PhysicalToLogicalMapping(pd=new_pdev, ld=new_ldev, start_time=self.now())
+        dao.insert_mapping(mapping1)
+
+        pdev2 = copy.deepcopy(pdev)
+        pdev2.name = 'D2'
+        pdev2, new_pdev2 = self._create_physical_device(dev=pdev2)
+
+        pdev3 = copy.deepcopy(pdev)
+        pdev3.source_name = 'greenbrain'
+        pdev3.name = 'D3'
+        pdev3, new_pdev3 = self._create_physical_device(dev=pdev3)
+
+        pdev4 = copy.deepcopy(pdev)
+        pdev4.source_name = 'ydoc'
+        pdev4.name = 'D4'
+        pdev4, new_pdev4 = self._create_physical_device(dev=pdev4)
+
+        unmapped_devs = dao.get_unmapped_physical_devices()
+        self.assertEqual(len(unmapped_devs), 3)
+        self.assertTrue(new_pdev2 in unmapped_devs)
+        self.assertTrue(new_pdev3 in unmapped_devs)
+        self.assertTrue(new_pdev4 in unmapped_devs)
+
+        mapping2 = PhysicalToLogicalMapping(pd=new_pdev2, ld=new_ldev, start_time=self.now())
+        dao.insert_mapping(mapping2)
+
+        ldev2 = copy.deepcopy(ldev)
+        ldev2.name = 'L2'
+        ldev2.last_seen = self.now()
+        ldev2, new_ldev2 = self._create_default_logical_device(dev=ldev2)
+
+        mapping3 = PhysicalToLogicalMapping(pd=new_pdev4, ld=new_ldev2, start_time=self.now())
+        dao.insert_mapping(mapping3)
+        unmapped_devs = dao.get_unmapped_physical_devices()
+        self.assertEqual(len(unmapped_devs), 2)
+        self.assertTrue(new_pdev in unmapped_devs)
+        self.assertTrue(new_pdev3 in unmapped_devs)
+
+        ldev3 = copy.deepcopy(ldev)
+        ldev3.name = 'L3'
+        ldev3.last_seen = self.now()
+        ldev3, new_ldev3 = self._create_default_logical_device(dev=ldev3)
+
+        mapping4 = PhysicalToLogicalMapping(pd=new_pdev, ld=new_ldev3, start_time=self.now())
+        dao.insert_mapping(mapping4)
+        unmapped_devs = dao.get_unmapped_physical_devices()
+        self.assertEqual(len(unmapped_devs), 1)
+        self.assertTrue(new_pdev3 in unmapped_devs)
+
 
     def test_add_raw_json_message(self):
         uuid1 = uuid.uuid4()

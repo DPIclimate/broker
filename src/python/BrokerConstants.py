@@ -5,6 +5,7 @@ PHYSICAL_DEVICE_UID_KEY = 'p_uid'
 LOGICAL_DEVICE_UID_KEY = 'l_uid'
 TIMESTAMP_KEY = 'timestamp'
 TIMESERIES_KEY = 'timeseries'
+LAST_MSG = 'last_msg'
 
 # Source names
 TTN = 'ttn'

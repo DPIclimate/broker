@@ -10,7 +10,7 @@ from typing import Tuple
 logging.basicConfig(level=logging.INFO, format='%(asctime)s %(name)s: %(message)s', datefmt='%Y-%m-%dT%H:%M:%S%z')
 logger = logging.getLogger(__name__)
 
-_BASE = "http://restapi:5687/api"
+_BASE = "http://restapi:5687/broker/api"
 _HEADERS = {
     "Content-Type": "application/json",
     "Accept": "application/json"
@@ -54,7 +54,7 @@ class TestRESTAPI(unittest.TestCase):
         r = requests.get(url, headers=_HEADERS)
         self.assertEqual(r.status_code, 200)
         sources = r.json()
-        self.assertEqual(sources, ['greenbrain', 'ttn'])
+        self.assertEqual(sources, ['greenbrain', 'ttn', 'ydoc'])
 
     def test_create_physical_device(self):
         dev, new_dev = self._create_default_physical_device()
@@ -367,13 +367,13 @@ class TestRESTAPI(unittest.TestCase):
         self.assertEqual(r.status_code, 201)
 
         # Confirm getting the mapping works.
-        r = requests.get(f'{_BASE}/mappings/from_physical/{new_pdev.uid}')
+        r = requests.get(f'{_BASE}/mappings/current/physical/{new_pdev.uid}')
         self.assertEqual(r.status_code, 200)
         m = PhysicalToLogicalMapping.parse_obj(r.json())
         self.assertEqual(mapping, m)
 
         # Confirm getting an invalid map returns 404
-        r = requests.get(f'{_BASE}/mappings/from_physical/{-1}')
+        r = requests.get(f'{_BASE}/mappings/current/physical/{-1}')
         self.assertEqual(r.status_code, 404)
 
         # Confirm the latest mapping is returned.
@@ -385,7 +385,7 @@ class TestRESTAPI(unittest.TestCase):
         r = requests.post(url, headers=_HEADERS, data=payload)
         self.assertEqual(r.status_code, 201)
 
-        r = requests.get(f'{_BASE}/mappings/from_physical/{new_pdev.uid}')
+        r = requests.get(f'{_BASE}/mappings/current/physical/{new_pdev.uid}')
         self.assertEqual(r.status_code, 200)
         m = PhysicalToLogicalMapping.parse_obj(r.json())
         self.assertEqual(mapping2, m)
@@ -401,13 +401,13 @@ class TestRESTAPI(unittest.TestCase):
         self.assertEqual(r.status_code, 201)
 
         # Confirm getting the mapping works.
-        r = requests.get(f'{_BASE}/mappings/from_logical/{new_ldev.uid}')
+        r = requests.get(f'{_BASE}/mappings/current/logical/{new_ldev.uid}')
         self.assertEqual(r.status_code, 200)
         m = PhysicalToLogicalMapping.parse_obj(r.json())
         self.assertEqual(mapping, m)
 
         # Confirm getting an invalid map returns 404
-        r = requests.get(f'{_BASE}/mappings/from_logical/{-1}')
+        r = requests.get(f'{_BASE}/mappings/current/logical/{-1}')
         self.assertEqual(r.status_code, 404)
 
         # Confirm the latest mapping is returned.
@@ -419,7 +419,10 @@ class TestRESTAPI(unittest.TestCase):
         r = requests.post(url, headers=_HEADERS, data=payload)
         self.assertEqual(r.status_code, 201)
 
-        r = requests.get(f'{_BASE}/mappings/from_logical/{new_ldev.uid}')
+        r = requests.get(f'{_BASE}/mappings/current/logical/{new_ldev.uid}')
         self.assertEqual(r.status_code, 200)
         m = PhysicalToLogicalMapping.parse_obj(r.json())
         self.assertEqual(mapping2, m)
+
+if __name__ == '__main__':
+    unittest.main()

@@ -40,7 +40,8 @@ class LogicalDevice(BaseModel):
 class PhysicalToLogicalMapping(BaseModel):
     pd: PhysicalDevice
     ld: LogicalDevice
-    start_time: datetime = datetime.now(tz=timezone.utc)
+    start_time: datetime
+    end_time: Optional[datetime]
 
 
 class DeviceNote(BaseModel):

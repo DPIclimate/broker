@@ -7,8 +7,13 @@ services:
 
   mq:
     ports:
-      - "1883:1883"
-      - "15672:15672"
+      # It is easier to use nginx without port number clashes so
+      # nginx will accept a connection on 1883, forward it to
+      # 127.0.0.1:1884, which docker will forward to port 1883
+      # within the container.
+      - "127.0.0.1:1884:1883"
+      - "127.0.0.1:15672:15672"
+      - "127.0.0.1:15692:15692"
     volumes:
       - mq_data:/var/lib/rabbitmq/mnesia/rabbit@mq
 

@@ -5,13 +5,13 @@
 # status codes.
 #
 
-from fastapi import FastAPI, Query, HTTPException, Request, Response, status
+from fastapi import APIRouter, FastAPI, Query, HTTPException, Request, Response, status
 from typing import Dict, List
 
 from pdmodels.Models import DeviceNote, PhysicalDevice, LogicalDevice, PhysicalToLogicalMapping
 import api.client.DAO as dao
 
-app = FastAPI(title='IoT Device Broker', version="1.0.0")
+router = APIRouter(prefix='/broker/api')
 
 """
 An example of how we might do not-very-good authentication for the
@@ -23,7 +23,7 @@ if auth_token is None or len(auth_token) < 1:
     logger.error('auth_token not set.')
     sys.exit(1)
 
-@app.middleware("http")
+@router.middleware("http")
 async def check_auth_header(request: Request, call_next):
     if not 'X-Auth-Token' in request.headers:
         return JSONResponse(status_code=401)
@@ -35,7 +35,7 @@ async def check_auth_header(request: Request, call_next):
     return await call_next(request)
 """
 
-@app.get("/api/physical/sources/", tags=['physical devices'])
+@router.get("/physical/sources/", tags=['physical devices'])
 async def get_all_physical_sources() -> List[str]:
     """
     Return a list of all physical device sources.
@@ -46,7 +46,7 @@ async def get_all_physical_sources() -> List[str]:
         raise HTTPException(status_code=500, detail=err.msg)
 
 
-@app.get("/api/physical/devices/", tags=['physical devices'])
+@router.get("/physical/devices/", tags=['physical devices'])
 async def query_physical_devices(
     source: str | None = None,
     source_id_name: List[str] | None = Query(None),
@@ -81,8 +81,7 @@ async def query_physical_devices(
     return devs
 
 
-
-@app.get("/api/physical/devices/{uid}", tags=['physical devices'])
+@router.get("/physical/devices/{uid}", tags=['physical devices'])
 async def get_physical_device(uid: int) -> PhysicalDevice:
     """
     Get the PhysicalDevice specified by uid.
@@ -97,7 +96,7 @@ async def get_physical_device(uid: int) -> PhysicalDevice:
         raise HTTPException(status_code=500, detail=err.msg)
 
 
-@app.post("/api/physical/devices/", tags=['physical devices'], status_code=status.HTTP_201_CREATED)
+@router.post("/physical/devices/", tags=['physical devices'], status_code=status.HTTP_201_CREATED)
 async def create_physical_device(device: PhysicalDevice, request: Request, response: Response) -> PhysicalDevice:
     """
     Create a new PhysicalDevice. The new device is returned in the response.
@@ -110,7 +109,7 @@ async def create_physical_device(device: PhysicalDevice, request: Request, respo
         raise HTTPException(status_code=500, detail=err.msg)
 
 
-@app.patch("/api/physical/devices/", tags=['physical devices'])
+@router.patch("/physical/devices/", tags=['physical devices'])
 async def update_physical_device(device: PhysicalDevice) -> PhysicalDevice:
     """
     Update a PhysicalDevice. The updated device is returned in the respose.
@@ -124,8 +123,7 @@ async def update_physical_device(device: PhysicalDevice) -> PhysicalDevice:
         raise HTTPException(status_code=500, detail=err.msg)
 
 
-
-@app.delete("/api/physical/devices/{uid}", tags=['physical devices'])
+@router.delete("/physical/devices/{uid}", tags=['physical devices'])
 async def delete_physical_device(uid: int) -> PhysicalDevice:
     """
     Delete a PhysicalDevice. The deleted device is returned in the response.
@@ -139,7 +137,7 @@ async def delete_physical_device(uid: int) -> PhysicalDevice:
 """--------------------------------------------------------------------------
 DEVICE NOTES
 --------------------------------------------------------------------------"""
-@app.post("/api/physical/devices/notes/{uid}", tags=['physical devices'], status_code=status.HTTP_201_CREATED)
+@router.post("/physical/devices/notes/{uid}", tags=['physical devices'], status_code=status.HTTP_201_CREATED)
 async def create_physical_device_note(uid: int, note: DeviceNote, request: Request, response: Response) -> None:
     """
     Create a new note for a PhysicalDevice.
@@ -153,7 +151,7 @@ async def create_physical_device_note(uid: int, note: DeviceNote, request: Reque
         raise HTTPException(status_code=500, detail=err.msg)
 
 
-@app.get("/api/physical/devices/notes/{uid}", tags=['physical devices'])
+@router.get("/physical/devices/notes/{uid}", tags=['physical devices'])
 async def get_physical_device_notes(uid: int) -> List[DeviceNote]:
     try:
         return dao.get_physical_device_notes(uid)
@@ -164,7 +162,7 @@ async def get_physical_device_notes(uid: int) -> List[DeviceNote]:
 LOGICAL DEVICES
 --------------------------------------------------------------------------"""
 
-@app.post("/api/logical/devices/", tags=['logical devices'], status_code=status.HTTP_201_CREATED)
+@router.post("/logical/devices/", tags=['logical devices'], status_code=status.HTTP_201_CREATED)
 async def create_logical_device(device: LogicalDevice, request: Request, response: Response) -> LogicalDevice:
     """
     Create a new LogicalDevice. The new device is returned in the response.
@@ -177,7 +175,7 @@ async def create_logical_device(device: LogicalDevice, request: Request, respons
         raise HTTPException(status_code=500, detail=err.msg)
 
 
-@app.get("/api/logical/devices/{uid}", tags=['logical devices'])
+@router.get("/logical/devices/{uid}", tags=['logical devices'])
 async def get_logical_device(uid: int) -> LogicalDevice:
     """
     Get the LogicalDevice specified by uid.
@@ -192,7 +190,7 @@ async def get_logical_device(uid: int) -> LogicalDevice:
         raise HTTPException(status_code=500, detail=err.msg)
 
 
-@app.patch("/api/logical/devices/", tags=['logical devices'])
+@router.patch("/logical/devices/", tags=['logical devices'])
 async def update_logical_device(device: LogicalDevice) -> LogicalDevice:
     """
     Update a LogicalDevice. The updated device is returned in the respose.
@@ -205,7 +203,7 @@ async def update_logical_device(device: LogicalDevice) -> LogicalDevice:
         raise HTTPException(status_code=500, detail=err.msg)
 
 
-@app.delete("/api/logical/devices/{uid}", tags=['logical devices'])
+@router.delete("/logical/devices/{uid}", tags=['logical devices'])
 async def delete_logical_device(uid: int) -> LogicalDevice:
     """
     Delete a LogicalDevice. The deleted device is returned in the response.
@@ -220,7 +218,7 @@ async def delete_logical_device(uid: int) -> LogicalDevice:
 DEVICE MAPPINGS
 --------------------------------------------------------------------------"""
 
-@app.post("/api/mappings/", tags=['device mapping'], status_code=status.HTTP_201_CREATED)
+@router.post("/mappings/", tags=['device mapping'], status_code=status.HTTP_201_CREATED)
 async def insert_mapping(mapping: PhysicalToLogicalMapping) -> None:
     try:
         dao.insert_mapping(mapping)
@@ -231,7 +229,8 @@ async def insert_mapping(mapping: PhysicalToLogicalMapping) -> None:
     except dao.DAOException as err:
         raise HTTPException(status_code=500, detail=err.msg)
 
-@app.get("/api/mappings/from_physical/{uid}", tags=['device mapping'], response_model=PhysicalToLogicalMapping)
+
+@router.get("/mappings/current/physical/{uid}", tags=['device mapping'], response_model=PhysicalToLogicalMapping)
 async def get_mapping_from_physical_uid(uid: int) -> PhysicalToLogicalMapping:
     try:
         mapping = dao.get_current_device_mapping(pd=uid)
@@ -242,7 +241,8 @@ async def get_mapping_from_physical_uid(uid: int) -> PhysicalToLogicalMapping:
     except dao.DAOException as err:
         raise HTTPException(status_code=500, detail=err.msg)
 
-@app.get("/api/mappings/from_logical/{uid}", tags=['device mapping'], response_model=PhysicalToLogicalMapping)
+
+@router.get("/mappings/current/logical/{uid}", tags=['device mapping'], response_model=PhysicalToLogicalMapping)
 async def get_mapping_from_logical_uid(uid: int) -> PhysicalToLogicalMapping:
     try:
         mapping = dao.get_current_device_mapping(ld=uid)
@@ -252,3 +252,7 @@ async def get_mapping_from_logical_uid(uid: int) -> PhysicalToLogicalMapping:
         return mapping
     except dao.DAOException as err:
         raise HTTPException(status_code=500, detail=err.msg)
+
+
+app = FastAPI(title='IoT Device Broker', version='1.0.0')
+app.include_router(router)

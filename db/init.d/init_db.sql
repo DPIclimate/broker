@@ -71,6 +71,9 @@ create table if not exists physical_logical_map (
     physical_uid integer not null references physical_devices(uid),
     logical_uid integer not null references logical_devices(uid),
     start_time timestamptz not null default now(),
+    end_time timestamptz,
+    constraint end_gt_start check (end_time > start_time),
+    unique (logical_uid, start_time),
     primary key(physical_uid, logical_uid, start_time)
 );
 

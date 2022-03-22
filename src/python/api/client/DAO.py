@@ -529,7 +529,8 @@ Physical to logical device mapping operations
 create table if not exists physical_logical_map (
     physical_uid integer not null,
     logcial_uid integer not null,
-    start_time timestamptz not null default now()
+    start_time timestamptz not null default now(),
+    end_time timestamptz
 );
 
 """
@@ -539,20 +540,78 @@ def insert_mapping(mapping: PhysicalToLogicalMapping) -> None:
     """
     try:
         with _get_connection() as conn, conn.cursor() as cursor:
+            current_mapping = _get_current_device_mapping(conn, ld=mapping.ld.uid)
+            if current_mapping is not None:
+                _end_mapping(conn, ld=mapping.ld.uid)
+
             cursor.execute('insert into physical_logical_map (physical_uid, logical_uid, start_time) values (%s, %s, %s)', (mapping.pd.uid, mapping.ld.uid, mapping.start_time))
     except psycopg2.errors.ForeignKeyViolation as fkerr:
-        raise DAODeviceNotFound(f'insert_mapping foreign key error with mapping {mapping.pd.uid} -> {mapping.ld.uid}.', fkerr)
+        raise DAODeviceNotFound(f'insert_mapping foreign key error with mapping {mapping.pd.uid} {mapping.pd.name} -> {mapping.ld.uid} {mapping.ld.name}.', fkerr)
     except psycopg2.errors.UniqueViolation as err:
-        raise DAOUniqeConstraintException(f'Mapping already exists: {mapping.pd.uid} -> {mapping.ld.uid}, starting at {mapping.start_time}.', err)
+        raise DAOUniqeConstraintException(f'Mapping already exists: {mapping.pd.uid} {mapping.pd.name} -> {mapping.ld.uid} {mapping.ld.name}, starting at {mapping.start_time}.', err)
     except Exception as err:
-        logging.debug(type(err), err)
+        #logging.exception('insert_mapping failed.')
         raise DAOException('insert_mapping failed.', err)
     finally:
         free_conn(conn)
 
 
+def end_mapping(pd: Optional[Union[PhysicalDevice, int]] = None, ld: Optional[Union[LogicalDevice, int]] = None) -> None:
+    conn = None
+    try:
+        with _get_connection() as conn:
+            _end_mapping(conn, pd, ld)
+    except Exception as err:
+        raise err if isinstance(err, DAOException) else DAOException('end_mapping failed.', err)
+    finally:
+        free_conn(conn)
+
+
+def _end_mapping(conn, pd: Optional[Union[PhysicalDevice, int]] = None, ld: Optional[Union[LogicalDevice, int]] = None) -> None:
+    with conn.cursor() as cursor:
+        mapping: PhysicalToLogicalMapping = _get_current_device_mapping(conn, pd, ld)
+        if mapping is None:
+            return
+
+        if pd is None and ld is None:
+            raise DAOException('A PhysicalDevice or a LogicalDevice (or an uid for one of them) must be supplied to end a mapping.')
+
+        if pd is not None and ld is not None:
+            raise DAOException('Both pd and ld were provided, only give one when ending a mapping.')
+
+        p_uid = None
+        if pd is not None:
+            p_uid = pd.uid if isinstance(pd, PhysicalDevice) else pd
+
+        l_uid = None
+        if ld is not None:
+            l_uid = ld.uid if isinstance(ld, LogicalDevice) else ld
+
+        if p_uid is not None:
+            cursor.execute('update physical_logical_map set end_time = now() where physical_uid = %s and end_time is null', (p_uid, ))
+        else:
+            cursor.execute('update physical_logical_map set end_time = now() where logical_uid = %s and end_time is null', (l_uid, ))
+
+        if cursor.rowcount != 1:
+            logging.warning(f'No mapping was updated during end_mapping for {pd.uid} {pd.name} -> {ld.uid} {ld.name}')
+
+
 def get_current_device_mapping(pd: Optional[Union[PhysicalDevice, int]] = None, ld: Optional[Union[LogicalDevice, int]] = None) -> Optional[PhysicalToLogicalMapping]:
-    mapping = None
+    conn = None
+    try:
+        mapping = None
+        with _get_connection() as conn:
+            mapping = _get_current_device_mapping(conn, pd, ld)
+
+        return mapping
+    except Exception as err:
+        raise err if isinstance(err, DAOException) else DAOException('get_current_device_mapping failed.', err)
+    finally:
+        free_conn(conn)
+
+
+def _get_current_device_mapping(conn, pd: Optional[Union[PhysicalDevice, int]] = None, ld: Optional[Union[LogicalDevice, int]] = None) -> Optional[PhysicalToLogicalMapping]:
+    mappings = None
 
     if pd is None and ld is None:
         raise DAOException('A PhysicalDevice or a LogicalDevice (or an uid for one of them) must be supplied to find a mapping.')
@@ -568,29 +627,62 @@ def get_current_device_mapping(pd: Optional[Union[PhysicalDevice, int]] = None, 
     if ld is not None:
         l_uid = ld.uid if isinstance(ld, LogicalDevice) else ld
 
+    with conn.cursor() as cursor:
+        # A single query could get the data from all three tables but it would be unreadable.
+        if p_uid is not None:
+            cursor.execute('select physical_uid, logical_uid, start_time from physical_logical_map where physical_uid = %s and end_time is null order by start_time desc', (p_uid, ))
+        else:
+            cursor.execute('select physical_uid, logical_uid, start_time from physical_logical_map where logical_uid = %s and end_time is null order by start_time desc', (l_uid, ))
+
+        mappings = []
+        for p_uid, l_uid, start_time in cursor:
+            pd = _get_physical_device(conn, p_uid)
+            ld = _get_logical_device(conn, l_uid)
+            mappings.append(PhysicalToLogicalMapping(pd=pd, ld=ld, start_time=start_time))
+
+
+        if len(mappings) > 1:
+            warnings.warn(f'Found multiple ({cursor.rowcount}) current mappings for {pd.uid} {pd.name} -> {ld.uid} {ld.name}')
+            for m in mappings:
+                logging.warning(m)
+
+        if len(mappings) > 0:
+            return mappings[0]
+
+        return None
+
+
+def get_unmapped_physical_devices() -> List[PhysicalDevice]:
     try:
+        devs = []
         with _get_connection() as conn, conn.cursor() as cursor:
-            conn.autocommit = True
+            cursor.execute('select * from physical_devices where uid not in (select physical_uid from physical_logical_map where end_time is null)')
+            for r in cursor:
+                dfr = _dict_from_row(cursor.description, r)
+                devs.append(PhysicalDevice.parse_obj(dfr))
 
-            # A single query could get the data from all three tables but it would be unreadable.
+        return devs
+    except Exception as err:
+        raise err if isinstance(err, DAOException) else DAOException('get_unmapped_physical_devices failed.', err)
+    finally:
+        free_conn(conn)
 
-            if p_uid is not None:
-                cursor.execute('select physical_uid, logical_uid, start_time from physical_logical_map where physical_uid = %s order by start_time desc limit 1', (p_uid, ))
-            else:
-                cursor.execute('select physical_uid, logical_uid, start_time from physical_logical_map where logical_uid = %s order by start_time desc limit 1', (l_uid, ))
 
-            if cursor.rowcount == 1:
-                p_uid, l_uid, start_time = cursor.fetchone()
-
+def get_logical_device_mappings(ld: Union[LogicalDevice, int]) -> List[PhysicalToLogicalMapping]:
+    try:
+        mappings = []
+        with _get_connection() as conn, conn.cursor() as cursor:
+            l_uid = ld.uid if isinstance(ld, LogicalDevice) else ld
+            cursor.execute('select physical_uid, logical_uid, start_time, end_time from physical_logical_map where logical_uid = %s order by start_time desc', (l_uid, ))
+            for p_uid, l_uid, start_time, end_time in cursor:
                 pd = _get_physical_device(conn, p_uid)
                 ld = _get_logical_device(conn, l_uid)
+                mapping = PhysicalToLogicalMapping(pd=pd, ld=ld, start_time=start_time, end_time=end_time)
+                mappings.append(mapping)
 
-                mapping = PhysicalToLogicalMapping(pd=pd, ld=ld, start_time=start_time)
-
-            return mapping
-
+        return mappings
     except Exception as err:
-        raise DAOException('get_current_device_mapping failed.', err)
+        raise err if isinstance(err, DAOException) else DAOException('get_unmapped_physical_devices failed.', err)
     finally:
         free_conn(conn)
 
