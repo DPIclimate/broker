@@ -171,6 +171,8 @@ def on_message(channel, method, properties, body):
         serial_no = msg['device']['sn']
         dev_name = msg['device']['name']
 
+        lu.cid_logger.warning(f'Accepted message from {dev_name} {serial_no}', extra=msg_with_cid)
+
         # Create a map of the channel objects keyed by channel code to make it simple
         # to find the variable name, uom, etc while processing values.
         channels = {}
@@ -211,7 +213,7 @@ def on_message(channel, method, properties, body):
                     break
 
                 if not k in channels:
-                    lu.cid_logger.info(f'Skipping key {k}')
+                    lu.cid_logger.warning(f'Skipping key {k}', extra=msg_with_cid)
                     continue
 
                 sc_match = _sensor_code_re.match(k)
@@ -237,8 +239,9 @@ def on_message(channel, method, properties, body):
 
                 device['dots'].append(dot)
 
+        printed_msg = False
         for device in devices.values():
-            lu.cid_logger.info(device, extra=msg_with_cid)
+            lu.cid_logger.debug(device, extra=msg_with_cid)
 
             source_ids = {
                 'id': device['id']
@@ -246,6 +249,11 @@ def on_message(channel, method, properties, body):
 
             pds = dao.get_pyhsical_devices_using_source_ids(BrokerConstants.YDOC, source_ids)
             if len(pds) < 1:
+                if not printed_msg:
+                    printed_msg = True
+                    lu.cid_logger.info(f'Message from a new device.', extra=msg_with_cid)
+                    lu.cid_logger.info(body, extra=msg_with_cid)
+
                 lu.cid_logger.info('Device not found, creating physical device.', extra=msg_with_cid)
 
                 props = {
@@ -269,7 +277,7 @@ def on_message(channel, method, properties, body):
                 return
 
             min_ts_dot = min(device['dots'], key=lambda d: dateutil.parser.parse(d[BrokerConstants.TIMESTAMP_KEY]))
-            lu.cid_logger.info(f'From {device["dots"]}, min_ts is {min_ts_dot}', extra=msg_with_cid)
+            lu.cid_logger.debug(f'From {device["dots"]}, min_ts is {min_ts_dot}', extra=msg_with_cid)
 
             p_ts_msg = {
                 BrokerConstants.CORRELATION_ID_KEY: correlation_id,
@@ -278,7 +286,7 @@ def on_message(channel, method, properties, body):
                 BrokerConstants.TIMESERIES_KEY: device['dots']
             }
 
-            lu.cid_logger.info(f'Publishing message: {p_ts_msg}', extra=msg_with_cid)
+            lu.cid_logger.debug(f'Publishing message: {p_ts_msg}', extra=msg_with_cid)
             tx_channel.publish_message('physical_timeseries', p_ts_msg)
 
         """
