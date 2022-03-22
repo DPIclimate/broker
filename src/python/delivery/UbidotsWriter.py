@@ -5,7 +5,7 @@ on to Ubidots.
 
 import dateutil.parser
 
-import asyncio, json, logging, math, signal
+import asyncio, json, logging, math, signal, uuid
 
 import BrokerConstants
 from pika.exchange_type import ExchangeType
@@ -169,9 +169,8 @@ def on_message(channel, method, properties, body):
                 ubi_label = f'{system_id}-{station_id}-{sensor_group_id}'
                 ld.properties['ubidots']['label'] = ubi_label
             else:
-                lu.cid_logger.warning(f'TODO: work with {pd.source_name} devices!', extra=msg)
-                rx_channel._channel.basic_ack(delivery_tag)
-                return
+                lu.cid_logger.info('Using a UUID as Ubidots label', extra=msg)
+                ld.properties['ubidots']['label'] = uuid.uuid4()
 
         ubidots_dev_label = ld.properties['ubidots']['label']
         ubidots.post_device_data(ubidots_dev_label, ubidots_payload)
@@ -204,7 +203,7 @@ def on_message(channel, method, properties, body):
                         patch_obj['properties'] |= {'_config': cfg, 'dpi-uid': ttn_props['attributes']['uid']}
 
                 # TODO: What about Green Brain devices?
-
+                
             ubidots.update_device(ubidots_dev_label, patch_obj)
 
             # Update the newly created logical device properties with the information
