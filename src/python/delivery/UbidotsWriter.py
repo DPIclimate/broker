@@ -109,12 +109,18 @@ def on_message(channel, method, properties, body):
             rx_channel._channel.basic_ack(delivery_tag)
             return
 
+        ts = 0.0
         # TODO: Find or create a class to hide all the Python datetime horrors.
-        ts_float = dateutil.parser.isoparse(msg[BrokerConstants.TIMESTAMP_KEY]).timestamp()
-        # datetime.timestamp() returns a float where the ms are to the right of the
-        # decimal point. This should get us an integer value in ms.
-        ts = math.floor(ts_float * 1000)
-
+        try:
+            ts_float = dateutil.parser.isoparse(msg[BrokerConstants.TIMESTAMP_KEY]).timestamp()
+            # datetime.timestamp() returns a float where the ms are to the right of the
+            # decimal point. This should get us an integer value in ms.
+            ts = math.floor(ts_float * 1000)
+        except:
+            lu.cid_logger.error(f'Failed to parse timestamp from message: {msg[BrokerConstants.TIMESTAMP_KEY]}', extra=msg)
+            rx_channel._channel.basic_ack(delivery_tag)
+            return
+        
         ubidots_payload = {}
         for v in msg[BrokerConstants.TIMESERIES_KEY]:
             dot_ts = ts
