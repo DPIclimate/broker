@@ -87,7 +87,7 @@ class RabbitMQConnection(object):
         """
         logging.error('Connection open failed: %s', err)
         if not self._stopping:
-            asyncio.create_task(self.connect(60))
+            asyncio.create_task(self.connect(30))
         else:
             self.state = State.CLOSED
 

@@ -17,3 +17,16 @@ To connect to the RabbitMQ monitor web page, use `https://hostname/rabbitmq`
         proxy_pass http://localhost:15672/;
     }
 ```
+
+To reverse proxy a public MQTT port to RabbitMQ, create a file
+`/etc/nginx/modules-enabled/60-mqtt-stream.conf` with the following content.
+
+```
+# Reverse proxy definition for the MQTT port of the RabbitMQ container.
+stream {
+    server {
+        listen 1883;
+        proxy_pass 127.0.0.1:1884;
+    }
+}
+```

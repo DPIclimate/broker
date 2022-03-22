@@ -118,9 +118,9 @@ def on_message(channel, method, properties, body):
             ts = math.floor(ts_float * 1000)
         except:
             lu.cid_logger.error(f'Failed to parse timestamp from message: {msg[BrokerConstants.TIMESTAMP_KEY]}', extra=msg)
-            rx_channel._channel.basic_ack(delivery_tag)
+            rx_channel._channel.basic_reject(delivery_tag, requeue=False)
             return
-        
+
         ubidots_payload = {}
         for v in msg[BrokerConstants.TIMESERIES_KEY]:
             dot_ts = ts
@@ -227,7 +227,7 @@ def on_message(channel, method, properties, body):
 
     except BaseException as e:
         logging.exception('Error while processing message.')
-        rx_channel._channel.basic_reject(delivery_tag)
+        rx_channel._channel.basic_reject(delivery_tag, requeue=False)
 
 
 if __name__ == '__main__':
