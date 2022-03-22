@@ -233,7 +233,7 @@ def on_message(channel, method, properties, body):
 
                 channel_name: str = channels[k]['name']
                 var_name = channel_name[2:] if channel_name.startswith(s_prefix) else channel_name
-                dot = { 'ts': ts, 'name': var_name, 'value': v }
+                dot = { BrokerConstants.TIMESTAMP_KEY: ts, 'name': var_name, 'value': v }
 
                 device['dots'].append(dot)
 
@@ -268,13 +268,13 @@ def on_message(channel, method, properties, body):
                 rx_channel._channel.basic_ack(delivery_tag)
                 return
 
-            min_ts = min(device['dots'], key=lambda d: dateutil.parser.parse(d['ts']))
-            lu.cid_logger.info(f'From {device["dots"]}, min_ts is {min_ts}', extra=msg_with_cid)
+            min_ts_dot = min(device['dots'], key=lambda d: dateutil.parser.parse(d[BrokerConstants.TIMESTAMP_KEY]))
+            lu.cid_logger.info(f'From {device["dots"]}, min_ts is {min_ts_dot}', extra=msg_with_cid)
 
             p_ts_msg = {
                 BrokerConstants.CORRELATION_ID_KEY: correlation_id,
                 BrokerConstants.PHYSICAL_DEVICE_UID_KEY: pd.uid,
-                BrokerConstants.TIMESTAMP_KEY: min_ts,
+                BrokerConstants.TIMESTAMP_KEY: min_ts_dot[BrokerConstants.TIMESTAMP_KEY],
                 BrokerConstants.TIMESERIES_KEY: device['dots']
             }
 
