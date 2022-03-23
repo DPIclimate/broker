@@ -282,11 +282,11 @@ def get_physical_devices(query_args = {}) -> List[PhysicalDevice]:
 def update_physical_device(device: PhysicalDevice) -> PhysicalDevice:
     try:
         with _get_connection() as conn:
-            updated_device = _get_physical_device(conn, device.uid)
-            if updated_device is None:
+            current_device = _get_physical_device(conn, device.uid)
+            if current_device is None:
                 raise DAODeviceNotFound(f'update_physical_device: device not found: {device.uid}')
 
-            current_values = vars(updated_device)
+            current_values = vars(current_device)
 
             update_col_names = []
             update_col_values = []
@@ -540,6 +540,10 @@ def insert_mapping(mapping: PhysicalToLogicalMapping) -> None:
     """
     try:
         with _get_connection() as conn, conn.cursor() as cursor:
+            current_mapping = _get_current_device_mapping(conn, pd=mapping.pd.uid)
+            if current_mapping is not None:
+                raise DAOException(f'insert_mapping failed: physical device {current_mapping.pd.uid} / "{current_mapping.pd.name}" is already mapped to logical device {current_mapping.ld.uid} / "{current_mapping.ld.name}"')
+
             current_mapping = _get_current_device_mapping(conn, ld=mapping.ld.uid)
             if current_mapping is not None:
                 _end_mapping(conn, ld=mapping.ld.uid)
@@ -550,8 +554,7 @@ def insert_mapping(mapping: PhysicalToLogicalMapping) -> None:
     except psycopg2.errors.UniqueViolation as err:
         raise DAOUniqeConstraintException(f'Mapping already exists: {mapping.pd.uid} {mapping.pd.name} -> {mapping.ld.uid} {mapping.ld.name}, starting at {mapping.start_time}.', err)
     except Exception as err:
-        #logging.exception('insert_mapping failed.')
-        raise DAOException('insert_mapping failed.', err)
+        raise err if isinstance(err, DAOException) else DAOException('insert_mapping failed.', err)
     finally:
         free_conn(conn)
 
