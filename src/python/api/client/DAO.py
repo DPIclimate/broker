@@ -258,6 +258,8 @@ def get_physical_devices(query_args = {}) -> List[PhysicalDevice]:
                         add_and = True
                         sql = sql + clause
 
+            sql = sql + ' order by uid asc'
+
             #logging.info(cursor.mogrify(sql, args))
 
             cursor.execute(sql, args)
@@ -450,6 +452,8 @@ def get_logical_devices(query_args = {}) -> List[LogicalDevice]:
                         args[f'{name}_val'] = val
                         add_and = True
                         sql = sql + clause
+
+            sql = sql + ' order by uid asc'
 
             #logging.info(cursor.mogrify(sql, args))
 

@@ -86,7 +86,6 @@ map_end_parser = map_sub_parsers.add_parser('end', help='end mapping from physic
 map_end_parser.add_argument('--luid', type=int, help='Logical device uid', dest='l_uid')
 
 args = main_parser.parse_args()
-print(args)
 
 def serialise_datetime(obj):
     if isinstance(obj, datetime.datetime):
