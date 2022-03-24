@@ -112,8 +112,12 @@ def on_message(channel, method, properties, body):
             rx_channel._channel.basic_ack(delivery_tag)
             return
 
+        ld = mapping.ld
+        ld.last_seen = msg[BrokerConstants.TIMESTAMP_KEY]
+        dao.update_logical_device(ld)
+
         # Don't publish most TTN traffic yet.
-        broker_apps = ['linpar-ict', 'oai-test-devices', 'ndvi-dpi-hemistop', 'ndvisoil-dpi-stop5tm', 'stoneleigh-strega', 'tankwater-ellenex-5m', 'temphumid-netvox-r718a']
+        broker_apps = ['aws-ict-atmos41', 'linpar-ict', 'oai-netvox-temphumidity', 'oai-test-devices', 'ndvi-dpi-hemistop', 'ndvisoil-dpi-stop5tm', 'stoneleigh-strega', 'tankwater-ellenex-5m', 'temphumid-netvox-r718a']
         publish = pd.source_name != 'ttn' or pd.source_ids['app_id'] in broker_apps
         if publish:
             msg[BrokerConstants.LOGICAL_DEVICE_UID_KEY] = mapping.ld.uid

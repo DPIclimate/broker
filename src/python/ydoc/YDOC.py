@@ -171,7 +171,7 @@ def on_message(channel, method, properties, body):
         serial_no = msg['device']['sn']
         dev_name = msg['device']['name']
 
-        lu.cid_logger.warning(f'Accepted message from {dev_name} {serial_no}', extra=msg_with_cid)
+        lu.cid_logger.info(f'Accepted message from {dev_name} {serial_no}', extra=msg_with_cid)
 
         # Create a map of the channel objects keyed by channel code to make it simple
         # to find the variable name, uom, etc while processing values.
