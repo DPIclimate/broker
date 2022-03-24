@@ -258,14 +258,14 @@ def on_message(channel, method, properties, body):
         lu.cid_logger.info(f'Accepted message from {dev_name} {serial_no}', extra=msg_with_cid)
 
         printed_msg = False
-        for device in process_message(msg_with_cid):
-            lu.cid_logger.debug(device, extra=msg_with_cid)
-
+        devices = process_message(msg_with_cid)
+        for device in devices.values():
             source_ids = {
                 'id': device['id']
             }
 
-            last_seen = max(device['dots'], key=lambda d: dateutil.parser.parse(d[BrokerConstants.TIMESTAMP_KEY]))
+            max_ts_dot = max(device['dots'], key=lambda d: dateutil.parser.parse(d[BrokerConstants.TIMESTAMP_KEY]))
+            last_seen = max_ts_dot[BrokerConstants.TIMESTAMP_KEY]
 
             pds = dao.get_pyhsical_devices_using_source_ids(BrokerConstants.YDOC, source_ids)
             if len(pds) < 1:

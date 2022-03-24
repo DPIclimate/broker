@@ -22,6 +22,7 @@ pd_sub_parsers = pd_parser.add_subparsers(dest='cmd2')
 
 ## List unmapped physical devices
 pd_lum_parser = pd_sub_parsers.add_parser('lum', help='list unmapped physical devices')
+pd_lum_parser.add_argument('--source', help='Physical device source name', dest='source_name')
 
 ## List unmapped physical devices
 pd_ls_parser = pd_sub_parsers.add_parser('ls', help='list physical devices')
@@ -112,6 +113,8 @@ def main() -> None:
         elif args.cmd2 == 'lum':
             unmapped_devices = dao.get_unmapped_physical_devices()
             tmp_list = list(map(lambda dev: dev.dict(exclude={'properties'}), unmapped_devices))
+            if args.source_name is not None:
+                tmp_list = list(filter(lambda d: d['source_name'] == args.source_name, tmp_list))
             print(pretty_print_json(tmp_list))
         elif args.cmd2 == 'create' and args.pd is not None:
             print(dao.create_physical_device(args.pd))
