@@ -1,7 +1,7 @@
 import datetime, dateutil.parser
 
-import asyncio, json, logging, re, signal, uuid
-from typing import Optional
+import asyncio, json, logging, re, signal, sys, uuid
+from typing import Dict, List, Optional
 
 import BrokerConstants
 from pdmodels.Models import PhysicalDevice, Location
@@ -94,6 +94,90 @@ def parse_ydoc_ts(ydoc_ts) -> Optional[datetime.datetime]:
 # off the reading name before it is added to a physical timeseries message.
 _sensor_code_re = re.compile(r'^([a-z]\d+)([a-z]\d+)')
 
+_non_alpha_numeric = re.compile(r'\W')
+
+def process_message(msg_with_cid: Dict) -> Dict[str, Dict]:
+    # Create a map of the channel objects keyed by channel code to make it simple
+    # to find the variable name, uom, etc while processing values.
+    channels = {}
+    msg = msg_with_cid[BrokerConstants.RAW_MESSAGE_KEY]
+
+    for c in msg['channels']:
+        if 'code' in c:
+            channels[c['code'].lower()] = c
+
+    last_seen = None
+    serial_no = msg['device']['sn']
+    dev_name = msg['device']['name']
+    data = msg['data']
+
+    devices = {}
+
+    """
+    A message from a YDOC device can have multiple sets of readings under the data element,
+    with each set having its own timestamp. So go through the sets of readings and create
+    data points (dots) from each reading in each set with the associated timestamp (in ISO-8601 format).
+
+    The timestamps are also used for the last seen value of the physical device. The parse_ydoc_ts
+    function returns a datetime.datetime object because this makes it simple to compare the current
+    last seen value with the timestamp from the set of readings. After the last seen is taken care
+    of the timestamp is converted to ISO format for use in the phsical timeseries message.
+    """
+    for d in data:
+        for k, v in d.items():
+            # The channel codes are converted to lower-case because we've decided to standardise
+            # on that.
+            k = k.lower()
+            if k == '$ts':
+                ts = parse_ydoc_ts(v)
+                if last_seen is None or last_seen < ts:
+                    last_seen = ts
+
+                ts = ts.isoformat()
+                continue
+
+            if k == '$msg':
+                lu.cid_logger.debug(f'Ignoring message element: {v}', extra=msg_with_cid)
+                break
+
+            if not k in channels:
+                lu.cid_logger.debug(f'Skipping key {k}', extra=msg_with_cid)
+                continue
+
+            sc_match = _sensor_code_re.match(k)
+            if sc_match is None:
+                # If the channel id does not match our convention of s<n>... then assume it is a node
+                # level value such as voltage or processor temperature.
+                channel = channels[k]
+                lu.cid_logger.debug(f'YDOC node level data : ({k}) {channel["name"]} = {v} {channel["unit"]}', extra=msg_with_cid)
+                dev_id = f'ydoc-{serial_no}'
+                logical_dev_name = f'{dev_name.strip()} ({dev_id})'
+                # Set a prefix that cannot be matched down where the var_name is set so that the node
+                # level vars will get the proper names.
+                s_prefix = '!'
+            else:
+                sc_groups = sc_match.groups()
+                s_prefix = sc_groups[0]
+                dev_id = f'{serial_no}-{s_prefix}'
+                logical_dev_name = f'{dev_name.strip()} ({s_prefix})'
+
+            if dev_id not in devices:
+                devices[dev_id] = {
+                    'id': dev_id,
+                    'name': logical_dev_name,
+                    'dots': []
+                }
+
+            device = devices[dev_id]
+
+            channel_name: str = channels[k]['name']
+            var_name = channel_name[2:] if channel_name.startswith(s_prefix) else _non_alpha_numeric.sub('_', channel_name)
+            dot = { BrokerConstants.TIMESTAMP_KEY: ts, 'name': var_name, 'value': v }
+
+            device['dots'].append(dot)
+
+    return devices
+
 def on_message(channel, method, properties, body):
     """
     This function is called when a message arrives from RabbitMQ.
@@ -173,79 +257,15 @@ def on_message(channel, method, properties, body):
 
         lu.cid_logger.info(f'Accepted message from {dev_name} {serial_no}', extra=msg_with_cid)
 
-        # Create a map of the channel objects keyed by channel code to make it simple
-        # to find the variable name, uom, etc while processing values.
-        channels = {}
-        for c in msg['channels']:
-            if 'code' in c:
-                channels[c['code'].lower()] = c
-
-        last_seen = None
-        data = msg['data']
-
-        devices = {}
-
-        """
-        A message from a YDOC device can have multiple sets of readings under the data element,
-        with each set having its own timestamp. So go through the sets of readings and create
-        data points (dots) from each reading in each set with the associated timestamp (in ISO-8601 format).
-
-        The timestamps are also used for the last seen value of the physical device. The parse_ydoc_ts
-        function returns a datetime.datetime object because this makes it simple to compare the current
-        last seen value with the timestamp from the set of readings. After the last seen is taken care
-        of the timestamp is converted to ISO format for use in the phsical timeseries message.
-        """
-        for d in data:
-            for k, v in d.items():
-                # The channel codes are converted to lower-case because we've decided to standardise
-                # on that.
-                k = k.lower()
-                if k == '$ts':
-                    ts = parse_ydoc_ts(v)
-                    if last_seen is None or last_seen < ts:
-                        last_seen = ts
-
-                    ts = ts.isoformat()
-                    continue
-
-                if k == '$msg':
-                    lu.cid_logger.debug(f'Ignoring message element: {v}', extra=msg_with_cid)
-                    break
-
-                if not k in channels:
-                    lu.cid_logger.warning(f'Skipping key {k}', extra=msg_with_cid)
-                    continue
-
-                sc_match = _sensor_code_re.match(k)
-                if sc_match is None:
-                    lu.cid_logger.debug(f'Ignoring message element: {k}: {v} because it does not represent a sensor reading.', extra=msg_with_cid)
-                    continue
-
-                sc_groups = sc_match.groups()
-                s_prefix = sc_groups[0]
-                dev_id = f'{serial_no}-{s_prefix}'
-                if dev_id not in devices:
-                    devices[dev_id] = {
-                        'id': dev_id,
-                        'name': f'{dev_name.strip()} ({s_prefix})',
-                        'dots': []
-                    }
-
-                device = devices[dev_id]
-
-                channel_name: str = channels[k]['name']
-                var_name = channel_name[2:] if channel_name.startswith(s_prefix) else channel_name
-                dot = { BrokerConstants.TIMESTAMP_KEY: ts, 'name': var_name, 'value': v }
-
-                device['dots'].append(dot)
-
         printed_msg = False
-        for device in devices.values():
+        for device in process_message(msg_with_cid):
             lu.cid_logger.debug(device, extra=msg_with_cid)
 
             source_ids = {
                 'id': device['id']
             }
+
+            last_seen = max(device['dots'], key=lambda d: dateutil.parser.parse(d[BrokerConstants.TIMESTAMP_KEY]))
 
             pds = dao.get_pyhsical_devices_using_source_ids(BrokerConstants.YDOC, source_ids)
             if len(pds) < 1:
@@ -308,6 +328,16 @@ if __name__ == '__main__':
     # a handler to catch the signal and initiate an orderly shutdown.
     signal.signal(signal.SIGTERM, sigterm_handler)
 
-    # Does not return until SIGTERM is received.
-    asyncio.run(main())
-    logging.info('Exiting.')
+    if len(sys.argv) > 1:
+        for filename in sys.argv[1:]:
+            with open(filename, mode='r') as file:
+                correlation_id = str(uuid.uuid4())
+                msg = json.load(file)
+                msg_with_cid = {BrokerConstants.CORRELATION_ID_KEY: correlation_id, BrokerConstants.RAW_MESSAGE_KEY: msg}
+                devices = process_message(msg_with_cid)
+                print(json.dumps(devices, indent=2))
+                print('')
+    else:
+        # Does not return until SIGTERM is received.
+        asyncio.run(main())
+        logging.info('Exiting.')
