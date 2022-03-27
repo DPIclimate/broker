@@ -245,7 +245,9 @@ def on_message(channel, method, properties, body):
         msg = json.loads(body)
         msg_with_cid = {BrokerConstants.CORRELATION_ID_KEY: correlation_id, BrokerConstants.RAW_MESSAGE_KEY: msg}
 
-        #lu.cid_logger.info(f'Accepted message {msg}', extra=msg_with_cid)
+        # Record the message to the all messages table before doing anything else to ensure it
+        # is saved. Attempts to add duplicate messages are ignored in the DAO.
+        dao.add_raw_json_message(BrokerConstants.YDOC, last_seen, correlation_id, msg)
 
         if 'data' not in msg:
             lu.cid_logger.info(f'Ignoring message because it has no data element.', extra=msg_with_cid)
@@ -308,12 +310,6 @@ def on_message(channel, method, properties, body):
 
             lu.cid_logger.debug(f'Publishing message: {p_ts_msg}', extra=msg_with_cid)
             tx_channel.publish_message('physical_timeseries', p_ts_msg)
-
-        """
-        # Record the message to the all messages table before doing anything else to ensure it
-        # is saved. Attempts to add duplicate messages are ignored in the DAO.
-        dao.add_raw_json_message(BrokerConstants.YDOC, last_seen, correlation_id, msg)
-        """
 
         # This tells RabbitMQ the message is handled and can be deleted from the queue.    
         rx_channel._channel.basic_ack(delivery_tag)
