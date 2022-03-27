@@ -1,10 +1,10 @@
 import datetime, dateutil.parser
 
 import asyncio, json, logging, re, signal, sys, uuid
-from typing import Dict, List, Optional
+from typing import Dict, Optional
 
 import BrokerConstants
-from pdmodels.Models import PhysicalDevice, Location
+from pdmodels.Models import PhysicalDevice
 from pika.exchange_type import ExchangeType
 
 import api.client.RabbitMQ as mq
@@ -13,6 +13,7 @@ import api.client.TTNAPI as ttn
 import api.client.DAO as dao
 
 import util.LoggingUtil as lu
+import util.Timestamps as ts
 
 rx_channel: mq.RxChannel = None
 tx_channel: mq.TxChannel = None
@@ -247,7 +248,9 @@ def on_message(channel, method, properties, body):
 
         # Record the message to the all messages table before doing anything else to ensure it
         # is saved. Attempts to add duplicate messages are ignored in the DAO.
-        dao.add_raw_json_message(BrokerConstants.YDOC, last_seen, correlation_id, msg)
+        # The 'now' timestamp is used so the message can be recorded ASAP and before any processing
+        # that might fail or cause the message to be ignored is performed.
+        dao.add_raw_json_message(BrokerConstants.YDOC, ts.now_utc(), correlation_id, msg)
 
         if 'data' not in msg:
             lu.cid_logger.info(f'Ignoring message because it has no data element.', extra=msg_with_cid)
