@@ -61,7 +61,7 @@ def _dict_to_logical_device(ubidots_dict) -> LogicalDevice:
     location = None
 
     try:
-        if 'lastActivity' in ubidots_dict:
+        if 'lastActivity' in ubidots_dict and ubidots_dict['lastActivity'] is not None:
             try:
                 last_seen_sec = float(ubidots_dict['lastActivity']) / 1000
                 last_seen = datetime.datetime.fromtimestamp(last_seen_sec)
