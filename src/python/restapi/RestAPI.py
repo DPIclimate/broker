@@ -47,10 +47,7 @@ async def get_all_physical_sources() -> List[str]:
 
 
 @router.get("/physical/devices/", tags=['physical devices'])
-async def query_physical_devices(
-    source: str | None = None,
-    source_id_name: List[str] | None = Query(None),
-    source_id_value: List[str] | None = Query(None)) -> List[PhysicalDevice]:
+async def query_physical_devices(source_name: str = None) -> List[PhysicalDevice]:
     """
     Query PhysicalDevices.
     """
@@ -61,7 +58,8 @@ async def query_physical_devices(
     #return dao.get_physical_devices(locals())
 
     devs: List[PhysicalDevice] = []
-
+    
+    """
     if source is not None and source_id_name is not None and source_id_value is not None:
         source_ids: Dict[str, str] = {}
         s_names: List[str] = []
@@ -75,9 +73,12 @@ async def query_physical_devices(
         # Transform into a dict
         for k, v in zip(s_names, s_values):
             source_ids[k] = v
+    """
 
-        devs = dao.get_pyhsical_devices_using_source_ids(source, source_ids)
-
+    if source_name is None:
+        devs = dao.get_all_physical_devices()
+    else:
+        devs = dao.get_physical_devices_from_source(source_name)
     return devs
 
 
@@ -92,6 +93,17 @@ async def get_physical_device(uid: int) -> PhysicalDevice:
             raise HTTPException(status_code=404, detail="Physical device not found")
 
         return dev
+    except dao.DAOException as err:
+        raise HTTPException(status_code=500, detail=err.msg)
+
+
+@router.get("/physical/devices/unmapped/", tags=['physical devices'])
+async def get_unmapped_physical_devices() -> List[PhysicalDevice]:
+    """
+    Returns a list of unmapped PhysicalDevices.
+    """
+    try:
+        return dao.get_unmapped_physical_devices()
     except dao.DAOException as err:
         raise HTTPException(status_code=500, detail=err.msg)
 

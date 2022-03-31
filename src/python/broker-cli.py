@@ -27,6 +27,7 @@ pd_lum_parser.add_argument('--source', help='Physical device source name', dest=
 ## List unmapped physical devices
 pd_ls_parser = pd_sub_parsers.add_parser('ls', help='list physical devices')
 pd_ls_parser.add_argument('--source', help='Physical device source name', dest='source_name')
+pd_ls_parser.add_argument('--plain', action='store_true', help='Plain output, not JSON', dest='plain')
 
 ## Create physical device
 pd_mk_parser = pd_sub_parsers.add_parser('create', help='create physical devices')
@@ -94,12 +95,26 @@ def serialise_datetime(obj):
     print(f'Cannot serialise {type(obj)}, {obj}')
     return "NO CONVERSION"
 
+
 def now() -> datetime.datetime:
         return datetime.datetime.now(tz=datetime.timezone.utc)
+
 
 def pretty_print_json(object: List | Dict | BaseModel) -> str:
     x = object.dict() if isinstance(object, BaseModel) else object
     return json.dumps(x, indent=2, default=serialise_datetime)
+
+
+def plain_pd_list(devs: List[PhysicalDevice]):
+    for d in devs:
+        m = dao.get_current_device_mapping(pd=d.uid)        
+        print(f'{d.uid: >5}   {d.name: <48}   {d.last_seen.isoformat()}', end='')
+        if m is not None:
+            l = m.ld
+            print(f' --> {l.uid: >5}   {l.name: <48}   {l.last_seen.isoformat()}', end='')
+        
+        print()
+
 
 def main() -> None:
     if args.cmd1 == 'pd':
@@ -108,8 +123,13 @@ def main() -> None:
                 devs = dao.get_physical_devices()
             else:
                 devs = dao.get_physical_devices({'source': args.source_name})
-            tmp_list = list(map(lambda dev: dev.dict(exclude={'properties'}), devs))
-            print(pretty_print_json(tmp_list))
+
+            if not args.plain:
+                tmp_list = list(map(lambda dev: dev.dict(exclude={'properties'}), devs))
+                print(pretty_print_json(tmp_list))
+            else:
+                plain_pd_list(devs)
+
         elif args.cmd2 == 'lum':
             unmapped_devices = dao.get_unmapped_physical_devices()
             tmp_list = list(map(lambda dev: dev.dict(exclude={'properties'}), unmapped_devices))

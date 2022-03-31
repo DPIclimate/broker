@@ -225,6 +225,50 @@ def get_pyhsical_devices_using_source_ids(source_name: str, source_ids: Dict[str
         free_conn(conn)
 
 
+def get_all_physical_devices() -> List[PhysicalDevice]:
+    try:
+        devs = []
+        with _get_connection() as conn, conn.cursor() as cursor:
+            sql = 'select uid, source_name, name, location, last_seen, source_ids, properties from physical_devices order by uid asc'
+            cursor.execute(sql)
+            cursor.arraysize = 200
+            rows = cursor.fetchmany()
+            while len(rows) > 0:
+                for r in rows:
+                    d = PhysicalDevice.parse_obj(_dict_from_row(cursor.description, r))
+                    devs.append(d)
+
+                rows = cursor.fetchmany()
+
+        return devs
+    except Exception as err:
+        raise err if isinstance(err, DAOException) else DAOException('get_all_physical_devices failed.', err)
+    finally:
+        free_conn(conn)
+
+
+def get_physical_devices_from_source(source_name: str) -> List[PhysicalDevice]:
+    try:
+        devs = []
+        with _get_connection() as conn, conn.cursor() as cursor:
+            sql = 'select uid, source_name, name, location, last_seen, source_ids, properties from physical_devices where source_name = %s order by uid asc'
+            cursor.execute(sql, (source_name, ))
+            cursor.arraysize = 200
+            rows = cursor.fetchmany()
+            while len(rows) > 0:
+                for r in rows:
+                    d = PhysicalDevice.parse_obj(_dict_from_row(cursor.description, r))
+                    devs.append(d)
+
+                rows = cursor.fetchmany()
+
+        return devs
+    except Exception as err:
+        raise err if isinstance(err, DAOException) else DAOException('get_all_physical_devices failed.', err)
+    finally:
+        free_conn(conn)
+
+
 def get_physical_devices(query_args = {}) -> List[PhysicalDevice]:
     try:
         devs = []
