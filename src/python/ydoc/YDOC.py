@@ -318,6 +318,7 @@ def on_message(channel, method, properties, body):
         rx_channel._channel.basic_ack(delivery_tag)
         lu.cid_logger.debug('Acking message from ttn_raw.', extra=msg_with_cid)
     except Exception as e:
+        logging.error(body)
         logging.exception('Error while processing message.')
         rx_channel._channel.basic_ack(delivery_tag)
 

@@ -20,6 +20,10 @@ main_sub_parsers = main_parser.add_subparsers(dest='cmd1')
 pd_parser = main_sub_parsers.add_parser('pd', help='physical device operations')
 pd_sub_parsers = pd_parser.add_subparsers(dest='cmd2')
 
+## Get physical device
+pd_get_parser = pd_sub_parsers.add_parser('get', help='get physical device')
+pd_get_parser.add_argument('--puid', type=int, help='physical device uid', dest='p_uid', required=True)
+
 ## List unmapped physical devices
 pd_lum_parser = pd_sub_parsers.add_parser('lum', help='list unmapped physical devices')
 pd_lum_parser.add_argument('--source', help='Physical device source name', dest='source_name')
@@ -28,6 +32,7 @@ pd_lum_parser.add_argument('--source', help='Physical device source name', dest=
 pd_ls_parser = pd_sub_parsers.add_parser('ls', help='list physical devices')
 pd_ls_parser.add_argument('--source', help='Physical device source name', dest='source_name')
 pd_ls_parser.add_argument('--plain', action='store_true', help='Plain output, not JSON', dest='plain')
+pd_ls_parser.add_argument('--puid', type=int, help='Physical device uid', dest='p_uid')
 
 ## Create physical device
 pd_mk_parser = pd_sub_parsers.add_parser('create', help='create physical devices')
@@ -108,10 +113,10 @@ def pretty_print_json(object: List | Dict | BaseModel) -> str:
 def plain_pd_list(devs: List[PhysicalDevice]):
     for d in devs:
         m = dao.get_current_device_mapping(pd=d.uid)        
-        print(f'{d.uid: >5}   {d.name: <48}   {d.last_seen.isoformat()}', end='')
+        print(f'{d.uid: >5}   {d.name: <48}   {d.last_seen.isoformat(timespec="minutes")}', end='')
         if m is not None:
             l = m.ld
-            print(f' --> {l.uid: >5}   {l.name: <48}   {l.last_seen.isoformat()}', end='')
+            print(f' --> {l.uid: >5}   {l.name: <48}   {l.last_seen.isoformat(timespec="minutes")}', end='')
         
         print()
 
@@ -129,7 +134,9 @@ def main() -> None:
                 print(pretty_print_json(tmp_list))
             else:
                 plain_pd_list(devs)
-
+        elif args.cmd2 == 'get':
+            dev = dao.get_physical_device(args.p_uid)
+            print(pretty_print_json(dev))
         elif args.cmd2 == 'lum':
             unmapped_devices = dao.get_unmapped_physical_devices()
             tmp_list = list(map(lambda dev: dev.dict(exclude={'properties'}), unmapped_devices))

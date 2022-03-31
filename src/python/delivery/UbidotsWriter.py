@@ -130,13 +130,18 @@ def on_message(channel, method, properties, body):
                 dot_ts_float = dateutil.parser.isoparse(msg[BrokerConstants.TIMESTAMP_KEY]).timestamp()
                 dot_ts = math.floor(dot_ts_float * 1000)
 
-            ubidots_payload[v['name']] = {
-                'value': v['value'],
-                'timestamp': dot_ts,
-                'context': {
-                    BrokerConstants.CORRELATION_ID_KEY: msg[BrokerConstants.CORRELATION_ID_KEY]
+            try:
+                value = float(v['value'])
+                ubidots_payload[v['name']] = {
+                    'value': value,
+                    'timestamp': dot_ts,
+                    'context': {
+                        BrokerConstants.CORRELATION_ID_KEY: msg[BrokerConstants.CORRELATION_ID_KEY]
+                    }
                 }
-            }
+            except ValueError:
+                # Ubidots will not accept values that are not floats, so skip this value.
+                pass
 
         #
         # TODO: Add some way to abstract the source-specific details of creating the Ubidots device.
@@ -150,11 +155,10 @@ def on_message(channel, method, properties, body):
 
         new_device = False
         if not 'ubidots' in ld.properties or not 'label' in ld.properties['ubidots']:
-            # If the label is not in the logical device properties it most likely
-            # means the logical device is newly created by the mapper. Look at the
-            # physical device source to decide what the label should be, and remember
-            # to read the Ubidots device back after writing the timeseries data so
-            # the device info can be stored in the logical device properties.
+            # If the Ubidots label is not in the logical device properties, the device
+            # may no exist in Ubidots yet so  we must remember to read the Ubidots
+            # device back after writing the timeseries data so the device info can be
+            # stored in the logical device properties.
             lu.cid_logger.info('No Ubidots label found in logical device.', extra=msg)
             pd = dao.get_physical_device(msg[BrokerConstants.PHYSICAL_DEVICE_UID_KEY])
             if pd is None:
@@ -164,6 +168,10 @@ def on_message(channel, method, properties, body):
 
             new_device = True
             ld.properties['ubidots'] = {}
+            # TODO: Remove the device source specific code here and always use a random
+            # UUID for the Ubidots label. This cannot be done until the current TTN ubifunction
+            # is switched off because the broker must be able to determine the same device label
+            # used by the ubifunction when it creates Ubidots devices.
             if pd.source_name == BrokerConstants.TTN:
                 ld.properties['ubidots']['label'] = pd.source_ids['dev_eui']
                 lu.cid_logger.info(f'Using physical device eui for label: {ld.properties["ubidots"]["label"]}', extra=msg)
@@ -225,7 +233,7 @@ def on_message(channel, method, properties, body):
         # This tells RabbitMQ the message is handled and can be deleted from the queue.    
         rx_channel._channel.basic_ack(delivery_tag)
 
-    except BaseException as e:
+    except BaseException:
         logging.exception('Error while processing message.')
         rx_channel._channel.basic_reject(delivery_tag, requeue=False)
 

@@ -58,15 +58,23 @@ def _dict_to_logical_device(ubidots_dict) -> LogicalDevice:
     logging.debug(f'dict from ubidots: {ubidots_dict}')
 
     last_seen = datetime.datetime.now(datetime.timezone.utc)
-    if 'lastActivity' in ubidots_dict:
-        last_seen_sec = ubidots_dict['lastActivity'] / 1000
-        last_seen = datetime.datetime.fromtimestamp(last_seen_sec)
-
     location = None
-    if 'properties' in ubidots_dict:
-        if '_location_fixed' in ubidots_dict['properties']:
-            uloc = ubidots_dict['properties']['_location_fixed']
-            location = Location(lat=uloc['lat'], long=uloc['lng'])
+
+    try:
+        if 'lastActivity' in ubidots_dict:
+            try:
+                last_seen_sec = float(ubidots_dict['lastActivity']) / 1000
+                last_seen = datetime.datetime.fromtimestamp(last_seen_sec)
+            except ValueError:
+                # Ubidots did not have a value for lastActivity, so last seen with be 'now'
+                pass
+
+        if 'properties' in ubidots_dict:
+            if '_location_fixed' in ubidots_dict['properties']:
+                uloc = ubidots_dict['properties']['_location_fixed']
+                location = Location(lat=uloc['lat'], long=uloc['lng'])
+    except BaseException as err:
+        logging.exception(f'Could not parse Ubidots device: {ubidots_dict}')
 
     return LogicalDevice(name=ubidots_dict['name'], last_seen=last_seen, location=location, properties={'ubidots': ubidots_dict})
 
@@ -129,7 +137,8 @@ def post_device_data(label: str, body) -> None:
     time.sleep(0.3)
     r = requests.post(url, headers=hdrs, data=body_str)
     if r.status_code != 200:
-        logging.warning(f'POST {url}: {r.status_code}: {r.reason}')
+        logging.info(f'POST {url}: {r.status_code}: {r.reason}')
+        logging.info(body_str)
 
 
 def update_device(label: str, patch_obj) -> None:
