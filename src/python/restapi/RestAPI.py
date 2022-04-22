@@ -187,6 +187,18 @@ async def create_logical_device(device: LogicalDevice, request: Request, respons
         raise HTTPException(status_code=500, detail=err.msg)
 
 
+@router.get("/logical/devices/", tags=['logical devices'])
+async def get_logical_devices() -> LogicalDevice:
+    """
+    Get all LogicalDevices.
+    """
+    try:
+        devs = dao.get_logical_devices()
+        return devs
+    except dao.DAOException as err:
+        raise HTTPException(status_code=500, detail=err.msg)
+
+
 @router.get("/logical/devices/{uid}", tags=['logical devices'])
 async def get_logical_device(uid: int) -> LogicalDevice:
     """
