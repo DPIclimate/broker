@@ -214,13 +214,18 @@ def on_message(channel, method, properties, body):
             except Exception as err:
                 lu.cid_logger.exception('Local decoding of message failed.', extra=msg_with_cid)
 
-            # This is a temporary check to confirm local decoders are working.
+            # Prefer decoded payloads from TTN because a device may have its own device-level
+            # decoder defined below the application level. In these cases we would have
+            # incorrect data if we ran that device payload through the application-level
+            # decoder.
             if decoded_payload is not None and 'decoded_payload' in uplink_message:
                 uplink_decode = uplink_message['decoded_payload']
                 lu.cid_logger.debug(f'ttn decode: {uplink_decode}', extra=msg_with_cid)
                 if decoded_payload != uplink_decode:
-                    lu.cid_logger.warning(f'Local and ttn decode are different. {decoded_payload}, {uplink_decode}', extra=msg_with_cid)
-            if decoded_payload is None and 'decoded_payload' in uplink_message:
+                    lu.cid_logger.warning(f'Local and TTN decoded payloads are different. {decoded_payload}, {uplink_decode}', extra=msg_with_cid)
+                    lu.cid_logger.warning(f'Using decoded payload from TTN.', extra=msg_with_cid)
+                    decoded_payload = uplink_decode
+            elif decoded_payload is None and 'decoded_payload' in uplink_message:
                 lu.cid_logger.warning('Using decoded_payload from uplink_message', extra=msg_with_cid)
                 decoded_payload = uplink_message['decoded_payload']
 

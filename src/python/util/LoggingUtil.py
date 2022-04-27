@@ -1,4 +1,4 @@
-import inspect, json, logging, logging.config, os.path, uuid
+import inspect, json, logging, logging.config, os.path
 
 _mod_src_file = os.path.abspath(inspect.getsourcefile(lambda:0))
 _mod_dir = os.path.dirname(_mod_src_file)

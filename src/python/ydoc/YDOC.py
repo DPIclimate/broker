@@ -241,7 +241,7 @@ def on_message(channel, method, properties, body):
         """
         # The message from the webhook process already has the correlation id in it.
         correlation_id = str(uuid.uuid4())
-        lu.cid_logger.debug(f'Message as received: {body}', extra={BrokerConstants.CORRELATION_ID_KEY: correlation_id})
+        lu.cid_logger.info(f'Message as received: {body}', extra={BrokerConstants.CORRELATION_ID_KEY: correlation_id})
 
         msg = json.loads(body)
         msg_with_cid = {BrokerConstants.CORRELATION_ID_KEY: correlation_id, BrokerConstants.RAW_MESSAGE_KEY: msg}
@@ -264,6 +264,8 @@ def on_message(channel, method, properties, body):
 
         printed_msg = False
         devices = process_message(msg_with_cid)
+        lu.cid_logger.info(f'Processed message {dev_name} {serial_no}', extra=msg_with_cid)
+        lu.cid_logger.info(devices, extra=msg_with_cid)
         for device in devices.values():
             source_ids = {
                 'id': device['id']
