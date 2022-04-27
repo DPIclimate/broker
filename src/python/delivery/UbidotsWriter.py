@@ -110,7 +110,7 @@ def on_message(channel, method, properties, body):
             return
 
         ts = 0.0
-        # TODO: Find or create a class to hide all the Python datetime horrors.
+        # TODO: Find or create a class to hide all the Python datetime processing.
         try:
             ts_float = dateutil.parser.isoparse(msg[BrokerConstants.TIMESTAMP_KEY]).timestamp()
             # datetime.timestamp() returns a float where the ms are to the right of the
@@ -186,6 +186,10 @@ def on_message(channel, method, properties, body):
                 lu.cid_logger.info('Using a UUID as Ubidots label', extra=msg)
                 ld.properties['ubidots']['label'] = uuid.uuid4()
 
+        #
+        # So it doesn't get lost in all the surrounding code, here is where the
+        # data is posted to Ubidots.
+        #
         ubidots_dev_label = ld.properties['ubidots']['label']
         ubidots.post_device_data(ubidots_dev_label, ubidots_payload)
 
