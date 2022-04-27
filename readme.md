@@ -131,6 +131,17 @@ This is how it is deployed by the Digital Agriculture team. We hope the containe
 
 docker and docker-compose must be installed for IoTa to run.
 
+> The [ttn-formatters](https://github.com/DPIclimate/ttn-formatters) repo should be cloned in the same directory as the broker
+> repo, ie the ttn-formatters and broker directories share the same parent directory.
+>
+> If this is not done the ttn_processor and ttn_decoder logs will get errors for every uplink received. If the message from TTN
+> has decoded values in it, these values will be used.
+
+```
+$ git clone https://github.com/DPIclimate/broker.git
+$ git clone https://github.com/DPIclimate/ttn-formatters.git
+```
+
 
 ## Configuration
 
