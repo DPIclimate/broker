@@ -404,6 +404,39 @@ class TestDAO(unittest.TestCase):
         self.assertTrue(self.compare_mappings_ignore_end_time(mappings[1], mapping2))
         self.assertTrue(self.compare_mappings_ignore_end_time(mappings[2], mapping1))
 
+    def test_get_all_logical_device_mappings(self):
+        pdev, new_pdev = self._create_physical_device()
+        ldev, new_ldev = self._create_default_logical_device()
+
+        mapping1 = PhysicalToLogicalMapping(pd=new_pdev, ld=new_ldev, start_time=self.now())
+        dao.insert_mapping(mapping1)
+        time.sleep(0.1)
+        dao.end_mapping(ld=new_ldev.uid)
+        mapping1 = dao.get_current_device_mapping(ld=new_ldev.uid, only_current_mapping=False)
+
+        pdev2 = copy.deepcopy(pdev)
+        pdev2.name = 'D2'
+        pdev2, new_pdev2 = self._create_physical_device(dev=pdev2)
+        time.sleep(0.1)
+        mapping2 = PhysicalToLogicalMapping(pd=new_pdev2, ld=new_ldev, start_time=self.now())
+        dao.insert_mapping(mapping2)
+        time.sleep(0.1)
+        dao.end_mapping(ld=new_ldev.uid)
+        mapping2 = dao.get_current_device_mapping(ld=new_ldev.uid, only_current_mapping=False)
+
+        pdev3 = copy.deepcopy(pdev)
+        pdev3.name = 'D3'
+        pdev3, new_pdev3 = self._create_physical_device(dev=pdev3)
+        time.sleep(0.1)
+        mapping3 = PhysicalToLogicalMapping(pd=new_pdev3, ld=new_ldev, start_time=self.now())
+        dao.insert_mapping(mapping3)
+
+        mappings = dao.get_logical_device_mappings(ld=new_ldev.uid)
+        self.assertEqual(len(mappings), 3)
+        self.assertEqual(mappings[0], mapping3)
+        self.assertEqual(mappings[1], mapping2)
+        self.assertEqual(mappings[2], mapping1)
+
     def test_get_unmapped_devices(self):
         pdev, new_pdev = self._create_physical_device()
         ldev, new_ldev = self._create_default_logical_device()

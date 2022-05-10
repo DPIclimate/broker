@@ -34,7 +34,7 @@ class TestRESTAPI(unittest.TestCase):
     def now(self):
         return datetime.datetime.now(tz=datetime.timezone.utc)
 
-    def _create_default_physical_device(self, dev=None) -> Tuple[PhysicalDevice, PhysicalDevice]:
+    def _create_physical_device(self, dev=None) -> Tuple[PhysicalDevice, PhysicalDevice]:
         if dev is None:
             last_seen = self.now()
             dev = PhysicalDevice(source_name='ttn', name='Test Device', location=Location(lat=3, long=-31), last_seen=last_seen,
@@ -57,7 +57,7 @@ class TestRESTAPI(unittest.TestCase):
         self.assertEqual(sources, ['greenbrain', 'ttn', 'ydoc'])
 
     def test_create_physical_device(self):
-        dev, new_dev = self._create_default_physical_device()
+        dev, new_dev = self._create_physical_device()
 
         # Don't fail the equality assertion due to the uid being None in dev.
         dev.uid = new_dev.uid
@@ -68,7 +68,7 @@ class TestRESTAPI(unittest.TestCase):
         r = requests.get(url, headers=_HEADERS)
         self.assertEqual(r.status_code, 404)
 
-        dev, new_dev = self._create_default_physical_device()
+        dev, new_dev = self._create_physical_device()
 
         url=f'{_BASE}/physical/devices/{new_dev.uid}'
         r = requests.get(url, headers=_HEADERS)
@@ -77,7 +77,7 @@ class TestRESTAPI(unittest.TestCase):
         self.assertEqual(new_dev, got_dev)
 
     def test_get_physical_devices_using_source_names(self):
-        dev, new_dev = self._create_default_physical_device()
+        dev, new_dev = self._create_physical_device()
 
         url=f'{_BASE}/physical/devices/'
         params = {'source_name': 'ttn'}
@@ -101,7 +101,7 @@ class TestRESTAPI(unittest.TestCase):
         self.assertEqual(len(j), 0)
 
     def test_update_physical_device(self):
-        dev, new_dev = self._create_default_physical_device()
+        dev, new_dev = self._create_physical_device()
 
         # Confirm no update works.
         url=f"{_BASE}/physical/devices/"
@@ -132,7 +132,7 @@ class TestRESTAPI(unittest.TestCase):
         self.assertEqual(r.status_code, 404)
 
     def test_delete_physical_device(self):
-        dev, new_dev = self._create_default_physical_device()
+        dev, new_dev = self._create_physical_device()
 
         url=f'{_BASE}/physical/devices/{new_dev.uid}'
         r = requests.delete(url, headers=_HEADERS)
@@ -151,7 +151,7 @@ class TestRESTAPI(unittest.TestCase):
         self.assertIsNone(r.json())
 
     def test_create_device_note(self):
-        dev, new_dev = self._create_default_physical_device()
+        dev, new_dev = self._create_physical_device()
 
         note1 = DeviceNote(note="Note1")
         url=f'{_BASE}/physical/devices/notes/{new_dev.uid}'
@@ -163,7 +163,7 @@ class TestRESTAPI(unittest.TestCase):
         self.assertEqual(r.status_code, 404)
 
     def test_get_device_notes(self):
-        dev, new_dev = self._create_default_physical_device()
+        dev, new_dev = self._create_physical_device()
 
         note1 = DeviceNote(note="Note1")
         note2 = DeviceNote(note="Note2")
@@ -287,7 +287,7 @@ class TestRESTAPI(unittest.TestCase):
         self.assertIsNone(r.json())
 
     def test_insert_mapping(self):
-        pdev, new_pdev = self._create_default_physical_device()
+        pdev, new_pdev = self._create_physical_device()
         ldev, new_ldev = self._create_default_logical_device()
         mapping = PhysicalToLogicalMapping(pd=new_pdev, ld=new_ldev, start_time=self.now())
 
@@ -338,7 +338,7 @@ class TestRESTAPI(unittest.TestCase):
         self.assertEqual(r.status_code, 404)
 
     def test_get_mapping_from_physical(self):
-        pdev, new_pdev = self._create_default_physical_device()
+        pdev, new_pdev = self._create_physical_device()
         ldev, new_ldev = self._create_default_logical_device()
         mapping = PhysicalToLogicalMapping(pd=new_pdev, ld=new_ldev, start_time=self.now())
 
@@ -376,7 +376,7 @@ class TestRESTAPI(unittest.TestCase):
         self.assertEqual(mapping2, m)
 
     def test_get_mapping_from_logical(self):
-        pdev, new_pdev = self._create_default_physical_device()
+        pdev, new_pdev = self._create_physical_device()
         ldev, new_ldev = self._create_default_logical_device()
         mapping = PhysicalToLogicalMapping(pd=new_pdev, ld=new_ldev, start_time=self.now())
 
@@ -417,7 +417,7 @@ class TestRESTAPI(unittest.TestCase):
         return m1.pd == m2.pd and m1.ld == m2.ld and m1.start_time == m2.start_time
 
     def test_get_latest_mapping_from_physical(self):
-        pdev, new_pdev = self._create_default_physical_device()
+        pdev, new_pdev = self._create_physical_device()
         ldev, new_ldev = self._create_default_logical_device()
         mapping = PhysicalToLogicalMapping(pd=new_pdev, ld=new_ldev, start_time=self.now())
 
@@ -461,7 +461,7 @@ class TestRESTAPI(unittest.TestCase):
         self.assertTrue(self.compare_mappings_ignore_end_time(mapping, m))
 
     def test_get_latest_mapping_from_logical(self):
-        pdev, new_pdev = self._create_default_physical_device()
+        pdev, new_pdev = self._create_physical_device()
         ldev, new_ldev = self._create_default_logical_device()
         mapping = PhysicalToLogicalMapping(pd=new_pdev, ld=new_ldev, start_time=self.now())
 
@@ -503,6 +503,54 @@ class TestRESTAPI(unittest.TestCase):
         m = PhysicalToLogicalMapping.parse_obj(r.json())
         self.assertIsNotNone(m.end_time)
         self.assertTrue(self.compare_mappings_ignore_end_time(mapping, m))
+
+    def test_get_all_logical_device_mappings(self):
+        pdev, new_pdev = self._create_physical_device()
+        ldev, new_ldev = self._create_default_logical_device()
+
+        # Using the DAO to create the test data, the REST API methods to do this are
+        # tested elsewhere.
+
+        mapping1 = PhysicalToLogicalMapping(pd=new_pdev, ld=new_ldev, start_time=self.now())
+        dao.insert_mapping(mapping1)
+        time.sleep(0.1)
+        dao.end_mapping(ld=new_ldev.uid)
+        mapping1 = dao.get_current_device_mapping(ld=new_ldev.uid, only_current_mapping=False)
+
+        pdev2 = copy.deepcopy(pdev)
+        pdev2.name = 'D2'
+        pdev2, new_pdev2 = self._create_physical_device(dev=pdev2)
+        time.sleep(0.1)
+        mapping2 = PhysicalToLogicalMapping(pd=new_pdev2, ld=new_ldev, start_time=self.now())
+        dao.insert_mapping(mapping2)
+        time.sleep(0.1)
+        dao.end_mapping(ld=new_ldev.uid)
+        mapping2 = dao.get_current_device_mapping(ld=new_ldev.uid, only_current_mapping=False)
+
+        pdev3 = copy.deepcopy(pdev)
+        pdev3.name = 'D3'
+        pdev3, new_pdev3 = self._create_physical_device(dev=pdev3)
+        time.sleep(0.1)
+        mapping3 = PhysicalToLogicalMapping(pd=new_pdev3, ld=new_ldev, start_time=self.now())
+        dao.insert_mapping(mapping3)
+
+        url=f'{_BASE}/mappings/logical/all/{new_ldev.uid}'
+        r = requests.get(f'{url}')
+        self.assertEqual(r.status_code, 200)
+
+        j = r.json()
+        self.assertIsNotNone(j)
+        self.assertEqual(len(j), 3)
+
+        # Note the devs must be parsed by the PhysicalDevice class to convert
+        # the ISO-8601 strings into datetime objects or the comparsion will not
+        # work.
+        mappings = [PhysicalToLogicalMapping.parse_obj(m) for m in j]
+
+        self.assertEqual(len(mappings), 3)
+        self.assertEqual(mappings[0], mapping3)
+        self.assertEqual(mappings[1], mapping2)
+        self.assertEqual(mappings[2], mapping1)
 
 if __name__ == '__main__':
     unittest.main()

@@ -315,7 +315,7 @@ async def end_mapping_of_physical_uid(uid: int) -> None:
 
 
 @router.get("/mappings/logical/current/{uid}", tags=['device mapping'], response_model=PhysicalToLogicalMapping)
-async def get_current_mapping_from_logical_uid(uid: int) -> PhysicalToLogicalMapping:
+async def get_current_mapping_to_logical_uid(uid: int) -> PhysicalToLogicalMapping:
     """
     Returns the _current_ mapping for the given logical device. A current mapping is one with no
     end time set, meaning messages from the physical device will be forwarded to the logical
@@ -332,7 +332,7 @@ async def get_current_mapping_from_logical_uid(uid: int) -> PhysicalToLogicalMap
 
 
 @router.get("/mappings/logical/latest/{uid}", tags=['device mapping'], response_model=PhysicalToLogicalMapping)
-async def get_latest_mapping_from_logical_uid(uid: int) -> PhysicalToLogicalMapping:
+async def get_latest_mapping_to_logical_uid(uid: int) -> PhysicalToLogicalMapping:
     """
     Returns the _latest_ mapping for the given logical device. The latest mapping is the most recent
     mapping for the logical device, even if it has ended.
@@ -343,6 +343,21 @@ async def get_latest_mapping_from_logical_uid(uid: int) -> PhysicalToLogicalMapp
             raise HTTPException(status_code=404, detail=f'Device mapping for logical device {uid} not found.')
 
         return mapping
+    except dao.DAOException as err:
+        raise HTTPException(status_code=500, detail=err.msg)
+
+
+@router.get("/mappings/logical/all/{uid}", tags=['device mapping'])
+async def get_all_mappings_to_logical_uid(uid: int) -> List[PhysicalToLogicalMapping]:
+    """
+    Returns all mappings made to the given logical device.
+    """
+    try:
+        mappings = dao.get_logical_device_mappings(ld=uid)
+        if mappings is None:
+            raise HTTPException(status_code=404, detail=f'No mappings to logical device {uid} were found.')
+
+        return mappings
     except dao.DAOException as err:
         raise HTTPException(status_code=500, detail=err.msg)
 
