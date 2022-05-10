@@ -11,6 +11,9 @@ from typing import Dict, List
 from pdmodels.Models import DeviceNote, PhysicalDevice, LogicalDevice, PhysicalToLogicalMapping
 import api.client.DAO as dao
 
+import util.LoggingUtil as lu
+import logging
+
 router = APIRouter(prefix='/broker/api')
 
 """
@@ -254,7 +257,7 @@ async def insert_mapping(mapping: PhysicalToLogicalMapping) -> None:
         raise HTTPException(status_code=500, detail=err.msg)
 
 
-@router.get("/mappings/current/physical/{uid}", tags=['device mapping'], response_model=PhysicalToLogicalMapping)
+@router.get("/mappings/physical/current/{uid}", tags=['device mapping'], response_model=PhysicalToLogicalMapping)
 async def get_mapping_from_physical_uid(uid: int) -> PhysicalToLogicalMapping:
     try:
         mapping = dao.get_current_device_mapping(pd=uid)
@@ -266,7 +269,19 @@ async def get_mapping_from_physical_uid(uid: int) -> PhysicalToLogicalMapping:
         raise HTTPException(status_code=500, detail=err.msg)
 
 
-@router.get("/mappings/current/logical/{uid}", tags=['device mapping'], response_model=PhysicalToLogicalMapping)
+@router.patch("/mappings/physical/end/{uid}", tags=['device mapping'], status_code=status.HTTP_204_NO_CONTENT)
+async def end_mapping_of_physical_uid(uid: int) -> None:
+    try:
+        mapping = dao.get_current_device_mapping(pd=uid)
+        if mapping is None:
+            raise HTTPException(status_code=404, detail=f'Device mapping for physical device {uid} not found.')
+
+        dao.end_mapping(pd=uid)
+    except dao.DAOException as err:
+        raise HTTPException(status_code=500, detail=err.msg)
+
+
+@router.get("/mappings/logical/current/{uid}", tags=['device mapping'], response_model=PhysicalToLogicalMapping)
 async def get_mapping_from_logical_uid(uid: int) -> PhysicalToLogicalMapping:
     try:
         mapping = dao.get_current_device_mapping(ld=uid)
@@ -274,6 +289,18 @@ async def get_mapping_from_logical_uid(uid: int) -> PhysicalToLogicalMapping:
             raise HTTPException(status_code=404, detail=f'Device mapping for logical device {uid} not found.')
 
         return mapping
+    except dao.DAOException as err:
+        raise HTTPException(status_code=500, detail=err.msg)
+
+
+@router.patch("/mappings/logical/end/{uid}", tags=['device mapping'], status_code=status.HTTP_204_NO_CONTENT)
+async def end_mapping_of_logical_uid(uid: int) -> None:
+    try:
+        mapping = dao.get_current_device_mapping(ld=uid)
+        if mapping is None:
+            raise HTTPException(status_code=404, detail=f'Device mapping for logical device {uid} not found.')
+
+        dao.end_mapping(ld=uid)
     except dao.DAOException as err:
         raise HTTPException(status_code=500, detail=err.msg)
 

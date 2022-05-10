@@ -1,4 +1,6 @@
-import argparse, datetime, json
+#!/usr/local/bin/python
+
+import argparse, datetime, json, sys
 from typing import Dict, List
 import api.client.DAO as dao
 from pdmodels.Models import LogicalDevice, PhysicalDevice, PhysicalToLogicalMapping
@@ -23,25 +25,32 @@ pd_sub_parsers = pd_parser.add_subparsers(dest='cmd2')
 ## Get physical device
 pd_get_parser = pd_sub_parsers.add_parser('get', help='get physical device')
 pd_get_parser.add_argument('--puid', type=int, help='physical device uid', dest='p_uid', required=True)
+pd_get_parser.add_argument('--properties', action='store_true', help='Include the properties field in the output', dest='include_props', required=False)
 
 ## List unmapped physical devices
 pd_lum_parser = pd_sub_parsers.add_parser('lum', help='list unmapped physical devices')
 pd_lum_parser.add_argument('--source', help='Physical device source name', dest='source_name')
+pd_lum_parser.add_argument('--plain', action='store_true', help='Plain output, not JSON', dest='plain')
+pd_lum_parser.add_argument('--properties', action='store_true', help='Include the properties field in the output', dest='include_props', required=False)
 
-## List unmapped physical devices
+## List physical devices
 pd_ls_parser = pd_sub_parsers.add_parser('ls', help='list physical devices')
 pd_ls_parser.add_argument('--source', help='Physical device source name', dest='source_name')
 pd_ls_parser.add_argument('--plain', action='store_true', help='Plain output, not JSON', dest='plain')
-pd_ls_parser.add_argument('--puid', type=int, help='Physical device uid', dest='p_uid')
+pd_ls_parser.add_argument('--properties', action='store_true', help='Include the properties field in the output', dest='include_props', required=False)
 
 ## Create physical device
 pd_mk_parser = pd_sub_parsers.add_parser('create', help='create physical devices')
-pd_mk_parser.add_argument('--json', type=str_to_physical_device, help='Physical device JSON', dest='pd', required=True)
+group = pd_mk_parser.add_mutually_exclusive_group(required=True)
+group.add_argument('--json', type=str_to_dict, help='Physical device JSON', dest='pd')
+group.add_argument('--file', help='Read json from file, - for stdin', dest='in_filename')
 
 ## Update physical device
 pd_up_parser = pd_sub_parsers.add_parser('up', help='update physical devices')
-pd_up_parser.add_argument('--puid', type=int, help='Physical device uid', dest='p_uid')
-pd_up_parser.add_argument('--json', type=str_to_dict, help='Physical device JSON', dest='pd', required=True)
+pd_up_parser.add_argument('--puid', type=int, help='Physical device uid', dest='p_uid', required=True)
+group = pd_up_parser.add_mutually_exclusive_group(required=True)
+group.add_argument('--json', type=str_to_dict, help='Physical device JSON', dest='pd')
+group.add_argument('--file', help='Read json from file, - for stdin', dest='in_filename')
 
 ## Delete physical devices
 pd_rm_parser = pd_sub_parsers.add_parser('rm', help='delete physical devices')
@@ -57,12 +66,16 @@ ld_ls_parser = ld_sub_parsers.add_parser('ls', help='list logical devices')
 
 ## Create logical devices
 ld_mk_parser = ld_sub_parsers.add_parser('create', help='create logical device')
-ld_mk_parser.add_argument('--json', type=str_to_logical_device, help='Logical device JSON', dest='ld', required=True)
+group = ld_mk_parser.add_mutually_exclusive_group(required=True)
+group.add_argument('--json', type=str_to_dict, help='Physical device JSON', dest='pd')
+group.add_argument('--file', help='Read json from file, - for stdin', dest='in_filename')
 
 ## Update logical devices
 ld_up_parser = ld_sub_parsers.add_parser('up', help='update logical device')
 ld_up_parser.add_argument('--luid', type=int, help='logical device uid', dest='l_uid', required=True)
-ld_up_parser.add_argument('--json', type=str_to_dict, help='Logical device JSON', dest='ld', required=True)
+group = ld_up_parser.add_mutually_exclusive_group(required=True)
+group.add_argument('--json', type=str_to_dict, help='Physical device JSON', dest='pd')
+group.add_argument('--file', help='Read json from file, - for stdin', dest='in_filename')
 
 ## Delete logical devices
 ld_rm_parser = ld_sub_parsers.add_parser('rm', help='delete logical devices')
@@ -80,17 +93,20 @@ map_sub_parsers = map_parser.add_subparsers(dest='cmd2')
 
 ## Map physical device to logical device
 map_start_parser = map_sub_parsers.add_parser('start', help='start mapping from physical device to logical device')
-map_start_parser.add_argument('--puid', type=int, help='Physical device uid', dest='p_uid')
-map_start_parser.add_argument('--luid', type=int, help='Logical device uid', dest='l_uid')
+map_start_parser.add_argument('--puid', type=int, help='Physical device uid', dest='p_uid', required=True)
+map_start_parser.add_argument('--luid', type=int, help='Logical device uid', dest='l_uid', required=True)
 
 ## List mapping
 map_ls_parser = map_sub_parsers.add_parser('ls', help='list mapping for device')
-map_ls_parser.add_argument('--puid', type=int, help='Physical device uid', dest='p_uid')
-map_ls_parser.add_argument('--luid', type=int, help='Logical device uid', dest='l_uid')
+group = map_ls_parser.add_mutually_exclusive_group(required=True)
+group.add_argument('--puid', type=int, help='Physical device uid', dest='p_uid')
+group.add_argument('--luid', type=int, help='Logical device uid', dest='l_uid')
 
 ## End mapping
 map_end_parser = map_sub_parsers.add_parser('end', help='end mapping from physical device to logical device')
-map_end_parser.add_argument('--luid', type=int, help='Logical device uid', dest='l_uid')
+group = map_end_parser.add_mutually_exclusive_group(required=True)
+group.add_argument('--puid', type=int, help='Physical device uid', dest='p_uid')
+group.add_argument('--luid', type=int, help='Logical device uid', dest='l_uid')
 
 args = main_parser.parse_args()
 
@@ -107,18 +123,53 @@ def now() -> datetime.datetime:
 
 def pretty_print_json(object: List | Dict | BaseModel) -> str:
     x = object.dict() if isinstance(object, BaseModel) else object
+    if isinstance(x, dict):
+        if hasattr(args, 'include_props') and not args.include_props:
+            x.pop("properties")
+
     return json.dumps(x, indent=2, default=serialise_datetime)
+
+
+def get_last_seen(d: PhysicalDevice | LogicalDevice) -> str:
+#                    2022-04-14T13:52+10:00    
+    log_last_seen = 'Never                 '
+    if d.last_seen is not None:
+        log_last_seen = d.last_seen.isoformat(timespec="minutes")
+
+    return log_last_seen
 
 
 def plain_pd_list(devs: List[PhysicalDevice]):
     for d in devs:
-        m = dao.get_current_device_mapping(pd=d.uid)        
-        print(f'{d.uid: >5}   {d.name: <48}   {d.last_seen.isoformat(timespec="minutes")}', end='')
+        m = dao.get_current_device_mapping(pd=d.uid)
+        print(f'{d.uid: >5}   {d.name: <48}   {get_last_seen(d)}', end='')
         if m is not None:
             l = m.ld
-            print(f' --> {l.uid: >5}   {l.name: <48}   {l.last_seen.isoformat(timespec="minutes")}', end='')
-        
+            if l is not None:
+                print(f' --> {l.uid: >5}   {l.name: <48}   {get_last_seen(l)}', end='')
+
         print()
+
+
+def dict_from_file_or_string() -> dict:
+    if args.pd is not None and args.in_filename is not None:
+        raise RuntimeError('error: --json and --file are mutually exclusive.')
+
+    json_obj = None
+    if hasattr(args, 'in_filename'):
+        if args.in_filename == '-':
+            json_obj = json.load(sys.stdin)
+        else:
+            with open(args.in_filename) as jf:
+                json_obj = json.load(jf)
+
+    elif hasattr(args, 'pd'):
+        json_obj = args.pd
+
+    if json_obj is None:
+        raise RuntimeError('No physical device object given via either --json or --file.')
+
+    return json_obj
 
 
 def main() -> None:
@@ -130,7 +181,11 @@ def main() -> None:
                 devs = dao.get_physical_devices({'source': args.source_name})
 
             if not args.plain:
-                tmp_list = list(map(lambda dev: dev.dict(exclude={'properties'}), devs))
+                if args.include_props:
+                    tmp_list = list(map(lambda dev: dev.dict(), devs))
+                else:
+                    tmp_list = list(map(lambda dev: dev.dict(exclude={'properties'}), devs))
+
                 print(pretty_print_json(tmp_list))
             else:
                 plain_pd_list(devs)
@@ -138,46 +193,62 @@ def main() -> None:
             dev = dao.get_physical_device(args.p_uid)
             print(pretty_print_json(dev))
         elif args.cmd2 == 'lum':
-            unmapped_devices = dao.get_unmapped_physical_devices()
-            tmp_list = list(map(lambda dev: dev.dict(exclude={'properties'}), unmapped_devices))
+            devs = dao.get_unmapped_physical_devices()
             if args.source_name is not None:
-                tmp_list = list(filter(lambda d: d['source_name'] == args.source_name, tmp_list))
-            print(pretty_print_json(tmp_list))
-        elif args.cmd2 == 'create' and args.pd is not None:
-            print(dao.create_physical_device(args.pd))
-        elif args.cmd2 == 'up' and args.pd is not None:
-            pdev = dao.get_physical_device(args.p_uid)
-            if pdev is None:
+                devs = list(filter(lambda d: d.dict()['source_name'] == args.source_name, devs))
+            if not args.plain:
+                if args.include_props:
+                    tmp_list = list(map(lambda dev: dev.dict(), devs))
+                else:
+                    tmp_list = list(map(lambda dev: dev.dict(exclude={'properties'}), devs))
+
+                print(pretty_print_json(tmp_list))
+            else:
+                plain_pd_list(devs)
+
+        elif args.cmd2 == 'create':
+            dev = PhysicalDevice.parse_obj(dict_from_file_or_string())
+            print(pretty_print_json(dao.create_physical_device(dev)))
+
+        elif args.cmd2 == 'up':
+            json_obj = dict_from_file_or_string()
+            dev = dao.get_physical_device(args.p_uid)
+            if dev is None:
                 raise RuntimeError('Physical device not found.')
 
-            pdev = pdev.dict()
-            for k, v in args.pd.items():
-                if pdev[k] != v:
-                    pdev[k] = v
+            dev = dev.dict()
+            for k, v in json_obj.items():
+                if k == "uid":
+                    continue
+                if dev[k] != v:
+                    dev[k] = v
 
-            pdev = PhysicalDevice.parse_obj(pdev)
-            print(pretty_print_json(dao.update_physical_device(pdev)))
+            dev = PhysicalDevice.parse_obj(dev)
+            print(pretty_print_json(dao.update_physical_device(dev)))
         elif args.cmd2 == 'rm':
-            print(dao.delete_physical_device(args.p_uid))
+            print(pretty_print_json(dao.delete_physical_device(args.p_uid)))
     elif args.cmd1 == 'ld':
         if args.cmd2 == 'ls':
             devs = dao.get_logical_devices()
             tmp_list = list(map(lambda dev: dev.dict(exclude={'properties'}), devs))
             print(pretty_print_json(tmp_list))
         elif args.cmd2 == 'create' and args.ld is not None:
-            print(dao.create_logical_device(args.ld))
+            dev = LogicalDevice.parse_obj(dict_from_file_or_string())
+            print(dao.create_logical_device(dev))
         elif args.cmd2 == 'up' and args.ld is not None:
-            ldev = dao.get_logical_device(args.l_uid)
-            if ldev is None:
+            json_obj = dict_from_file_or_string()
+            dev = dao.get_logical_device(args.l_uid)
+            if dev is None:
                 raise RuntimeError('Logical device not found.')
 
-            ldev = ldev.dict()
-            for k, v in args.ld.items():
-                if ldev[k] != v:
-                    ldev[k] = v
+            for k, v in json_obj.items():
+                if k == "uid":
+                    continue
+                if dev[k] != v:
+                    dev[k] = v
 
-            ldev = LogicalDevice.parse_obj(ldev)
-            print(pretty_print_json(dao.update_logical_device(ldev)))
+            dev = LogicalDevice.parse_obj(dev)
+            print(pretty_print_json(dao.update_logical_device(dev)))
         elif args.cmd2 == 'rm':
             print(dao.delete_logical_device(args.l_uid))
         elif args.cmd2 == 'cpd':
@@ -205,10 +276,14 @@ def main() -> None:
             mapping = dao.get_current_device_mapping(ld=ldev.uid)
             print(json.dumps(mapping.dict(), indent=2, default=serialise_datetime))
         elif args.cmd2 == 'end':
-            dao.end_mapping(ld=args.l_uid)
+            if args.p_uid is not None:
+                dao.end_mapping(pd=args.p_uid)
+            else:
+                dao.end_mapping(ld=args.l_uid)
         elif args.cmd2 == 'ls':
             if args.p_uid is not None:
-                pretty_print_json(dao.get_current_device_mapping(pd=args.p_uid))
+                mapping = dao.get_current_device_mapping(pd=args.p_uid)
+                print(pretty_print_json(mapping))
             elif args.l_uid is not None:
                 map_list = dao.get_logical_device_mappings(args.l_uid)
                 new_list = [m.dict() for m in map_list]

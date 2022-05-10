@@ -220,7 +220,14 @@ class TestDAO(unittest.TestCase):
         # This should fail due to duplicate start time.
         self.assertRaises(dao.DAOException, dao.insert_mapping, mapping)
 
+        # This should fail due to the physical device is still mapped to something.
         time.sleep(0.001)
+        mapping.start_time=self.now()
+        self.assertRaises(dao.DAOException, dao.insert_mapping, mapping)
+
+        # Unmap the physical device so the next test doesn't fail due to the device being mapped.
+        dao.end_mapping(pd=new_pdev)
+        # The insert_mapping operation should succeed because the timestamp is different from above.
         mapping.start_time=self.now()
         dao.insert_mapping(mapping)
 
@@ -230,6 +237,8 @@ class TestDAO(unittest.TestCase):
         # This should fail due to invalid physical uid.
         self.assertRaises(dao.DAODeviceNotFound, dao.insert_mapping, mapping)
 
+        # Unmap the physical device so the next test doesn't fail due to the device being mapped.
+        dao.end_mapping(pd=new_pdev)
         ldx = copy.deepcopy(new_ldev)
         ldx.uid = -1
         mapping = PhysicalToLogicalMapping(pd=new_pdev, ld=ldx, start_time=self.now())

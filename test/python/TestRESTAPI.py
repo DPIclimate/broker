@@ -76,11 +76,11 @@ class TestRESTAPI(unittest.TestCase):
         got_dev = PhysicalDevice.parse_obj(r.json())
         self.assertEqual(new_dev, got_dev)
 
-    def test_get_physical_devices_using_source_ids(self):
+    def test_get_physical_devices_using_source_names(self):
         dev, new_dev = self._create_default_physical_device()
 
         url=f'{_BASE}/physical/devices/'
-        params = {'source': 'ttn', 'source_id_name': 'appId', 'source_id_value': 'x'}
+        params = {'source_name': 'ttn'}
         r = requests.get(url, headers=_HEADERS, params=params)
         self.assertEqual(r.status_code, 200)
         j = r.json()
@@ -93,40 +93,7 @@ class TestRESTAPI(unittest.TestCase):
         parsed_devs = [PhysicalDevice.parse_obj(d) for d in j]
         self.assertEqual(new_dev, parsed_devs[0])
 
-        # Check we get two devices back from a shared source id value.
-        dev.last_seen = self.now()
-        dev.source_ids['devId'] = 'z'
-        dev, new_dev2 = self._create_default_physical_device(dev)
-
-        params = {'source': 'ttn', 'source_id_name': 'appId', 'source_id_value': 'x'}
-        r = requests.get(url, headers=_HEADERS, params=params)
-        self.assertEqual(r.status_code, 200)
-        j = r.json()
-        self.assertIsNotNone(j)
-        self.assertEqual(len(j), 2)
-
-        # Note the devs must be parsed by the PhysicalDevice class to convert
-        # the ISO-8601 strings into datetime objects or the comparsion will not
-        # work.
-        parsed_devs = [PhysicalDevice.parse_obj(d) for d in j]
-        self.assertEqual(new_dev, parsed_devs[0])
-        self.assertEqual(new_dev2, parsed_devs[1])
-
-        params = {'source': 'ttn', 'source_id_name': 'appId,devId', 'source_id_value': 'x,z'}
-        r = requests.get(url, headers=_HEADERS, params=params)
-        self.assertEqual(r.status_code, 200)
-        j = r.json()
-        self.assertIsNotNone(j)
-        self.assertEqual(len(j), 1)
-
-        # Note the devs must be parsed by the PhysicalDevice class to convert
-        # the ISO-8601 strings into datetime objects or the comparsion will not
-        # work.
-        parsed_devs = [PhysicalDevice.parse_obj(d) for d in j]
-        self.assertEqual(new_dev2, parsed_devs[0])
-
-        # Confirm no results comes back as an empty list.
-        params = {'source': 'INVALID', 'source_id_name': 'appId', 'source_id_value': 'x'}
+        params = {'source_name': 'ydoc'}
         r = requests.get(url, headers=_HEADERS, params=params)
         self.assertEqual(r.status_code, 200)
         j = r.json()
@@ -334,7 +301,16 @@ class TestRESTAPI(unittest.TestCase):
         r = requests.post(url, headers=_HEADERS, data=payload)
         self.assertEqual(r.status_code, 400)
 
+        # This should fail because the physical device has a current mapping.
         time.sleep(0.001)
+        mapping.start_time=self.now()
+        payload = mapping.json()
+        r = requests.post(url, headers=_HEADERS, data=payload)
+        self.assertEqual(r.status_code, 400)
+
+        # End the current mapping and create a new one. This should work and
+        # simulates 'pausing' a physical device while working on it.
+        requests.patch(f'{url}physical/end/{mapping.pd.uid}')
         mapping.start_time=self.now()
         payload = mapping.json()
         r = requests.post(url, headers=_HEADERS, data=payload)
@@ -351,6 +327,11 @@ class TestRESTAPI(unittest.TestCase):
         ldx = copy.deepcopy(new_ldev)
         ldx.uid = -1
         mapping = PhysicalToLogicalMapping(pd=new_pdev, ld=ldx, start_time=self.now())
+
+        # End the current mapping for the phyiscal device so the RESTAPI doesn't
+        # return status 400.
+        requests.patch(f'{url}physical/end/{mapping.pd.uid}')
+
         # This should fail due to invalid logical uid.
         payload = mapping.json()
         r = requests.post(url, headers=_HEADERS, data=payload)
@@ -367,14 +348,18 @@ class TestRESTAPI(unittest.TestCase):
         self.assertEqual(r.status_code, 201)
 
         # Confirm getting the mapping works.
-        r = requests.get(f'{_BASE}/mappings/current/physical/{new_pdev.uid}')
+        r = requests.get(f'{url}physical/current/{new_pdev.uid}')
         self.assertEqual(r.status_code, 200)
         m = PhysicalToLogicalMapping.parse_obj(r.json())
         self.assertEqual(mapping, m)
 
         # Confirm getting an invalid map returns 404
-        r = requests.get(f'{_BASE}/mappings/current/physical/{-1}')
+        r = requests.get(f'{url}physical/current/{-1}')
         self.assertEqual(r.status_code, 404)
+
+        # End the current mapping for the phyiscal device so the RESTAPI doesn't
+        # return status 400.
+        requests.patch(f'{url}physical/end/{mapping.pd.uid}')
 
         # Confirm the latest mapping is returned.
         time.sleep(0.001)
@@ -385,7 +370,7 @@ class TestRESTAPI(unittest.TestCase):
         r = requests.post(url, headers=_HEADERS, data=payload)
         self.assertEqual(r.status_code, 201)
 
-        r = requests.get(f'{_BASE}/mappings/current/physical/{new_pdev.uid}')
+        r = requests.get(f'{url}physical/current/{new_pdev.uid}')
         self.assertEqual(r.status_code, 200)
         m = PhysicalToLogicalMapping.parse_obj(r.json())
         self.assertEqual(mapping2, m)
@@ -401,14 +386,18 @@ class TestRESTAPI(unittest.TestCase):
         self.assertEqual(r.status_code, 201)
 
         # Confirm getting the mapping works.
-        r = requests.get(f'{_BASE}/mappings/current/logical/{new_ldev.uid}')
+        r = requests.get(f'{url}logical/current/{new_ldev.uid}')
         self.assertEqual(r.status_code, 200)
         m = PhysicalToLogicalMapping.parse_obj(r.json())
         self.assertEqual(mapping, m)
 
         # Confirm getting an invalid map returns 404
-        r = requests.get(f'{_BASE}/mappings/current/logical/{-1}')
+        r = requests.get(f'{url}logical/current/{-1}')
         self.assertEqual(r.status_code, 404)
+
+        # End the current mapping for the phyiscal device so the RESTAPI doesn't
+        # return status 400.
+        requests.patch(f'{url}logical/end/{mapping.ld.uid}')
 
         # Confirm the latest mapping is returned.
         time.sleep(0.001)
@@ -419,7 +408,7 @@ class TestRESTAPI(unittest.TestCase):
         r = requests.post(url, headers=_HEADERS, data=payload)
         self.assertEqual(r.status_code, 201)
 
-        r = requests.get(f'{_BASE}/mappings/current/logical/{new_ldev.uid}')
+        r = requests.get(f'{url}logical/current/{new_ldev.uid}')
         self.assertEqual(r.status_code, 200)
         m = PhysicalToLogicalMapping.parse_obj(r.json())
         self.assertEqual(mapping2, m)

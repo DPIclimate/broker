@@ -28,7 +28,9 @@ Message exchanges and queues are used as the service coupling mechanism, carryin
 
 The scale of the Digital Agriculture project is relatively small - comprising some few hundred devices in the field - so the rate of messages and the performance required from even the busiest components are modest. The implementation reflects this, having enough performance and resiliency to support our use-case while exploring solutions to the challenges mentioned above.
 
-To address the problem of routing the data from different devices in the field - for example after replacing a broken device - to the same final destinations IoTa has the notion of physical devices and logical devices. Physical devices are the devices in the field, sending data via some means to be accepted by the front-end processors.
+To address the problem of routing the data from different devices in the field - for example after replacing a broken device - to the same final destinations IoTa introduces the notion of physical and logical devices. Physical devices are the devices in the field, sending data via some means to be accepted by the front-end processors. Logical devices
+represent a device in a destination system or database such as a tank sensor or weather station whose timeseries data
+may be provided by different physical devices over time as the phyiscal devices are replaced for maintenance purposes.
 
 Due to the disparate nature of sources and destinations, IoTa has a minimalistic view of devices, comprising an id, name, location, and a last seen timestamp. Physical devices also record their 'source' and some source-specific information to allow fast device lookups to be performed based upon information in an incoming message. Each device has a map of free-form properties associated with it that is available for use by the various components of the system.
 
@@ -39,7 +41,7 @@ Due to the disparate nature of sources and destinations, IoTa has a minimalistic
 
 * Physical device: A physical device is IoTa's representation of a sensor. Front-end processors create physical devices as necessary in response to incoming telemetry messages.
 
-* Logical device: A logical device is IoTa's representation of a destination for timeseries telemetry. It generally represents a sensor in a location such as a water tank or a buoy in a river, and a series of sensors/phyiscal devices will be assoiated with that location over time as maintenance takes place. Telemetry sent to destination systems such as IoT platforms are recorded against logical devices so a coherent timeseries is maintained.
+* Logical device: A logical device is IoTa's representation of a destination for timeseries telemetry. It generally represents a sensor in a location such as a water tank or a buoy in a river, and a series of sensors/physical devices will be assoiated with that location over time as maintenance takes place. Telemetry sent to destination systems such as IoT platforms are recorded against logical devices so a coherent timeseries is maintained.
 
 * Mapping: Physical devices are mapped to logical devices, and this mapping is updated when a new physical device appears due to field maintenance. Mappings can also be temporarily or permanently broken to stop messages from a physical device reaching the destination systems, such as when a device is retired or is being reconfigured.
 
@@ -164,9 +166,9 @@ $ docker volume create broker_db
 $ docker volume create mq_data
 ```
 
-## Running IoTa
+# Running IoTa
 
-### run.sh
+## run.sh
 
 IoTa is started using the `run.sh` script.
 
@@ -179,7 +181,7 @@ IoTa is started using the `run.sh` script.
 In either mode the script runs a `docker-compose logs -f` command, leaving the log files scrolling up the screen. You can safely `ctrl-c` out of this and the containers will keep running.
 
 
-### dc.sh
+## dc.sh
 
 A script called `dc.sh` exists in both the `broker/compose/production` and `broker/compose/test` directories. This is a convenience script for running `docker-compose` commands with the correct docker-compose file arguments and in the correct directory.
 
@@ -194,7 +196,178 @@ Examples:
 * `./dc.sh logs -f lm delivery` follow the logs for the logical mapper and Ubidots delivery containers.
 
 
-### Unit tests
+# broker-cli
+
+A python script called `broker-cli` can be used to query and update the device data. It must be run in a container using a command similar to:
+
+```
+docker exec prod_lm_1 python -m broker-cli pd ls --plain
+```
+
+If a container is running a python process, it can be used for running `broker-cli`. It makes no difference which python-enabled container is used, so this document will always use lm_1 - `test_lm_1` or `prod_lm_1`.
+
+The `broker/src/python` directory is mounted into the python-based containers and is the current working directory for processes in those containers. If you wish to provide a file to a command you can place the file in the `broker/src/python` directory and have the command find it:
+
+```
+docker exec prod_lm_1 python -m broker-cli pd create --file new_device.json
+```
+
+If a command can take JSON via stdin using `--file -` then you must run the command from a shell running in the container:
+
+```
+host$ docker exec -it prod_lm_1 bash
+broker@529308294:~/python$ cat updated_device.json | python -m broker-cli pd up --puid 123 --file -
+```
+
+The script functions are broken up into a multi-level set of commands, with flags used to pass in values. The --help flag to print the available commands and flags.
+
+From here on, the docker part of the command line is omitted, and examples will start with `broker-cli`.
+
+
+## Physical devices
+
+The `pd` command is used to work with physical devices. The subcommands are:
+
+* `get --puid uid [--properties]` returns the complete JSON representation of a physical device identified by `uid`. Unless the `--properties` flag is used the properties field is omitted to reduce clutter in the output. 
+
+* `lum [--source source] [--properties] [--plain]` lists currently unmapped physical devices. A JSON list (the default), or a plain single line per device list of devices is the output. May optionally be filtered by source. Unless the
+`--properties` flag is used the properties field is omitted to reduce clutter in the output. 
+
+* `ls [--source source] [--properties] [--plain]` lists mapped and unmapped physical devices, with the option of filtering by source. Plain mode shows one device per line, with the mapped logical device (if any). Unless the
+`--properties` flag is used the properties field is omitted to reduce clutter in the output. 
+
+* `create --file filename | --json '{"name": "...", ...}'` creates a physical devices based upon a JSON object provided to the command. See the example below for the structure of the JSON object. The flags  `--file` and `--json` are mutually
+exclusive. Use `--file -` to read JSON from stdin.
+
+* `up --puid uid --file filename | --json '{ ... }'` updates the physical device identified by uid based upon the JSON object provided to the command. Only the fields present in the JSON object will be updated in the database. The flags  `--file` and `--json` are mutually exclusive. Use `--file -` to read JSON from stdin.
+
+* `rm --puid uid` deletes the physical device indentified by uid.
+
+_Examples_:
+
+`broker-cli pd get --properties --puid 6`
+
+> Fetches the physical device with uid 6 and prints the complete JSON representation.
+
+`broker-cli pd lum`
+
+> Prints a list of all unmapped physical devices in JSON format, without the properties field.
+
+`broker-cli pd lum --source ttn`
+
+> Prints a list of all unmapped TTN physical devices in JSON format.
+
+`broker-cli pd ls`
+
+> Prints a list of all physical devices in JSON format, excluding the properties field.
+
+`broker-cli pd ls --source ydoc --plain`
+
+> Prints a list of all YDOC devices in a plain text format, one device per line, including the current mapping to a
+> logical device, if any.
+
+`broker-cli pd create --json '{ "source_name": "ttn", "name": "Test device", "location": { "lat": -39.769108, "long": 147.920245 }, "source_ids": { "app_id": "ttn-app-id", "dev_id": "ttn-device-id", "dev_eui": "ttn-dev-eui-in-hex" } }'`
+
+> Creates a new physical device and prints the JSON object describing the newly created device. The new device's uid is included in this output.
+
+`broker-cli pd create --file new_device.json`
+
+> Creates a new physical device from the JSON in `new_device.json` and prints the JSON object describing the newly created device. The new device's uid is included in this output.
+
+`broker-cli pd up --puid 123 --json '{ "name": "XYZ", "last_seen": "2022-05-06T10:30+10:00" }'`
+
+> Updates the name and last_seen fields of the physical device identified by uid 123. The updated device JSON is printed.
+
+`cat updated_device.json | python -m broker-cli pd up --puid 123 --file -`
+
+> Updates the physical device identified by uid 123 with changes contained in the file updated_device.json. The updated device JSON is printed. This command would be have been run while logged into the container.
+
+`broker-cli pd rm --puid 123`
+
+> Deletes the physical device with uid 123 and prints the JSON object describing the (now deleted) device.
+
+
+## Logical devices
+
+The `ld` command is used to work with logical devices. The subcommands are:
+
+* `get --luid uid [--properties]` returns the complete JSON representation of a logical device identified by `uid`. Unless the `--properties` flag is used the properties field is omitted to reduce clutter in the output. 
+
+* `ls [--source source] [--properties]` lists mapped and unmapped logical devices, with the option of filtering by source. The properties field is omitted unless the `--properties` flag is used to reduce clutter in the output. 
+
+* `create --file filename | --json '{"name": "...", ...}'` creates a logical devices based upon a JSON object provided to the command. See the example below for the structure of the JSON object. The flags  `--file` and `--json` are mutually
+exclusive. Use `--file -` to read JSON from stdin.
+
+* `up --luid uid --file filename | --json '{ ... }'` updates the logical device identified by uid based upon the JSON object provided to the command. Only the fields present in the JSON object will be updated in the database. The flags  `--file` and `--json` are mutually exclusive. Use `--file -` to read JSON from stdin.
+
+* `rm --luid uid` deletes the logical device indentified by uid.
+
+_Examples_:
+
+`broker-cli ld get --properties --luid 6`
+
+> Fetches the logical device with uid 6 and prints the complete JSON representation.
+
+`broker-cli ld ls`
+
+> Prints a list of all logical devices in JSON format, excluding the properties field.
+
+`broker-cli ld create --json '{ "name": "Test device", "location": { "lat": -39.769108, "long": 147.920245 } }'`
+
+> Creates a new logical device and prints the JSON object describing the newly created device. The new device's uid is included in this output.
+
+`broker-cli ld create --file new_device.json`
+
+> Creates a new logical device from the JSON in `new_device.json` and prints the JSON object describing the newly created device. The new device's uid is included in this output.
+
+`broker-cli ld up --luid 123 --json '{ "name": "XYZ", "last_seen": "2022-05-06T10:30+10:00" }'`
+
+> Updates the name and last_seen fields of the logical device identified by uid 123. The updated device JSON is printed.
+
+`cat updated_device.json | python -m broker-cli ld up --luid 123 --file -`
+
+> Updates the logical device identified by uid 123 with changes contained in the file updated_device.json. The updated device JSON is printed. This command would be have been run while logged into the container.
+
+`broker-cli ld rm --luid 123`
+
+> Deletes the logical device with uid 123 and prints the JSON object describing the (now deleted) device.
+
+
+## Device mappings
+
+The `map` command is used to work with physical devices. The subcommands are:
+
+* `ls (--puid p_uid | --luid l_uid)` display the current mapping for the specified device. Either a physical or logical
+device identifier may be provided, but not both. The mappings are displayed as a JSON object containing the physical
+and logical devices, and the start and end times of the mapping.
+
+* `start --puid p_uid --luid l_uid` maps the physical device identified by p_uid to the logical device identified
+by l_uid, with a start time of 'now'. Messages from the physical device will start flowing to the logical device. The
+new mapping is printed as a JSON object.
+
+* `end (--puid p_uid | --luid l_uid)` end the current mapping for the specified device. Either a physical or logical
+device identifier may be provided, but not both.
+
+_Examples_:
+
+`broker-cli map ls --puid 154`
+
+> Displays the current mapping, if any, for physical device identified by uid 154.
+
+`broker-cli map ls --luid 123`
+
+> Displays the mapping history, if any, for the logical device identified by uid 123.
+
+`broker-cli map start --puid 154 --luid 123`
+
+> Maps phyiscal device 154 to logical device 123. Any existing mapping for either device is ended.
+
+`broker-cli map end --puid 154`
+
+> Ends the current mapping, if any, for physical device identified by uid 154.
+
+
+# Unit tests
 
 There are unit tests for the database interface and the REST API. To run these, use the following commands while a set of test containers are running (via `run.sh test`):
 

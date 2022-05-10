@@ -590,7 +590,7 @@ def insert_mapping(mapping: PhysicalToLogicalMapping) -> None:
         with _get_connection() as conn, conn.cursor() as cursor:
             current_mapping = _get_current_device_mapping(conn, pd=mapping.pd.uid)
             if current_mapping is not None:
-                raise DAOException(f'insert_mapping failed: physical device {current_mapping.pd.uid} / "{current_mapping.pd.name}" is already mapped to logical device {current_mapping.ld.uid} / "{current_mapping.ld.name}"')
+                raise DAOUniqeConstraintException(f'insert_mapping failed: physical device {current_mapping.pd.uid} / "{current_mapping.pd.name}" is already mapped to logical device {current_mapping.ld.uid} / "{current_mapping.ld.name}"')
 
             current_mapping = _get_current_device_mapping(conn, ld=mapping.ld.uid)
             if current_mapping is not None:
@@ -691,7 +691,6 @@ def _get_current_device_mapping(conn, pd: Optional[Union[PhysicalDevice, int]] =
             ld = _get_logical_device(conn, l_uid)
             mappings.append(PhysicalToLogicalMapping(pd=pd, ld=ld, start_time=start_time))
 
-
         if len(mappings) > 1:
             warnings.warn(f'Found multiple ({cursor.rowcount}) current mappings for {pd.uid} {pd.name} -> {ld.uid} {ld.name}')
             for m in mappings:
@@ -707,7 +706,7 @@ def get_unmapped_physical_devices() -> List[PhysicalDevice]:
     try:
         devs = []
         with _get_connection() as conn, conn.cursor() as cursor:
-            cursor.execute('select * from physical_devices where uid not in (select physical_uid from physical_logical_map where end_time is null)')
+            cursor.execute('select * from physical_devices where uid not in (select physical_uid from physical_logical_map where end_time is null) order by uid asc')
             for r in cursor:
                 dfr = _dict_from_row(cursor.description, r)
                 devs.append(PhysicalDevice.parse_obj(dfr))
