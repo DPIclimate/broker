@@ -263,7 +263,7 @@ class TestDAO(unittest.TestCase):
         self.assertRaises(dao.DAOException, dao.get_current_device_mapping, -1, -1)
         self.assertRaises(dao.DAOException, dao.get_current_device_mapping, new_pdev, new_ldev)
 
-        # confirm a physical device can be mapped to a logical device.        
+        # confirm a physical device can be mapped to a logical device.
         mapping1 = PhysicalToLogicalMapping(pd=new_pdev, ld=new_ldev, start_time=self.now())
         dao.insert_mapping(mapping1)
 
@@ -290,6 +290,47 @@ class TestDAO(unittest.TestCase):
             self.assertEqual(mapping2, dao.get_current_device_mapping(pd=new_pdev2))
             self.assertEqual(mapping2, dao.get_current_device_mapping(ld=new_ldev.uid))
             self.assertEqual(mapping2, dao.get_current_device_mapping(ld=new_ldev))
+
+    def test_get_latest_device_mapping(self):
+        pdev, new_pdev = self._create_physical_device()
+        ldev, new_ldev = self._create_default_logical_device()
+
+        # confirm getting the latest mapping returns a current mapping
+        mapping1 = PhysicalToLogicalMapping(pd=new_pdev, ld=new_ldev, start_time=self.now())
+        dao.insert_mapping(mapping1)
+
+        self.assertEqual(mapping1, dao.get_current_device_mapping(pd=new_pdev.uid, only_current_mapping=True))
+        self.assertEqual(mapping1, dao.get_current_device_mapping(pd=new_pdev, only_current_mapping=True))
+        self.assertEqual(mapping1, dao.get_current_device_mapping(ld=new_ldev.uid, only_current_mapping=True))
+        self.assertEqual(mapping1, dao.get_current_device_mapping(ld=new_ldev, only_current_mapping=True))
+
+        self.assertEqual(mapping1, dao.get_current_device_mapping(pd=new_pdev.uid, only_current_mapping=False))
+        self.assertEqual(mapping1, dao.get_current_device_mapping(pd=new_pdev, only_current_mapping=False))
+        self.assertEqual(mapping1, dao.get_current_device_mapping(ld=new_ldev.uid, only_current_mapping=False))
+        self.assertEqual(mapping1, dao.get_current_device_mapping(ld=new_ldev, only_current_mapping=False))
+
+        dao.end_mapping(mapping1.pd.uid)
+
+        # the default call will return None because the mapping has ended
+        mapping2 = dao.get_current_device_mapping(pd=mapping1.pd.uid)
+        self.assertIsNone(mapping2)
+
+        # asking for the most recent mapping, even if it has ended, should return mapping1 but
+        # with an end time.
+        mapping2 = dao.get_current_device_mapping(pd=mapping1.pd.uid, only_current_mapping=False)
+        self.assertIsNotNone(mapping2.end_time)
+        self.assertTrue(self.compare_mappings_ignore_end_time(mapping1, mapping2))
+
+        time.sleep(0.1)
+        mapping1.start_time = self.now()
+        dao.insert_mapping(mapping1)
+
+        # with a new mapping with no end time, both calls should again return the same thing.
+        mapping3 = dao.get_current_device_mapping(pd=mapping1.pd.uid)
+        self.assertEqual(mapping1, mapping3)
+
+        mapping3 = dao.get_current_device_mapping(pd=mapping1.pd.uid, only_current_mapping=False)
+        self.assertEqual(mapping1, mapping3)
 
     def test_end_mapping(self):
         pdev, new_pdev = self._create_physical_device()
@@ -367,7 +408,7 @@ class TestDAO(unittest.TestCase):
         pdev, new_pdev = self._create_physical_device()
         ldev, new_ldev = self._create_default_logical_device()
 
-        # confirm a physical device can be mapped to a logical device.        
+        # confirm a physical device can be mapped to a logical device.
         mapping1 = PhysicalToLogicalMapping(pd=new_pdev, ld=new_ldev, start_time=self.now())
         dao.insert_mapping(mapping1)
 

@@ -11,9 +11,6 @@ from typing import Dict, List
 from pdmodels.Models import DeviceNote, PhysicalDevice, LogicalDevice, PhysicalToLogicalMapping
 import api.client.DAO as dao
 
-import util.LoggingUtil as lu
-import logging
-
 router = APIRouter(prefix='/broker/api')
 
 """
@@ -52,7 +49,9 @@ async def get_all_physical_sources() -> List[str]:
 @router.get("/physical/devices/", tags=['physical devices'])
 async def query_physical_devices(source_name: str = None) -> List[PhysicalDevice]:
     """
-    Query PhysicalDevices.
+    Returns a list of PhysicalDevices.
+
+    If the `source_name` query parameter is given, only devices from that source are returned.
     """
 
     # locals() returns a dict of the local variables. In this case it's like kwargs which is what the
@@ -61,7 +60,7 @@ async def query_physical_devices(source_name: str = None) -> List[PhysicalDevice
     #return dao.get_physical_devices(locals())
 
     devs: List[PhysicalDevice] = []
-    
+
     """
     if source is not None and source_id_name is not None and source_id_value is not None:
         source_ids: Dict[str, str] = {}
@@ -247,6 +246,14 @@ DEVICE MAPPINGS
 
 @router.post("/mappings/", tags=['device mapping'], status_code=status.HTTP_201_CREATED)
 async def insert_mapping(mapping: PhysicalToLogicalMapping) -> None:
+    """
+    Add the given physical to logical device mapping to the system. Messages from the
+    physical device will be forwarded to the logical device.
+
+    If the physical device is already mapped to a logical device, the call fails.
+
+    If the logical device already has a mapping, that mapping is ended.
+    """
     try:
         dao.insert_mapping(mapping)
     except dao.DAODeviceNotFound as daonf:
@@ -258,7 +265,12 @@ async def insert_mapping(mapping: PhysicalToLogicalMapping) -> None:
 
 
 @router.get("/mappings/physical/current/{uid}", tags=['device mapping'], response_model=PhysicalToLogicalMapping)
-async def get_mapping_from_physical_uid(uid: int) -> PhysicalToLogicalMapping:
+async def get_current_mapping_from_physical_uid(uid: int) -> PhysicalToLogicalMapping:
+    """
+    Returns the _current_ mapping for the given physical device. A current mapping is one with no
+    end time set, meaning messages from the physical device will be forwarded to the logical
+    device.
+    """
     try:
         mapping = dao.get_current_device_mapping(pd=uid)
         if mapping is None:
@@ -269,8 +281,29 @@ async def get_mapping_from_physical_uid(uid: int) -> PhysicalToLogicalMapping:
         raise HTTPException(status_code=500, detail=err.msg)
 
 
+@router.get("/mappings/physical/latest/{uid}", tags=['device mapping'], response_model=PhysicalToLogicalMapping)
+async def get_latest_mapping_from_physical_uid(uid: int) -> PhysicalToLogicalMapping:
+    """
+    Returns the _latest_ mapping for the given physical device. The latest mapping is the most recent
+    mapping for the logical device, even if it has ended.
+    """
+    try:
+        mapping = dao.get_current_device_mapping(pd=uid, only_current_mapping=False)
+        if mapping is None:
+            raise HTTPException(status_code=404, detail=f'Device mapping for physical device {uid} not found.')
+
+        return mapping
+    except dao.DAOException as err:
+        raise HTTPException(status_code=500, detail=err.msg)
+
+
 @router.patch("/mappings/physical/end/{uid}", tags=['device mapping'], status_code=status.HTTP_204_NO_CONTENT)
 async def end_mapping_of_physical_uid(uid: int) -> None:
+    """
+    End the current mapping (if any) for the given physical device. This means messages will no longer
+    be forwarded from this physical device. If there was a mapping, the logical device also has no mapping
+    after this call.
+    """
     try:
         mapping = dao.get_current_device_mapping(pd=uid)
         if mapping is None:
@@ -282,7 +315,12 @@ async def end_mapping_of_physical_uid(uid: int) -> None:
 
 
 @router.get("/mappings/logical/current/{uid}", tags=['device mapping'], response_model=PhysicalToLogicalMapping)
-async def get_mapping_from_logical_uid(uid: int) -> PhysicalToLogicalMapping:
+async def get_current_mapping_from_logical_uid(uid: int) -> PhysicalToLogicalMapping:
+    """
+    Returns the _current_ mapping for the given logical device. A current mapping is one with no
+    end time set, meaning messages from the physical device will be forwarded to the logical
+    device.
+    """
     try:
         mapping = dao.get_current_device_mapping(ld=uid)
         if mapping is None:
@@ -293,8 +331,29 @@ async def get_mapping_from_logical_uid(uid: int) -> PhysicalToLogicalMapping:
         raise HTTPException(status_code=500, detail=err.msg)
 
 
+@router.get("/mappings/logical/latest/{uid}", tags=['device mapping'], response_model=PhysicalToLogicalMapping)
+async def get_latest_mapping_from_logical_uid(uid: int) -> PhysicalToLogicalMapping:
+    """
+    Returns the _latest_ mapping for the given logical device. The latest mapping is the most recent
+    mapping for the logical device, even if it has ended.
+    """
+    try:
+        mapping = dao.get_current_device_mapping(ld=uid, only_current_mapping=False)
+        if mapping is None:
+            raise HTTPException(status_code=404, detail=f'Device mapping for logical device {uid} not found.')
+
+        return mapping
+    except dao.DAOException as err:
+        raise HTTPException(status_code=500, detail=err.msg)
+
+
 @router.patch("/mappings/logical/end/{uid}", tags=['device mapping'], status_code=status.HTTP_204_NO_CONTENT)
 async def end_mapping_of_logical_uid(uid: int) -> None:
+    """
+    End the current mapping (if any) for the given logical device. This means messages will no longer
+    be forwarded to this logical device. If there was a mapping, the physical device also has no mapping
+    after this call.
+    """
     try:
         mapping = dao.get_current_device_mapping(ld=uid)
         if mapping is None:

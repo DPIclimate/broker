@@ -647,12 +647,12 @@ def _end_mapping(conn, pd: Optional[Union[PhysicalDevice, int]] = None, ld: Opti
             logging.warning(f'No mapping was updated during end_mapping for {pd.uid} {pd.name} -> {ld.uid} {ld.name}')
 
 
-def get_current_device_mapping(pd: Optional[Union[PhysicalDevice, int]] = None, ld: Optional[Union[LogicalDevice, int]] = None) -> Optional[PhysicalToLogicalMapping]:
+def get_current_device_mapping(pd: Optional[Union[PhysicalDevice, int]] = None, ld: Optional[Union[LogicalDevice, int]] = None, only_current_mapping: bool = True) -> Optional[PhysicalToLogicalMapping]:
     conn = None
     try:
         mapping = None
         with _get_connection() as conn:
-            mapping = _get_current_device_mapping(conn, pd, ld)
+            mapping = _get_current_device_mapping(conn, pd, ld, only_current_mapping)
 
         return mapping
     except Exception as err:
@@ -661,7 +661,7 @@ def get_current_device_mapping(pd: Optional[Union[PhysicalDevice, int]] = None, 
         free_conn(conn)
 
 
-def _get_current_device_mapping(conn, pd: Optional[Union[PhysicalDevice, int]] = None, ld: Optional[Union[LogicalDevice, int]] = None) -> Optional[PhysicalToLogicalMapping]:
+def _get_current_device_mapping(conn, pd: Optional[Union[PhysicalDevice, int]] = None, ld: Optional[Union[LogicalDevice, int]] = None, only_current_mapping: bool = True) -> Optional[PhysicalToLogicalMapping]:
     mappings = None
 
     if pd is None and ld is None:
@@ -678,20 +678,20 @@ def _get_current_device_mapping(conn, pd: Optional[Union[PhysicalDevice, int]] =
     if ld is not None:
         l_uid = ld.uid if isinstance(ld, LogicalDevice) else ld
 
+    end_time_clause = 'and end_time is null' if only_current_mapping else ''
+
     with conn.cursor() as cursor:
-        # A single query could get the data from all three tables but it would be unreadable.
-        if p_uid is not None:
-            cursor.execute('select physical_uid, logical_uid, start_time from physical_logical_map where physical_uid = %s and end_time is null order by start_time desc', (p_uid, ))
-        else:
-            cursor.execute('select physical_uid, logical_uid, start_time from physical_logical_map where logical_uid = %s and end_time is null order by start_time desc', (l_uid, ))
+        column_name = 'physical_uid' if p_uid is not None else 'logical_uid'
+        sql = f'select physical_uid, logical_uid, start_time, end_time from physical_logical_map where {column_name} = %s {end_time_clause} order by start_time desc'
+        cursor.execute(sql, (p_uid if p_uid is not None else l_uid, ))
 
         mappings = []
-        for p_uid, l_uid, start_time in cursor:
+        for p_uid, l_uid, start_time, end_time in cursor:
             pd = _get_physical_device(conn, p_uid)
             ld = _get_logical_device(conn, l_uid)
-            mappings.append(PhysicalToLogicalMapping(pd=pd, ld=ld, start_time=start_time))
+            mappings.append(PhysicalToLogicalMapping(pd=pd, ld=ld, start_time=start_time, end_time=end_time))
 
-        if len(mappings) > 1:
+        if only_current_mapping and len(mappings) > 1:
             warnings.warn(f'Found multiple ({cursor.rowcount}) current mappings for {pd.uid} {pd.name} -> {ld.uid} {ld.name}')
             for m in mappings:
                 logging.warning(m)

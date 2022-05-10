@@ -413,5 +413,96 @@ class TestRESTAPI(unittest.TestCase):
         m = PhysicalToLogicalMapping.parse_obj(r.json())
         self.assertEqual(mapping2, m)
 
+    def compare_mappings_ignore_end_time(self, m1: PhysicalToLogicalMapping, m2: PhysicalToLogicalMapping) -> bool:
+        return m1.pd == m2.pd and m1.ld == m2.ld and m1.start_time == m2.start_time
+
+    def test_get_latest_mapping_from_physical(self):
+        pdev, new_pdev = self._create_default_physical_device()
+        ldev, new_ldev = self._create_default_logical_device()
+        mapping = PhysicalToLogicalMapping(pd=new_pdev, ld=new_ldev, start_time=self.now())
+
+        url=f'{_BASE}/mappings/'
+
+        # No mappings yet, these should both 404.
+        r = requests.get(f'{url}physical/current/{new_pdev.uid}')
+        self.assertEqual(r.status_code, 404)
+
+        r = requests.get(f'{url}physical/latest/{new_pdev.uid}')
+        self.assertEqual(r.status_code, 404)
+
+        payload = mapping.json()
+        r = requests.post(url, headers=_HEADERS, data=payload)
+        self.assertEqual(r.status_code, 201)
+
+        # Confirm getting the mapping works via current.
+        r = requests.get(f'{url}physical/current/{new_pdev.uid}')
+        self.assertEqual(r.status_code, 200)
+        m = PhysicalToLogicalMapping.parse_obj(r.json())
+        self.assertEqual(mapping, m)
+
+        # Confirm getting the mapping works via latest.
+        r = requests.get(f'{url}physical/latest/{new_pdev.uid}')
+        self.assertEqual(r.status_code, 200)
+        m = PhysicalToLogicalMapping.parse_obj(r.json())
+        self.assertEqual(mapping, m)
+
+        # End the mapping to test that current returns None but latest returns the finished mapping.
+        requests.patch(f'{url}physical/end/{mapping.pd.uid}')
+
+        # Confirm getting the current mapping ignores the finished map row.
+        r = requests.get(f'{url}physical/current/{new_pdev.uid}')
+        self.assertEqual(r.status_code, 404)
+
+        # Confirm getting the mapping works via latest.
+        r = requests.get(f'{url}physical/latest/{new_pdev.uid}')
+        self.assertEqual(r.status_code, 200)
+        m = PhysicalToLogicalMapping.parse_obj(r.json())
+        self.assertIsNotNone(m.end_time)
+        self.assertTrue(self.compare_mappings_ignore_end_time(mapping, m))
+
+    def test_get_latest_mapping_from_logical(self):
+        pdev, new_pdev = self._create_default_physical_device()
+        ldev, new_ldev = self._create_default_logical_device()
+        mapping = PhysicalToLogicalMapping(pd=new_pdev, ld=new_ldev, start_time=self.now())
+
+        url=f'{_BASE}/mappings/'
+
+        # No mappings yet, these should both 404.
+        r = requests.get(f'{url}logical/current/{new_ldev.uid}')
+        self.assertEqual(r.status_code, 404)
+
+        r = requests.get(f'{url}logical/latest/{new_ldev.uid}')
+        self.assertEqual(r.status_code, 404)
+
+        payload = mapping.json()
+        r = requests.post(url, headers=_HEADERS, data=payload)
+        self.assertEqual(r.status_code, 201)
+
+        # Confirm getting the mapping works via current.
+        r = requests.get(f'{url}logical/current/{new_ldev.uid}')
+        self.assertEqual(r.status_code, 200)
+        m = PhysicalToLogicalMapping.parse_obj(r.json())
+        self.assertEqual(mapping, m)
+
+        # Confirm getting the mapping works via latest.
+        r = requests.get(f'{url}logical/latest/{new_ldev.uid}')
+        self.assertEqual(r.status_code, 200)
+        m = PhysicalToLogicalMapping.parse_obj(r.json())
+        self.assertEqual(mapping, m)
+
+        # End the mapping to test that current returns None but latest returns the finished mapping.
+        requests.patch(f'{url}logical/end/{new_ldev.uid}')
+
+        # Confirm getting the current mapping ignores the finished map row.
+        r = requests.get(f'{url}logical/current/{new_ldev.uid}')
+        self.assertEqual(r.status_code, 404)
+
+        # Confirm getting the mapping works via latest.
+        r = requests.get(f'{url}logical/latest/{new_ldev.uid}')
+        self.assertEqual(r.status_code, 200)
+        m = PhysicalToLogicalMapping.parse_obj(r.json())
+        self.assertIsNotNone(m.end_time)
+        self.assertTrue(self.compare_mappings_ignore_end_time(mapping, m))
+
 if __name__ == '__main__':
     unittest.main()
