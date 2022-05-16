@@ -47,7 +47,7 @@ async def get_all_physical_sources() -> List[str]:
 
 
 @router.get("/physical/devices/", tags=['physical devices'])
-async def query_physical_devices(source_name: str = None) -> List[PhysicalDevice]:
+async def query_physical_devices(source_name: str = None, include_properties: bool | None = True) -> List[PhysicalDevice]:
     """
     Returns a list of PhysicalDevices.
 
@@ -81,6 +81,11 @@ async def query_physical_devices(source_name: str = None) -> List[PhysicalDevice
         devs = dao.get_all_physical_devices()
     else:
         devs = dao.get_physical_devices_from_source(source_name)
+
+    if include_properties != True:
+        for d in devs:
+            d.properties = None
+
     return devs
 
 
@@ -190,12 +195,17 @@ async def create_logical_device(device: LogicalDevice, request: Request, respons
 
 
 @router.get("/logical/devices/", tags=['logical devices'])
-async def get_logical_devices() -> LogicalDevice:
+async def get_logical_devices(include_properties: bool | None = True) -> LogicalDevice:
     """
     Get all LogicalDevices.
     """
     try:
         devs = dao.get_logical_devices()
+
+        if include_properties != True:
+            for d in devs:
+                d.properties = None
+
         return devs
     except dao.DAOException as err:
         raise HTTPException(status_code=500, detail=err.msg)
