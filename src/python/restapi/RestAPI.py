@@ -274,6 +274,20 @@ async def insert_mapping(mapping: PhysicalToLogicalMapping) -> None:
         raise HTTPException(status_code=500, detail=err.msg)
 
 
+@router.get("/mappings/current/", tags=['device mapping'], response_model=List[PhysicalToLogicalMapping])
+async def get_current_mappings(return_uids: bool = True) -> PhysicalToLogicalMapping:
+    """
+    Returns the _current_ mapping for the given physical device. A current mapping is one with no
+    end time set, meaning messages from the physical device will be forwarded to the logical
+    device.
+    """
+    try:
+        mappings = dao.get_all_current_mappings(return_uids=return_uids)
+        return mappings
+    except dao.DAOException as err:
+        raise HTTPException(status_code=500, detail=err.msg)
+
+
 @router.get("/mappings/physical/current/{uid}", tags=['device mapping'], response_model=PhysicalToLogicalMapping)
 async def get_current_mapping_from_physical_uid(uid: int) -> PhysicalToLogicalMapping:
     """

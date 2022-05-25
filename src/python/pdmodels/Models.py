@@ -38,8 +38,8 @@ class LogicalDevice(BaseModel):
 
 
 class PhysicalToLogicalMapping(BaseModel):
-    pd: PhysicalDevice
-    ld: LogicalDevice
+    pd: PhysicalDevice | int
+    ld: LogicalDevice | int
     start_time: datetime
     end_time: Optional[datetime]
 

@@ -32,6 +32,10 @@
             "handlers": ["console_cid"],
             "level": "INFO",
             "propagate": false
+        },
+        "backoff": {
+            "handlers": ["console_std"],
+            "level": "INFO"
         }
     }
 }

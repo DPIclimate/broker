@@ -1,5 +1,6 @@
 from datetime import datetime
 import logging, re, warnings
+import backoff
 import psycopg2
 from psycopg2 import pool
 import psycopg2.errors
@@ -130,7 +131,9 @@ create table if not exists sources (
     source_name text primary key not null
 );
 """
+@backoff.on_exception(backoff.expo, DAOException, max_time=30)
 def get_all_physical_sources() -> List[PhysicalDevice]:
+    conn = None
     try:
         sources = []
         with _get_connection() as conn, conn.cursor() as cursor:
@@ -143,13 +146,16 @@ def get_all_physical_sources() -> List[PhysicalDevice]:
     except Exception as err:
         raise err if isinstance(err, DAOException) else DAOException('get_all_physical_sources failed.', err)
     finally:
-        free_conn(conn)
+        if conn is not None:
+            free_conn(conn)
 
 
 """
 Physical device CRUD methods
 """
+@backoff.on_exception(backoff.expo, DAOException, max_time=30)
 def create_physical_device(device: PhysicalDevice) -> PhysicalDevice:
+    conn = None
     try:
         dev_fields = {}
         for k, v in vars(device).items():
@@ -165,7 +171,8 @@ def create_physical_device(device: PhysicalDevice) -> PhysicalDevice:
     except Exception as err:
         raise err if isinstance(err, DAOException) else DAOException('create_physical_device failed.', err)
     finally:
-        free_conn(conn)
+        if conn is not None:
+            free_conn(conn)
 
 
 def _get_physical_device(conn, uid: int) -> PhysicalDevice:
@@ -192,6 +199,7 @@ def _get_physical_device(conn, uid: int) -> PhysicalDevice:
     return dev
 
 
+@backoff.on_exception(backoff.expo, DAOException, max_time=30)
 def get_physical_device(uid: int) -> PhysicalDevice:
     conn = None
     try:
@@ -203,10 +211,13 @@ def get_physical_device(uid: int) -> PhysicalDevice:
     except Exception as err:
         raise err if isinstance(err, DAOException) else DAOException('get_physical_device failed.', err)
     finally:
-        free_conn(conn)
+        if conn is not None:
+            free_conn(conn)
 
 
+@backoff.on_exception(backoff.expo, DAOException, max_time=30)
 def get_pyhsical_devices_using_source_ids(source_name: str, source_ids: Dict[str, str]) -> List[PhysicalDevice]:
+    conn = None
     try:
         devs = []
         with _get_connection() as conn, conn.cursor() as cursor:
@@ -222,10 +233,13 @@ def get_pyhsical_devices_using_source_ids(source_name: str, source_ids: Dict[str
     except Exception as err:
         raise err if isinstance(err, DAOException) else DAOException('get_pyhsical_devices_using_source_ids failed.', err)
     finally:
-        free_conn(conn)
+        if conn is not None:
+            free_conn(conn)
 
 
+@backoff.on_exception(backoff.expo, DAOException, max_time=30)
 def get_all_physical_devices() -> List[PhysicalDevice]:
+    conn = None
     try:
         devs = []
         with _get_connection() as conn, conn.cursor() as cursor:
@@ -244,10 +258,13 @@ def get_all_physical_devices() -> List[PhysicalDevice]:
     except Exception as err:
         raise err if isinstance(err, DAOException) else DAOException('get_all_physical_devices failed.', err)
     finally:
-        free_conn(conn)
+        if conn is not None:
+            free_conn(conn)
 
 
+@backoff.on_exception(backoff.expo, DAOException, max_time=30)
 def get_physical_devices_from_source(source_name: str) -> List[PhysicalDevice]:
+    conn = None
     try:
         devs = []
         with _get_connection() as conn, conn.cursor() as cursor:
@@ -266,10 +283,13 @@ def get_physical_devices_from_source(source_name: str) -> List[PhysicalDevice]:
     except Exception as err:
         raise err if isinstance(err, DAOException) else DAOException('get_all_physical_devices failed.', err)
     finally:
-        free_conn(conn)
+        if conn is not None:
+            free_conn(conn)
 
 
+@backoff.on_exception(backoff.expo, DAOException, max_time=30)
 def get_physical_devices(query_args = {}) -> List[PhysicalDevice]:
+    conn = None
     try:
         devs = []
         with _get_connection() as conn, conn.cursor() as cursor:
@@ -322,10 +342,13 @@ def get_physical_devices(query_args = {}) -> List[PhysicalDevice]:
     except Exception as err:
         raise err if isinstance(err, DAOException) else DAOException('get_physical_devices failed.', err)
     finally:
-        free_conn(conn)
+        if conn is not None:
+            free_conn(conn)
 
 
+@backoff.on_exception(backoff.expo, DAOException, max_time=30)
 def update_physical_device(device: PhysicalDevice) -> PhysicalDevice:
+    conn = None
     try:
         with _get_connection() as conn:
             current_device = _get_physical_device(conn, device.uid)
@@ -366,10 +389,13 @@ def update_physical_device(device: PhysicalDevice) -> PhysicalDevice:
     except Exception as err:
         raise err if isinstance(err, DAOException) else DAOException('update_physical_device failed.', err)
     finally:
-        free_conn(conn)
+        if conn is not None:
+            free_conn(conn)
 
 
+@backoff.on_exception(backoff.expo, DAOException, max_time=30)
 def delete_physical_device(uid: int) -> PhysicalDevice:
+    conn = None
     try:
         with _get_connection() as conn:
             dev = _get_physical_device(conn, uid)
@@ -381,10 +407,13 @@ def delete_physical_device(uid: int) -> PhysicalDevice:
     except Exception as err:
         raise err if isinstance(err, DAOException) else DAOException('delete_physical_device failed.', err)
     finally:
-        free_conn(conn)
+        if conn is not None:
+            free_conn(conn)
 
 
+@backoff.on_exception(backoff.expo, DAOException, max_time=30)
 def create_physical_device_note(uid: int, note: str) -> None:
+    conn = None
     try:
         with _get_connection() as conn, conn.cursor() as cursor:
             cursor.execute('insert into device_notes (physical_uid, note) values (%s, %s)', [uid, note])
@@ -393,10 +422,13 @@ def create_physical_device_note(uid: int, note: str) -> None:
     except Exception as err:
         raise err if isinstance(err, DAOException) else DAOException('create_physical_device_note failed.', err)
     finally:
-        free_conn(conn)
+        if conn is not None:
+            free_conn(conn)
 
 
+@backoff.on_exception(backoff.expo, DAOException, max_time=30)
 def get_physical_device_notes(uid: int) -> List[DeviceNote]:
+    conn = None
     try:
         notes = []
         with _get_connection() as conn, conn.cursor() as cursor:
@@ -408,14 +440,17 @@ def get_physical_device_notes(uid: int) -> List[DeviceNote]:
     except Exception as err:
         raise err if isinstance(err, DAOException) else DAOException('create_physical_device_note failed.', err)
     finally:
-        free_conn(conn)
+        if conn is not None:
+            free_conn(conn)
 
 
 """
 Logical Device CRUD methods
 """
 
+@backoff.on_exception(backoff.expo, DAOException, max_time=30)
 def create_logical_device(device: LogicalDevice) -> LogicalDevice:
+    conn = None
     try:
         dev = None
         dev_fields = {}
@@ -431,7 +466,8 @@ def create_logical_device(device: LogicalDevice) -> LogicalDevice:
     except Exception as err:
         raise err if isinstance(err, DAOException) else DAOException('create_logical_device failed.', err)
     finally:
-        free_conn(conn)
+        if conn is not None:
+            free_conn(conn)
 
 
 def _get_logical_device(conn, uid: int) -> LogicalDevice:
@@ -458,7 +494,9 @@ def _get_logical_device(conn, uid: int) -> LogicalDevice:
     return dev
 
 
+@backoff.on_exception(backoff.expo, DAOException, max_time=30)
 def get_logical_device(uid: int) -> LogicalDevice:
+    conn = None
     try:
         with _get_connection() as conn:
             dev = _get_logical_device(conn, uid)
@@ -466,10 +504,13 @@ def get_logical_device(uid: int) -> LogicalDevice:
     except Exception as err:
         raise err if isinstance(err, DAOException) else DAOException('get_logical_device failed.', err)
     finally:
-        free_conn(conn)
+        if conn is not None:
+            free_conn(conn)
 
 
+@backoff.on_exception(backoff.expo, DAOException, max_time=30)
 def get_logical_devices(query_args = {}) -> List[LogicalDevice]:
+    conn = None
     try:
         devs = []
         with _get_connection() as conn, conn.cursor() as cursor:
@@ -516,10 +557,13 @@ def get_logical_devices(query_args = {}) -> List[LogicalDevice]:
     except Exception as err:
         raise DAOException('get_logical_devices failed.', err)
     finally:
-        free_conn(conn)
+        if conn is not None:
+            free_conn(conn)
 
 
+@backoff.on_exception(backoff.expo, DAOException, max_time=30)
 def update_logical_device(device: LogicalDevice) -> LogicalDevice:
+    conn = None
     try:
         with _get_connection() as conn:
             current_device = _get_logical_device(conn, device.uid)
@@ -553,10 +597,13 @@ def update_logical_device(device: LogicalDevice) -> LogicalDevice:
     except Exception as err:
         raise err if isinstance(err, DAOException) else DAOException('get_logical_device failed.', err)
     finally:
-        free_conn(conn)
+        if conn is not None:
+            free_conn(conn)
 
 
+@backoff.on_exception(backoff.expo, DAOException, max_time=30)
 def delete_logical_device(uid: int) -> LogicalDevice:
+    conn = None
     try:
         with _get_connection() as conn:
             dev = _get_logical_device(conn, uid)
@@ -568,7 +615,8 @@ def delete_logical_device(uid: int) -> LogicalDevice:
     except Exception as err:
         raise err if isinstance(err, DAOException) else DAOException('delete_logical_device failed.', err)
     finally:
-        free_conn(conn)
+        if conn is not None:
+            free_conn(conn)
 
 
 """
@@ -582,10 +630,12 @@ create table if not exists physical_logical_map (
 );
 
 """
+@backoff.on_exception(backoff.expo, DAOException, max_time=30)
 def insert_mapping(mapping: PhysicalToLogicalMapping) -> None:
     """
     Insert a device mapping.
     """
+    conn = None
     try:
         with _get_connection() as conn, conn.cursor() as cursor:
             current_mapping = _get_current_device_mapping(conn, pd=mapping.pd.uid)
@@ -604,9 +654,11 @@ def insert_mapping(mapping: PhysicalToLogicalMapping) -> None:
     except Exception as err:
         raise err if isinstance(err, DAOException) else DAOException('insert_mapping failed.', err)
     finally:
-        free_conn(conn)
+        if conn is not None:
+            free_conn(conn)
 
 
+@backoff.on_exception(backoff.expo, DAOException, max_time=30)
 def end_mapping(pd: Optional[Union[PhysicalDevice, int]] = None, ld: Optional[Union[LogicalDevice, int]] = None) -> None:
     conn = None
     try:
@@ -615,9 +667,11 @@ def end_mapping(pd: Optional[Union[PhysicalDevice, int]] = None, ld: Optional[Un
     except Exception as err:
         raise err if isinstance(err, DAOException) else DAOException('end_mapping failed.', err)
     finally:
-        free_conn(conn)
+        if conn is not None:
+            free_conn(conn)
 
 
+@backoff.on_exception(backoff.expo, DAOException, max_time=30)
 def _end_mapping(conn, pd: Optional[Union[PhysicalDevice, int]] = None, ld: Optional[Union[LogicalDevice, int]] = None) -> None:
     with conn.cursor() as cursor:
         mapping: PhysicalToLogicalMapping = _get_current_device_mapping(conn, pd, ld)
@@ -647,6 +701,7 @@ def _end_mapping(conn, pd: Optional[Union[PhysicalDevice, int]] = None, ld: Opti
             logging.warning(f'No mapping was updated during end_mapping for {pd.uid} {pd.name} -> {ld.uid} {ld.name}')
 
 
+@backoff.on_exception(backoff.expo, DAOException, max_time=30)
 def get_current_device_mapping(pd: Optional[Union[PhysicalDevice, int]] = None, ld: Optional[Union[LogicalDevice, int]] = None, only_current_mapping: bool = True) -> Optional[PhysicalToLogicalMapping]:
     conn = None
     try:
@@ -658,7 +713,8 @@ def get_current_device_mapping(pd: Optional[Union[PhysicalDevice, int]] = None, 
     except Exception as err:
         raise err if isinstance(err, DAOException) else DAOException('get_current_device_mapping failed.', err)
     finally:
-        free_conn(conn)
+        if conn is not None:
+            free_conn(conn)
 
 
 def _get_current_device_mapping(conn, pd: Optional[Union[PhysicalDevice, int]] = None, ld: Optional[Union[LogicalDevice, int]] = None, only_current_mapping: bool = True) -> Optional[PhysicalToLogicalMapping]:
@@ -702,7 +758,9 @@ def _get_current_device_mapping(conn, pd: Optional[Union[PhysicalDevice, int]] =
         return None
 
 
+@backoff.on_exception(backoff.expo, DAOException, max_time=30)
 def get_unmapped_physical_devices() -> List[PhysicalDevice]:
+    conn = None
     try:
         devs = []
         with _get_connection() as conn, conn.cursor() as cursor:
@@ -715,10 +773,13 @@ def get_unmapped_physical_devices() -> List[PhysicalDevice]:
     except Exception as err:
         raise err if isinstance(err, DAOException) else DAOException('get_unmapped_physical_devices failed.', err)
     finally:
-        free_conn(conn)
+        if conn is not None:
+            free_conn(conn)
 
 
+@backoff.on_exception(backoff.expo, DAOException, max_time=30)
 def get_logical_device_mappings(ld: Union[LogicalDevice, int]) -> List[PhysicalToLogicalMapping]:
+    conn = None
     try:
         mappings = []
         with _get_connection() as conn, conn.cursor() as cursor:
@@ -734,10 +795,38 @@ def get_logical_device_mappings(ld: Union[LogicalDevice, int]) -> List[PhysicalT
     except Exception as err:
         raise err if isinstance(err, DAOException) else DAOException('get_unmapped_physical_devices failed.', err)
     finally:
-        free_conn(conn)
+        if conn is not None:
+            free_conn(conn)
 
 
+@backoff.on_exception(backoff.expo, DAOException, max_time=30)
+def get_all_current_mappings(return_uids: bool = True) -> List[PhysicalToLogicalMapping]:
+    conn = None
+    try:
+        mappings = []
+        with _get_connection() as conn, conn.cursor() as cursor:
+            cursor.execute('select physical_uid, logical_uid, start_time, end_time from physical_logical_map where end_time is null order by logical_uid asc')
+            for p_uid, l_uid, start_time, end_time in cursor:
+                if return_uids:
+                    pd = p_uid
+                    ld = l_uid
+                else:
+                    pd = _get_physical_device(conn, p_uid)
+                    ld = _get_logical_device(conn, l_uid)
+                mapping = PhysicalToLogicalMapping(pd=pd, ld=ld, start_time=start_time, end_time=end_time)
+                mappings.append(mapping)
+
+        return mappings
+    except Exception as err:
+        raise err if isinstance(err, DAOException) else DAOException('get_unmapped_physical_devices failed.', err)
+    finally:
+        if conn is not None:
+            free_conn(conn)
+
+
+@backoff.on_exception(backoff.expo, DAOException, max_time=30)
 def add_raw_json_message(source_name: str, ts: datetime, correlation_uuid: str, msg, uid: int=None):
+    conn = None
     try:
         with _get_connection() as conn, conn.cursor() as cursor:
             cursor.execute('insert into raw_messages (source_name, physical_uid, correlation_id, ts, json_msg) values (%s, %s, %s, %s, %s)', (source_name, uid, correlation_uuid, ts, Json(msg)))
@@ -746,15 +835,21 @@ def add_raw_json_message(source_name: str, ts: datetime, correlation_uuid: str, 
     except Exception as err:
         raise DAOException('add_raw_json_message failed.', err)
     finally:
-        free_conn(conn)
+        if conn is not None:
+            free_conn(conn)
 
+
+@backoff.on_exception(backoff.expo, DAOException, max_time=30)
 def add_raw_text_message(source_name: str, ts: datetime, correlation_uuid: str, msg, uid: int=None):
+    conn = None
     try:
-        with _get_connection() as conn, conn.cursor() as cursor:
-            cursor.execute('insert into raw_messages (source_name, physical_uid, correlation_id, ts, text_msg) values (%s, %s, %s, %s, %s)', (source_name, uid, correlation_uuid, ts, msg))
+        with _get_connection() as conn:
+            with conn.cursor() as cursor:
+                cursor.execute('insert into raw_messages (source_name, physical_uid, correlation_id, ts, text_msg) values (%s, %s, %s, %s, %s)', (source_name, uid, correlation_uuid, ts, msg))
     except psycopg2.errors.UniqueViolation as err:
         warnings.warn(f'Tried to add duplicate raw message: {source_name} {ts} {correlation_uuid} {msg}')
     except Exception as err:
         raise DAOException('add_raw_text_message failed.', err)
     finally:
-        free_conn(conn)
+        if conn is not None:
+            free_conn(conn)
