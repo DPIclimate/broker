@@ -5,35 +5,21 @@
 # status codes.
 #
 
-from fastapi import APIRouter, FastAPI, Query, HTTPException, Request, Response, status
+import os, sys
+
+from fastapi import APIRouter, Depends, FastAPI, HTTPException, Request, Response, status
+from fastapi.security import HTTPBearer
+
+#from fastapi.responses import JSONResponse
 from typing import Dict, List
 
 from pdmodels.Models import DeviceNote, PhysicalDevice, LogicalDevice, PhysicalToLogicalMapping
 import api.client.DAO as dao
 
-router = APIRouter(prefix='/broker/api')
+# Scheme for the Authorization header
+token_auth_scheme = HTTPBearer()
 
-"""
-An example of how we might do not-very-good authentication for the
-REST API. The point is, it is simple to wrap every call with a
-function to check the caller credentials.
-
-auth_token = os.getenv('RESTAPI_TOKEN')
-if auth_token is None or len(auth_token) < 1:
-    logger.error('auth_token not set.')
-    sys.exit(1)
-
-@router.middleware("http")
-async def check_auth_header(request: Request, call_next):
-    if not 'X-Auth-Token' in request.headers:
-        return JSONResponse(status_code=401)
-
-    token = request.headers['X-Auth-Token']
-    if token != auth_token:
-        return JSONResponse(status_code=401)
-
-    return await call_next(request)
-"""
+router = APIRouter(prefix='/broker/api', dependencies=[Depends(token_auth_scheme)])
 
 @router.get("/physical/sources/", tags=['physical devices'])
 async def get_all_physical_sources() -> List[str]:
@@ -405,3 +391,27 @@ async def end_mapping_of_logical_uid(uid: int) -> None:
 
 app = FastAPI(title='IoT Device Broker', version='1.0.0')
 app.include_router(router)
+
+
+"""
+An example of how we might do not-very-good authentication for the
+REST API. The point is, it is simple to wrap every call with a
+function to check the caller credentials.
+"""
+auth_token = os.getenv('RESTAPI_TOKEN')
+if auth_token is None or len(auth_token) < 1:
+    print('auth_token not set.')
+    sys.exit(1)
+
+@app.middleware("http")
+async def check_auth_header(request: Request, call_next):
+    if not request.url.path in ['/docs', '/openapi.json']:
+        if not 'Authorization' in request.headers:
+            return Response(content="", status_code=401)
+
+        token = request.headers['Authorization']
+        if token != f'Bearer {auth_token}':
+            print(f'Authentication failed for url: {request.url}')
+            return Response(content="", status_code=401)
+
+    return await call_next(request)

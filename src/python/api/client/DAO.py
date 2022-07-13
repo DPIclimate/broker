@@ -818,7 +818,7 @@ def get_all_current_mappings(return_uids: bool = True) -> List[PhysicalToLogical
 
         return mappings
     except Exception as err:
-        raise err if isinstance(err, DAOException) else DAOException('get_unmapped_physical_devices failed.', err)
+        raise err if isinstance(err, DAOException) else DAOException('get_all_current_mappings failed.', err)
     finally:
         if conn is not None:
             free_conn(conn)

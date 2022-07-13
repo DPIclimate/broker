@@ -70,6 +70,11 @@ group = ld_mk_parser.add_mutually_exclusive_group(required=True)
 group.add_argument('--json', type=str_to_dict, help='Physical device JSON', dest='pd')
 group.add_argument('--file', help='Read json from file, - for stdin', dest='in_filename')
 
+## Get logical device
+ld_get_parser = ld_sub_parsers.add_parser('get', help='get logical device')
+ld_get_parser.add_argument('--luid', type=int, help='logical device uid', dest='l_uid', required=True)
+ld_get_parser.add_argument('--properties', action='store_true', help='Include the properties field in the output', dest='include_props', required=False)
+
 ## Update logical devices
 ld_up_parser = ld_sub_parsers.add_parser('up', help='update logical device')
 ld_up_parser.add_argument('--luid', type=int, help='logical device uid', dest='l_uid', required=True)
@@ -235,6 +240,9 @@ def main() -> None:
         elif args.cmd2 == 'create' and args.ld is not None:
             dev = LogicalDevice.parse_obj(dict_from_file_or_string())
             print(dao.create_logical_device(dev))
+        elif args.cmd2 == 'get':
+            dev = dao.get_logical_device(args.l_uid)
+            print(pretty_print_json(dev))
         elif args.cmd2 == 'up' and args.ld is not None:
             json_obj = dict_from_file_or_string()
             dev = dao.get_logical_device(args.l_uid)
