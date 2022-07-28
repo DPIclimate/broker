@@ -15,6 +15,8 @@ import api.client.DAO as dao
 import util.LoggingUtil as lu
 import util.Timestamps as ts
 
+std_logger = logging.getLogger(__name__)
+
 rx_channel: mq.RxChannel = None
 tx_channel: mq.TxChannel = None
 mq_client: mq.RabbitMQConnection = None
@@ -193,6 +195,11 @@ def on_message(channel, method, properties, body):
         rx_channel._channel.basic_reject(delivery_tag)
         return
 
+    if body[0] != 123 or body[1] != 34:
+        std_logger.info(f'Ignoring non-JSON message: {body}')
+        rx_channel._channel.basic_ack(delivery_tag)
+        return
+
     try:
         """
         {"device":{"sn":108173526,"name":"Elephant Yards Pond 3 ","v":"4.4B6","imei":352909081735264,"sim":89882280666027703499},
@@ -243,7 +250,14 @@ def on_message(channel, method, properties, body):
         correlation_id = str(uuid.uuid4())
         lu.cid_logger.info(f'Message as received: {body}', extra={BrokerConstants.CORRELATION_ID_KEY: correlation_id})
 
-        msg = json.loads(body)
+        msg = {}
+        try:
+            msg = json.loads(body)
+        except Exception as e:
+            std_logger.info(f'JSON parsing failed, ignoring message')
+            rx_channel._channel.basic_ack(delivery_tag)
+            return
+
         msg_with_cid = {BrokerConstants.CORRELATION_ID_KEY: correlation_id, BrokerConstants.RAW_MESSAGE_KEY: msg}
 
         # Record the message to the all messages table before doing anything else to ensure it
@@ -320,8 +334,7 @@ def on_message(channel, method, properties, body):
         rx_channel._channel.basic_ack(delivery_tag)
         lu.cid_logger.debug('Acking message from ttn_raw.', extra=msg_with_cid)
     except Exception as e:
-        logging.error(body)
-        logging.exception('Error while processing message.')
+        std_logger.exception('Error while processing message.')
         rx_channel._channel.basic_ack(delivery_tag)
 
 
