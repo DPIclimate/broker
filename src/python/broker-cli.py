@@ -1,10 +1,13 @@
 #!/usr/local/bin/python
 
 import argparse, datetime, json, sys
+from re import U
 from typing import Dict, List
 import api.client.DAO as dao
 from pdmodels.Models import LogicalDevice, PhysicalDevice, PhysicalToLogicalMapping
 from pydantic import BaseModel
+import os
+import hashlib
 
 def str_to_physical_device(val) -> PhysicalDevice:
     return PhysicalDevice.parse_obj(json.loads(val))
@@ -113,6 +116,38 @@ group = map_end_parser.add_mutually_exclusive_group(required=True)
 group.add_argument('--puid', type=int, help='Physical device uid', dest='p_uid')
 group.add_argument('--luid', type=int, help='Logical device uid', dest='l_uid')
 
+
+#User commands
+user_parser=main_sub_parsers.add_parser('users', help="manage users")
+user_sub_parsers=user_parser.add_subparsers(dest='cmd2')
+
+#Add user
+user_add_parser=user_sub_parsers.add_parser('add', help="Add a user")
+user_add_parser.add_argument('-u', help="Username of user", dest='uname', required=True)
+user_add_parser.add_argument('-p', help="Password for user", dest='passwd', required=True)
+user_add_parser.add_argument('-d', help="Account is disable upon creation", action='store_true', dest='disabled')
+
+#Remove user
+user_rm_parser=user_sub_parsers.add_parser('rm', help="Remove a user")
+user_rm_parser.add_argument('-u', help="Username of user to be removed", dest='uname', required=True)
+
+#Manage users token
+user_token_parser=user_sub_parsers.add_parser('token', help="Manage a user's token")
+user_token_parser.add_argument('-u', help="Username", dest='uname', required=True)
+user_token_parser.add_argument('--refresh', help="Refresh a users token", action='store_true')
+
+group=user_token_parser.add_mutually_exclusive_group()
+group.add_argument('--disable', help="Disable a users token", action="store_true")
+group.add_argument('--enable', help="Enable a users token", action='store_true')
+
+#Change users password
+user_pw_change_passer=user_sub_parsers.add_parser('chng', help="Change a user's password")
+user_pw_change_passer.add_argument('-u', help="Username", dest='uname', required=True)
+user_pw_change_passer.add_argument('-p', help="New password for user", dest='passwd')
+
+#List users
+user_sub_parsers.add_parser('ls', help="List all users")
+
 args = main_parser.parse_args()
 
 def serialise_datetime(obj):
@@ -175,7 +210,6 @@ def dict_from_file_or_string() -> dict:
         raise RuntimeError('No physical device object given via either --json or --file.')
 
     return json_obj
-
 
 def main() -> None:
     if args.cmd1 == 'pd':
@@ -296,6 +330,29 @@ def main() -> None:
                 map_list = dao.get_logical_device_mappings(args.l_uid)
                 new_list = [m.dict() for m in map_list]
                 print(pretty_print_json(new_list))
+    
+    elif args.cmd1=='users':
+        if args.cmd2=='add':
+            dao.user_add(uname=args.uname, passwd=args.passwd, disabled=args.disabled)
+
+        elif args.cmd2=='rm':
+            dao.user_rm(uname=args.uname)
+
+        elif args.cmd2=='token':
+            if args.disable==True:
+                dao.token_disable(uname=args.uname)
+
+            elif args.enable==True:
+                dao.token_enable(uname=args.uname)
+            
+            if args.refresh==True:
+                dao.token_refresh(uname=args.uname)
+
+        elif args.cmd2=='chng':
+            dao.user_chng_passwd(uname=args.uname, new_passwd=args.passwd)
+        
+        elif args.cmd2=='ls':
+            print(dao.user_ls())
 
 if __name__ == '__main__':
     main()

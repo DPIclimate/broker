@@ -1,13 +1,18 @@
 from datetime import datetime
+from email.utils import parseaddr
 import logging, re, warnings
+from turtle import back
+from unittest import result
 import backoff
 import psycopg2
 from psycopg2 import pool
 import psycopg2.errors
 from psycopg2.extensions import register_adapter, AsIs
 from psycopg2.extras import Json, register_uuid
-
 from typing import Any, Dict, List, Optional, Union
+import hashlib
+import base64
+import os
 
 from pdmodels.Models import DeviceNote, Location, LogicalDevice, PhysicalDevice, PhysicalToLogicalMapping
 
@@ -850,6 +855,146 @@ def add_raw_text_message(source_name: str, ts: datetime, correlation_uuid: str, 
         warnings.warn(f'Tried to add duplicate raw message: {source_name} {ts} {correlation_uuid} {msg}')
     except Exception as err:
         raise DAOException('add_raw_text_message failed.', err)
+    finally:
+        if conn is not None:
+            free_conn(conn)
+
+"""
+User Authentication CRUD methods
+
+create table if not exists users(
+    uid integer generated always as identity primary key,
+    username text not null,
+    salt text not null,
+    password text not null,
+    auth_token text not null
+);
+"""
+@backoff.on_exception(backoff.expo, DAOException, max_time=30)
+def user_add(uname, passwd, disabled) -> None:
+
+    #Generate salted password
+    salt=os.urandom(64).hex()
+    pass_hash=hashlib.scrypt(password=passwd.encode(), salt=salt.encode(), n=2**14, r=8, p=1, maxmem=0, dklen=64).hex()
+    
+    #Auth token to be used on other endpoints
+    auth_token=os.urandom(64).hex()
+    
+    try:
+        with _get_connection() as conn, conn.cursor() as cursor:
+            cursor.execute(f"insert into users (username, salt, password, auth_token, valid) values ('{uname}', '{salt}','{pass_hash}', '{auth_token}', {not disabled})")
+
+            conn.commit()
+
+    except Exception as err:
+        raise err if isinstance(err, DAOException) else DAOException('add_user failed.', err)
+    finally:
+        if conn is not None:
+            free_conn(conn)
+
+@backoff.on_exception(backoff.expo, DAOException, max_time=30)
+def user_get_token(basic_auth) -> str | None:
+
+    username, password = base64.b64decode(basic_auth).decode().split(":")
+
+    #TODO - Fix SQLi vulnerability
+    conn = None
+    try:
+        with _get_connection() as conn, conn.cursor() as cursor:
+            cursor.execute(f"select salt, password, auth_token from users where username='{username}'")
+            result=cursor.fetchone()
+
+            if result is None:
+                return None
+            
+            db_salt, db_password, auth_token=result
+            input_pw_hash=hashlib.scrypt(password=password.encode(), salt=db_salt.encode(), n=2**14, r=8, p=1, maxmem=0, dklen=64).hex()
+
+            if input_pw_hash != db_password:
+                #Incorrect password supplied
+                return None
+            
+            return auth_token
+            
+    except Exception as err:
+        raise err if isinstance(err, DAOException) else DAOException('get_user_token failed.', err)
+    finally:
+        if conn is not None:
+            free_conn(conn)
+
+@backoff.on_exception(backoff.expo, DAOException, max_time=30)
+def user_rm(uname) -> None:
+    try:
+        with _get_connection() as conn, conn.cursor() as cursor:
+            cursor.execute(f"delete from username where username='{uname}'")
+    except Exception as err:
+        raise err if isinstance(err, DAOException) else DAOException('user_ls failed.', err)
+    finally:
+        if conn is not None:
+            free_conn(conn)
+
+@backoff.on_exception(backoff.expo, DAOException, max_time=30)
+def user_ls() -> List:
+    try:
+        with _get_connection() as conn, conn.cursor() as cursor:
+            cursor.execute("select username from users")
+            results=cursor.fetchall()
+            return [i[0] for i in results]
+
+    except Exception as err:
+        raise err if isinstance(err, DAOException) else DAOException('user_ls failed.', err)
+    finally:
+        if conn is not None:
+            free_conn(conn)
+
+@backoff.on_exception(backoff.expo, DAOException, max_time=30)
+def token_is_valid(user_token) -> bool:
+    '''
+    Check if token is in database and is valid
+    '''
+    try:
+        with _get_connection() as conn, conn.cursor() as cursor:
+            cursor.execute(f"select uid from users where auth_token='{user_token}' and valid='True'")
+            result=cursor.fetchone()
+
+            if result is None:
+                return False
+            return True
+    except Exception as err:
+        raise err if isinstance(err, DAOException) else DAOException('is_valid_token failed.', err)
+    finally:
+        if conn is not None:
+            free_conn(conn)
+
+@backoff.on_exception(backoff.expo, DAOException, max_time=30)
+def token_refresh(uname):
+    pass
+
+@backoff.on_exception(backoff.expo, DAOException, max_time=30)
+def user_chng_passwd(uname, new_passwd):
+    pass
+
+@backoff.on_exception(backoff.expo, DAOException, max_time=30)
+def token_disable(uname):
+    
+    try:
+        with _get_connection() as conn, conn.cursor() as cursor:
+            cursor.execute(f"update users set valid='F' where username='{uname}'")
+            
+    except Exception as err:
+        raise err if isinstance(err, DAOException) else DAOException('disable_token failed.', err)
+    finally:
+        if conn is not None:
+            free_conn(conn)
+
+@backoff.on_exception(backoff.expo, DAOException, max_time=30)
+def token_enable(uname):
+    try:
+        with _get_connection() as conn, conn.cursor() as cursor:
+            cursor.execute(f"update users set valid='T' where username='{uname}'")
+            
+    except Exception as err:
+        raise err if isinstance(err, DAOException) else DAOException('disable_token failed.', err)
     finally:
         if conn is not None:
             free_conn(conn)

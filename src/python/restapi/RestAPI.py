@@ -5,10 +5,14 @@
 # status codes.
 #
 
+from doctest import DocTestFailure
+from email import contentmanager
+import logging
 import os, sys
+from urllib import request, response
 
 from fastapi import APIRouter, Depends, FastAPI, HTTPException, Request, Response, status
-from fastapi.security import HTTPBearer
+from fastapi.security import HTTPBearer, HTTPBasic, HTTPBasicCredentials
 
 #from fastapi.responses import JSONResponse
 from typing import Dict, List
@@ -18,10 +22,12 @@ import api.client.DAO as dao
 
 # Scheme for the Authorization header
 token_auth_scheme = HTTPBearer()
+http_basic_auth = HTTPBasic()
 
-router = APIRouter(prefix='/broker/api', dependencies=[Depends(token_auth_scheme)])
+# router = APIRouter(prefix='/broker/api', dependencies=[Depends(token_auth_scheme)])
+router = APIRouter(prefix='/broker/api')
 
-@router.get("/physical/sources/", tags=['physical devices'])
+@router.get("/physical/sources/", tags=['physical devices'], dependencies=[Depends(token_auth_scheme)])
 async def get_all_physical_sources() -> List[str]:
     """
     Return a list of all physical device sources.
@@ -32,7 +38,7 @@ async def get_all_physical_sources() -> List[str]:
         raise HTTPException(status_code=500, detail=err.msg)
 
 
-@router.get("/physical/devices/", tags=['physical devices'])
+@router.get("/physical/devices/", tags=['physical devices'], dependencies=[Depends(token_auth_scheme)])
 async def query_physical_devices(source_name: str = None, include_properties: bool | None = True) -> List[PhysicalDevice]:
     """
     Returns a list of PhysicalDevices.
@@ -75,7 +81,7 @@ async def query_physical_devices(source_name: str = None, include_properties: bo
     return devs
 
 
-@router.get("/physical/devices/{uid}", tags=['physical devices'])
+@router.get("/physical/devices/{uid}", tags=['physical devices'], dependencies=[Depends(token_auth_scheme)])
 async def get_physical_device(uid: int) -> PhysicalDevice:
     """
     Get the PhysicalDevice specified by uid.
@@ -90,7 +96,7 @@ async def get_physical_device(uid: int) -> PhysicalDevice:
         raise HTTPException(status_code=500, detail=err.msg)
 
 
-@router.get("/physical/devices/unmapped/", tags=['physical devices'])
+@router.get("/physical/devices/unmapped/", tags=['physical devices'], dependencies=[Depends(token_auth_scheme)])
 async def get_unmapped_physical_devices() -> List[PhysicalDevice]:
     """
     Returns a list of unmapped PhysicalDevices.
@@ -101,7 +107,7 @@ async def get_unmapped_physical_devices() -> List[PhysicalDevice]:
         raise HTTPException(status_code=500, detail=err.msg)
 
 
-@router.post("/physical/devices/", tags=['physical devices'], status_code=status.HTTP_201_CREATED)
+@router.post("/physical/devices/", tags=['physical devices'], status_code=status.HTTP_201_CREATED, dependencies=[Depends(token_auth_scheme)])
 async def create_physical_device(device: PhysicalDevice, request: Request, response: Response) -> PhysicalDevice:
     """
     Create a new PhysicalDevice. The new device is returned in the response.
@@ -114,7 +120,7 @@ async def create_physical_device(device: PhysicalDevice, request: Request, respo
         raise HTTPException(status_code=500, detail=err.msg)
 
 
-@router.patch("/physical/devices/", tags=['physical devices'])
+@router.patch("/physical/devices/", tags=['physical devices'], dependencies=[Depends(token_auth_scheme)])
 async def update_physical_device(device: PhysicalDevice) -> PhysicalDevice:
     """
     Update a PhysicalDevice. The updated device is returned in the respose.
@@ -128,7 +134,7 @@ async def update_physical_device(device: PhysicalDevice) -> PhysicalDevice:
         raise HTTPException(status_code=500, detail=err.msg)
 
 
-@router.delete("/physical/devices/{uid}", tags=['physical devices'])
+@router.delete("/physical/devices/{uid}", tags=['physical devices'], dependencies=[Depends(token_auth_scheme)])
 async def delete_physical_device(uid: int) -> PhysicalDevice:
     """
     Delete a PhysicalDevice. The deleted device is returned in the response.
@@ -142,7 +148,7 @@ async def delete_physical_device(uid: int) -> PhysicalDevice:
 """--------------------------------------------------------------------------
 DEVICE NOTES
 --------------------------------------------------------------------------"""
-@router.post("/physical/devices/notes/{uid}", tags=['physical devices'], status_code=status.HTTP_201_CREATED)
+@router.post("/physical/devices/notes/{uid}", tags=['physical devices'], status_code=status.HTTP_201_CREATED, dependencies=[Depends(token_auth_scheme)])
 async def create_physical_device_note(uid: int, note: DeviceNote, request: Request, response: Response) -> None:
     """
     Create a new note for a PhysicalDevice.
@@ -167,7 +173,7 @@ async def get_physical_device_notes(uid: int) -> List[DeviceNote]:
 LOGICAL DEVICES
 --------------------------------------------------------------------------"""
 
-@router.post("/logical/devices/", tags=['logical devices'], status_code=status.HTTP_201_CREATED)
+@router.post("/logical/devices/", tags=['logical devices'], status_code=status.HTTP_201_CREATED, dependencies=[Depends(token_auth_scheme)])
 async def create_logical_device(device: LogicalDevice, request: Request, response: Response) -> LogicalDevice:
     """
     Create a new LogicalDevice. The new device is returned in the response.
@@ -180,7 +186,7 @@ async def create_logical_device(device: LogicalDevice, request: Request, respons
         raise HTTPException(status_code=500, detail=err.msg)
 
 
-@router.get("/logical/devices/", tags=['logical devices'])
+@router.get("/logical/devices/", tags=['logical devices'], dependencies=[Depends(token_auth_scheme)])
 async def get_logical_devices(include_properties: bool | None = True) -> LogicalDevice:
     """
     Get all LogicalDevices.
@@ -197,7 +203,7 @@ async def get_logical_devices(include_properties: bool | None = True) -> Logical
         raise HTTPException(status_code=500, detail=err.msg)
 
 
-@router.get("/logical/devices/{uid}", tags=['logical devices'])
+@router.get("/logical/devices/{uid}", tags=['logical devices'], dependencies=[Depends(token_auth_scheme)])
 async def get_logical_device(uid: int) -> LogicalDevice:
     """
     Get the LogicalDevice specified by uid.
@@ -212,7 +218,7 @@ async def get_logical_device(uid: int) -> LogicalDevice:
         raise HTTPException(status_code=500, detail=err.msg)
 
 
-@router.patch("/logical/devices/", tags=['logical devices'])
+@router.patch("/logical/devices/", tags=['logical devices'], dependencies=[Depends(token_auth_scheme)])
 async def update_logical_device(device: LogicalDevice) -> LogicalDevice:
     """
     Update a LogicalDevice. The updated device is returned in the respose.
@@ -225,7 +231,7 @@ async def update_logical_device(device: LogicalDevice) -> LogicalDevice:
         raise HTTPException(status_code=500, detail=err.msg)
 
 
-@router.delete("/logical/devices/{uid}", tags=['logical devices'])
+@router.delete("/logical/devices/{uid}", tags=['logical devices'], dependencies=[Depends(token_auth_scheme)])
 async def delete_logical_device(uid: int) -> LogicalDevice:
     """
     Delete a LogicalDevice. The deleted device is returned in the response.
@@ -240,7 +246,7 @@ async def delete_logical_device(uid: int) -> LogicalDevice:
 DEVICE MAPPINGS
 --------------------------------------------------------------------------"""
 
-@router.post("/mappings/", tags=['device mapping'], status_code=status.HTTP_201_CREATED)
+@router.post("/mappings/", tags=['device mapping'], status_code=status.HTTP_201_CREATED, dependencies=[Depends(token_auth_scheme)])
 async def insert_mapping(mapping: PhysicalToLogicalMapping) -> None:
     """
     Add the given physical to logical device mapping to the system. Messages from the
@@ -260,7 +266,7 @@ async def insert_mapping(mapping: PhysicalToLogicalMapping) -> None:
         raise HTTPException(status_code=500, detail=err.msg)
 
 
-@router.get("/mappings/current/", tags=['device mapping'], response_model=List[PhysicalToLogicalMapping])
+@router.get("/mappings/current/", tags=['device mapping'], response_model=List[PhysicalToLogicalMapping], dependencies=[Depends(token_auth_scheme)])
 async def get_current_mappings(return_uids: bool = True) -> PhysicalToLogicalMapping:
     """
     Returns the _current_ mapping for the given physical device. A current mapping is one with no
@@ -274,7 +280,7 @@ async def get_current_mappings(return_uids: bool = True) -> PhysicalToLogicalMap
         raise HTTPException(status_code=500, detail=err.msg)
 
 
-@router.get("/mappings/physical/current/{uid}", tags=['device mapping'], response_model=PhysicalToLogicalMapping)
+@router.get("/mappings/physical/current/{uid}", tags=['device mapping'], response_model=PhysicalToLogicalMapping, dependencies=[Depends(token_auth_scheme)])
 async def get_current_mapping_from_physical_uid(uid: int) -> PhysicalToLogicalMapping:
     """
     Returns the _current_ mapping for the given physical device. A current mapping is one with no
@@ -291,7 +297,7 @@ async def get_current_mapping_from_physical_uid(uid: int) -> PhysicalToLogicalMa
         raise HTTPException(status_code=500, detail=err.msg)
 
 
-@router.get("/mappings/physical/latest/{uid}", tags=['device mapping'], response_model=PhysicalToLogicalMapping)
+@router.get("/mappings/physical/latest/{uid}", tags=['device mapping'], response_model=PhysicalToLogicalMapping, dependencies=[Depends(token_auth_scheme)])
 async def get_latest_mapping_from_physical_uid(uid: int) -> PhysicalToLogicalMapping:
     """
     Returns the _latest_ mapping for the given physical device. The latest mapping is the most recent
@@ -307,7 +313,7 @@ async def get_latest_mapping_from_physical_uid(uid: int) -> PhysicalToLogicalMap
         raise HTTPException(status_code=500, detail=err.msg)
 
 
-@router.patch("/mappings/physical/end/{uid}", tags=['device mapping'], status_code=status.HTTP_204_NO_CONTENT)
+@router.patch("/mappings/physical/end/{uid}", tags=['device mapping'], status_code=status.HTTP_204_NO_CONTENT, dependencies=[Depends(token_auth_scheme)])
 async def end_mapping_of_physical_uid(uid: int) -> None:
     """
     End the current mapping (if any) for the given physical device. This means messages will no longer
@@ -324,7 +330,7 @@ async def end_mapping_of_physical_uid(uid: int) -> None:
         raise HTTPException(status_code=500, detail=err.msg)
 
 
-@router.get("/mappings/logical/current/{uid}", tags=['device mapping'], response_model=PhysicalToLogicalMapping)
+@router.get("/mappings/logical/current/{uid}", tags=['device mapping'], response_model=PhysicalToLogicalMapping, dependencies=[Depends(token_auth_scheme)])
 async def get_current_mapping_to_logical_uid(uid: int) -> PhysicalToLogicalMapping:
     """
     Returns the _current_ mapping for the given logical device. A current mapping is one with no
@@ -341,7 +347,7 @@ async def get_current_mapping_to_logical_uid(uid: int) -> PhysicalToLogicalMappi
         raise HTTPException(status_code=500, detail=err.msg)
 
 
-@router.get("/mappings/logical/latest/{uid}", tags=['device mapping'], response_model=PhysicalToLogicalMapping)
+@router.get("/mappings/logical/latest/{uid}", tags=['device mapping'], response_model=PhysicalToLogicalMapping, dependencies=[Depends(token_auth_scheme)])
 async def get_latest_mapping_to_logical_uid(uid: int) -> PhysicalToLogicalMapping:
     """
     Returns the _latest_ mapping for the given logical device. The latest mapping is the most recent
@@ -357,7 +363,7 @@ async def get_latest_mapping_to_logical_uid(uid: int) -> PhysicalToLogicalMappin
         raise HTTPException(status_code=500, detail=err.msg)
 
 
-@router.get("/mappings/logical/all/{uid}", tags=['device mapping'])
+@router.get("/mappings/logical/all/{uid}", tags=['device mapping'], dependencies=[Depends(token_auth_scheme)])
 async def get_all_mappings_to_logical_uid(uid: int) -> List[PhysicalToLogicalMapping]:
     """
     Returns all mappings made to the given logical device.
@@ -372,7 +378,7 @@ async def get_all_mappings_to_logical_uid(uid: int) -> List[PhysicalToLogicalMap
         raise HTTPException(status_code=500, detail=err.msg)
 
 
-@router.patch("/mappings/logical/end/{uid}", tags=['device mapping'], status_code=status.HTTP_204_NO_CONTENT)
+@router.patch("/mappings/logical/end/{uid}", tags=['device mapping'], status_code=status.HTTP_204_NO_CONTENT, dependencies=[Depends(token_auth_scheme)])
 async def end_mapping_of_logical_uid(uid: int) -> None:
     """
     End the current mapping (if any) for the given logical device. This means messages will no longer
@@ -388,9 +394,28 @@ async def end_mapping_of_logical_uid(uid: int) -> None:
     except dao.DAOException as err:
         raise HTTPException(status_code=500, detail=err.msg)
 
+"""--------------------------------------------------------------------------
+USER AUTHENTICATION
+--------------------------------------------------------------------------"""
+
+#Get user token
+#TODO Change to post request
+@router.get("/token", tags=['User Authentication'], dependencies=[Depends(http_basic_auth)])
+async def get_user_token(request: Request) -> str:
+    """
+    Get user token from database if user is authenticated
+    """
+    basic_auth = request.headers['Authorization'].split(' ')[1]
+    user_auth_token = dao.user_get_token(basic_auth=basic_auth)
+    if user_auth_token != None:
+        return user_auth_token
+    else:
+        raise HTTPException(status_code=403, detail="Incorrect username or password")
+
 
 app = FastAPI(title='IoT Device Broker', version='1.0.0')
 app.include_router(router)
+
 
 
 """
@@ -405,12 +430,15 @@ if auth_token is None or len(auth_token) < 1:
 
 @app.middleware("http")
 async def check_auth_header(request: Request, call_next):
-    if not request.url.path in ['/docs', '/openapi.json']:
+
+    if not request.url.path in ['/docs', '/openapi.json', '/broker/api/token']:
         if not 'Authorization' in request.headers:
             return Response(content="", status_code=401)
 
-        token = request.headers['Authorization']
-        if token != f'Bearer {auth_token}':
+        token = request.headers['Authorization'].split(' ')[1]
+        is_valid=dao.token_is_valid(token)
+
+        if not is_valid:
             print(f'Authentication failed for url: {request.url}')
             return Response(content="", status_code=401)
 
