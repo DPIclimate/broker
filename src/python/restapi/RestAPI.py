@@ -169,6 +169,25 @@ async def get_physical_device_notes(uid: int) -> List[DeviceNote]:
     except dao.DAOException as err:
         raise HTTPException(status_code=500, detail=err.msg)
 
+
+@router.patch("/physical/devices/notes/", tags=['physical devices'])
+async def patch_physical_device_note(note: DeviceNote) -> None:
+    try:
+        dao.update_physical_device_note(note)
+    except dao.DAOException as err:
+        raise HTTPException(status_code=500, detail=err.msg)
+
+
+@router.delete("/physical/devices/notes/{uid}", tags=['physical devices'])
+async def delete_physical_device_note(uid: int) -> None:
+    """
+    Delete the given device note.
+    """
+    try:
+        dao.delete_physical_device_note(uid)
+    except dao.DAOException as err:
+        raise HTTPException(status_code=500, detail=err.msg)
+
 """--------------------------------------------------------------------------
 LOGICAL DEVICES
 --------------------------------------------------------------------------"""

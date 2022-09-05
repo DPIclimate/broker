@@ -46,5 +46,6 @@ class PhysicalToLogicalMapping(BaseModel):
 
 
 class DeviceNote(BaseModel):
+    uid: Optional[int]
     ts: Optional[datetime]
     note: str
