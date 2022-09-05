@@ -432,13 +432,42 @@ def get_physical_device_notes(uid: int) -> List[DeviceNote]:
     try:
         notes = []
         with _get_connection() as conn, conn.cursor() as cursor:
-            cursor.execute('select ts, note from device_notes where physical_uid = %s order by ts asc', [uid])
-            for ts, note in cursor:
-                notes.append(DeviceNote(ts=ts, note=note))
+            cursor.execute('select uid, ts, note from device_notes where physical_uid = %s order by ts asc', [uid])
+            for uid, ts, note in cursor:
+                notes.append(DeviceNote(uid=uid, ts=ts, note=note))
 
         return notes
     except Exception as err:
         raise err if isinstance(err, DAOException) else DAOException('create_physical_device_note failed.', err)
+    finally:
+        if conn is not None:
+            free_conn(conn)
+
+
+@backoff.on_exception(backoff.expo, DAOException, max_time=30)
+def update_physical_device_note(note: DeviceNote) -> None:
+    conn = None
+    try:
+        with _get_connection() as conn:
+            with conn.cursor() as cursor:
+                cursor.execute('update device_notes set ts = %s, note = %s where uid = %s', (note.ts, note.note, note.uid))
+    except Exception as err:
+        raise err if isinstance(err, DAOException) else DAOException('update_physical_device_note failed.', err)
+    finally:
+        if conn is not None:
+            free_conn(conn)
+
+
+@backoff.on_exception(backoff.expo, DAOException, max_time=30)
+def delete_physical_device_note(uid: int) -> None:
+    conn = None
+    try:
+        with _get_connection() as conn:
+            with conn.cursor() as cursor:
+                cursor.execute('delete from device_notes where uid = %s', (uid, ))
+
+    except Exception as err:
+        raise err if isinstance(err, DAOException) else DAOException('delete_physical_device_note failed.', err)
     finally:
         if conn is not None:
             free_conn(conn)

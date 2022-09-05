@@ -156,6 +156,44 @@ class TestDAO(unittest.TestCase):
         notes = dao.get_physical_device_notes(-1)
         self.assertEqual(len(notes), 0)
 
+    def test_update_physical_device_note(self):
+        dev, new_dev = self._create_physical_device()
+        dao.create_physical_device_note(new_dev.uid, 'Note 1')
+        time.sleep(0.001)
+        dao.create_physical_device_note(new_dev.uid, 'Note 2')
+
+        notes = dao.get_physical_device_notes(new_dev.uid)
+        self.assertEqual(len(notes), 2)
+        self.assertGreater(notes[1].ts, notes[0].ts)
+        self.assertEqual(notes[0].note, 'Note 1')
+        self.assertEqual(notes[1].note, 'Note 2')
+
+        notes[0].note = 'XYZ'
+        dao.update_physical_device_note(notes[0])
+        notes = dao.get_physical_device_notes(new_dev.uid)
+        self.assertEqual(len(notes), 2)
+        self.assertGreater(notes[1].ts, notes[0].ts)
+        self.assertEqual(notes[0].note, 'XYZ')
+        self.assertEqual(notes[1].note, 'Note 2')
+
+    def test_delete_physical_device_note(self):
+        dev, new_dev = self._create_physical_device()
+        dao.create_physical_device_note(new_dev.uid, 'Note 1')
+        time.sleep(0.001)
+        dao.create_physical_device_note(new_dev.uid, 'Note 2')
+
+        notes = dao.get_physical_device_notes(new_dev.uid)
+        self.assertEqual(len(notes), 2)
+        self.assertGreater(notes[1].ts, notes[0].ts)
+        self.assertEqual(notes[0].note, 'Note 1')
+        self.assertEqual(notes[1].note, 'Note 2')
+
+        dao.delete_physical_device_note(notes[0].uid)
+
+        notes = dao.get_physical_device_notes(new_dev.uid)
+        self.assertEqual(len(notes), 1)
+        self.assertEqual(notes[0].note, 'Note 2')
+
     def _create_default_logical_device(self, dev=None) -> Tuple[LogicalDevice, LogicalDevice]:
         if dev is None:
             last_seen = self.now()
