@@ -20,6 +20,8 @@ from typing import Dict, List
 from pdmodels.Models import DeviceNote, PhysicalDevice, LogicalDevice, PhysicalToLogicalMapping
 import api.client.DAO as dao
 
+import base64
+
 # Scheme for the Authorization header
 token_auth_scheme = HTTPBearer()
 http_basic_auth = HTTPBasic()
@@ -162,7 +164,7 @@ async def create_physical_device_note(uid: int, note: DeviceNote, request: Reque
         raise HTTPException(status_code=500, detail=err.msg)
 
 
-@router.get("/physical/devices/notes/{uid}", tags=['physical devices'])
+@router.get("/physical/devices/notes/{uid}", tags=['physical devices'], dependencies=[Depends(token_auth_scheme)])
 async def get_physical_device_notes(uid: int) -> List[DeviceNote]:
     try:
         return dao.get_physical_device_notes(uid)
@@ -170,7 +172,7 @@ async def get_physical_device_notes(uid: int) -> List[DeviceNote]:
         raise HTTPException(status_code=500, detail=err.msg)
 
 
-@router.patch("/physical/devices/notes/", tags=['physical devices'])
+@router.patch("/physical/devices/notes/", tags=['physical devices'], dependencies=[Depends(token_auth_scheme)])
 async def patch_physical_device_note(note: DeviceNote) -> None:
     try:
         dao.update_physical_device_note(note)
@@ -178,7 +180,7 @@ async def patch_physical_device_note(note: DeviceNote) -> None:
         raise HTTPException(status_code=500, detail=err.msg)
 
 
-@router.delete("/physical/devices/notes/{uid}", tags=['physical devices'])
+@router.delete("/physical/devices/notes/{uid}", tags=['physical devices'], dependencies=[Depends(token_auth_scheme)])
 async def delete_physical_device_note(uid: int) -> None:
     """
     Delete the given device note.
@@ -418,14 +420,14 @@ USER AUTHENTICATION
 --------------------------------------------------------------------------"""
 
 #Get user token
-#TODO Change to post request
 @router.get("/token", tags=['User Authentication'], dependencies=[Depends(http_basic_auth)])
 async def get_user_token(request: Request) -> str:
     """
     Get user token from database if user is authenticated
     """
     basic_auth = request.headers['Authorization'].split(' ')[1]
-    user_auth_token = dao.user_get_token(basic_auth=basic_auth)
+    username, password=base64.b64decode(basic_auth).decode().split(":")
+    user_auth_token = dao.user_get_token(username=username, password=password)
     if user_auth_token != None:
         return user_auth_token
     else:

@@ -4,6 +4,7 @@ from typing import Tuple
 import api.client.DAO as dao
 from pdmodels.Models import PhysicalDevice, PhysicalToLogicalMapping, Location, LogicalDevice
 from typing import Tuple
+import os
 
 logging.basicConfig(level=logging.INFO, format='%(asctime)s %(name)s: %(message)s', datefmt='%Y-%m-%dT%H:%M:%S%z')
 logger = logging.getLogger(__name__)
@@ -39,6 +40,11 @@ class TestDAO(unittest.TestCase):
                 properties={'appId': 'x', 'devId': 'y', 'other': 'z'})
 
         return (dev, dao.create_physical_device(dev))
+
+    def _create_test_user(self) -> str:
+        test_uname=os.urandom(4).hex()
+        dao.user_add(uname=test_uname, passwd='password', disabled=False)
+        return test_uname
 
     def test_create_physical_device(self):
         dev, new_dev = self._create_physical_device()
@@ -584,6 +590,57 @@ class TestDAO(unittest.TestCase):
         # duplicate UUID, but doesn't throw an exception.
         with self.assertWarns(UserWarning):
             dao.add_raw_text_message('ttn', self.now(), uuid1, msg1)
+
+    def test_user_add(self):
+        uname=self._create_test_user()
+        users=dao.user_ls()
+
+        self.assertEqual(uname, users[-1])
+
+    def test_user_rm(self):
+        uname=self._create_test_user()
+        dao.user_rm(uname)
+        self.assertFalse(uname in dao.user_ls())
+
+    def test_add_non_unique_user(self):
+        #Check that two users with the same username cannot be created
+        uname=self._create_test_user()
+        self.assertRaises(dao.DAOUniqeConstraintException, dao.user_add, uname, 'password', False)
+    
+    def test_get_user_token(self):
+        uname=self._create_test_user()
+        self.assertIsNotNone(dao.user_get_token(username=uname, password='password'))
+
+    def test_user_token_refresh(self):
+        uname=self._create_test_user()
+        token1=dao.user_get_token(username=uname, password='password')
+        dao.token_refresh(uname=uname)
+        token2=dao.user_get_token(username=uname, password='password')
+
+        self.assertNotEqual(token1, token2)
+
+    def test_user_token_disable(self):
+        uname=self._create_test_user()
+        user_token=dao.user_get_token(username=uname, password='password')
+        
+        dao.token_disable(uname)
+        self.assertFalse(dao.token_is_valid(user_token))
+        
+    def test_user_token_enable(self):
+        uname=self._create_test_user()
+        user_token=dao.user_get_token(username=uname, password='password')
+        
+        dao.token_disable(uname)
+        dao.token_enable(uname)
+        self.assertTrue(dao.token_is_valid(user_token))
+        
+    def test_user_chng_passwd(self):
+        uname=self._create_test_user()
+        dao.user_chng_passwd(uname, 'password1')
+        
+        self.assertIsNone(dao.user_get_token(username=uname, password='password'))
+        
+
 
 if __name__ == '__main__':
     unittest.main()
