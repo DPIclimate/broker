@@ -124,14 +124,12 @@ def on_message(channel, method, properties, body):
         ubidots_payload = {}
         for v in msg[BrokerConstants.TIMESERIES_KEY]:
             dot_ts = ts
+
             # Override the default message timestamp if one of the dot entries has its
             # own timestamp.
             if BrokerConstants.TIMESTAMP_KEY in v:
-                try:
-                    dot_ts_float = dateutil.parser.isoparse(v[BrokerConstants.TIMESTAMP_KEY]).timestamp()
-                    dot_ts = math.floor(dot_ts_float * 1000)
-                except:
-                    lu.cid_logger.error(f'Failed to parse dot-specific timestamp from message: {v[BrokerConstants.TIMESTAMP_KEY]}', extra=msg)
+                dot_ts_float = dateutil.parser.isoparse(msg[BrokerConstants.TIMESTAMP_KEY]).timestamp()
+                dot_ts = math.floor(dot_ts_float * 1000)
 
             try:
                 value = float(v['value'])
