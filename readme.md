@@ -34,7 +34,6 @@ may be provided by different physical devices over time as the phyiscal devices 
 
 Due to the disparate nature of sources and destinations, IoTa has a minimalistic view of devices, comprising an id, name, location, and a last seen timestamp. Physical devices also record their 'source' and some source-specific information to allow fast device lookups to be performed based upon information in an incoming message. Each device has a map of free-form properties associated with it that is available for use by the various components of the system.
 
-
 ## Terminology
 
 * Sensor: The term 'sensor' is used to describe a real device deployed in the field. In reality this is likely to be a microcontoller system with RF communications and some number of actual sensors attached such as soil moisture probes, water salinity sensors, liquid level sensors etc.
@@ -44,7 +43,6 @@ Due to the disparate nature of sources and destinations, IoTa has a minimalistic
 * Logical device: A logical device is IoTa's representation of a destination for timeseries telemetry. It generally represents a sensor in a location such as a water tank or a buoy in a river, and a series of sensors/physical devices will be assoiated with that location over time as maintenance takes place. Telemetry sent to destination systems such as IoT platforms are recorded against logical devices so a coherent timeseries is maintained.
 
 * Mapping: Physical devices are mapped to logical devices, and this mapping is updated when a new physical device appears due to field maintenance. Mappings can also be temporarily or permanently broken to stop messages from a physical device reaching the destination systems, such as when a device is retired or is being reconfigured.
-
 
 ## System architecture
 
@@ -58,20 +56,17 @@ Front-end processors are responsible for creating physical devices in IoTas data
 
 Finally, front-end processors are responsible for generating and assigning the correlation id to each message as it is received, and should record every message along with its correlation id in the  `raw_messages` database table. This should be done as soon as possible so the message has the best chance of being stored somewhere before any errors cause the processor to abort processing that message.
 
-
 ### Mid-tier processors
 
 There is currently one mid-tier processor, the logical mapper. The logical mapper's job is to determine where to send the telemetry received from a physical device. This decision is informed by a table in the database that maps a physical device to a logical device. This mapping must be updated when a physical device is replaced in the field so that data from the new device flows to the same destination.
 
 The mapping is maintained manually using a CLI tool. For example, this tool provides a command to create a logical device based upon an existing physical device and then map the two. The reason this is not done automatically is because when a sensor is replaced in the field and a new physical device is created by a front-end processor, the telemetry from that new sensor/physical device should flow to the same logical device, not a new one.
 
-
 ### Back-end processors
 
 A back-end processor is responsible for writing timeseries data to destinations such as IoT platforms or locally hosted timeseries databases.
 
 There is currently a single back-end processor that writes the telemetry to our current IoT platform, [Ubidots](https://www.ubidots.com/).
-
 
 ### Inter-service communications
 
@@ -91,16 +86,13 @@ The message exchanges and queues are declared as persistent, and the exchanges r
 
 RabbitMQ also acts as an MQTT broker for sources that publish telemetry via MQTT.
 
-
 ### Database
 
 IoTa uses a PostgreSQL database to store device metadata and raw messages.
 
-
 ### Reverse proxy
 
 A reverse proxy is required to terminate TLS connections for webhooks, the REST API, and the MQTT broker. [nginx](https://www.nginx.com/) works well, and configuration details are provided in [doc/ngix.md](doc/ngix.md).
-
 
 ### Normalised message format
 
@@ -124,7 +116,6 @@ A third exchange, `ttn_raw` is used internally by the Things Stack front-end pro
 
 The normalised messages are encoded as JSON objects before being published to a message exchange.
 
-
 ## Installation
 
 A simple installation of IoTa is achieved by cloning the GitHub repository, and installing a web server to act as a TLS connection termination point and reverse proxy.
@@ -135,7 +126,7 @@ docker and docker-compose must be installed for IoTa to run.
 
 > The [ttn-formatters](https://github.com/DPIclimate/ttn-formatters) repo should be cloned in the same directory as the broker
 > repo, ie the ttn-formatters and broker directories share the same parent directory.
->
+> 
 > If this is not done the ttn_processor and ttn_decoder logs will get errors for every uplink received. If the message from TTN
 > has decoded values in it, these values will be used.
 
@@ -144,16 +135,13 @@ $ git clone https://github.com/DPIclimate/broker.git
 $ git clone https://github.com/DPIclimate/ttn-formatters.git
 ```
 
-
 ## Configuration
-
 
 ### Container environment variables
 
 The main point of configuration is the file `compose/.env`. This is initialised by copying `config/broker.env.template` and filling in the values for each environment variable.
 
 Many variables have default values and can be left as-is. It is important to set the various passwords to a secure value. The various hostnames should be left at their defaults unless the docker-compose file services are also updated to reflect the hostnames.
-
 
 ### Docker volumes
 
@@ -180,7 +168,6 @@ IoTa is started using the `run.sh` script.
 
 In either mode the script runs a `docker-compose logs -f` command, leaving the log files scrolling up the screen. You can safely `ctrl-c` out of this and the containers will keep running.
 
-
 ## dc.sh
 
 A script called `dc.sh` exists in both the `broker/compose/production` and `broker/compose/test` directories. This is a convenience script for running `docker-compose` commands with the correct docker-compose file arguments and in the correct directory.
@@ -194,7 +181,6 @@ Examples:
 * `./dc.sh down` to bring the docker-compose stack down. The stack that is stopped depends on whether you are in the `broker/compose/production` or `broker/compose/test` directory.
 
 * `./dc.sh logs -f lm delivery` follow the logs for the logical mapper and Ubidots delivery containers.
-
 
 # broker-cli
 
@@ -223,7 +209,6 @@ The script functions are broken up into a multi-level set of commands, with flag
 
 From here on, the docker part of the command line is omitted, and examples will start with `broker-cli`.
 
-
 ## Physical devices
 
 The `pd` command is used to work with physical devices. The subcommands are:
@@ -231,13 +216,13 @@ The `pd` command is used to work with physical devices. The subcommands are:
 * `get --puid uid [--properties]` returns the complete JSON representation of a physical device identified by `uid`. Unless the `--properties` flag is used the properties field is omitted to reduce clutter in the output. 
 
 * `lum [--source source] [--properties] [--plain]` lists currently unmapped physical devices. A JSON list (the default), or a plain single line per device list of devices is the output. May optionally be filtered by source. Unless the
-`--properties` flag is used the properties field is omitted to reduce clutter in the output. 
+  `--properties` flag is used the properties field is omitted to reduce clutter in the output. 
 
 * `ls [--source source] [--properties] [--plain]` lists mapped and unmapped physical devices, with the option of filtering by source. Plain mode shows one device per line, with the mapped logical device (if any). Unless the
-`--properties` flag is used the properties field is omitted to reduce clutter in the output. 
+  `--properties` flag is used the properties field is omitted to reduce clutter in the output. 
 
 * `create --file filename | --json '{"name": "...", ...}'` creates a physical devices based upon a JSON object provided to the command. See the example below for the structure of the JSON object. The flags  `--file` and `--json` are mutually
-exclusive. Use `--file -` to read JSON from stdin.
+  exclusive. Use `--file -` to read JSON from stdin.
 
 * `up --puid uid --file filename | --json '{ ... }'` updates the physical device identified by uid based upon the JSON object provided to the command. Only the fields present in the JSON object will be updated in the database. The flags  `--file` and `--json` are mutually exclusive. Use `--file -` to read JSON from stdin.
 
@@ -286,7 +271,6 @@ _Examples_:
 
 > Deletes the physical device with uid 123 and prints the JSON object describing the (now deleted) device.
 
-
 ## Logical devices
 
 The `ld` command is used to work with logical devices. The subcommands are:
@@ -296,7 +280,7 @@ The `ld` command is used to work with logical devices. The subcommands are:
 * `ls [--source source] [--properties]` lists mapped and unmapped logical devices, with the option of filtering by source. The properties field is omitted unless the `--properties` flag is used to reduce clutter in the output. 
 
 * `create --file filename | --json '{"name": "...", ...}'` creates a logical devices based upon a JSON object provided to the command. See the example below for the structure of the JSON object. The flags  `--file` and `--json` are mutually
-exclusive. Use `--file -` to read JSON from stdin.
+  exclusive. Use `--file -` to read JSON from stdin.
 
 * `up --luid uid --file filename | --json '{ ... }'` updates the logical device identified by uid based upon the JSON object provided to the command. Only the fields present in the JSON object will be updated in the database. The flags  `--file` and `--json` are mutually exclusive. Use `--file -` to read JSON from stdin.
 
@@ -332,21 +316,20 @@ _Examples_:
 
 > Deletes the logical device with uid 123 and prints the JSON object describing the (now deleted) device.
 
-
 ## Device mappings
 
 The `map` command is used to work with physical devices. The subcommands are:
 
 * `ls (--puid p_uid | --luid l_uid)` display the current mapping for the specified device. Either a physical or logical
-device identifier may be provided, but not both. The mappings are displayed as a JSON object containing the physical
-and logical devices, and the start and end times of the mapping.
+  device identifier may be provided, but not both. The mappings are displayed as a JSON object containing the physical
+  and logical devices, and the start and end times of the mapping.
 
 * `start --puid p_uid --luid l_uid` maps the physical device identified by p_uid to the logical device identified
-by l_uid, with a start time of 'now'. Messages from the physical device will start flowing to the logical device. The
-new mapping is printed as a JSON object.
+  by l_uid, with a start time of 'now'. Messages from the physical device will start flowing to the logical device. The
+  new mapping is printed as a JSON object.
 
 * `end (--puid p_uid | --luid l_uid)` end the current mapping for the specified device. Either a physical or logical
-device identifier may be provided, but not both.
+  device identifier may be provided, but not both.
 
 _Examples_:
 
@@ -366,6 +349,73 @@ _Examples_:
 
 > Ends the current mapping, if any, for physical device identified by uid 154.
 
+# User Authentication
+
+The broker implements authentication to control access to the API endpoints. The user is created on the broker-cli and then an API request prives a username and password to obtain an authorization token which can be used for subsequent requests.
+
+## Broker CLI
+
+The `users` command is use to manage users. Subcommands are:
+
+- `add -u username -p password` used to craete a new user. Creating a new user will generate an authenticatino token for the user to use. Use the `-d` option to disable the token upon creation.
+
+- `rm -u username` command is used to remove a user
+
+- `token -u username (--refresh | --disable | --enable)` used to enable/disable a users token as weel as refresh their token.
+
+- `chng -u username -p new_password` used to change the users password
+
+- `ls` used to list all users in the broker
+
+_Examples_:
+
+`broker-cli add -u my_user -p super_strong_password`
+
+> Creates a user called 'my_user' and has the password 'super_strong_password'
+
+`token -u my_user --refresh`
+
+> Refreshes the authentication token required for my_user to authenticate with the system
+
+## Authenticating with API
+
+To authenticate with the API you must obtain a users token at `/broker/api/token`. This token can then be used for subsequent requests with the API
+
+### Obtaining Bearer Token
+
+`/broker/api/token` uses Basic HTTP Auth to send the username and password. 
+
+_Example Request_:
+
+```bash
+curl -X 'GET' \
+  'http://10.211.55.3:5686/broker/api/token' \
+  -H 'accept: application/json' \
+  -H 'Authorization: Basic bXlfdXNlcjpzdXBlcl9zdHJvbmdfcGFzc3dvcmQ='
+```
+
+> `Basic bXlfdXNlcjpzdXBlcl9zdHJvbmdfcGFzc3dvcmQ=` is the base64 encoded string of  `my_user:super_strong_password`
+
+_Example Response_:
+
+```bash
+"0b81e933c7b79bb20a98cba7936ce3bfc2098b7ed10fb46548d22f0aaaf19f1e6f627ec3d9ef7d5247f8c48cdbc674251f15804baf3fe4bede5c5c2c7490378e"
+```
+
+> This is the token to be used on subsequent requests with the API
+
+### Authenticating
+
+Now that a token has been obtained we can make a request to other endpoints, for example `/broker/api/physical/sources`. Instead of Basic HTTP Auth we will use Bearer Authentication.
+
+_Example Request_:
+
+```bash
+curl -X 'GET' \
+  'http://10.211.55.3:5686/broker/api/physical/sources/' \
+  -H 'accept: application/json' \
+  -H 'Authorization: Bearer 0b81e933c7b79bb20a98cba7936ce3bfc2098b7ed10fb46548d22f0aaaf19f1e6f627ec3d9ef7d5247f8c48cdbc674251f15804baf3fe4bede5c5c2c7490378e'
+```
 
 # Unit tests
 

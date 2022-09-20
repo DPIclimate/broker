@@ -1,4 +1,7 @@
+import base64
 import copy, datetime, logging, time, unittest, uuid
+from typing_extensions import assert_type
+import re
 from typing import Tuple
 
 import api.client.DAO as dao
@@ -6,6 +9,8 @@ import requests
 
 from pdmodels.Models import DeviceNote, PhysicalDevice, PhysicalToLogicalMapping, Location, LogicalDevice
 from typing import Tuple
+
+import os
 
 logging.basicConfig(level=logging.INFO, format='%(asctime)s %(name)s: %(message)s', datefmt='%Y-%m-%dT%H:%M:%S%z')
 logger = logging.getLogger(__name__)
@@ -48,6 +53,11 @@ class TestRESTAPI(unittest.TestCase):
         new_dev = PhysicalDevice.parse_obj(r.json())
         self.assertEqual(r.headers['Location'], f'{url}{new_dev.uid}')
         return (dev, new_dev)
+
+    def _create_test_user(self) -> str:
+        test_uname=os.urandom(4).hex()
+        dao.user_add(uname=test_uname, passwd='password', disabled=False)
+        return test_uname
 
     def test_get_all_physical_sources(self):
         url=f'{_BASE}/physical/sources/'
@@ -551,6 +561,38 @@ class TestRESTAPI(unittest.TestCase):
         self.assertEqual(mappings[0], mapping3)
         self.assertEqual(mappings[1], mapping2)
         self.assertEqual(mappings[2], mapping1)
+
+    def test_get_auth_token(self):
+        test_uname=os.urandom(4).hex()
+        dao.user_add(uname=test_uname, passwd='password', disabled=False)
+
+        headers=_HEADERS
+        headers['Authorization']=f'Basic {base64.b64encode(f"{test_uname}:password".encode()).decode()}'
+        url=f"{_BASE}/token"
+        r=requests.get(url, headers=headers)
+        self.assertEqual(r.status_code, 200)
+
+    def test_user_login(self):
+        #Create user for testing
+        test_uname=os.urandom(4).hex()
+        dao.user_add(uname=test_uname, passwd='password', disabled=False)
+
+        #Get auth token
+        headers=_HEADERS
+        headers['Authorization']=f'Basic {base64.b64encode(f"{test_uname}:password".encode()).decode()}'
+        url=f"{_BASE}/token"
+        r=requests.get(url, headers=headers)
+        token=r.text.strip('"')
+
+        #Test token on /physical/sources
+        url=f"{_BASE}/physical/sources"
+        headers=_HEADERS
+        headers['Authorization']=f'Bearer {token}'
+        r=requests.get(url, headers=_HEADERS)
+
+        self.assertEqual(r.status_code, 200)
+
+
 
 if __name__ == '__main__':
     unittest.main()
