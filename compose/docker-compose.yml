@@ -17,7 +17,7 @@ services:
     env_file:
       - .env
     volumes:
-      - ../config/rabbitmq/enabled_plugins:/etc/rabbitmq/enabled_plugins
+      - ../config/rabbitmq:/etc/rabbitmq
 
   restapi:
     image: broker/python-base
