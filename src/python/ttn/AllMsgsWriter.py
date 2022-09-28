@@ -55,7 +55,7 @@ async def main():
     global mq_client, rx_channel, tx_channel, finish
 
     logging.info('===============================================================')
-    logging.info('               STARTING TTN ALLMSGSWRITER')
+    logging.info('               STARTING TTN PROCESSOR')
     logging.info('===============================================================')
 
     # Cannot put these assignments up the top because you cannot do a forward
@@ -99,10 +99,12 @@ def get_received_at(msg) -> Optional[str]:
 
     return received_at
 
+
 _decoder_req_headers = {
     'Content-type': 'application/json',
     'Accept': 'application/json'
 }
+
 
 def on_message(channel, method, properties, body):
     """
@@ -140,18 +142,20 @@ def on_message(channel, method, properties, body):
 
         last_seen = dateutil.parser.isoparse(received_at)
 
+        # Record the message to the all messages table before doing anything else to ensure it
+        # is saved. Attempts to add duplicate messages are ignored in the DAO.
+        dao.add_raw_json_message(BrokerConstants.TTN, last_seen, correlation_id, msg)
+
         source_ids = {
-            # These values are split out to make SQL queries more readable and hopefully faster.
             'app_id': app_id,
             'dev_id': dev_id,
             'dev_eui': dev_eui,
         }
 
-        # Record the message to the all messages table before doing anything else to ensure it
-        # is saved. Attempts to add duplicate messages are ignored in the DAO.
-        dao.add_raw_json_message(BrokerConstants.TTN, last_seen, correlation_id, msg)
+        # Only query on dev_eui. This allows a TTN device to be moved to a different
+        # application without having a new physical device created.
+        pds = dao.get_pyhsical_devices_using_source_ids(BrokerConstants.TTN, {'dev_eui': dev_eui})
 
-        pds = dao.get_pyhsical_devices_using_source_ids(BrokerConstants.TTN, source_ids)
         if len(pds) < 1:
             lu.cid_logger.info('Device not found, creating physical device.', extra=msg_with_cid)
             ttn_dev = ttn.get_device_details(app_id, dev_id)
@@ -159,12 +163,6 @@ def on_message(channel, method, properties, body):
 
             dev_name = ttn_dev['name'] if 'name' in ttn_dev else dev_id
             dev_loc = Location.from_ttn_device(ttn_dev)
-            source_ids = {
-                # These values are split out to make SQL queries more readable and hopefully faster.
-                'app_id': app_id,
-                'dev_id': dev_id,
-                'dev_eui': dev_eui,
-            }
 
             props = {
                 BrokerConstants.TTN: ttn_dev,
@@ -175,10 +173,17 @@ def on_message(channel, method, properties, body):
             pd = PhysicalDevice(source_name=BrokerConstants.TTN, name=dev_name, location=dev_loc, last_seen=last_seen, source_ids=source_ids, properties=props)
             pd = dao.create_physical_device(pd)
         else:
-            pd = pds[0]
+            pd: PhysicalDevice = pds[0]
+
+            lu.cid_logger.info(f'Found physical device: {pd.uid}, {pd.source_ids}', extra=msg_with_cid)
+            if source_ids['app_id'] != pd.source_ids['app_id'] or source_ids['dev_id'] != pd.source_ids['dev_id']:
+                lu.cid_logger.info(f'source_ids changed to {source_ids}', extra=msg_with_cid)
+
             #logging.info(f'Updating last_seen for device {pd.name}')
             if last_seen is not None:
                 pd.last_seen = last_seen
+                # In case the device was moved to a different TTN application.
+                pd.source_ids = source_ids
                 pd.properties[BrokerConstants.LAST_MSG] = msg
                 pd = dao.update_physical_device(pd)
 
