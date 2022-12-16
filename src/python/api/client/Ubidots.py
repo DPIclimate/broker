@@ -4,8 +4,8 @@ import datetime, json, logging, os, time
 
 from pdmodels.Models import Location, LogicalDevice
 
-BASE_1_6 = "https://industrial.api.ubidots.com/api/v1.6"
-BASE_2_0 = "https://industrial.api.ubidots.com/api/v2.0"
+BASE_1_6 = "https://industrial.api.ubidots.com.au/api/v1.6"
+BASE_2_0 = "https://industrial.api.ubidots.com.au/api/v2.0"
 
 
 headers = {
@@ -134,7 +134,6 @@ def post_device_data(label: str, body) -> None:
     hdrs = headers
     hdrs['Content-Type'] = 'application/json'
     body_str = json.dumps(body)
-    time.sleep(0.3)
     r = requests.post(url, headers=hdrs, data=body_str)
     if r.status_code != 200:
         logging.info(f'POST {url}: {r.status_code}: {r.reason}')

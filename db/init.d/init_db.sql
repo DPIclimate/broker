@@ -89,3 +89,8 @@ create table if not exists users(
 create index if not exists pd_src_id_idx on physical_devices using GIN (source_ids);
 
 insert into sources values ('ttn'), ('greenbrain'), ('ydoc');
+
+-- Enable the PostGIS extensions
+CREATE EXTENSION postgis;
+CREATE EXTENSION postgis_raster;
+CREATE EXTENSION postgis_sfcgal;

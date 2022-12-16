@@ -5,35 +5,45 @@ on to Ubidots.
 
 import dateutil.parser
 
-import asyncio, json, logging, math, signal, uuid
+import json, logging, math, os, signal, time, uuid
 
 import BrokerConstants
+
+import pika, pika.channel, pika.spec
 from pika.exchange_type import ExchangeType
-import api.client.RabbitMQ as mq
+
 import api.client.Ubidots as ubidots
 
 import api.client.DAO as dao
 import util.LoggingUtil as lu
 
-rx_channel = None
-mq_client = None
-finish = False
+_user = os.environ['RABBITMQ_DEFAULT_USER']
+_passwd = os.environ['RABBITMQ_DEFAULT_PASS']
+_host = os.environ['RABBITMQ_HOST']
+_port = os.environ['RABBITMQ_PORT']
 
+_amqp_url_str = f'amqp://{_user}:{_passwd}@{_host}:{_port}/%2F'
+
+_channel = None
+
+_finish = False
 
 def sigterm_handler(sig_no, stack_frame) -> None:
     """
     Handle SIGTERM from docker by closing the mq and db connections and setting a
     flag to tell the main loop to exit.
     """
-    global finish, mq_client
+    global _finish, _channel
 
     logging.info(f'{signal.strsignal(sig_no)}, setting finish to True')
-    finish = True
+    _finish = True
     dao.stop()
-    mq_client.stop()
+
+    # This breaks the endless loop in main.
+    _channel.cancel()
 
 
-async def main():
+def main():
     """
     Initiate the connection to RabbitMQ and then idle until asked to stop.
 
@@ -42,24 +52,45 @@ async def main():
 
     It would be good to find a better way to do nothing than the current loop.
     """
-    global mq_client, rx_channel, finish
+    global _channel, _finish
 
     logging.info('===============================================================')
     logging.info('               STARTING UBIDOTS WRITER')
     logging.info('===============================================================')
 
-    rx_channel = mq.RxChannel(BrokerConstants.LOGICAL_TIMESERIES_EXCHANGE_NAME, exchange_type=ExchangeType.fanout, queue_name='ubidots_logical_msg_queue', on_message=on_message, routing_key='logical_timeseries')
-    mq_client = mq.RabbitMQConnection(channels=[rx_channel])
-    asyncio.create_task(mq_client.connect())
+    logging.info('Opening connection')
+    connection = None
+    conn_attempts = 0
+    backoff = 10
+    while connection is None:
+        try:
+            connection = pika.BlockingConnection(pika.URLParameters(_amqp_url_str))
+        except:
+            conn_attempts += 1
+            logging.warning(f'Connection to RabbitMQ attempt {conn_attempts} failed.')
 
-    while not rx_channel.is_open:
-        await asyncio.sleep(0)
+            if conn_attempts % 5 == 0 and backoff < 60:
+                backoff += 10
 
-    while not finish:
-        await asyncio.sleep(2)
+            time.sleep(backoff)
 
-    while not mq_client.stopped:
-        await asyncio.sleep(1)
+    logging.info('Opening channel')
+    _channel = connection.channel()
+    _channel.basic_qos(prefetch_count=1)
+    logging.info('Declaring exchange')
+    _channel.exchange_declare(
+            exchange=BrokerConstants.LOGICAL_TIMESERIES_EXCHANGE_NAME,
+            exchange_type=ExchangeType.fanout,
+            durable=True)
+    logging.info('Declaring queue')
+    _channel.queue_declare(queue='ubidots_logical_msg_queue', durable=True)
+
+    # This loops until _channel.cancel is called in the signal handler.
+    for method, properties, body in _channel.consume('ubidots_logical_msg_queue'):
+        on_message(_channel, method, properties, body)
+
+    logging.info('Closing connection')
+    connection.close()
 
 
 def on_message(channel, method, properties, body):
@@ -89,24 +120,26 @@ def on_message(channel, method, properties, body):
     So get the logical device from the db via the id in the message, and convert the iso-8601 timestamp to an epoch-style timestamp.
     """
 
-    global rx_channel, finish
+    global _channel, _finish
 
     delivery_tag = method.delivery_tag
 
     # If the finish flag is set, reject the message so RabbitMQ will re-queue it
     # and return early.
-    if finish:
-        rx_channel._channel.basic_reject(delivery_tag)
+    if _finish:
+        lu.cid_logger.info(f'NACK delivery tag {delivery_tag}, _finish is True', extra=msg)
+        _channel.basic_reject(delivery_tag)
         return
 
     try:
         msg = json.loads(body)
         l_uid = msg[BrokerConstants.LOGICAL_DEVICE_UID_KEY]
         lu.cid_logger.info(f'Accepted message from logical device id {l_uid}', extra=msg)
+
         ld = dao.get_logical_device(l_uid)
         if ld is None:
             lu.cid_logger.error(f'Could not find logical device, dropping message: {body}', extra=msg)
-            rx_channel._channel.basic_ack(delivery_tag)
+            _channel.basic_reject(delivery_tag, requeue=False)
             return
 
         ts = 0.0
@@ -118,12 +151,13 @@ def on_message(channel, method, properties, body):
             ts = math.floor(ts_float * 1000)
         except:
             lu.cid_logger.error(f'Failed to parse timestamp from message: {msg[BrokerConstants.TIMESTAMP_KEY]}', extra=msg)
-            rx_channel._channel.basic_reject(delivery_tag, requeue=False)
+            _channel.basic_reject(delivery_tag, requeue=False)
             return
 
         ubidots_payload = {}
         for v in msg[BrokerConstants.TIMESERIES_KEY]:
             dot_ts = ts
+
             # Override the default message timestamp if one of the dot entries has its
             # own timestamp.
             if BrokerConstants.TIMESTAMP_KEY in v:
@@ -131,7 +165,8 @@ def on_message(channel, method, properties, body):
                     dot_ts_float = dateutil.parser.isoparse(v[BrokerConstants.TIMESTAMP_KEY]).timestamp()
                     dot_ts = math.floor(dot_ts_float * 1000)
                 except:
-                    lu.cid_logger.error(f'Failed to parse dot-specific timestamp from message: {v[BrokerConstants.TIMESTAMP_KEY]}', extra=msg)
+                    # dot_ts has already been set to msg timestamp above as a default value.
+                    pass
 
             try:
                 value = float(v['value'])
@@ -155,7 +190,6 @@ def on_message(channel, method, properties, body):
         # scheme that does not require source-specific information, change this code, and restart
         # the logical mapper.
         #
-
         new_device = False
         if not 'ubidots' in ld.properties or not 'label' in ld.properties['ubidots']:
             # If the Ubidots label is not in the logical device properties, the device
@@ -166,7 +200,7 @@ def on_message(channel, method, properties, body):
             pd = dao.get_physical_device(msg[BrokerConstants.PHYSICAL_DEVICE_UID_KEY])
             if pd is None:
                 lu.cid_logger.error(f'Could not find physical device, dropping message: {body}', extra=msg)
-                rx_channel._channel.basic_ack(delivery_tag)
+                _channel.basic_reject(delivery_tag, requeue=False)
                 return
 
             new_device = True
@@ -224,7 +258,7 @@ def on_message(channel, method, properties, body):
                         patch_obj['properties'] |= {'_config': cfg, 'dpi-uid': ttn_props['attributes']['uid']}
 
                 # TODO: What about Green Brain devices?
-                
+
             ubidots.update_device(ubidots_dev_label, patch_obj)
 
             # Update the newly created logical device properties with the information
@@ -238,11 +272,12 @@ def on_message(channel, method, properties, body):
                 dao.update_logical_device(ld)
 
         # This tells RabbitMQ the message is handled and can be deleted from the queue.    
-        rx_channel._channel.basic_ack(delivery_tag)
+        _channel.basic_ack(delivery_tag)
+        #lu.cid_logger.info(f'ACK delivery tag {delivery_tag}', extra=msg)
 
     except BaseException:
         logging.exception('Error while processing message.')
-        rx_channel._channel.basic_reject(delivery_tag, requeue=False)
+        _channel.basic_reject(delivery_tag, requeue=False)
 
 
 if __name__ == '__main__':
@@ -251,5 +286,5 @@ if __name__ == '__main__':
     signal.signal(signal.SIGTERM, sigterm_handler)
 
     # Does not return until SIGTERM is received.
-    asyncio.run(main())
+    main()
     logging.info('Exiting.')

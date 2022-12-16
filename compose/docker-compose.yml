@@ -3,10 +3,12 @@ version: '3.1'
 services:
 
   db:
-    image: postgres
+    image: postgis/postgis
     restart: "no"
     env_file:
       - .env
+    ports:
+      - "5432:5432"
     volumes:
       - ../db/init.d:/docker-entrypoint-initdb.d
 
@@ -17,7 +19,7 @@ services:
     env_file:
       - .env
     volumes:
-      - ../config/rabbitmq/enabled_plugins:/etc/rabbitmq/enabled_plugins
+      - ../config/rabbitmq:/etc/rabbitmq
 
   restapi:
     image: broker/python-base
