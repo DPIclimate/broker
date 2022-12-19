@@ -251,7 +251,7 @@ def on_message(channel, method, properties, body):
                     # I think that means we need to hold off the ack in this method and only ack the message
                     # we got from ttn_raw when we get confirmation from the server that it has saved the message
                     # written to the physical_timeseries queue.
-                    #lu.cid_logger.debug(f'Publishing to physical messages exchange: {json.dumps(p_ts_msg)}', extra=msg_with_cid)
+                    #lu.cid_logger.info(f'Publishing to physical messages exchange: {json.dumps(p_ts_msg)}', extra=msg_with_cid)
                     msg_id = tx_channel.publish_message('physical_timeseries', p_ts_msg)
                 else:
                     lu.cid_logger.debug(f'Not publishing from disabled app {app_id}.', extra=msg_with_cid)

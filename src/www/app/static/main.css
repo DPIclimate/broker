@@ -1,0 +1,219 @@
+body {
+    font: 15px/1.5 Arial Helvetica, sans-serif;
+    padding: 0;
+    margin: 0;
+    background-color: #f4f4f4;
+}
+
+.container {
+    width: 80%;
+    margin: auto;
+    overflow: hidden;
+}
+
+.container h2 {
+    padding: 20px 0 20px 0;
+}
+
+.hidden {
+    display: none;
+}
+
+header {
+    background: #063f5c;
+    color: #ffffff;
+    padding: 30px;
+    min-height: 70px;
+}
+
+header a {
+    color: #ffffff;
+    text-decoration: none;
+    text-transform: uppercase;
+    font-size: 20px;
+}
+
+header ul {
+    margin: 0;
+    padding: 0;
+}
+
+header li {
+    float: left;
+    display: inline;
+    padding: 0 20px 0 20px;
+}
+
+header #header-title {
+    float: left;
+}
+
+header #header-title h1 {
+    margin: 0;
+}
+
+header nav {
+    float: right;
+    margin-top:10px;
+}
+
+header a:hover {
+    color:#fd7e14;
+    font-weight:bold;
+}
+
+.command-bar {
+    background: #17a2b8;
+    text-align: center;
+    min-height: 40px;
+    margin: auto;
+    color: #ffffff;
+    padding: 15px;
+    border-bottom: #fd7e14 5px solid;
+}
+
+.command-bar ul {
+    margin: 0;
+    padding: 0;
+}
+
+.command-bar li {
+    display: inline;
+    padding: 0 20px 0 20px;
+}
+
+.command-bar a {
+    color: #ffffff;
+    text-decoration: none;
+    text-transform: uppercase;
+    font-size: 16px;
+}
+
+.command-bar a:hover {
+    color:#fd7e14;
+    font-weight:bold;
+}
+
+.command-bar .btn {
+    color: #ffffff;
+    text-decoration: none;
+    text-transform: uppercase;
+    font-size: 16px;
+}
+
+.command-bar .btn:hover {
+    color:#fd7e14;
+    font-weight:bold;
+}
+
+.form-heading {
+    color: #fd7e14;
+    font-weight: bold;
+}
+
+.form-section {
+    margin: 20px 0 20px 0;
+}
+
+form {
+    display: table;
+}
+
+form div {
+    display: table-row;
+}
+
+form label {
+    display: table-cell;
+    margin: 5px;
+}
+
+form input {
+    display: table-cell;
+    margin: 5px;
+}
+
+form select {
+    display: table-cell;
+    width: 95%;
+    margin: 5px;
+}
+
+.row {
+    display: flex;
+}
+
+.column {
+    flex: 50%
+}
+
+.dialog-box {
+    z-index: 10;
+    width: 70%;
+}
+
+.dialog-box form{
+    width: 100%;
+}
+
+#note-input {
+    margin: 5px 5px 0 0;
+    width: 70%
+}
+
+.form-btn {
+    background-color: #17a2b8;
+    border: none;
+    color: white;
+    text-align: center;
+    text-decoration: none;
+    display: inline-block;
+    font-size: 16px;
+    margin: 5px;
+    cursor: pointer;
+}
+
+.form-btn:hover {
+    background-color: #fd7e14;
+    font-size: 17px;
+}
+
+.textAreaAlign {
+    display: inline-flex;
+    margin-top: 5px;
+    margin-bottom: 5px;
+}
+
+.note-dialog-box {
+    z-index: 1;
+    position: relative;
+    left: 16%;
+    top: -100%;
+    width: 30%;
+}
+
+.delete-btn {
+    background-color: #fd7e14;
+    border: none;
+    color: white;
+    text-align: center;
+    text-decoration: none;
+    display: inline-block;
+    font-size: 16px;
+    margin: 5px;
+    cursor: pointer;
+}
+
+.edit-note-container{
+    display: flex; 
+    justify-content: space-between;
+  }
+
+.edit-note-container span{
+flex: 1;
+text-align: center;
+}
+
+.selected {
+    background-color: #a8e9f4;
+}

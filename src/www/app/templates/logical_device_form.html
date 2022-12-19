@@ -1,0 +1,94 @@
+{% extends "base.html" %}
+{% block content %}
+
+<div class="command-bar">
+	<div class="form-buttons">
+		<ul>
+			<li><span class="btn" onclick="handleSubmit('device-form', 'Are you sure you want to Save?')">Save</a></li>
+			<li><span class="btn" onclick="handleMapping('logical device')">Update Mapping</span></li>
+		</ul>
+	</div>
+</div>
+
+<section class="container">
+	<h2 class="form-heading">{{ title }}</h2>
+	<div class="row">
+		<div class="column">
+			<div class="form-section">
+				<h3>Form</h3>
+				<form id="device-form" action="{{ url_for('UpdateLogicalDevice') }}" method="GET" target="hidden-frame">
+					<div>
+						<label for="form-uid">UID</label>
+						<input type="text" id="form-uid" name="form_uid" value="{{ ld_data.uid }}" readonly>
+					</div>
+					<div>
+						<label for="form-name">Name</label>
+						<input type="text" id="form-device-name" name="form_name" value="{{ ld_data.name }}">
+					</div>
+					<div>
+						<label id="form-location-label" for="form-name">Location</label>
+						<input type="text" id="form-location" name="form_location" value="{{ deviceLocation }}">
+					</div>
+					<label for="device-last-seen">Device Last Seen:</label>
+					<input type="text" id="device-last-seen" name="device_last_seen" value="{{ deviceLastSeen }}" readonly>
+				</form>
+			</div>
+			<div class="form-section">
+				<h3>Properties</h3>
+				<textarea rows="10" cols="50">{{ properties }}</textarea>
+			</div>
+		</div>
+		<div class="column">
+			<div class="form-section">
+				<dialog id="mapping-dialog" class="dialog-box">
+					<h3 id="mapping-dialog-heading">Select Physical Device to Map</h3>
+					<form id="mapping-form" action="{{ url_for('UpdateMappings') }}" method="GET" target="hidden-frame">
+						<table class="table table-striped data-table">
+							<thead>
+								<th>Select</th>
+								<th>Uid</th>
+								<th>Name</th>
+								<th>Location</th>
+								<th>Last Seen</th>
+							</thead>
+							<tbody>
+							{% for physicalDevice in pd_data %}
+								<tr>
+									<td><input type="radio" name="physicalDevice_mapping" value="{{ physicalDevice.uid }}"></td>
+									<td>{{ physicalDevice.uid }}</td>
+									<td><a href="{{ url_for('physical_device_form', uid=physicalDevice.uid) }}">{{ physicalDevice.name }}</a></td>
+									<td>{{ physicalDevice.location }}</td>
+									<td>{{ physicalDevice.last_seen }}</td>
+								</tr>
+							{% endfor %}
+						</tbody>
+						</table>
+						<input type="text" id="mapping-id" name="logicalDevice_mapping" class="hidden" value="{{ ld_data.uid }}" readonly>
+						<input type="button" class="form-btn" value="Update Mapping" onClick="handleSubmit('mapping-form', 'Are you sure you want to map these?')">
+					</form>
+				</dialog>
+				<h3>Mappings</h3>
+				<table class="table table-striped data-table">
+					<thead>
+						<th>ID</th>
+						<th>Name</th>
+						<th>Start</th>
+						<th>End</th>
+					</thead>
+						{% for mapping in deviceMappings %}
+						<tbody>
+							<tr>
+								<td>{{ mapping.pd_uid }}</td>
+								<td><a href="{{ url_for('physical_device_form', uid=mapping.pd_uid) }}">{{ mapping.pd_name }}</a></td>
+								<td>{{ mapping.start_time }}</td>
+								<td>{{ mapping.end_time }}</td>
+							</tr>
+						</tbody>
+						{% endfor %}
+				</table>
+			</div>
+		</div>
+	</div>
+</section>
+
+{% endblock %}

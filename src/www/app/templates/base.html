@@ -1,0 +1,217 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <meta charset="utf-8">
+        <meta name="viewport" content="width=device-width">
+        <title>DPI Device Manager | {{ title }}</title>
+        <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.0.1/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-+0n0xVW2eSR5OomGNYDnhzAbDsOXxcvSN1TPprVMTNDbiYZCxYbOOl7+AMvyTG2x" crossorigin="anonymous">
+        <link rel="stylesheet" type="text/css" href="https://cdn.datatables.net/1.10.25/css/dataTables.bootstrap5.css">
+        <link rel="stylesheet" href="{{ url_for('static', filename='main.css') }}">
+        <link rel="shortcut icon" href="https://www.dpi.nsw.gov.au/favicon.ico"/>
+        <script type="text/javascript" charset="utf8" src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+        <script type="text/javascript" charset="utf8" src="https://cdn.datatables.net/1.10.25/js/jquery.dataTables.js"></script>
+        <script type="text/javascript" charset="utf8" src="https://cdn.datatables.net/1.10.25/js/dataTables.bootstrap5.js"></script>
+        
+        <script type="text/javascript" charset="utf8" src="https://cdn.datatables.net/select/1.4.0/js/dataTables.select.min.js"></script>
+        <script type="text/javascript">
+
+            $(document).ready(function () {
+                $('.data-table-multi').DataTable({
+                    select: {
+                        style: 'multi+shift'
+                    },
+                    language: {
+                        info:   "Showing _START_ to _END_ of _TOTAL_ entries "
+                    }
+                });
+
+                $('.data-table-single').DataTable({
+                    select: {
+                        style: 'os'
+                    },
+                    language: {
+                        info:   "Showing _START_ to _END_ of _TOTAL_ entries "
+                    }
+                });
+
+                $('.data-table').DataTable();
+
+            });
+
+
+            function handleSubmit(form_id, warning_message){
+                if(confirm(warning_message)){
+                    document.getElementById(form_id).submit();
+                }
+            }
+
+            var editNoteID = 0;
+            var isDialogHidden = true;
+            function handleMapping(deviceType){                
+                if(isDialogHidden){
+                    document.getElementById('mapping-dialog').show();
+                    isDialogHidden = false;
+                } else {
+                    document.getElementById('mapping-dialog').close();
+                    isDialogHidden = true;
+                }
+            }
+
+            function handleCreateMultipleMappings(){
+                var selected = $('.selected');
+                if(selected.length === 0){
+                    alert('Please select at least one device to update.')
+                }
+                else if(confirm('Are you sure you want to Create Mappings for ' + selected.length + ' devices?')){
+                    for (var index = 0; index < selected.length; index++){
+                        var url = "{{ url_for('CreateMapping') }}" + '?uid=' + selected[index]['id'];
+                        console.log('Create Mapping for Physical Device: ' + selected[index]['id'] + ': ' + httpGet(url));
+                    }
+                    alert('Success');
+                }
+            }
+
+            function handleCreateMapping(uid){
+                if(confirm('Are you sure you want to Create Mapping?')){
+                    var url = "{{ url_for('CreateMapping') }}" + '?uid=' + uid;
+                    alert(httpGet(url));
+                    location.reload();
+                } else {
+                    console.log("Did not Create Mapping");
+                }
+            }
+
+            function handleCreateNote(){
+                var text = document.getElementById('note-input').value;
+                if (text !== '') {
+                        var deviceUID = document.getElementById('form-uid').value;
+                        deviceUID = String(deviceUID)
+                        var url = `{{ url_for('CreateNote', noteText='inputText', uid='deviceID') }}`.replace('inputText', text).replace('deviceID', deviceUID);
+                        httpGet(url);
+                        location.reload();
+                    }
+                    else {
+                        alert('Note cannot be null');
+                    }
+                } 
+            
+
+            function saveEditNote(){
+                var text = document.getElementById('edit-note-box').value;
+                editNoteID = String(editNoteID)
+                var url = `{{ url_for('EditNote', noteText='inputText', uid='deviceID') }}`.replace('inputText', text).replace('deviceID', editNoteID);
+                httpPatch(url);
+                location.reload();
+                closeEditNote();
+            }
+
+            function handleDeleteNote(){
+                var checkboxes = document.getElementsByName('note-uid');
+                for (var i=0; i < checkboxes.length; i++){
+                    if (checkboxes[i].checked) {
+                        var noteID = checkboxes[i].value;
+                        var url = `{{ url_for('DeleteNote', noteUID='noteID') }}`.replace('noteID', noteID);
+                        httpDelete(url);
+                    }
+                }
+                location.reload();
+                }
+            
+
+            function handleClickNote(e){ 
+                var checkbox = document.getElementsByName('note-uid');
+                var anyChecked = false;
+                for (var i=0; i < checkbox.length; i++){
+                        if (checkbox[i].checked) {
+                            anyChecked = true
+                        }
+                if (anyChecked) {
+                    document.getElementById('delete-note-btn').removeAttribute("hidden");
+                }
+                else {
+                    document.getElementById('delete-note-btn').setAttribute("hidden", "hidden");
+                }
+            }
+        }
+
+            function closeEditNote(e){ 
+                if(isDialogHidden){
+                    document.getElementById('edit-note-dialog').show();
+                    isDialogHidden = false;
+                } else {
+                    document.getElementById('edit-note-dialog').close();
+                    isDialogHidden = true;
+                }
+            }
+
+            function handleEditNote(e){ 
+                if(isDialogHidden){
+                    document.getElementById('edit-note-dialog').showModal();
+                    isDialogHidden = false;
+                } else {
+                    document.getElementById('edit-note-dialog').close();
+                    isDialogHidden = true;
+                }
+                var note = document.getElementsByName("note")[getRow(e)-1];
+                var editNoteElem = document.getElementsByName("note-uid")[getRow(e)-1];
+                editNoteID = editNoteElem.value;
+                document.getElementById('edit-note-box').value = note.innerText;
+            }
+
+            function getRow(element) {
+                 return element.closest('tr').rowIndex;
+            }
+
+            function httpGet(url) {
+                var xmlHttp = new XMLHttpRequest();
+                xmlHttp.open( "GET", url, false ); 
+                xmlHttp.send( null )
+                return xmlHttp.responseText;
+            }
+
+            function httpPatch(url) {
+                var xmlHttp = new XMLHttpRequest();
+                xmlHttp.open( "PATCH", url, false );
+                xmlHttp.send( null );
+                return xmlHttp.responseText;
+            }
+
+            function httpDelete(url) {
+                var xmlHttp = new XMLHttpRequest();
+                xmlHttp.open( "DELETE", url); 
+                xmlHttp.send( null )
+                return xmlHttp.responseText;
+            }
+            
+
+        </script>
+    </head>
+    <body>
+        <header>
+            <iframe name="hidden-frame" class="hidden"></iframe>
+            <div class="container">
+                <div id="header-title">
+                    <h1>DPI | Device Manager</h1>
+                </div>
+                <nav>
+                    <ul>
+                        <li><a id="physical-device-banner-heading" href="{{ url_for('index') }}">Physical Devices</a></li>
+                        <li><a id="logical-device-banner-heading" href="{{ url_for('logical_device_table') }}">Logical Devices</a></li>
+                        <li><a id="map-banner-heading" href="{{ url_for('map') }}">Map</a></li>
+                        <li><a id="map-banner-heading" href="{{ url_for('singout') }}">Singout</a></li>
+                    </ul>
+                </nav>
+            </div>
+        </header>
+        {% block content %}{% endblock %}        
+    </body>
+
+    <dialog style="width: 20%" id="edit-note-dialog" class="dialog-box">
+        <h3 id="mapping-dialog-heading">Edit Note</h3>
+        <div class="edit-note-container">
+            <textarea rows='3' cols='35' id="edit-note-box" name="edit-note-text" class="close-edit-note" value="Save"></textarea>
+            <input type="button" style="height:70px;width:83px" class="form-btn" value="Save" onClick="saveEditNote()">
+            <input type="button" class="form-btn" value="Close" onClick="closeEditNote()">
+        </div>
+    </dialog>
+</html>

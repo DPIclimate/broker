@@ -114,6 +114,7 @@ def on_message(channel, method, properties, body):
 
         ld = mapping.ld
         ld.last_seen = msg[BrokerConstants.TIMESTAMP_KEY]
+        lu.cid_logger.info(f'Timestamp from message for LD last seen update: {ld.last_seen}', extra=msg)
         dao.update_logical_device(ld)
         
         """
@@ -146,7 +147,7 @@ def on_message(channel, method, properties, body):
 
     except BaseException as e:
         logging.exception('Error while processing message')
-        rx_channel._channel.basic_reject(delivery_tag)
+        rx_channel._channel.basic_ack(delivery_tag)
 
 
 if __name__ == '__main__':

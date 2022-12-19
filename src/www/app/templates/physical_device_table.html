@@ -1,0 +1,38 @@
+{% extends "base.html" %}
+{% block content%}
+
+<div class="command-bar">
+    <div class="form-buttons">
+        <ul id="physicalmappingbuttons">
+			<li><span class="btn" onclick="handleCreateMultipleMappings()">Create Multiple Mappings</span></li>
+        </ul>
+    </div>
+</div>
+
+<section id="device-table">
+    <div class="container">
+        <h2 class="form-heading">Physical Devices</h2>
+        <table class="table table-striped data-table-multi">
+            <thead>
+                <tr>
+                    <th>UID</th>
+                    <th>NAME</th>
+                    <th>SOURCE</th>
+                    <th>LAST SEEN</th>
+                </tr>
+            </thead>
+            <tbody id="device-table-body">
+                {% for physicalDevice in physicalDevices %}
+                <tr id="{{ physicalDevice.uid }}">
+                    <td>{{ physicalDevice.uid }}</td>
+                    <td><a href="{{ url_for('physical_device_form', uid=physicalDevice.uid) }}">{{ physicalDevice.name }}</a></td>
+                    <td>{{ physicalDevice.source_name }}</td>
+                    <td>{{ physicalDevice.last_seen }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</section>
+
+{% endblock %}

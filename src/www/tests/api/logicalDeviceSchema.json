@@ -1,0 +1,378 @@
+{
+	"definitions": {},
+	"$schema": "http://json-schema.org/draft-07/schema#", 
+	"$id": "https://example.com/object1660456998.json", 
+	"title": "Root", 
+	"type": "object",
+	"required": [
+		"uid",
+		"name",
+		"location",
+		"last_seen",
+		"properties"
+	],
+	"properties": {
+		"uid": {
+			"$id": "#root/uid", 
+			"title": "Uid", 
+			"type": "integer",
+			"examples": [
+				1
+			],
+			"default": 0
+		},
+		"name": {
+			"$id": "#root/name", 
+			"title": "Name", 
+			"type": "string",
+			"default": "",
+			"examples": [
+				"oai-tipping-gauge"
+			],
+			"pattern": "^.*$"
+		},
+		"location": {
+			"$id": "#root/location", 
+			"title": "Location", 
+			"type": "object",
+			"required": [
+				"lat",
+				"long"
+			],
+			"properties": {
+				"lat": {
+					"$id": "#root/location/lat", 
+					"title": "Lat", 
+					"type": "number",
+					"examples": [
+						-33.322246
+					],
+					"default": 0.0
+				},
+				"long": {
+					"$id": "#root/location/long", 
+					"title": "Long", 
+					"type": "number",
+					"examples": [
+						149.0857
+					],
+					"default": 0.0
+				}
+			}
+		}
+,
+		"last_seen": {
+			"$id": "#root/last_seen", 
+			"title": "Last_seen", 
+			"type": "string",
+			"default": "",
+			"examples": [
+				"2022-04-01T11:53:03.212695+11:00"
+			],
+			"pattern": "^.*$"
+		},
+		"properties": {
+			"$id": "#root/properties", 
+			"title": "Properties", 
+			"type": "object",
+			"required": [
+				"ubidots",
+				"creation_correlation_id"
+			],
+			"properties": {
+				"ubidots": {
+					"$id": "#root/properties/ubidots", 
+					"title": "Ubidots", 
+					"type": "object",
+					"required": [
+						"id",
+						"url",
+						"name",
+						"tags",
+						"label",
+						"isActive",
+						"location",
+						"createdAt",
+						"variables",
+						"properties",
+						"description",
+						"lastActivity",
+						"organization",
+						"variablesCount"
+					],
+					"properties": {
+						"id": {
+							"$id": "#root/properties/ubidots/id", 
+							"title": "Id", 
+							"type": "string",
+							"default": "",
+							"examples": [
+								"62031eb836478d0e1c038eb2"
+							],
+							"pattern": "^.*$"
+						},
+						"url": {
+							"$id": "#root/properties/ubidots/url", 
+							"title": "Url", 
+							"type": "string",
+							"default": "",
+							"examples": [
+								"https://industrial.api.ubidots.com/api/v2.0/devices/62031eb836478d0e1c038eb2"
+							],
+							"pattern": "^.*$"
+						},
+						"name": {
+							"$id": "#root/properties/ubidots/name", 
+							"title": "Name", 
+							"type": "string",
+							"default": "",
+							"examples": [
+								"oai-tipping-gauge"
+							],
+							"pattern": "^.*$"
+						},
+						"tags": {
+							"$id": "#root/properties/ubidots/tags", 
+							"title": "Tags", 
+							"type": "array",
+							"default": []
+						},
+						"label": {
+							"$id": "#root/properties/ubidots/label", 
+							"title": "Label", 
+							"type": "string",
+							"default": "",
+							"examples": [
+								"006bc37f343cad30"
+							],
+							"pattern": "^.*$"
+						},
+						"isActive": {
+							"$id": "#root/properties/ubidots/isActive", 
+							"title": "Isactive", 
+							"type": "boolean",
+							"examples": [
+								true
+							],
+							"default": true
+						},
+						"location": {
+							"$id": "#root/properties/ubidots/location", 
+							"title": "Location", 
+							"type": "object",
+							"required": [
+								"lat",
+								"lng"
+							],
+							"properties": {
+								"lat": {
+									"$id": "#root/properties/ubidots/location/lat", 
+									"title": "Lat", 
+									"type": "number",
+									"examples": [
+										-33.322246
+									],
+									"default": 0.0
+								},
+								"lng": {
+									"$id": "#root/properties/ubidots/location/lng", 
+									"title": "Lng", 
+									"type": "number",
+									"examples": [
+										149.0857
+									],
+									"default": 0.0
+								}
+							}
+						}
+,
+						"createdAt": {
+							"$id": "#root/properties/ubidots/createdAt", 
+							"title": "Createdat", 
+							"type": "string",
+							"default": "",
+							"examples": [
+								"2022-02-09T01:54:00.888130Z"
+							],
+							"pattern": "^.*$"
+						},
+						"variables": {
+							"$id": "#root/properties/ubidots/variables", 
+							"title": "Variables", 
+							"type": "string",
+							"default": "",
+							"examples": [
+								"https://industrial.api.ubidots.com/api/v2.0/devices/62031eb836478d0e1c038eb2/variables"
+							],
+							"pattern": "^.*$"
+						},
+						"properties": {
+							"$id": "#root/properties/ubidots/properties", 
+							"title": "Properties", 
+							"type": "object",
+							"required": [
+								"_config",
+								"dpi-uid",
+								"_location_type",
+								"_location_fixed"
+							],
+							"properties": {
+								"_config": {
+									"$id": "#root/properties/ubidots/properties/_config", 
+									"title": "_config", 
+									"type": "object",
+									"required": [
+										"dpi-uid"
+									],
+									"properties": {
+										"dpi-uid": {
+											"$id": "#root/properties/ubidots/properties/_config/dpi-uid", 
+											"title": "Dpi-uid", 
+											"type": "object",
+											"required": [
+												"text",
+												"type",
+												"description"
+											],
+											"properties": {
+												"text": {
+													"$id": "#root/properties/ubidots/properties/_config/dpi-uid/text", 
+													"title": "Text", 
+													"type": "string",
+													"default": "",
+													"examples": [
+														"DPI UID"
+													],
+													"pattern": "^.*$"
+												},
+												"type": {
+													"$id": "#root/properties/ubidots/properties/_config/dpi-uid/type", 
+													"title": "Type", 
+													"type": "string",
+													"default": "",
+													"examples": [
+														"text"
+													],
+													"pattern": "^.*$"
+												},
+												"description": {
+													"$id": "#root/properties/ubidots/properties/_config/dpi-uid/description", 
+													"title": "Description", 
+													"type": "string",
+													"default": "",
+													"examples": [
+														"The uid from the DPI QR code used to activate the device."
+													],
+													"pattern": "^.*$"
+												}
+											}
+										}
+
+									}
+								}
+,
+								"dpi-uid": {
+									"$id": "#root/properties/ubidots/properties/dpi-uid", 
+									"title": "Dpi-uid", 
+									"type": "string",
+									"default": "",
+									"examples": [
+										"A4RF3C"
+									],
+									"pattern": "^.*$"
+								},
+								"_location_type": {
+									"$id": "#root/properties/ubidots/properties/_location_type", 
+									"title": "_location_type", 
+									"type": "string",
+									"default": "",
+									"examples": [
+										"manual"
+									],
+									"pattern": "^.*$"
+								},
+								"_location_fixed": {
+									"$id": "#root/properties/ubidots/properties/_location_fixed", 
+									"title": "_location_fixed", 
+									"type": "object",
+									"required": [
+										"lat",
+										"lng"
+									],
+									"properties": {
+										"lat": {
+											"$id": "#root/properties/ubidots/properties/_location_fixed/lat", 
+											"title": "Lat", 
+											"type": "number",
+											"examples": [
+												-33.322246
+											],
+											"default": 0.0
+										},
+										"lng": {
+											"$id": "#root/properties/ubidots/properties/_location_fixed/lng", 
+											"title": "Lng", 
+											"type": "number",
+											"examples": [
+												149.0857
+											],
+											"default": 0.0
+										}
+									}
+								}
+
+							}
+						}
+,
+						"description": {
+							"$id": "#root/properties/ubidots/description", 
+							"title": "Description", 
+							"type": "string",
+							"default": "",
+							"examples": [
+								"Tipping rain gauge used for firmware development testing."
+							],
+							"pattern": "^.*$"
+						},
+						"lastActivity": {
+							"$id": "#root/properties/ubidots/lastActivity", 
+							"title": "Lastactivity", 
+							"type": "integer",
+							"examples": [
+								1646699580839
+							],
+							"default": 0
+						},
+						"organization": {
+							"$id": "#root/properties/ubidots/organization", 
+							"title": "Organization", 
+							"type": "null",
+							"default": null
+						},
+						"variablesCount": {
+							"$id": "#root/properties/ubidots/variablesCount", 
+							"title": "Variablescount", 
+							"type": "integer",
+							"examples": [
+								2
+							],
+							"default": 0
+						}
+					}
+				}
+,
+				"creation_correlation_id": {
+					"$id": "#root/properties/creation_correlation_id", 
+					"title": "Creation_correlation_id", 
+					"type": "string",
+					"default": "",
+					"examples": [
+						"0c71c520-31ce-47fb-84e2-ed9ac0fc65bf"
+					],
+					"pattern": "^.*$"
+				}
+			}
+		}
+
+	}
+}
