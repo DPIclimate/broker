@@ -1,0 +1,17 @@
+<header>
+    <iframe name="hidden-frame" class="hidden"></iframe>
+    <div class="container">
+        <div id="header-title">
+            <h1>DPI | Device Manager</h1>
+        </div>
+        <nav>
+            <ul>
+                <li><a id="physical-device-banner-heading" href="{{ url_for('index') }}">Physical Devices</a></li>
+                <li><a id="logical-device-banner-heading" href="{{ url_for('logical_device_table') }}">Logical Devices</a></li>
+                <li><a id="map-banner-heading" href="{{ url_for('map') }}">Map</a></li>
+                <li><a id="map-banner-heading" href="{{ url_for('account') }}">Account</a></li>
+                <li><a id="map-banner-heading" href="{{ url_for('singout') }}">Singout</a></li>
+            </ul>
+        </nav>
+    </div>
+</header>

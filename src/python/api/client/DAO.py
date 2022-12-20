@@ -957,7 +957,6 @@ def user_get_token(username, password) -> str | None:
     conn = None
     try:
         with _get_connection() as conn, conn.cursor() as cursor:
-            # logging.debug(cursor.mogrify("select salt, password, auth_token from users where username='%s'", (username)))
             cursor.execute("select salt, password, auth_token from users where username=%s",(username,))
             result=cursor.fetchone()
 
@@ -1016,8 +1015,10 @@ def token_refresh(uname)-> None:
             free_conn(conn)
 
 @backoff.on_exception(backoff.expo, DAOException, max_time=30)
-def user_chng_passwd(uname, new_passwd)->None:
-    
+def user_chng_passwd(new_passwd:str, prev_token:str)->str:
+    """
+        Changes user's password and auth token, returns users new auth token upon success
+    """
     #Generate salted password
     salt=os.urandom(64).hex()
     pass_hash=hashlib.scrypt(password=new_passwd.encode(), salt=salt.encode(), n=2**14, r=8, p=1, maxmem=0, dklen=64).hex()
@@ -1027,9 +1028,13 @@ def user_chng_passwd(uname, new_passwd)->None:
     
     try:
         with _get_connection() as conn, conn.cursor() as cursor:
-            cursor.execute("update users set salt=%s, password=%s, auth_token=%s where username=%s", (salt, pass_hash, auth_token, uname))
-
+            cursor.execute("update users set salt=%s, password=%s, auth_token=%s where auth_token=%s", (salt, pass_hash, auth_token, prev_token))
             conn.commit()
+            print(cursor.rowcount, prev_token, user_get_token('my_user', 'pass'), prev_token==user_get_token('my_user', 'pass'))
+            if cursor.rowcount == 0:
+                return
+
+            return auth_token
 
     except Exception as err:
         raise err if isinstance(err, DAOException) else DAOException('user_chng_password failed.', err)

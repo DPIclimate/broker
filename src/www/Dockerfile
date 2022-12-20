@@ -2,9 +2,6 @@
 
 FROM python:3.8-slim-buster
 
-ENV bearer_token=bad_token
-ENV end_point=https://staging.farmdecisiontech.net.au
-
 WORKDIR /app
 
 COPY requirements.txt requirements.txt

@@ -1,23 +1,29 @@
 from flask import Flask, render_template, request, make_response, redirect, url_for, session
 import folium
 import os
+from datetime import timedelta
+import re
 
 from utils.types import *
 from utils.api import *
 
 app = Flask(__name__)
-app.secret_key = os.environ["SERVER_KEY"]
 
 debug_enabled = True
+
+"""
+Session cookie config
+"""
+# Secret key changes every time server starts up
+app.secret_key = os.urandom(32).hex()
+app.permanent_session_lifetime = timedelta(hours=2)
 
 
 @app.before_request
 def check_user_logged_in():
     """
         Check user session is valid, if not redirect to /login
-        th
     """
-
     if not session.get('token'):
         if request.path != '/login' and request.path != '/static/main.css':
             return redirect(url_for('login'), code=302)
@@ -28,7 +34,7 @@ def index():
 
     try:
         physicalDevices = []
-        data = get_physical_devices(session.get('toke'))
+        data = get_physical_devices(session.get('token'))
         if data is None:
             return render_template('error_page.html')
 
@@ -54,9 +60,7 @@ def login():
             password: str = request.form['password']
 
             user_token = get_user_token(username=username, password=password)
-            if user_token == None:
-                return render_template('login.html', failed=True)
-
+            session['user'] = username
             session['token'] = user_token
 
             return redirect(url_for('index'))
@@ -64,7 +68,8 @@ def login():
         return render_template("login.html")
 
     except requests.exceptions.HTTPError as e:
-        return render_template('error_page.html', reason=e), e.response.status_code
+        # Probs not best way fo detecting incorect password
+        return render_template('login.html', failed=True)
 
 
 @app.route('/singout', methods=["GET"])
@@ -73,7 +78,31 @@ def singout():
     return redirect(url_for('login'))
 
 
-@app.route('/physical-device/<int:uid>', methods=['GET'])
+@app.route('/account', methods=["GET", "POST"])
+def account():
+    if request.method == "POST":
+        try:
+            password: str = request.form['password']
+            password_conf: str = request.form['confirm-password']
+
+            if not re.match(r".{8,}", password):
+                return render_template('account.html', failed=True, reason="Invalid password, password must be at least 8 characters long")
+
+            if password != password_conf:
+                return render_template('account.html', failed=True, reason="Passwords do not match")
+
+            new_token = change_user_password(
+                password=password, token=session['token'])
+            session['token'] = new_token
+
+            return render_template('account.html', success=True)
+        except requests.exceptions.HTTPError as e:
+            return render_template('account.html', failed=True, reason=f"Exception occured {e.response.status_code}")
+
+    return render_template('account.html')
+
+
+@app.route('/physical-device/<uid>', methods=['GET'])
 def physical_device_form(uid):
 
     try:
@@ -145,7 +174,7 @@ def logical_device_table():
         return render_template('error_page.html', reason=e), e.response.status_code
 
 
-@app.route('/logical-device/<int:uid>', methods=['GET'])
+@app.route('/logical-device/<uid>', methods=['GET'])
 def logical_device_form(uid):
     try:
         ld_data = get_logical_device(uid=uid, token=session.get('token'))
@@ -204,7 +233,6 @@ def map():
                     color = 'red'
                 else:
                     color = 'blue'
-                print(data[i]['location']['lat'])
                 folium.Marker([data[i]['location']['lat'], data[i]['location']['long']],
                               popup=data[i]['uid'],
                               icon=folium.Icon(color=color, icon='cloud'),
@@ -222,15 +250,16 @@ def CreateMapping():
     try:
 
         uid = request.args['uid']
-        data = get_physical_device(uid=uid, token=session.get('token'))
-        newLogicalDevice = update_logical_device(
-            data=data, token=session.get('token'))
-
+        physical_devie = get_physical_device(
+            uid=uid, token=session.get('token'))
+        new_ld_uid = create_logical_device(
+            physical_device=physical_devie, token=session.get('token'))
         insert_device_mapping(
-            physicalUid=uid, logicalUid=newLogicalDevice, token=session.get("token"))
+            physicalUid=uid, logicalUid=new_ld_uid, token=session.get('token'))
 
+        return 'Success', 200
     except requests.exceptions.HTTPError as e:
-        return render_template('error_page.html', reason=e), e.response.status_code
+        return f"Failed with http error {e.response.status_code}", e.response.status_code
 
 
 @app.route('/create-note/<noteText>/<uid>', methods=['GET'])
@@ -238,25 +267,29 @@ def CreateNote(noteText, uid):
     try:
 
         insert_note(noteText=noteText, uid=uid,
-                            token=session.get('token'))
+                    token=session.get('token'))
+        return 'Success', 200
     except requests.exceptions.HTTPError as e:
-        return render_template('error_page.html', reason=e), e.response.status_code
+        return f"Failed with http error {e.response.status_code}", e.response.status_code
 
 
 @app.route('/delete-note/<noteUID>', methods=['DELETE'])
 def DeleteNote(noteUID):
     try:
         delete_note(uid=noteUID, token=session.get('token'))
+        return 'Success', 200
     except requests.exceptions.HTTPError as e:
-        return render_template('error_page.html', reason=e), e.response.status_code
+        return f"Failed with http error {e.response.status_code}", e.response.status_code
+
 
 @app.route('/edit-note/<noteText>/<uid>', methods=['PATCH'])
 def EditNote(noteText, uid):
     try:
         edit_note(noteText=noteText, uid=uid, token=session.get("token"))
 
+        return 'Success', 200
     except requests.exceptions.HTTPError as e:
-        return render_template('error_page.html', reason=e), e.response.status_code
+        return f"Failed with http error {e.response.status_code}", e.response.status_code
 
 
 @app.route('/update-physical-device', methods=['GET'])
@@ -273,16 +306,20 @@ def UpdatePhysicalDevice():
 
         update_physical_device(
             uid=request.args['form_uid'], name=request.args['form_name'], location=locationJson, token=session.get('token'))
+        return 'Success', 200
     except requests.exceptions.HTTPError as e:
-        return render_template('error_page.html', reason=e), e.response.status_code
+        return f"Failed with http error {e.response.status_code}", e.response.status_code
+
 
 @app.route('/update-mappings', methods=['GET'])
 def UpdateMappings():
     try:
         insert_device_mapping(
             physicalUid=request.args['physicalDevice_mapping'], logicalUid=request.args['logicalDevice_mapping'], token=session.get('token'))
+        return 'Success', 200
     except requests.exceptions.HTTPError as e:
-        return render_template('error_page.html', reason=e), e.response.status_code
+        return f"Failed with http error {e.response.status_code}", e.response.status_code
+
 
 @app.route('/update-logical-device', methods=['GET'])
 def UpdateLogicalDevice():
@@ -297,9 +334,12 @@ def UpdateLogicalDevice():
             locationJson = None
 
         update_logical_device(uid=request.args['form_uid'], name=request.args['form_name'],
-                            location=locationJson, token=session.get('token'))
+                              location=locationJson, token=session.get('token'))
+        return 'Success', 200
+
     except requests.exceptions.HTTPError as e:
-        return render_template('error_page.html', reason=e), e.response.status_code
+        return f"Failed with http error {e.response.status_code}", e.response.status_code
+
 
 def formatTimeStamp(unformattedTime):
     if unformattedTime:

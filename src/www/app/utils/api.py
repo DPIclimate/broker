@@ -1,107 +1,140 @@
 import json
+from typing import List
 import requests
-import os
 from datetime import datetime
 import base64
 
+end_point = 'https://staging.farmdecisiontech.net.au'
 
-end_point = os.environ['end_point']
-bearer_token = os.environ['bearer_token']
+def get_sources(token: str) -> List[str]:
+    """
+        Return list of sources
 
-# end_point = 'https://staging.farmdecisiontech.net.au'
-# bearer_token = 'bad_token'
+        Params:
+            token: str - User's authentication token
 
-
-# Physical Device Links
-physical_link_all = end_point + \
-    '/broker/api/physical/devices/?include_properties=false'
-physical_link_notes = end_point + '/broker/api/physical/devices/notes/'
-physical_link_uid = end_point + '/broker/api/physical/devices/'
-physical_link_update = end_point + '/broker/api/physical/devices/'
-
-# Logical Device Links
-logical_link_all = end_point + '/broker/api/logical/devices/?include_properties=false'
-logical_link_uid = end_point + '/broker/api/logical/devices/'
-logical_link_insert = end_point + '/broker/api/logical/devices/'
-logical_link_update = end_point + '/broker/api/logical/devices/'
-
-# Mapping Device Links
-physical_link_unmapped = end_point + '/broker/api/physical/devices/unmapped/'
-physical_link_endmapping = end_point + '/broker/api/mappings/physical/end/'
-logical_link_endmapping = end_point + '/broker/api/mappings/logical/end/'
-mapping_link_all = end_point + '/broker/api/mappings/logical/all/'
-mapping_link_current = end_point + '/broker/api/mappings/physical/current/'
-mapping_link_insert = end_point + '/broker/api/mappings/'
-
-# Other links
-note_link_insert = end_point + '/broker/api/physical/devices/notes/'
-delete_note_url = end_point + '/broker/api/physical/devices/notes/'
-sources_link_all = end_point + '/broker/api/physical/sources/'
-login_url = f"{end_point}/broker/api/token"
-
-
-def get_sources(token: str):
-    headers = {"Authorization": f"Bearer {token}"}
-    response = requests.get(sources_link_all, headers=headers).raise_for_status()
-    
-    return response.json()
-
-
-def get_physical_devices(token: str):
+        returns:
+            sources: List[str] - A list of sources
+    """
     headers = {"Authorization": f"Bearer {token}"}
 
-    response = requests.get(physical_link_all, headers=headers).raise_for_status()
+    response = requests.get(f'{end_point}/broker/api/physical/sources/', headers=headers)
+
+    response.raise_for_status()
 
     return response.json()
 
 
-def get_physical_notes(uid: str, token: str):
+def get_physical_devices(token: str) -> List[dict]:
+    """
+        Get all physical devices
+
+        Params:
+            token: str - User's authentication token
+
+        returns:
+            physical_devices: List[dict] - list of physical devices
+    """
     headers = {"Authorization": f"Bearer {token}"}
 
-    response = requests.get(physical_link_notes + str(uid), headers=headers).raise_for_status()
+    response = requests.get(f"{end_point}/broker/api/physical/devices/?include_properties=false", headers=headers)
+    response.raise_for_status()
+
+    return response.json()
+
+
+def get_physical_notes(uid: str, token: str) -> List[dict]:
+    """
+        Get all notes from a physical device
+
+        Params:
+            uid: str - uid of physical device
+            token: str - authentication token of user
+    """
+    headers = {"Authorization": f"Bearer {token}"}
+
+    response = requests.get(f"{end_point}/broker/api/physical/devices/notes/{uid}",headers=headers)
+
+    response.raise_for_status()
     return response.json()
 
 
 def get_logical_devices(token: str):
     headers = {"Authorization": f"Bearer {token}"}
 
-    response = requests.get(logical_link_all, headers=headers).raise_for_status()
+    response = requests.get(
+        f'{end_point}/broker/api/logical/devices/?include_properties=false', headers=headers)
+    response.raise_for_status()
     return response.json()
 
 
 def get_physical_unmapped(token: str):
     headers = {"Authorization": f"Bearer {token}"}
 
-    response = requests.get(physical_link_unmapped, headers=headers).raise_for_status()
+    response = requests.get(f'{end_point}/broker/api/physical/devices/unmapped/',
+                            headers=headers)
+    response.raise_for_status()
     return response.json()
 
 
-def get_physical_device(uid: str, token: str):
+def get_physical_device(uid: str, token: str) -> dict:
+    """
+        Get a physical device object from a uid
+
+        Params:
+            uid: str - uid of physical device
+            token: str - user's authentication token
+
+        returns:
+            physical_device: dict - Phyical device object
+    """
+
     headers = {"Authorization": f"Bearer {token}"}
 
-    response = requests.get(physical_link_uid + str(uid), headers=headers).raise_for_status()
+    response = requests.get(f'{end_point}/broker/api/physical/devices/{uid}',headers=headers)
+    response.raise_for_status()
 
     return response.json()
 
 
-def get_logical_device(uid: str, token: str):
+def get_logical_device(uid: str, token: str) -> dict:
+    """
+        Get a logical device object from a uid
+
+        Params:
+            uid: str - uid of logical device
+            token: str - user's authentication token
+
+        returns:
+            logical_device: dict - Logical device object
+    """
+
     headers = {"Authorization": f"Bearer {token}"}
 
-    response = requests.get(logical_link_uid + str(uid), headers=headers).raise_for_status()
+    response = requests.get(f'{end_point}/broker/api/logical/devices/{uid}',
+                            headers=headers)
+    response.raise_for_status()
     return response.json()
 
 
 def get_device_mappings(uid: str, token: str):
     headers = {"Authorization": f"Bearer {token}"}
 
-    response = requests.get(mapping_link_all + str(uid), headers=headers).raise_for_status()
+    response = requests.get(f'{end_point}/broker/api/mappings/logical/all/{uid}',
+                            headers=headers)
+    response.raise_for_status()
     return response.json()
 
 
 def get_current_mappings(uid: str, token: str):
     headers = {"Authorization": f"Bearer {token}"}
 
-    response = requests.get(mapping_link_current + str(uid), headers=headers).raise_for_status()
+    response = requests.get(f'{end_point}/broker/api/mappings/physical/current/{uid}', headers=headers)
+
+    if response.status_code == 404:
+        return
+
+    response.raise_for_status()
     return response.json()
 
 
@@ -111,8 +144,9 @@ def update_physical_device(uid: str, name: str, location: str, token: str):
     device = get_physical_device(uid)
     device['name'] = name
     device['location'] = location
-    response = requests.patch(physical_link_update,
-                              headers=headers, json=device).raise_for_status()
+    response = requests.patch(f'{end_point}/broker/api/physical/devices/',
+                              headers=headers, json=device)
+    response.raise_for_status()
     return response.json()
 
 
@@ -123,7 +157,8 @@ def update_logical_device(uid: str, name: str, location: str, token: str):
     device['name'] = name
     device['location'] = location
     response = requests.patch(
-        logical_link_update, headers=headers, json=device).raise_for_status()
+        f'{end_point}/broker/api/logical/devices/', headers=headers, json=device)
+    response.raise_for_status()
 
     return response.json()
 
@@ -131,30 +166,53 @@ def update_logical_device(uid: str, name: str, location: str, token: str):
 def end_logical_mapping(uid: str, token: str):
     headers = {"Authorization": f"Bearer {token}"}
 
-    url = logical_link_endmapping + uid
-    requests.patch(url, headers=headers).raise_for_status()
+    url = f'{end_point}/broker/api/mappings/logical/end/{uid}'
+    requests.patch(url, headers=headers)
 
 
 def end_physical_mapping(uid: str, token: str):
+    """
+        End device mapping from a physical device (if any). If there was a mapping, the logical device also has no mapping after this call.
+
+        Params:
+            uid: str - end mapping on the physical device with this uid
+            token:str - user's authentication token
+    """
     headers = {"Authorization": f"Bearer {token}"}
 
-    url = physical_link_endmapping + uid
-    requests.patch(url, headers=headers).raise_for_status()
+    url = f'{end_point}/broker/api/mappings/physical/end/{uid}'
+    response = requests.patch(url, headers=headers)
+
+    # 404 is returned when there are no device mappings
+    if response.status_code != 200 and response.status_code != 404:
+        response.raise_for_status()
 
 
-def create_logical_device(data, token: str):
+def create_logical_device(physical_device: dict, token: str) ->str:
+    """
+        Create a logical device from physical device
+
+        Params:
+            physical_device: JSON - Physical device info to be compited
+            token: str - Users authentication token
+
+        returns:
+            uid: str - uid of newly created logical device
+    """
+
     headers = {"Authorization": f"Bearer {token}"}
 
     timeObject = datetime.now()
     logicalJson = {
         "uid": 0,
-        "name": data['name'],
-        "location": data['location'],
+        "name": physical_device['name'],
+        "location": physical_device['location'],
         "last_seen": str(timeObject),
-        "properties": data['properties']
+        "properties": physical_device['properties']
     }
     response = requests.post(
-        logical_link_insert, json=logicalJson, headers=headers).raise_for_status()
+        f'{end_point}/broker/api/logical/devices/', json=logicalJson, headers=headers)
+    response.raise_for_status()
 
     logical_device = response.json()
     return logical_device['uid']
@@ -163,7 +221,7 @@ def create_logical_device(data, token: str):
 def delete_note(uid: str, token: str):
     headers = {"Authorization": f"Bearer {token}"}
 
-    baseUrl = delete_note_url + str(uid)
+    baseUrl = f'{end_point}/broker/api/physical/devices/notes/{uid}'
     response = requests.delete(baseUrl, headers=headers)
     response.raise_for_status()
 
@@ -171,12 +229,24 @@ def delete_note(uid: str, token: str):
 
 
 def insert_device_mapping(physicalUid: str, logicalUid: str, token: str):
+
+    """
+        Create a device mapping between a physical and logical device
+
+        Params:
+            physicalUid: str - uid of physical device
+            logicalUid: str - uid of logical device
+
+        returns:
+
+    """
     headers = {"Authorization": f"Bearer {token}"}
 
-    logicalDevice = get_logical_device(logicalUid)
-    physicalDevice = get_physical_device(physicalUid)
+    logicalDevice = get_logical_device(logicalUid, token=token)
+    physicalDevice = get_physical_device(physicalUid, token=token)
     timeObject = datetime.now()
-    end_physical_mapping(physicalUid)
+    end_physical_mapping(physicalUid, token=token)
+
     mappingJson = {
         "pd": {
             "uid": physicalDevice['uid'],
@@ -197,9 +267,9 @@ def insert_device_mapping(physicalUid: str, logicalUid: str, token: str):
         "start_time": str(timeObject),
         "end_time": str(timeObject)
     }
-    response = requests.post(
-        mapping_link_insert, json=mappingJson, headers=headers).raise_for_status()
-    
+    response = requests.post(f'{end_point}/broker/api/mappings/', json=mappingJson, headers=headers)
+    response.raise_for_status()
+
     return response.json()
 
 
@@ -209,8 +279,10 @@ def insert_note(noteText: str, uid: str, token: str):
     noteJson = {
         "note": noteText
     }
-    baseUrl = note_link_insert + uid
-    response = requests.post(baseUrl, json=noteJson, headers=headers).raise_for_status()
+    baseUrl = f'{end_point}/broker/api/physical/devices/notes/{uid}'
+    response = requests.post(baseUrl, json=noteJson,
+                             headers=headers)
+    response.raise_for_status()
 
     return response.json()
 
@@ -224,8 +296,10 @@ def edit_note(noteText: str, uid: str, token: str):
         "ts": str(timeObject),
         "note": str(noteText)
     }
-    baseUrl = note_link_insert
-    response = requests.patch(baseUrl, json=noteJson, headers=headers).raise_for_status()
+    baseUrl = f'{end_point}/broker/api/physical/devices/notes/'
+    response = requests.patch(baseUrl, json=noteJson,
+                              headers=headers)
+    response.raise_for_status()
     return response.json()
 
 
@@ -233,10 +307,40 @@ def format_json(data):
     return (json.dumps(data, indent=4, sort_keys=True))
 
 
-def get_user_token(username: str, password: str):
+def get_user_token(username: str, password: str) -> str:
+    """
+        Get users authentiation token, provided username and password are correct
 
-    headers = {"Authorization": f"Basic {base64.b64encode(f'{username}:{password}'.encode()).decode()}"}
-    
-    response = requests.get(login_url, headers=headers).raise_for_status()
+        Params:
+            username: str - the user's username
+            password: str - the user's password
+
+        returns:
+            token: str - User's authentication token
+
+    """
+    headers = {
+        "Authorization": f"Basic {base64.b64encode(f'{username}:{password}'.encode()).decode()}"}
+
+    response = requests.get(f"{end_point}/broker/api/token", headers=headers)
+    response.raise_for_status()
+
+    return response.json()
+
+
+def change_user_password(password: str, token: str) -> str:
+    """
+        Change users password
+
+        Params:
+            password: str - User's new password
+            token: str - User's authentication token
+        
+        reutrn:
+            token: str - User's new authentication token
+    """
+    headers = {"Authorization": f"Bearer {token}"}
+    response = requests.post(f"{end_point}/broker/api/change-password", headers=headers, params={"password":password})
+    response.raise_for_status()
 
     return response.json()

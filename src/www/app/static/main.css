@@ -115,20 +115,20 @@ header a:hover {
     margin: 20px 0 20px 0;
 }
 
-form {
+#device-form {
     display: table;
 }
 
-form div {
+#device-form div {
     display: table-row;
 }
 
-form label {
+#device-form label {
     display: table-cell;
     margin: 5px;
 }
 
-form input {
+#device-form input {
     display: table-cell;
     margin: 5px;
 }

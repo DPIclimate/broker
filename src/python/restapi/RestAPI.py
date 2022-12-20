@@ -9,7 +9,6 @@ from doctest import DocTestFailure
 from email import contentmanager
 import logging
 import os, sys
-from urllib import request, response
 
 from fastapi import APIRouter, Depends, FastAPI, HTTPException, Request, Response, status
 from fastapi.security import HTTPBearer, HTTPBasic, HTTPBasicCredentials
@@ -433,6 +432,18 @@ async def get_user_token(request: Request) -> str:
     else:
         raise HTTPException(status_code=403, detail="Incorrect username or password")
 
+#Change users password
+@router.post("/change-password", tags=['User Authentication'], dependencies=[Depends(token_auth_scheme)])
+async def change_password(password:str, request:Request) -> str:
+    """
+        Change users password
+    """
+    try:
+        user_auth_token=dao.user_chng_passwd(new_passwd=password, prev_token=request.headers['Authorization'].replace("Bearer ",""))        
+        return user_auth_token
+
+    except dao.DAOException as err:
+        raise HTTPException(status_code=500, detail=err.msg)
 
 app = FastAPI(title='IoT Device Broker', version='1.0.0')
 app.include_router(router)

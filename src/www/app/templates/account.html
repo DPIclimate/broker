@@ -1,7 +1,7 @@
 <html>
 
 <head>
-	<title>Login</title>
+	<title>Account</title>
 	<link rel="stylesheet" href="{{ url_for('static', filename='main.css') }}">
 
 	<style>
@@ -31,13 +31,13 @@
 			font-size: 20;
 		}
 
-		.login_form {
-			margin-top: 40;
-			margin-bottom: 40;
+		.login_form div{
+			padding: 10px;
 		}
 
 		.submit_button {
 			border: none;
+			margin-top: 20px;
 			padding: 20;
 			padding-right: 40;
 			padding-left: 40;
@@ -55,15 +55,7 @@
 </head>
 
 <body>
-	<header>
-		<iframe name="hidden-frame" class="hidden"></iframe>
-		<div class="container">
-			<div id="header-title">
-				<h1>DPI | Device Manager</h1>
-			</div>
-		</div>
-
-	</header>
+	{% include 'header.html' %}
 
 	<div class="command-bar">
 		<div class="form-buttons">
@@ -72,22 +64,27 @@
 
 	<div class="content">
 		<div class="card">
-			<h2 class="form-heading">Please sign in</h2>
+			<h2 class="form-heading">Account</h2>
 			<div class="login_form">
-				<form action="{{url_for('login')}}" method="POST">
+				<form action="{{url_for('account')}}" method="POST">
 					<div>
-						<label style="display:block">Username:</label><br />
-						<input class="text_input" type="text" name="username"><br><br>
+						<label>New password:</label>
+						<input class="text_input" type="password" name="password">
 					</div>
 					<div>
 
-						<label style="display:block">Password:</label><br />
-						<input class="text_input" type="password" name="password"><br><br>
-						<input class="submit_button" type="submit" name='login' value="login">
+						<label>Confirm password:</label>
+						<input class="text_input" type="password" name="confirm-password">
 					</div>
+					<input class="submit_button" type="submit" name='change' value="Change">
 					{% if failed == True %}
 					<div id="password_error">
-						<p style="color: red">Incorrect username or password</p>
+						<p style="color: red">{{ reason }}</p>
+					</div>
+					{% endif %}
+					{% if success == True %}
+					<div id="password_success">
+						<p>Successfully changed password</p>
 					</div>
 					{% endif %}
 				</form>
@@ -95,4 +92,5 @@
 		</div>
 	</div>
 </body>
+
 </html>
