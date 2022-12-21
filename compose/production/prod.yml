@@ -24,7 +24,10 @@ services:
   ttn_webhook:
     ports:
       - "127.0.0.1:5688:5688"
-
+  
+  website:
+    ports:
+      - "0.0.0.0:5000:5000"
 # pollers:
 #   image: broker/python-base
 #   restart: "no"

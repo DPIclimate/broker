@@ -33,6 +33,17 @@ services:
     working_dir: "/home/broker/python/restapi"
     entrypoint: [ "/home/broker/.local/bin/uvicorn", "--proxy-headers", "--host", "0.0.0.0", "--port", "5687", "RestAPI:app" ]
 
+  website:
+    image: website
+    env_file:
+      - .env
+    build:
+      context: ../src/www/
+      dockerfile: ../src/www/Dockerfile
+    volumes:
+      - ../src/www:/app
+
+
   ttn_webhook:
     image: broker/python-base
     restart: "no"

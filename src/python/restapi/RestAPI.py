@@ -455,10 +455,10 @@ An example of how we might do not-very-good authentication for the
 REST API. The point is, it is simple to wrap every call with a
 function to check the caller credentials.
 """
-auth_token = os.getenv('RESTAPI_TOKEN')
-if auth_token is None or len(auth_token) < 1:
-    print('auth_token not set.')
-    sys.exit(1)
+# auth_token = os.getenv('RESTAPI_TOKEN')
+# if auth_token is None or len(auth_token) < 1:
+#     print('auth_token not set.')
+#     sys.exit(1)
 
 @app.middleware("http")
 async def check_auth_header(request: Request, call_next):
