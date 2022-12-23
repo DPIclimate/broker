@@ -225,3 +225,6 @@ fabric.properties
 # Android studio 3.1+ serialized cache file
 .idea/caches/build_file_checksums.ser
 
+#Swag
+swag/*
+!swag/nginx/proxy-confs/dpi-device-manager.subfolder.conf
