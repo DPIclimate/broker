@@ -7,19 +7,9 @@ import re
 from utils.types import *
 from utils.api import *
 
-from werkzeug.middleware.dispatcher import DispatcherMiddleware
-from werkzeug.wrappers import Response
-
- 
-
 app = Flask(__name__)
 
-debug_enabled=True 
-
-app.wsgi_app = DispatcherMiddleware(
-    Response('Not Found', status=404),
-    {'/iota': app.wsgi_app}
-)
+debug_enabled = True
 
 """
 Session cookie config

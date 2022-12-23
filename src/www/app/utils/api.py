@@ -4,7 +4,7 @@ import requests
 from datetime import datetime
 import base64
 
-end_point = 'http://restapi:5687'
+end_point = 'https://staging.farmdecisiontech.net.au'
 
 def get_sources(token: str) -> List[str]:
     """
