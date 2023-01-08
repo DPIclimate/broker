@@ -228,3 +228,4 @@ fabric.properties
 #Swag
 swag/*
 !swag/nginx/proxy-confs/dpi-device-manager.subfolder.conf
+*.pem
