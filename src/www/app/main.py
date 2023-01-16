@@ -7,9 +7,17 @@ import re
 from utils.types import *
 from utils.api import *
 
+from werkzeug.middleware.dispatcher import DispatcherMiddleware
+from werkzeug.wrappers import Response
+
 app = Flask(__name__)
 
-debug_enabled = True
+debug_enabled = False
+
+app.wsgi_app = DispatcherMiddleware(
+    Response('Not Found', status=404),
+    {'/iota': app.wsgi_app}
+)
 
 """
 Session cookie config
@@ -68,7 +76,7 @@ def login():
         return render_template("login.html")
 
     except requests.exceptions.HTTPError as e:
-        # Probs not best way fo detecting incorect password
+        # Probs not best way to detecting incorect password
         return render_template('login.html', failed=True)
 
 
@@ -361,4 +369,3 @@ def formatLocationString(locationJson):
 if __name__ == '__main__':
 
     app.run(debug=debug_enabled, port='5000', host='0.0.0.0')
-    # app.run(debug=True)
