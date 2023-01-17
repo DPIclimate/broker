@@ -1,9 +1,8 @@
 version: '3.1'
 
 services:
-
   db:
-    image: postgis/postgis
+    image: postgres:14.2
     restart: "no"
     env_file:
       - .env
@@ -14,7 +13,7 @@ services:
 
   mq:
     hostname: "mq"
-    image: rabbitmq:3-management
+    image: rabbitmq:3.9-management
     restart: "no"
     env_file:
       - .env
@@ -37,12 +36,13 @@ services:
     image: website
     env_file:
       - .env
+    depends_on:
+      - "restapi"
     build:
       context: ../src/www/
       dockerfile: ../src/www/Dockerfile
     volumes:
       - ../src/www:/app
-
 
   ttn_webhook:
     image: broker/python-base
@@ -105,3 +105,15 @@ services:
     working_dir: "/home/broker/python"
     entrypoint: [ "python", "-m", "logical_mapper.LogicalMapper" ]
 
+  delivery:
+    image: broker/python-base
+    restart: unless-stopped
+    env_file:
+      - .env
+    depends_on:
+      - "db"
+      - "mq"
+    volumes:
+      - ../src/python:/home/broker/python
+    working_dir: "/home/broker/python"
+    entrypoint: [ "python", "-m", "delivery.UbidotsWriter" ]
