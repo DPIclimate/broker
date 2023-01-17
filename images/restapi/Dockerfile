@@ -15,11 +15,9 @@ ENV PATH=/home/broker/.local/bin:${PATH}
 # Two quiets here to suppress 'old version of pip' warning, given that is what is being upgraded.
 RUN pip install --quiet --quiet --user --progress-bar off --upgrade pip
 
-# psycopg2-binary - PostgreSQL driver
-# fastapi[all] - everything required to run a FastAPI app
-# python-dateutil - improved ISO-8601 timestamp parsing
-# pika - RabbitMQ client
-RUN pip install --quiet --user --progress-bar off --upgrade psycopg2-binary fastapi[all] python-dateutil pika backoff requests
+# Using a requirements.txt file to avoid breaking updates in modules.
+COPY images/restapi/requirements.txt /tmp/requirements.txt
+RUN pip install --quiet --user --progress-bar off --requirement /tmp/requirements.txt
 
 # Work-around for M1 debian-based image, probably only works on (and required by) M1-based macos.
 # Fix a broken ARM psycopg2-binary installation by copying a later libpq from the system.
