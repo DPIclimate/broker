@@ -10,6 +10,7 @@ LAST_MSG = 'last_msg'
 # Source names
 TTN = 'ttn'
 GREENBRAIN = 'greenbrain'
+WOMBAT = 'wombat'
 YDOC = 'ydoc'
 
 CREATION_CORRELATION_ID_KEY = 'creation_correlation_id'
