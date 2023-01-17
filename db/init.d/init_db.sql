@@ -82,6 +82,6 @@ create index if not exists pd_src_id_idx on physical_devices using GIN (source_i
 insert into sources values ('ttn'), ('greenbrain'), ('wombat'), ('ydoc');
 
 -- Enable the PostGIS extensions
-CREATE EXTENSION postgis;
-CREATE EXTENSION postgis_raster;
-CREATE EXTENSION postgis_sfcgal;
+-- CREATE EXTENSION postgis;
+-- CREATE EXTENSION postgis_raster;
+-- CREATE EXTENSION postgis_sfcgal;

@@ -19,7 +19,7 @@ RUN pip install --quiet --quiet --user --progress-bar off --upgrade pip
 # fastapi[all] - everything required to run a FastAPI app
 # python-dateutil - improved ISO-8601 timestamp parsing
 # pika - RabbitMQ client
-RUN pip install --quiet --user --progress-bar off --upgrade psycopg2-binary fastapi[all] python-dateutil pika backoff
+RUN pip install --quiet --user --progress-bar off --upgrade psycopg2-binary fastapi[all] python-dateutil pika backoff requests
 
 # Work-around for M1 debian-based image, probably only works on (and required by) M1-based macos.
 # Fix a broken ARM psycopg2-binary installation by copying a later libpq from the system.

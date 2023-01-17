@@ -3,7 +3,7 @@ version: '3.1'
 services:
 
   db:
-    image: postgis/postgis
+    image: postgres
     restart: "no"
     env_file:
       - .env
@@ -14,7 +14,7 @@ services:
 
   mq:
     hostname: "mq"
-    image: rabbitmq:3-management
+    image: rabbitmq:3.9-management
     restart: "no"
     env_file:
       - .env
@@ -96,7 +96,7 @@ services:
 
   delivery:
     image: broker/python-base
-    restart: "no"
+    restart: unless-stopped
     env_file:
       - .env
     depends_on:
