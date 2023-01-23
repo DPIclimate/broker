@@ -7,6 +7,7 @@
 			<li><span class="btn" onclick="handleSubmit('device-form', 'Are you sure you want to Save?')">Save</a></li>
 			<li><span class="btn" onclick="handleMapping('physical device')">Update Mapping</span></li>
 			<li><span class="btn" onclick="handleCreateMapping('{{ pd_data.uid }}')">Create Mapping</span></li>
+			<li><span class="btn" onclick="handleEndMapping('{{ pd_data.uid }}', 'PD')">End Mapping</span></li>
 		</ul>
 	</div>
 </div>
@@ -34,8 +35,14 @@
 						<label id="form-location-label" for="form-name">Location</label>
 						<input type="text" id="form-location" name="form_location" value="{{ pd_data.location }}">
 					</div>
-					<label id="form-last-seen" for="device-last-seen">Device Last Seen:</label>
+					<label id="form-last-seen" for="device-last-seen">Device Last Seen</label>
 					<input type="text" id="device-last-seen" name="device_last_seen" value="{{ pd_data.last_seen }}" readonly>
+					{% if ttn_link != "" %}
+					<div>
+							<label id="form_link" for="form-link">TTN Link</label>
+							<a href="{{ ttn_link }}" target="_blank">Click here</a>
+					</div>
+					{% endif %}
 					<input type="text" id="device-properties" class="hidden" hidden name="device_properties" value="{{ pd_data.properties }}" readyonly>
 				</form>
 			</div>

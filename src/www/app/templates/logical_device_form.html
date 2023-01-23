@@ -6,6 +6,7 @@
 		<ul>
 			<li><span class="btn" onclick="handleSubmit('device-form', 'Are you sure you want to Save?')">Save</a></li>
 			<li><span class="btn" onclick="handleMapping('logical device')">Update Mapping</span></li>
+			<li><span class="btn" onclick="handleEndMapping('{{ ld_data.uid }}', 'LD')">End Mapping</span></li>
 		</ul>
 	</div>
 </div>
@@ -30,9 +31,15 @@
 						<input type="text" id="form-location" name="form_location" value="{{ deviceLocation }}">
 					</div>
 					<div>
-						<label for="device-last-seen">Device Last Seen:</label>
+						<label for="device-last-seen">Device Last Seen</label>
 						<input type="text" id="device-last-seen" name="device_last_seen" value="{{ deviceLastSeen }}" readonly>
 					</div>
+					{% if ubidots_link != "" %}
+					<div>
+							<label id="form_link" for="form-link">Ubidots Link</label>
+							<a href="{{ ubidots_link }}" target="_blank">Click here</a>
+					</div>
+					{% endif %}
 				</form>
 			</div>
 			<div class="form-section">

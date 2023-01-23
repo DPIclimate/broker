@@ -81,6 +81,22 @@
                 }
             }
 
+            function handleEndMapping(uid, deviceType) {
+                if (confirm('Are you sure you would like to End Mapping?')) {
+                    var url = ''
+                    if (deviceType == 'PD') {
+                        url = "{{ url_for('EndPhysicalDeviceMapping') }}" + '?uid=' + uid;
+                    }
+                    else if (deviceType == 'LD') {
+                        url = "{{ url_for('EndLogicalDeviceMapping') }}" + '?uid=' + uid;
+                    }
+                    alert(httpGet(url));
+                    location.reload();
+                } else {
+                    console.log("Did not End Mapping");
+                }
+            }
+
             function handleCreateNote(){
                 var text = document.getElementById('note-input').value;
                 if (text !== '') {

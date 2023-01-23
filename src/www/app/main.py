@@ -80,8 +80,8 @@ def login():
         return render_template('login.html', failed=True)
 
 
-@app.route('/singout', methods=["GET"])
-def singout():
+@app.route('/signout', methods=["GET"])
+def signout():
     session.clear()
     return redirect(url_for('login'))
 
@@ -119,6 +119,7 @@ def physical_device_form(uid):
         pd_data['location'] = formatLocationString(pd_data['location'])
         pd_data['last_seen'] = formatTimeStamp(pd_data['last_seen'])
         properties_formatted = format_json(pd_data['properties'])
+        ttn_link = generate_link(pd_data)
         sources = get_sources(token=session.get('token'))
         mappings = get_current_mappings(uid=uid, token=session.get('token'))
         notes = get_physical_notes(uid=uid, token=session.get('token'))
@@ -157,6 +158,7 @@ def physical_device_form(uid):
                                ld_data=ld_data,
                                sources=sources,
                                properties=properties_formatted,
+                               ttn_link=ttn_link,
                                currentMappings=currentDeviceMapping,
                                deviceNotes=deviceNotes)
 
@@ -190,6 +192,7 @@ def logical_device_form(uid):
         deviceName = ld_data['name']
         deviceLocation = formatLocationString(ld_data['location'])
         deviceLastSeen = formatTimeStamp(ld_data['last_seen'])
+        ubidots_link = generate_link(ld_data)
         title = 'Logical Device ' + str(uid) + ' - ' + str(deviceName)
         mappings = get_device_mappings(uid=uid, token=session.get('token'))
         deviceMappings = []
@@ -219,6 +222,7 @@ def logical_device_form(uid):
                                pd_data=physicalDevices,
                                deviceLocation=deviceLocation,
                                deviceLastSeen=deviceLastSeen,
+                               ubidots_link=ubidots_link,
                                properties=properties_formatted,
                                deviceMappings=deviceMappings)
     except requests.exceptions.HTTPError as e:
@@ -329,6 +333,20 @@ def UpdateMappings():
         return f"Failed with http error {e.response.status_code}", e.response.status_code
 
 
+@app.route('/end-ld-mapping', methods=['GET'])
+def EndLogicalDeviceMapping():
+    uid = request.args['uid']
+    end_logical_mapping(uid, session.get('token'))
+    return 'Success', 200
+
+
+@app.route('/end-pd-mapping', methods=['GET'])
+def EndPhysicalDeviceMapping():
+    uid = request.args['uid']
+    end_physical_mapping(uid, session.get('token'))
+    return 'Success', 200
+
+
 @app.route('/update-logical-device', methods=['GET'])
 def UpdateLogicalDevice():
     try:
@@ -364,6 +382,19 @@ def formatLocationString(locationJson):
     else:
         formattedLocation = None
     return formattedLocation
+
+
+def generate_link(data):
+    link = ''
+    if 'source_name' in data and 'source_ids' in data and 'app_id' in data['source_ids'] and 'dev_id' in data['source_ids']:
+        link = 'https://au1.cloud.thethings.network/console/applications/'
+        link += data['source_ids']['app_id']
+        link += '/devices/'
+        link += data['source_ids']['dev_id']
+    elif 'properties' in data and 'ubidots' in data['properties'] and 'id' in data['properties']['ubidots']:
+        link = 'https://industrial.ubidots.com.au/app/devices/'
+        link+= data['properties']['ubidots']['id']
+    return link
 
 
 if __name__ == '__main__':
