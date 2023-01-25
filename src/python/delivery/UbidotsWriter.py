@@ -84,6 +84,7 @@ def main():
             durable=True)
     logging.info('Declaring queue')
     _channel.queue_declare(queue='ubidots_logical_msg_queue', durable=True)
+    _channel.queue_bind('ubidots_logical_msg_queue', BrokerConstants.LOGICAL_TIMESERIES_EXCHANGE_NAME, 'logical_timeseries')
 
     # This loops until _channel.cancel is called in the signal handler.
     for method, properties, body in _channel.consume('ubidots_logical_msg_queue'):
