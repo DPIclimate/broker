@@ -1,7 +1,8 @@
 # This image is used for all Python containers in the broker.
 
-FROM python:3
-#FROM python:3-alpine3.10
+# 3.10 is important. There is a breaking change in 3.11 where some dependencies have not
+# been updated and cannot be built from source.
+FROM python:3.10
 
 # For debian-based images
 RUN groupadd broker && useradd -m -g broker broker
@@ -17,7 +18,7 @@ RUN pip install --quiet --quiet --user --progress-bar off --upgrade pip
 
 # Using a requirements.txt file to avoid breaking updates in modules.
 COPY images/restapi/requirements.txt /tmp/requirements.txt
-RUN pip install --quiet --user --progress-bar off --requirement /tmp/requirements.txt
+RUN pip install --user --progress-bar off --requirement /tmp/requirements.txt
 
 # Work-around for M1 debian-based image, probably only works on (and required by) M1-based macos.
 # Fix a broken ARM psycopg2-binary installation by copying a later libpq from the system.
