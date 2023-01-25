@@ -33,14 +33,11 @@ services:
     entrypoint: [ "/home/broker/.local/bin/uvicorn", "--proxy-headers", "--host", "0.0.0.0", "--port", "5687", "RestAPI:app" ]
 
   website:
-    image: website
+    image: broker/mgmt-app
     env_file:
       - .env
     depends_on:
       - "restapi"
-    build:
-      context: ../src/www/
-      dockerfile: ../src/www/Dockerfile
     volumes:
       - ../src/www:/app
 

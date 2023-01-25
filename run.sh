@@ -15,6 +15,7 @@ cd compose/$MODE
 cd $BROKER_ROOT
 docker build -q -t broker/python-base -f images/restapi/Dockerfile .
 docker build -q -t broker/ttn_decoder -f images/ttn_decoder/Dockerfile .
+docker build -q -t broker/mgmt-app -f src/www/Dockerfile .
 cd compose/$MODE
 ./dc.sh up -d
 ./dc.sh logs -f
