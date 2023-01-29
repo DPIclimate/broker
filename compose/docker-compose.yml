@@ -89,6 +89,19 @@ services:
     working_dir: "/home/broker/python"
     entrypoint: [ "python", "-m", "ydoc.YDOC" ]
 
+  wombat:
+    image: broker/python-base
+    restart: "no"
+    env_file:
+      - .env
+    depends_on:
+      - "mq"
+      - "db"
+    volumes:
+      - ../src/python:/home/broker/python
+    working_dir: "/home/broker/python"
+    entrypoint: [ "python", "-m", "ydoc.Wombat" ]
+
   lm:
     image: broker/python-base
     restart: "no"
