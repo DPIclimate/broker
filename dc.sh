@@ -3,17 +3,11 @@ set -euo pipefail
 
 # Setting +e so the script does not exit while testing for which docker compose command to use.
 set +e
-docker compose --help &>/dev/null
+which docker-compose &>/dev/null
 if [ $? = 0 ]; then
-    DC="docker compose"
+    DC="docker-compose"
 else
-    docker-compose --help &>/dev/null
-    if [ $? = 0 ]; then
-        DC="docker-compose"
-    else
-        echo docker compose not found
-        exit 1
-    fi
+    DC="docker compose"
 fi
 set -e
 
