@@ -145,11 +145,11 @@ def on_message(channel, method, properties, body):
             lu.cid_logger.error(f'Physical device not found, cannot continue. Dropping message.', extra=msg)
             # Ack the message, even though we cannot process it. We don't want it redelivered.
             # We can change this to a Nack if that would provide extra context somewhere.
-            _channel._channel.basic_ack(delivery_tag)
+            _channel.basic_ack(delivery_tag)
             return
 
         if BrokerConstants.WOMBAT != pd.source_name:
-            _channel._channel.basic_ack(delivery_tag)
+            _channel.basic_ack(delivery_tag)
             return
 
         lu.cid_logger.info(f'Physical device: {pd.name}', extra=msg)
@@ -176,7 +176,6 @@ def on_message(channel, method, properties, body):
 
         # This tells RabbitMQ the message is handled and can be deleted from the queue.    
         _channel.basic_ack(delivery_tag)
-        #lu.cid_logger.info(f'ACK delivery tag {delivery_tag}', extra=msg)
 
     except BaseException:
         logging.exception('Error while processing message.')
