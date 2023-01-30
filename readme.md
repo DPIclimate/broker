@@ -66,7 +66,11 @@ The mapping is maintained manually using a CLI tool. For example, this tool prov
 
 A back-end processor is responsible for writing timeseries data to destinations such as IoT platforms or locally hosted timeseries databases.
 
-There is currently a single back-end processor that writes the telemetry to our current IoT platform, [Ubidots](https://www.ubidots.com/).
+There are currently two back-end processors:
+
+# [delivery.UbidotsWriter](src/python/delivery/UbidotsWriter.py) writes to our current IoT platform, [Ubidots](https://www.ubidots.com/).
+
+# [delivery.FRRED](src/python/delivery/FRRED.py) writes the messages to a filesystem directory defined by the DATABOLT_SHARED_DIR environment variable, where the Intersect DataBolt process is polling for them.
 
 ### Inter-service communications
 
@@ -143,6 +147,9 @@ The main point of configuration is the file `compose/.env`. This is initialised 
 
 Many variables have default values and can be left as-is. It is important to set the various passwords to a secure value. The various hostnames should be left at their defaults unless the docker-compose file services are also updated to reflect the hostnames.
 
+This .env file must also be symlinked into the `compose/production` and `compose/test` directories.
+
+
 ### Docker volumes
 
 To preserve the state of PostgreSQL and RabbitMQ between `docker-compose down` and `docker-compose up` commands, external volumes are used by the database and RabbitMQ containers when running in production mode.
@@ -153,6 +160,9 @@ These external volumes must be created before running IoTa in production mode, u
 $ docker volume create broker_db
 $ docker volume create mq_data
 ```
+
+The Intersect DataBolt delivery processor requires a volume mapped to a directory shared with the DataBolt container. The DATABOLT_SHARED_DIR environment variable must be set to the fully qualified path name of this directory.
+
 
 # Running IoTa
 
