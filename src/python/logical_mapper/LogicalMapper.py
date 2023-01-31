@@ -112,34 +112,14 @@ def on_message(channel, method, properties, body):
             rx_channel._channel.basic_ack(delivery_tag)
             return
 
+        msg[BrokerConstants.LOGICAL_DEVICE_UID_KEY] = mapping.ld.uid
+        
         ld = mapping.ld
         ld.last_seen = msg[BrokerConstants.TIMESTAMP_KEY]
         lu.cid_logger.info(f'Timestamp from message for LD last seen update: {ld.last_seen}', extra=msg)
+        ld.properties[BrokerConstants.LAST_MSG] = msg
         dao.update_logical_device(ld)
-        
-        """
-        # Don't publish most TTN traffic yet.
-        broker_apps = ['aws-ict-atmos41',
-            'linpar-ict',
-            'oai-netvox-temphumidity',
-            'oai-test-devices',
-            'ndvi-dpi-hemistop',
-            'ndvisoil-dpi-stop5tm',
-            'pressure-ellenex-pts2',
-            'salinity-ict-c4e',
-            'soil-ict-enviropro80cm',
-            'stoneleigh-strega',
-            'tankwater-ellenex-5m',
-            'temphumid-netvox-r718a']
-        publish = pd.source_name != 'ttn' or pd.source_ids['app_id'] in broker_apps
-        if publish:
-            msg[BrokerConstants.LOGICAL_DEVICE_UID_KEY] = mapping.ld.uid
-            tx_channel.publish_message('logical_timeseries', msg)
-        else:
-            lu.cid_logger.warning(f'Skipping message from {pd.source_ids}', extra=msg)
-        """
 
-        msg[BrokerConstants.LOGICAL_DEVICE_UID_KEY] = mapping.ld.uid
         tx_channel.publish_message('logical_timeseries', msg)
 
         # This tells RabbitMQ the message is handled and can be deleted from the queue.
