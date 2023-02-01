@@ -60,7 +60,7 @@ Finally, front-end processors are responsible for generating and assigning the c
 
 There is currently one mid-tier processor, the logical mapper. The logical mapper's job is to determine where to send the telemetry received from a physical device. This decision is informed by a table in the database that maps a physical device to a logical device. This mapping must be updated when a physical device is replaced in the field so that data from the new device flows to the same destination.
 
-The mapping is maintained manually using a CLI tool. For example, this tool provides a command to create a logical device based upon an existing physical device and then map the two. The reason this is not done automatically is because when a sensor is replaced in the field and a new physical device is created by a front-end processor, the telemetry from that new sensor/physical device should flow to the same logical device, not a new one.
+The mapping is maintained manually using a CLI tool or the management webapp. For example, this tool provides a command to create a logical device based upon an existing physical device and then map the two. The reason this is not done automatically is because when a sensor is replaced in the field and a new physical device is created by a front-end processor, the telemetry from that new sensor/physical device should flow to the same logical device, not a new one.
 
 ### Back-end processors
 
@@ -68,9 +68,9 @@ A back-end processor is responsible for writing timeseries data to destinations 
 
 There are currently two back-end processors:
 
-# [delivery.UbidotsWriter](src/python/delivery/UbidotsWriter.py) writes to our current IoT platform, [Ubidots](https://www.ubidots.com/).
+* [delivery.UbidotsWriter](src/python/delivery/UbidotsWriter.py) writes to our current IoT platform, [Ubidots](https://www.ubidots.com/).
 
-# [delivery.FRRED](src/python/delivery/FRRED.py) writes the messages to a filesystem directory defined by the DATABOLT_SHARED_DIR environment variable, where the Intersect DataBolt process is polling for them.
+* [delivery.FRRED](src/python/delivery/FRRED.py) writes the messages to a filesystem directory defined by the `DATABOLT_SHARED_DIR` environment variable, where the Intersect DataBolt process is polling for them. For example, to write message files to the /home/abc/databolt/raw_data directory set `DATABOLT_SHARED_DIR=/home/abc/databolt` in the `compose/.env` file.
 
 ### Inter-service communications
 
@@ -88,6 +88,8 @@ The message exchanges and queues are declared as persistent, and the exchanges r
 
 > This can be a nuisance if a processor fails to handle a message due to either a bug or a malformed message - if the processor NACKs a message that cannot be processed without specifying it should not be re-delivered then RabbitMQ and the processor will become stuck in an endless loop with RabbitMQ continually re-delivering the message as soon as the processor NACKs it.
 
+A third exchange, `ttn_raw` is used internally by the Things Stack front-end processor. Additionally, HTTP is used for communication internally within this same front-end processor for calling uplink decoders.
+
 RabbitMQ also acts as an MQTT broker for sources that publish telemetry via MQTT.
 
 ### Database
@@ -96,7 +98,7 @@ IoTa uses a PostgreSQL database to store device metadata and raw messages.
 
 ### Reverse proxy
 
-A reverse proxy is required to terminate TLS connections for webhooks, the REST API, and the MQTT broker. [nginx](https://www.nginx.com/) works well, and configuration details are provided in [doc/ngix.md](doc/ngix.md).
+A reverse proxy is required to terminate TLS connections for webhooks, the REST API, the management webapp, and the MQTT broker. [nginx](https://www.nginx.com/) works well, and configuration details are provided in [doc/ngix.md](doc/ngix.md).
 
 ### Normalised message format
 
@@ -116,9 +118,32 @@ The normalised message format used by IoTa includes the following information:
 
 * A correlation value (a UUID) that can be used to trace the timeseries values from this message back to the message as received from the sensor, and to log entries from the various microservices. In our case this correlation value is recorded against the value in Ubidots using the Ubidots dot context feature.
 
-A third exchange, `ttn_raw` is used internally by the Things Stack front-end processor. Additionally, HTTP is used for communication internally within this same front-end processor. This was expedient but it would be better to use another message exchange.
-
 The normalised messages are encoded as JSON objects before being published to a message exchange.
+
+An example of a message in this standard format:
+
+```
+{
+  "broker_correlation_id": "83d04e6f-db16-4280-8337-53f11b2335c6",
+  "p_uid": 301,
+  "l_uid": 276,
+  "timestamp": "2023-01-30T06:21:56Z",
+  "timeseries": [
+    {
+      "name": "battery (v)",
+      "value": 4.16008997
+    },
+    {
+      "name": "pulse_count",
+      "value": 1
+    },
+    {
+      "name": "1_Temperature",
+      "value": 21.60000038
+    }
+  ]
+}
+```
 
 ## Installation
 
@@ -126,7 +151,7 @@ A simple installation of IoTa is achieved by cloning the GitHub repository, and 
 
 This is how it is deployed by the Digital Agriculture team. We hope the containerised nature of the system assits in deploying to a cloud service but we have not had a reason to do that - a simple docker-compose deployment is sufficient for our scale.
 
-docker and docker-compose must be installed for IoTa to run.
+docker must be installed for IoTa to run. If the installed docker does not support the 'docker compose' command then docker-compose must also be installed.
 
 > The [ttn-formatters](https://github.com/DPIclimate/ttn-formatters) repo should be cloned in the same directory as the broker
 > repo, ie the ttn-formatters and broker directories share the same parent directory.
@@ -161,7 +186,7 @@ $ docker volume create broker_db
 $ docker volume create mq_data
 ```
 
-The Intersect DataBolt delivery processor requires a volume mapped to a directory shared with the DataBolt container. The DATABOLT_SHARED_DIR environment variable must be set to the fully qualified path name of this directory.
+The Intersect DataBolt delivery processor requires a volume mapped to a directory shared with the DataBolt container. The `DATABOLT_SHARED_DIR` environment variable must be set to the fully qualified path name of this directory, for example `DATABOLT_SHARED_DIR=/home/abc/databolt`.
 
 
 # Running IoTa
