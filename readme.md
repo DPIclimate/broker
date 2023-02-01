@@ -98,7 +98,7 @@ IoTa uses a PostgreSQL database to store device metadata and raw messages.
 
 ### Reverse proxy
 
-A reverse proxy is required to terminate TLS connections for webhooks, the REST API, the management webapp, and the MQTT broker. [nginx](https://www.nginx.com/) works well, and configuration details are provided in [doc/ngix.md](doc/ngix.md).
+A reverse proxy is required to terminate TLS connections for webhooks, the REST API, the management webapp, and the MQTT broker. [nginx](https://www.nginx.com/) works well, and configuration details are provided in [doc/nginx.md](doc/nginx.md).
 
 ### Normalised message format
 

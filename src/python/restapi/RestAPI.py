@@ -11,7 +11,7 @@ import logging
 import os, sys
 
 from fastapi import APIRouter, Depends, FastAPI, HTTPException, Request, Response, status
-from fastapi.security import HTTPBearer, HTTPBasic, HTTPBasicCredentials
+from fastapi.security import HTTPBearer, HTTPBasic
 
 #from fastapi.responses import JSONResponse
 from typing import Dict, List
@@ -418,60 +418,54 @@ async def end_mapping_of_logical_uid(uid: int) -> None:
 USER AUTHENTICATION
 --------------------------------------------------------------------------"""
 
-#Get user token
+# Get user token
 @router.get("/token", tags=['User Authentication'], dependencies=[Depends(http_basic_auth)])
 async def get_user_token(request: Request) -> str:
     """
     Get user token from database if user is authenticated
     """
     basic_auth = request.headers['Authorization'].split(' ')[1]
-    username, password=base64.b64decode(basic_auth).decode().split(":")
+    username, password = base64.b64decode(basic_auth).decode().split(":")
     user_auth_token = dao.user_get_token(username=username, password=password)
     if user_auth_token != None:
         return user_auth_token
     else:
         raise HTTPException(status_code=403, detail="Incorrect username or password")
 
-#Change users password
+
+# Change users password
 @router.post("/change-password", tags=['User Authentication'], dependencies=[Depends(token_auth_scheme)])
 async def change_password(password:str, request:Request) -> str:
     """
-        Change users password
+    Change users password
     """
     try:
-        user_auth_token=dao.user_chng_passwd(new_passwd=password, prev_token=request.headers['Authorization'].replace("Bearer ",""))        
+        user_auth_token=dao.user_change_password_and_token(new_passwd=password, prev_token=request.headers['Authorization'].replace("Bearer ",""))
         return user_auth_token
 
     except dao.DAOException as err:
         raise HTTPException(status_code=500, detail=err.msg)
 
+
 app = FastAPI(title='IoT Device Broker', version='1.0.0')
 app.include_router(router)
 
 
-
-"""
-An example of how we might do not-very-good authentication for the
-REST API. The point is, it is simple to wrap every call with a
-function to check the caller credentials.
-"""
-# auth_token = os.getenv('RESTAPI_TOKEN')
-# if auth_token is None or len(auth_token) < 1:
-#     print('auth_token not set.')
-#     sys.exit(1)
-
 @app.middleware("http")
 async def check_auth_header(request: Request, call_next):
 
-    if not request.url.path in ['/docs', '/openapi.json', '/broker/api/token']:
-        if not 'Authorization' in request.headers:
-            return Response(content="", status_code=401)
+    try:
+        if not request.url.path in ['/docs', '/openapi.json', '/broker/api/token']:
+            if not 'Authorization' in request.headers:
+                return Response(content="", status_code=401)
 
-        token = request.headers['Authorization'].split(' ')[1]
-        is_valid=dao.token_is_valid(token)
+            token = request.headers['Authorization'].split(' ')[1]
+            is_valid=dao.token_is_valid(token)
 
-        if not is_valid:
-            print(f'Authentication failed for url: {request.url}')
-            return Response(content="", status_code=401)
+            if not is_valid:
+                print(f'Authentication failed for url: {request.url}')
+                return Response(content="", status_code=401)
+    except:
+        return Response(content="", status_code=401)
 
     return await call_next(request)

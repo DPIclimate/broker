@@ -349,7 +349,7 @@ def main() -> None:
                 dao.token_refresh(uname=args.uname)
 
         elif args.cmd2=='chng':
-            dao.user_chng_passwd(uname=args.uname, new_passwd=args.passwd)
+            dao.user_change_password(args.uname, args.passwd)
         
         elif args.cmd2=='ls':
             print(dao.user_ls())
