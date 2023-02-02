@@ -1,0 +1,11 @@
+name: Docker Compose Actions Workflow
+on: push
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - name: Build the stack
+        run: docker-compose -p test -f compose/docker-compose.yml -f compose/test/test.yml up -d
+      - name: Test REST API
+        run: docker exec test_x_1 python -m TestRESTAPI
