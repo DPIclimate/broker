@@ -12,7 +12,6 @@ fi
 set -e
 
 RUN_MODE=$(basename $PWD)
-echo $DC
 
 if [ "$RUN_MODE" != test ]; then
     if [ "$RUN_MODE" != production ]; then
@@ -22,7 +21,5 @@ if [ "$RUN_MODE" != test ]; then
         RUN_MODE=prod
     fi
 fi
-
-echo $RUN_MODE
 
 exec $DC -p $RUN_MODE -f ../docker-compose.yml -f ./$RUN_MODE.yml $*
