@@ -135,13 +135,16 @@ async def update_physical_device(device: PhysicalDevice) -> PhysicalDevice:
         raise HTTPException(status_code=500, detail=err.msg)
 
 
-@router.delete("/physical/devices/{uid}", tags=['physical devices'], dependencies=[Depends(token_auth_scheme)])
-async def delete_physical_device(uid: int) -> PhysicalDevice:
+@router.delete("/physical/devices/{uid}", tags=['physical devices'], status_code=status.HTTP_204_NO_CONTENT, dependencies=[Depends(token_auth_scheme)])
+async def delete_physical_device(uid: int) -> None:
     """
     Delete a PhysicalDevice. The deleted device is returned in the response.
     """
     try:
-        return dao.delete_physical_device(uid)
+        pd = dao.delete_physical_device(uid)
+        if pd is None:
+            raise HTTPException(status_code=404)
+
     except dao.DAOException as err:
         raise HTTPException(status_code=500, detail=err.msg)
 
@@ -179,7 +182,7 @@ async def patch_physical_device_note(note: DeviceNote) -> None:
         raise HTTPException(status_code=500, detail=err.msg)
 
 
-@router.delete("/physical/devices/notes/{uid}", tags=['physical devices'], dependencies=[Depends(token_auth_scheme)])
+@router.delete("/physical/devices/notes/{uid}", tags=['physical devices'], status_code=status.HTTP_204_NO_CONTENT, dependencies=[Depends(token_auth_scheme)])
 async def delete_physical_device_note(uid: int) -> None:
     """
     Delete the given device note.
@@ -251,13 +254,15 @@ async def update_logical_device(device: LogicalDevice) -> LogicalDevice:
         raise HTTPException(status_code=500, detail=err.msg)
 
 
-@router.delete("/logical/devices/{uid}", tags=['logical devices'], dependencies=[Depends(token_auth_scheme)])
-async def delete_logical_device(uid: int) -> LogicalDevice:
+@router.delete("/logical/devices/{uid}", tags=['logical devices'], status_code=status.HTTP_204_NO_CONTENT, dependencies=[Depends(token_auth_scheme)])
+async def delete_logical_device(uid: int) -> None:
     """
     Delete a LogicalDevice. The deleted device is returned in the response.
     """
     try:
-        return dao.delete_logical_device(uid)
+        ld = dao.delete_logical_device(uid)
+        if ld is None:
+            raise HTTPException(status_code=404)
     except dao.DAOException as err:
         raise HTTPException(status_code=500, detail=err.msg)
 

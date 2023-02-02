@@ -166,10 +166,7 @@ class TestRESTAPI(unittest.TestCase):
 
         url=f'{_BASE}/physical/devices/{new_dev.uid}'
         r = requests.delete(url, headers=_HEADERS)
-        self.assertEqual(r.status_code, 200)
-        deleted_dev = PhysicalDevice.parse_obj(r.json())
-
-        self.assertEqual(deleted_dev, new_dev)
+        self.assertEqual(r.status_code, 204)
 
         # Confirm the device was deleted.
         r = requests.get(url, headers=_HEADERS)
@@ -177,8 +174,7 @@ class TestRESTAPI(unittest.TestCase):
 
         # Confirm delete does not throw an exception when the device does not exist.
         r = requests.delete(url, headers=_HEADERS)
-        self.assertEqual(r.status_code, 200)
-        self.assertIsNone(r.json())
+        self.assertEqual(r.status_code, 404)
 
     def test_create_device_note(self):
         dev, new_dev = self._create_physical_device()
@@ -302,10 +298,7 @@ class TestRESTAPI(unittest.TestCase):
 
         url=f'{_BASE}/logical/devices/{new_dev.uid}'
         r = requests.delete(url, headers=_HEADERS)
-        self.assertEqual(r.status_code, 200)
-        deleted_dev = LogicalDevice.parse_obj(r.json())
-
-        self.assertEqual(deleted_dev, new_dev)
+        self.assertEqual(r.status_code, 204)
 
         # Confirm the device was deleted.
         r = requests.get(url, headers=_HEADERS)
@@ -313,8 +306,7 @@ class TestRESTAPI(unittest.TestCase):
 
         # Confirm delete does not throw an exception when the device does not exist.
         r = requests.delete(url, headers=_HEADERS)
-        self.assertEqual(r.status_code, 200)
-        self.assertIsNone(r.json())
+        self.assertEqual(r.status_code, 404)
 
     def test_insert_mapping(self):
         pdev, new_pdev = self._create_physical_device()
