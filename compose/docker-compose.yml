@@ -8,6 +8,11 @@ services:
       - .env
     volumes:
       - ../db/init.d:/docker-entrypoint-initdb.d
+    healthcheck:
+      test: [ "CMD", "pg_isready", "-q", "-d", "${PGDATABASE}", "-U", "${PGUSER}" ]
+      timeout: 45s
+      interval: 10s
+      retries: 10
 
   mq:
     hostname: "mq"
@@ -17,6 +22,10 @@ services:
       - .env
     volumes:
       - ../config/rabbitmq:/etc/rabbitmq
+    healthcheck:
+      test: rabbitmq-diagnostics check_port_connectivity || exit 1
+      interval: 30s
+      start_period: 30s
 
   restapi:
     image: broker/python-base
@@ -29,13 +38,18 @@ services:
       - ../src/python:/home/broker/python
     working_dir: "/home/broker/python/restapi"
     entrypoint: [ "/home/broker/.local/bin/uvicorn", "--proxy-headers", "--host", "0.0.0.0", "--port", "5687", "RestAPI:app" ]
+    healthcheck:
+      test: curl --fail -I http://localhost:5687/openapi.json || exit 1
+      interval: 1m
+      start_period: 20s
 
   website:
     image: broker/mgmt-app
     env_file:
       - .env
     depends_on:
-      - "restapi"
+      restapi:
+        condition: "service_healthy"
     volumes:
       - ../src/www:/app
 
@@ -44,6 +58,9 @@ services:
     restart: "no"
     env_file:
       - .env
+    depends_on:
+      mq:
+        condition: "service_healthy"
     volumes:
       - ../src/python:/home/broker/python
     working_dir: "/home/broker/python/ttn"
@@ -55,9 +72,12 @@ services:
     env_file:
       - .env
     depends_on:
-      - "db"
-      - "mq"
-      - "ttn_decoder"
+      db:
+        condition: "service_healthy"
+      mq:
+        condition: "service_healthy"
+      ttn_decoder:
+        condition: "service_started"
     volumes:
       - ../src/python:/home/broker/python
     working_dir: "/home/broker/python/ttn"
@@ -80,8 +100,10 @@ services:
     env_file:
       - .env
     depends_on:
-      - "mq"
-      - "db"
+      db:
+        condition: "service_healthy"
+      mq:
+        condition: "service_healthy"
     volumes:
       - ../src/python:/home/broker/python
     working_dir: "/home/broker/python"
@@ -93,8 +115,10 @@ services:
     env_file:
       - .env
     depends_on:
-      - "mq"
-      - "db"
+      db:
+        condition: "service_healthy"
+      mq:
+        condition: "service_healthy"
     volumes:
       - ../src/python:/home/broker/python
     working_dir: "/home/broker/python"
@@ -106,8 +130,10 @@ services:
     env_file:
       - .env
     depends_on:
-      - "db"
-      - "mq"
+      db:
+        condition: "service_healthy"
+      mq:
+        condition: "service_healthy"
     volumes:
       - ../src/python:/home/broker/python
     working_dir: "/home/broker/python"
@@ -119,8 +145,10 @@ services:
     env_file:
       - .env
     depends_on:
-      - "db"
-      - "mq"
+      db:
+        condition: "service_healthy"
+      mq:
+        condition: "service_healthy"
     volumes:
       - ../src/python:/home/broker/python
     working_dir: "/home/broker/python"
@@ -132,8 +160,10 @@ services:
     env_file:
       - .env
     depends_on:
-      - "db"
-      - "mq"
+      db:
+        condition: "service_healthy"
+      mq:
+        condition: "service_healthy"
     volumes:
       - ../src/python:/home/broker/python
       - ${DATABOLT_SHARED_DIR}/raw_data:/raw_data

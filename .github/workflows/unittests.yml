@@ -5,7 +5,15 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v2
+      - name: Create python-base image
+        run: docker build -q -t broker/python-base -f images/restapi/Dockerfile .
+      - name: Create ttn-decoder image
+        run: docker build -q -t broker/ttn_decoder -f images/ttn_decoder/Dockerfile .
+      - name: Create webapp image
+        run: docker build -q -t broker/mgmt-app -f src/www/Dockerfile .
       - name: Build the stack
         run: docker compose -p test -f compose/docker-compose.yml -f compose/test/test.yml up -d
+      - name: Test DAO
+        run: docker exec test-x-1 python -m TestDAO
       - name: Test REST API
-        run: docker exec test_x_1 python -m TestRESTAPI
+        run: docker exec test-x-1 python -m TestRESTAPI
