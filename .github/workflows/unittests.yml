@@ -14,4 +14,4 @@ jobs:
       - name: Build the stack
         run: docker compose -p test -f compose/docker-compose.yml -f compose/test/test.yml up -d
       - name: Test REST API
-        run: docker exec test_x_1 python -m TestRESTAPI
+        run: docker exec test-x-1 python -m TestRESTAPI
