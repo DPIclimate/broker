@@ -12,6 +12,6 @@ jobs:
       - name: Create webapp image
         run: docker build -q -t broker/mgmt-app -f src/www/Dockerfile .
       - name: Build the stack
-        run: docker-compose -p test -f compose/docker-compose.yml -f compose/test/test.yml up -d
+        run: docker compose -p test -f compose/docker-compose.yml -f compose/test/test.yml up -d
       - name: Test REST API
         run: docker exec test_x_1 python -m TestRESTAPI

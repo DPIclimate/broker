@@ -29,13 +29,18 @@ services:
       - ../src/python:/home/broker/python
     working_dir: "/home/broker/python/restapi"
     entrypoint: [ "/home/broker/.local/bin/uvicorn", "--proxy-headers", "--host", "0.0.0.0", "--port", "5687", "RestAPI:app" ]
+    healthcheck:
+      test: curl --fail -I http://localhost:5687/openapi.json || exit 1
+      interval: 1m
+      start_period: 20s
 
   website:
     image: broker/mgmt-app
     env_file:
       - .env
     depends_on:
-      - "restapi"
+      restapi:
+        condition: "service_healthy"
     volumes:
       - ../src/www:/app
 
