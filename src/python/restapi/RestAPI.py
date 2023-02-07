@@ -77,7 +77,7 @@ async def query_physical_devices(source_name: str = None, include_properties: bo
 
     if include_properties != True:
         for d in devs:
-            d.properties = None
+            d.properties = {}
 
     return devs
 
@@ -210,7 +210,7 @@ async def create_logical_device(device: LogicalDevice, request: Request, respons
 
 
 @router.get("/logical/devices/", tags=['logical devices'], dependencies=[Depends(token_auth_scheme)])
-async def get_logical_devices(include_properties: bool | None = True) -> LogicalDevice:
+async def get_logical_devices(include_properties: bool | None = True) -> List[LogicalDevice]:
     """
     Get all LogicalDevices.
     """
@@ -219,7 +219,7 @@ async def get_logical_devices(include_properties: bool | None = True) -> Logical
 
         if include_properties != True:
             for d in devs:
-                d.properties = None
+                d.properties = {}
 
         return devs
     except dao.DAOException as err:
