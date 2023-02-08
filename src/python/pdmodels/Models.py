@@ -49,3 +49,11 @@ class DeviceNote(BaseModel):
     uid: Optional[int]
     ts: Optional[datetime]
     note: str
+
+
+class User(BaseModel):
+    uid: int
+    username: str
+    auth_token: str
+    valid: bool
+    read_only: bool

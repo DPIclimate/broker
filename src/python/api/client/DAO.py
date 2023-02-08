@@ -14,7 +14,7 @@ import hashlib
 import base64
 import os
 
-from pdmodels.Models import DeviceNote, Location, LogicalDevice, PhysicalDevice, PhysicalToLogicalMapping
+from pdmodels.Models import DeviceNote, Location, LogicalDevice, PhysicalDevice, PhysicalToLogicalMapping, User
 
 logging.captureWarnings(True)
 
@@ -933,6 +933,35 @@ def user_rm(uname) -> None:
     
     except Exception as err:
         raise err if isinstance(err, DAOException) else DAOException('user_ls failed.', err)
+    finally:
+        if conn is not None:
+            free_conn(conn)
+
+@backoff.on_exception(backoff.expo, DAOException, max_time=30)
+def user_enable_write(uname) -> None:
+    try:
+        with _get_connection() as conn, conn.cursor() as cursor:
+            cursor.execute("update users set read_only=false where username=%s", (uname,))
+    except Exception as err:
+        raise err if isinstance(err, DAOException) else DAOException('user_enable_write failed.', err)
+    finally:
+        if conn is not None:
+            free_conn(conn)
+
+@backoff.on_exception(backoff.expo, DAOException, max_time=30)
+def user_get(auth_token) -> User:
+    conn = None
+    try:
+        user = None
+        with _get_connection() as conn, conn.cursor() as cursor:
+            cursor.execute("select uid, username, auth_token, valid, read_only from users where auth_token=%s", (auth_token,))
+            row = cursor.fetchone()
+            if row is not None:
+                dfr = _dict_from_row(cursor.description, row)
+                user = User.parse_obj(dfr)
+        return user
+    except Exception as err:
+        raise err if isinstance(err, DAOException) else DAOException('user_get failed.', err)
     finally:
         if conn is not None:
             free_conn(conn)

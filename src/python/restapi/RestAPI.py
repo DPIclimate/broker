@@ -474,4 +474,9 @@ async def check_auth_header(request: Request, call_next):
             print(f'Authentication failed for url: {request.url}')
             return Response(content="", status_code=401)
 
+        if request.method is not 'GET':
+            user=dao.user_get(token)
+            if user.read_only is True:
+                return Response(content="", status_code=403)
+
     return await call_next(request)
