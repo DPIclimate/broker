@@ -892,18 +892,10 @@ def add_raw_text_message(source_name: str, ts: datetime, correlation_uuid: str, 
             free_conn(conn)
 
 """
-User Authentication CRUD methods
-
-create table if not exists users(
-    uid integer generated always as identity primary key,
-    username text not null,
-    salt text not null,
-    password text not null,
-    auth_token text not null
-);
+User and authentication CRUD methods
 """
 @backoff.on_exception(backoff.expo, DAOException, max_time=30)
-def user_add(uname, passwd, disabled) -> None:
+def user_add(uname: str, passwd: str, disabled: bool) -> None:
 
     #Generate salted password
     salt=os.urandom(64).hex()
@@ -915,7 +907,6 @@ def user_add(uname, passwd, disabled) -> None:
     try:
         with _get_connection() as conn, conn.cursor() as cursor:
             cursor.execute("insert into users (username, salt, password, auth_token, valid) values (%s, %s, %s, %s, %s)", (uname, salt, pass_hash, auth_token, not disabled))
-
             conn.commit()
     except psycopg2.errors.UniqueViolation as err:
         raise DAOUniqeConstraintException("Unique constraint violated")
@@ -1029,9 +1020,9 @@ def token_is_valid(user_token) -> bool:
 @backoff.on_exception(backoff.expo, DAOException, max_time=30)
 def token_refresh(uname)-> None:
     
-    #Auth token to be used on other endpoints
+    # Auth token to be used on other endpoints.
     auth_token=os.urandom(64).hex()
-    
+
     try:
         with _get_connection() as conn, conn.cursor() as cursor:
             cursor.execute("update users set auth_token=%s where username=%s", (auth_token, uname))
@@ -1043,8 +1034,25 @@ def token_refresh(uname)-> None:
         if conn is not None:
             free_conn(conn)
 
+
 @backoff.on_exception(backoff.expo, DAOException, max_time=30)
-def user_chng_passwd(new_passwd:str, prev_token:str)->str:
+def user_change_password(username: str, new_passwd: str) -> None:
+    salt=os.urandom(64).hex()
+    pass_hash=hashlib.scrypt(password=new_passwd.encode(), salt=salt.encode(), n=2**14, r=8, p=1, maxmem=0, dklen=64).hex()
+
+    try:
+        with _get_connection() as conn, conn.cursor() as cursor:
+            cursor.execute("update users set salt=%s, password=%s where username=%s", (salt, pass_hash, username))
+            conn.commit()
+    except Exception as err:
+        raise err if isinstance(err, DAOException) else DAOException('user_change_passwd failed.', err)
+    finally:
+        if conn is not None:
+            free_conn(conn)
+
+
+@backoff.on_exception(backoff.expo, DAOException, max_time=30)
+def user_change_password_and_token(new_passwd: str, prev_token: str) -> str:
     """
         Changes user's password and auth token, returns users new auth token upon success
     """
@@ -1059,14 +1067,13 @@ def user_chng_passwd(new_passwd:str, prev_token:str)->str:
         with _get_connection() as conn, conn.cursor() as cursor:
             cursor.execute("update users set salt=%s, password=%s, auth_token=%s where auth_token=%s", (salt, pass_hash, auth_token, prev_token))
             conn.commit()
-            print(cursor.rowcount, prev_token, user_get_token('my_user', 'pass'), prev_token==user_get_token('my_user', 'pass'))
             if cursor.rowcount == 0:
-                return
+                return None
 
             return auth_token
 
     except Exception as err:
-        raise err if isinstance(err, DAOException) else DAOException('user_chng_password failed.', err)
+        raise err if isinstance(err, DAOException) else DAOException('user_change_password_and_token failed.', err)
     finally:
         if conn is not None:
             free_conn(conn)

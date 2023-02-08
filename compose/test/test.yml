@@ -1,27 +1,6 @@
 version: '3.1'
 
 services:
-
-  mq:
-    ports:
-      - "0.0.0.0:15672:15672"
-
-  ttn_decoder:
-    ports:
-      - "127.0.0.1:3001:3001"
-
-  restapi:
-    ports:
-      - "127.0.0.1:5686:5687"
-
-  ttn_webhook:
-    ports:
-      - "0.0.0.0:5688:5688"
-
-  website:
-    ports:
-      - "127.0.0.1:5000:5000"
-
   x:
     image: broker/python-base
     restart: "no"

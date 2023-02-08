@@ -18,12 +18,17 @@ logger = logging.getLogger(__name__)
 _BASE = "http://restapi:5687/broker/api"
 _HEADERS = {
     "Content-Type": "application/json",
-    "Accept": "application/json"
+    "Accept": "application/json",
+    "Authorization": ""
 }
 
 class TestRESTAPI(unittest.TestCase):
+    _username = ""
+    _token = ""
 
     def setUp(self):
+        global _HEADERS
+
         try:
             with dao._get_connection() as conn:
                 with conn.cursor() as cursor:
@@ -32,9 +37,16 @@ class TestRESTAPI(unittest.TestCase):
                     truncate logical_devices cascade;
                     truncate physical_logical_map cascade;
                     truncate device_notes cascade;
-                    truncate raw_messages cascade''')
+                    truncate raw_messages cascade;
+                    truncate users;''')
         finally:
             dao.free_conn(conn)
+
+        # Create a user and make a valid token so the APIs don't return 401.
+        global _HEADERS
+        _username = self._create_test_user()
+        _token = dao.user_get_token(_username, 'password')
+        _HEADERS['Authorization'] = f'Bearer {_token}'
 
     def now(self):
         return datetime.datetime.now(tz=datetime.timezone.utc)
@@ -64,7 +76,15 @@ class TestRESTAPI(unittest.TestCase):
         r = requests.get(url, headers=_HEADERS)
         self.assertEqual(r.status_code, 200)
         sources = r.json()
-        self.assertEqual(sources, ['greenbrain', 'ttn', 'ydoc'])
+        self.assertEqual(sources, ['greenbrain', 'ttn', 'wombat', 'ydoc'])
+
+        _HEADERS['Authorization'] = ""
+        r = requests.get(url, headers=_HEADERS)
+        self.assertEqual(r.status_code, 401)
+
+        _HEADERS.pop('Authorization')
+        r = requests.get(url, headers=_HEADERS)
+        self.assertEqual(r.status_code, 401)
 
     def test_create_physical_device(self):
         dev, new_dev = self._create_physical_device()
@@ -146,10 +166,7 @@ class TestRESTAPI(unittest.TestCase):
 
         url=f'{_BASE}/physical/devices/{new_dev.uid}'
         r = requests.delete(url, headers=_HEADERS)
-        self.assertEqual(r.status_code, 200)
-        deleted_dev = PhysicalDevice.parse_obj(r.json())
-
-        self.assertEqual(deleted_dev, new_dev)
+        self.assertEqual(r.status_code, 204)
 
         # Confirm the device was deleted.
         r = requests.get(url, headers=_HEADERS)
@@ -157,8 +174,7 @@ class TestRESTAPI(unittest.TestCase):
 
         # Confirm delete does not throw an exception when the device does not exist.
         r = requests.delete(url, headers=_HEADERS)
-        self.assertEqual(r.status_code, 200)
-        self.assertIsNone(r.json())
+        self.assertEqual(r.status_code, 404)
 
     def test_create_device_note(self):
         dev, new_dev = self._create_physical_device()
@@ -192,7 +208,7 @@ class TestRESTAPI(unittest.TestCase):
         self.assertEqual(r.status_code, 201)
 
         # Confirm multiple notes are returned in ascending timestamp order.
-        r = requests.get(url)
+        r = requests.get(url, headers=_HEADERS)
         self.assertEqual(r.status_code, 200)
         notes = [DeviceNote.parse_obj(n) for n in r.json()]
         self.assertIsNotNone(notes)
@@ -202,7 +218,7 @@ class TestRESTAPI(unittest.TestCase):
 
         # Confirm an empty array is returned for an invalid device id.
         url=f'{_BASE}/physical/devices/notes/{-1}'
-        r = requests.get(url)
+        r = requests.get(url, headers=_HEADERS)
         self.assertEqual(r.status_code, 200)
         self.assertEqual(len(r.json()), 0)
 
@@ -282,10 +298,7 @@ class TestRESTAPI(unittest.TestCase):
 
         url=f'{_BASE}/logical/devices/{new_dev.uid}'
         r = requests.delete(url, headers=_HEADERS)
-        self.assertEqual(r.status_code, 200)
-        deleted_dev = LogicalDevice.parse_obj(r.json())
-
-        self.assertEqual(deleted_dev, new_dev)
+        self.assertEqual(r.status_code, 204)
 
         # Confirm the device was deleted.
         r = requests.get(url, headers=_HEADERS)
@@ -293,8 +306,7 @@ class TestRESTAPI(unittest.TestCase):
 
         # Confirm delete does not throw an exception when the device does not exist.
         r = requests.delete(url, headers=_HEADERS)
-        self.assertEqual(r.status_code, 200)
-        self.assertIsNone(r.json())
+        self.assertEqual(r.status_code, 404)
 
     def test_insert_mapping(self):
         pdev, new_pdev = self._create_physical_device()
@@ -320,7 +332,7 @@ class TestRESTAPI(unittest.TestCase):
 
         # End the current mapping and create a new one. This should work and
         # simulates 'pausing' a physical device while working on it.
-        requests.patch(f'{url}physical/end/{mapping.pd.uid}')
+        requests.patch(f'{url}physical/end/{mapping.pd.uid}', headers=_HEADERS)
         mapping.start_time=self.now()
         payload = mapping.json()
         r = requests.post(url, headers=_HEADERS, data=payload)
@@ -340,7 +352,7 @@ class TestRESTAPI(unittest.TestCase):
 
         # End the current mapping for the phyiscal device so the RESTAPI doesn't
         # return status 400.
-        requests.patch(f'{url}physical/end/{mapping.pd.uid}')
+        requests.patch(f'{url}physical/end/{mapping.pd.uid}', headers=_HEADERS)
 
         # This should fail due to invalid logical uid.
         payload = mapping.json()
@@ -358,18 +370,18 @@ class TestRESTAPI(unittest.TestCase):
         self.assertEqual(r.status_code, 201)
 
         # Confirm getting the mapping works.
-        r = requests.get(f'{url}physical/current/{new_pdev.uid}')
+        r = requests.get(f'{url}physical/current/{new_pdev.uid}', headers=_HEADERS)
         self.assertEqual(r.status_code, 200)
         m = PhysicalToLogicalMapping.parse_obj(r.json())
         self.assertEqual(mapping, m)
 
         # Confirm getting an invalid map returns 404
-        r = requests.get(f'{url}physical/current/{-1}')
+        r = requests.get(f'{url}physical/current/{-1}', headers=_HEADERS)
         self.assertEqual(r.status_code, 404)
 
         # End the current mapping for the phyiscal device so the RESTAPI doesn't
         # return status 400.
-        requests.patch(f'{url}physical/end/{mapping.pd.uid}')
+        requests.patch(f'{url}physical/end/{mapping.pd.uid}', headers=_HEADERS)
 
         # Confirm the latest mapping is returned.
         time.sleep(0.001)
@@ -380,7 +392,7 @@ class TestRESTAPI(unittest.TestCase):
         r = requests.post(url, headers=_HEADERS, data=payload)
         self.assertEqual(r.status_code, 201)
 
-        r = requests.get(f'{url}physical/current/{new_pdev.uid}')
+        r = requests.get(f'{url}physical/current/{new_pdev.uid}', headers=_HEADERS)
         self.assertEqual(r.status_code, 200)
         m = PhysicalToLogicalMapping.parse_obj(r.json())
         self.assertEqual(mapping2, m)
@@ -396,18 +408,18 @@ class TestRESTAPI(unittest.TestCase):
         self.assertEqual(r.status_code, 201)
 
         # Confirm getting the mapping works.
-        r = requests.get(f'{url}logical/current/{new_ldev.uid}')
+        r = requests.get(f'{url}logical/current/{new_ldev.uid}', headers=_HEADERS)
         self.assertEqual(r.status_code, 200)
         m = PhysicalToLogicalMapping.parse_obj(r.json())
         self.assertEqual(mapping, m)
 
         # Confirm getting an invalid map returns 404
-        r = requests.get(f'{url}logical/current/{-1}')
+        r = requests.get(f'{url}logical/current/{-1}', headers=_HEADERS)
         self.assertEqual(r.status_code, 404)
 
         # End the current mapping for the phyiscal device so the RESTAPI doesn't
         # return status 400.
-        requests.patch(f'{url}logical/end/{mapping.ld.uid}')
+        requests.patch(f'{url}logical/end/{mapping.ld.uid}', headers=_HEADERS)
 
         # Confirm the latest mapping is returned.
         time.sleep(0.001)
@@ -418,7 +430,7 @@ class TestRESTAPI(unittest.TestCase):
         r = requests.post(url, headers=_HEADERS, data=payload)
         self.assertEqual(r.status_code, 201)
 
-        r = requests.get(f'{url}logical/current/{new_ldev.uid}')
+        r = requests.get(f'{url}logical/current/{new_ldev.uid}', headers=_HEADERS)
         self.assertEqual(r.status_code, 200)
         m = PhysicalToLogicalMapping.parse_obj(r.json())
         self.assertEqual(mapping2, m)
@@ -434,10 +446,10 @@ class TestRESTAPI(unittest.TestCase):
         url=f'{_BASE}/mappings/'
 
         # No mappings yet, these should both 404.
-        r = requests.get(f'{url}physical/current/{new_pdev.uid}')
+        r = requests.get(f'{url}physical/current/{new_pdev.uid}', headers=_HEADERS)
         self.assertEqual(r.status_code, 404)
 
-        r = requests.get(f'{url}physical/latest/{new_pdev.uid}')
+        r = requests.get(f'{url}physical/latest/{new_pdev.uid}', headers=_HEADERS)
         self.assertEqual(r.status_code, 404)
 
         payload = mapping.json()
@@ -445,26 +457,26 @@ class TestRESTAPI(unittest.TestCase):
         self.assertEqual(r.status_code, 201)
 
         # Confirm getting the mapping works via current.
-        r = requests.get(f'{url}physical/current/{new_pdev.uid}')
+        r = requests.get(f'{url}physical/current/{new_pdev.uid}', headers=_HEADERS)
         self.assertEqual(r.status_code, 200)
         m = PhysicalToLogicalMapping.parse_obj(r.json())
         self.assertEqual(mapping, m)
 
         # Confirm getting the mapping works via latest.
-        r = requests.get(f'{url}physical/latest/{new_pdev.uid}')
+        r = requests.get(f'{url}physical/latest/{new_pdev.uid}', headers=_HEADERS)
         self.assertEqual(r.status_code, 200)
         m = PhysicalToLogicalMapping.parse_obj(r.json())
         self.assertEqual(mapping, m)
 
         # End the mapping to test that current returns None but latest returns the finished mapping.
-        requests.patch(f'{url}physical/end/{mapping.pd.uid}')
+        requests.patch(f'{url}physical/end/{mapping.pd.uid}', headers=_HEADERS)
 
         # Confirm getting the current mapping ignores the finished map row.
-        r = requests.get(f'{url}physical/current/{new_pdev.uid}')
+        r = requests.get(f'{url}physical/current/{new_pdev.uid}', headers=_HEADERS)
         self.assertEqual(r.status_code, 404)
 
         # Confirm getting the mapping works via latest.
-        r = requests.get(f'{url}physical/latest/{new_pdev.uid}')
+        r = requests.get(f'{url}physical/latest/{new_pdev.uid}', headers=_HEADERS)
         self.assertEqual(r.status_code, 200)
         m = PhysicalToLogicalMapping.parse_obj(r.json())
         self.assertIsNotNone(m.end_time)
@@ -478,10 +490,10 @@ class TestRESTAPI(unittest.TestCase):
         url=f'{_BASE}/mappings/'
 
         # No mappings yet, these should both 404.
-        r = requests.get(f'{url}logical/current/{new_ldev.uid}')
+        r = requests.get(f'{url}logical/current/{new_ldev.uid}', headers=_HEADERS)
         self.assertEqual(r.status_code, 404)
 
-        r = requests.get(f'{url}logical/latest/{new_ldev.uid}')
+        r = requests.get(f'{url}logical/latest/{new_ldev.uid}', headers=_HEADERS)
         self.assertEqual(r.status_code, 404)
 
         payload = mapping.json()
@@ -489,26 +501,26 @@ class TestRESTAPI(unittest.TestCase):
         self.assertEqual(r.status_code, 201)
 
         # Confirm getting the mapping works via current.
-        r = requests.get(f'{url}logical/current/{new_ldev.uid}')
+        r = requests.get(f'{url}logical/current/{new_ldev.uid}', headers=_HEADERS)
         self.assertEqual(r.status_code, 200)
         m = PhysicalToLogicalMapping.parse_obj(r.json())
         self.assertEqual(mapping, m)
 
         # Confirm getting the mapping works via latest.
-        r = requests.get(f'{url}logical/latest/{new_ldev.uid}')
+        r = requests.get(f'{url}logical/latest/{new_ldev.uid}', headers=_HEADERS)
         self.assertEqual(r.status_code, 200)
         m = PhysicalToLogicalMapping.parse_obj(r.json())
         self.assertEqual(mapping, m)
 
         # End the mapping to test that current returns None but latest returns the finished mapping.
-        requests.patch(f'{url}logical/end/{new_ldev.uid}')
+        requests.patch(f'{url}logical/end/{new_ldev.uid}', headers=_HEADERS)
 
         # Confirm getting the current mapping ignores the finished map row.
-        r = requests.get(f'{url}logical/current/{new_ldev.uid}')
+        r = requests.get(f'{url}logical/current/{new_ldev.uid}', headers=_HEADERS)
         self.assertEqual(r.status_code, 404)
 
         # Confirm getting the mapping works via latest.
-        r = requests.get(f'{url}logical/latest/{new_ldev.uid}')
+        r = requests.get(f'{url}logical/latest/{new_ldev.uid}', headers=_HEADERS)
         self.assertEqual(r.status_code, 200)
         m = PhysicalToLogicalMapping.parse_obj(r.json())
         self.assertIsNotNone(m.end_time)
@@ -545,7 +557,7 @@ class TestRESTAPI(unittest.TestCase):
         dao.insert_mapping(mapping3)
 
         url=f'{_BASE}/mappings/logical/all/{new_ldev.uid}'
-        r = requests.get(f'{url}')
+        r = requests.get(f'{url}', headers=_HEADERS)
         self.assertEqual(r.status_code, 200)
 
         j = r.json()

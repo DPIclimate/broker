@@ -27,7 +27,7 @@ class TestDAO(unittest.TestCase):
 
     def test_get_all_physical_sources(self):
         sources = dao.get_all_physical_sources()
-        self.assertEqual(sources, ['greenbrain', 'ttn', 'ydoc'])
+        self.assertEqual(sources, ['greenbrain', 'ttn', 'wombat', 'ydoc'])
 
     def now(self):
         return datetime.datetime.now(tz=datetime.timezone.utc)
@@ -610,6 +610,7 @@ class TestDAO(unittest.TestCase):
     def test_get_user_token(self):
         uname=self._create_test_user()
         self.assertIsNotNone(dao.user_get_token(username=uname, password='password'))
+        self.assertIsNone(dao.user_get_token(username=uname, password='x'))
 
     def test_user_token_refresh(self):
         uname=self._create_test_user()
@@ -634,12 +635,10 @@ class TestDAO(unittest.TestCase):
         dao.token_enable(uname)
         self.assertTrue(dao.token_is_valid(user_token))
         
-    def test_user_chng_passwd(self):
+    def test_user_change_password(self):
         uname=self._create_test_user()
-        dao.user_chng_passwd(uname, 'password1')
-        
-        self.assertIsNone(dao.user_get_token(username=uname, password='password'))
-        
+        dao.user_change_password(uname, 'nuiscyeriygsreiuliu')
+        self.assertIsNotNone(dao.user_get_token(username=uname, password='nuiscyeriygsreiuliu'))
 
 
 if __name__ == '__main__':
