@@ -602,6 +602,13 @@ class TestDAO(unittest.TestCase):
         dao.user_rm(uname)
         self.assertFalse(uname in dao.user_ls())
 
+    def test_user_set_read_only(self):
+        uname=self._create_test_user()
+        dao.user_set_read_only(uname, False)
+        user_token=dao.user_get_token(username=uname, password='password')
+        user=dao.user_get_by_token(user_token)
+        self.assertFalse(user.read_only)
+
     def test_add_non_unique_user(self):
         #Check that two users with the same username cannot be created
         uname=self._create_test_user()

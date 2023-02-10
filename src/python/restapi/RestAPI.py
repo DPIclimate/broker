@@ -458,7 +458,7 @@ app.include_router(router)
 
 @app.middleware("http")
 async def check_auth_header(request: Request, call_next):
-
+    
     try:
         if not request.url.path in ['/docs', '/openapi.json', '/broker/api/token']:
             if not 'Authorization' in request.headers:
@@ -470,12 +470,12 @@ async def check_auth_header(request: Request, call_next):
             if not is_valid:
                 print(f'Authentication failed for url: {request.url}')
                 return Response(content="", status_code=401)
+
+            if request.method != 'GET':
+                user=dao.user_get_by_token(token)
+                if user is None or user.read_only is True:
+                    return Response(content="", status_code=403)
     except:
         return Response(content="", status_code=401)
-
-        if request.method is not 'GET':
-            user=dao.user_get(token)
-            if user.read_only is True:
-                return Response(content="", status_code=403)
 
     return await call_next(request)

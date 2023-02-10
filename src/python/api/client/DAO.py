@@ -929,10 +929,10 @@ def user_rm(uname) -> None:
             free_conn(conn)
 
 @backoff.on_exception(backoff.expo, DAOException, max_time=30)
-def user_enable_write(uname) -> None:
+def user_set_read_only(uname: str, read_only: bool) -> None:
     try:
         with _get_connection() as conn, conn.cursor() as cursor:
-            cursor.execute("update users set read_only=false where username=%s", (uname,))
+            cursor.execute("update users set read_only=%s where username=%s", (read_only,uname))
     except Exception as err:
         raise err if isinstance(err, DAOException) else DAOException('user_enable_write failed.', err)
     finally:
@@ -940,7 +940,7 @@ def user_enable_write(uname) -> None:
             free_conn(conn)
 
 @backoff.on_exception(backoff.expo, DAOException, max_time=30)
-def user_get(auth_token) -> User:
+def user_get_by_token(auth_token) -> User:
     conn = None
     try:
         user = None
@@ -1034,7 +1034,6 @@ def token_refresh(uname)-> None:
         if conn is not None:
             free_conn(conn)
 
-
 @backoff.on_exception(backoff.expo, DAOException, max_time=30)
 def user_change_password(username: str, new_passwd: str) -> None:
     salt=os.urandom(64).hex()
@@ -1049,7 +1048,6 @@ def user_change_password(username: str, new_passwd: str) -> None:
     finally:
         if conn is not None:
             free_conn(conn)
-
 
 @backoff.on_exception(backoff.expo, DAOException, max_time=30)
 def user_change_password_and_token(new_passwd: str, prev_token: str) -> str:
