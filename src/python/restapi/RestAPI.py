@@ -472,7 +472,7 @@ async def check_auth_header(request: Request, call_next):
                 return Response(content="", status_code=401)
 
             if request.method != 'GET':
-                user=dao.user_get_by_token(token)
+                user=dao.get_user(auth_token=token)
                 if user is None or user.read_only is True:
                     return Response(content="", status_code=403)
     except:
