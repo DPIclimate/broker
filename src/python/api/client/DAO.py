@@ -904,7 +904,7 @@ def user_add(uname: str, passwd: str, disabled: bool) -> None:
     
     #Auth token to be used on other endpoints
     auth_token=os.urandom(64).hex()
-    
+    conn = None
     try:
         with _get_connection() as conn, conn.cursor() as cursor:
             cursor.execute("insert into users (username, salt, password, auth_token, valid) values (%s, %s, %s, %s, %s)", (uname, salt, pass_hash, auth_token, not disabled))
@@ -963,9 +963,7 @@ def get_user(uid = None, username = None, auth_token = None) -> User:
                 if row is not None:
                     dfr = _dict_from_row(cursor.description, row)
                     user = User.parse_obj(dfr)
-                    return user
-                else:
-                    return None
+            return user
         except Exception as err:
             raise err if isinstance(err, DAOException) else DAOException('get_user failed.', err)
         finally:
