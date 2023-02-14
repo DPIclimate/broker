@@ -83,7 +83,8 @@ create table if not exists users(
     salt text not null,
     password text not null,
     auth_token text not null,
-    valid boolean not null
+    valid boolean not null,
+    read_only boolean default True not null
 );
 
 create index if not exists pd_src_id_idx on physical_devices using GIN (source_ids);

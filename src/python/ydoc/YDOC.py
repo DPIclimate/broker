@@ -175,9 +175,12 @@ def process_message(msg_with_cid: Dict) -> Dict[str, Dict]:
 
             channel_name: str = channels[k]['name']
             var_name = channel_name[2:] if channel_name.startswith(s_prefix) else _non_alpha_numeric.sub('_', channel_name)
-            dot = { BrokerConstants.TIMESTAMP_KEY: ts, 'name': var_name, 'value': v }
 
-            device['dots'].append(dot)
+            try:
+                dot = { BrokerConstants.TIMESTAMP_KEY: ts, 'name': var_name, 'value': float(v) }
+                device['dots'].append(dot)
+            except:
+                lu.cid_logger.info(f'YDOC variable {var_name} nan, got {v} instead.', extra=msg_with_cid)
 
     return devices
 
@@ -285,8 +288,11 @@ def on_message(channel, method, properties, body):
                 'id': device['id']
             }
 
-            max_ts_dot = max(device['dots'], key=lambda d: dateutil.parser.parse(d[BrokerConstants.TIMESTAMP_KEY]))
-            last_seen = max_ts_dot[BrokerConstants.TIMESTAMP_KEY]
+            if len(device['dots']) > 0:
+                max_ts_dot = max(device['dots'], key=lambda d: dateutil.parser.parse(d[BrokerConstants.TIMESTAMP_KEY]))
+                last_seen = max_ts_dot[BrokerConstants.TIMESTAMP_KEY]
+            else:
+                continue
 
             pds = dao.get_pyhsical_devices_using_source_ids(BrokerConstants.YDOC, source_ids)
             if len(pds) < 1:

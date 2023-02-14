@@ -14,7 +14,7 @@ import hashlib
 import base64
 import os
 
-from pdmodels.Models import DeviceNote, Location, LogicalDevice, PhysicalDevice, PhysicalToLogicalMapping
+from pdmodels.Models import DeviceNote, Location, LogicalDevice, PhysicalDevice, PhysicalToLogicalMapping, User
 
 logging.captureWarnings(True)
 
@@ -891,6 +891,7 @@ def add_raw_text_message(source_name: str, ts: datetime, correlation_uuid: str, 
         if conn is not None:
             free_conn(conn)
 
+
 """
 User and authentication CRUD methods
 """
@@ -903,7 +904,7 @@ def user_add(uname: str, passwd: str, disabled: bool) -> None:
     
     #Auth token to be used on other endpoints
     auth_token=os.urandom(64).hex()
-    
+    conn = None
     try:
         with _get_connection() as conn, conn.cursor() as cursor:
             cursor.execute("insert into users (username, salt, password, auth_token, valid) values (%s, %s, %s, %s, %s)", (uname, salt, pass_hash, auth_token, not disabled))
@@ -916,8 +917,10 @@ def user_add(uname: str, passwd: str, disabled: bool) -> None:
         if conn is not None:
             free_conn(conn)
 
+
 @backoff.on_exception(backoff.expo, DAOException, max_time=30)
 def user_rm(uname) -> None:
+    conn = None
     try:
         with _get_connection() as conn, conn.cursor() as cursor:
             cursor.execute("delete from users where username=%s", (uname,))
@@ -927,6 +930,46 @@ def user_rm(uname) -> None:
     finally:
         if conn is not None:
             free_conn(conn)
+
+
+@backoff.on_exception(backoff.expo, DAOException, max_time=30)
+def user_set_read_only(uname: str, read_only: bool) -> None:
+    try:
+        with _get_connection() as conn, conn.cursor() as cursor:
+            cursor.execute("update users set read_only=%s where username=%s", (read_only,uname))
+    except Exception as err:
+        raise err if isinstance(err, DAOException) else DAOException('user_enable_write failed.', err)
+    finally:
+        if conn is not None:
+            free_conn(conn)
+
+
+@backoff.on_exception(backoff.expo, DAOException, max_time=30)
+def get_user(uid = None, username = None, auth_token = None) -> User:
+    conn = None
+    if uid is None and username is None and auth_token is None:
+        raise DAOException('get_user requires at least one parameter')
+    else:
+        try:
+            user = None
+            with _get_connection() as conn, conn.cursor() as cursor:
+                if uid is not None:
+                    cursor.execute("select uid, username, auth_token, valid, read_only from users where uid=%s", (uid,))
+                elif username is not None:
+                    cursor.execute("select uid, username, auth_token, valid, read_only from users where username=%s", (username,))
+                elif auth_token is not None:
+                    cursor.execute("select uid, username, auth_token, valid, read_only from users where auth_token=%s", (auth_token,))
+                row = cursor.fetchone()
+                if row is not None:
+                    dfr = _dict_from_row(cursor.description, row)
+                    user = User.parse_obj(dfr)
+            return user
+        except Exception as err:
+            raise err if isinstance(err, DAOException) else DAOException('get_user failed.', err)
+        finally:
+            if conn is not None:
+                free_conn(conn)
+
 
 @backoff.on_exception(backoff.expo, DAOException, max_time=30)
 def user_ls() -> List:
@@ -941,6 +984,7 @@ def user_ls() -> List:
     finally:
         if conn is not None:
             free_conn(conn)
+
 
 @backoff.on_exception(backoff.expo, DAOException, max_time=30)
 def user_get_token(username, password) -> str | None:
@@ -962,12 +1006,13 @@ def user_get_token(username, password) -> str | None:
                 return None
             
             return auth_token
-            
+
     except Exception as err:
         raise err if isinstance(err, DAOException) else DAOException('get_user_token failed.', err)
     finally:
         if conn is not None:
             free_conn(conn)
+
 
 @backoff.on_exception(backoff.expo, DAOException, max_time=30)
 def token_is_valid(user_token) -> bool:
@@ -987,6 +1032,7 @@ def token_is_valid(user_token) -> bool:
     finally:
         if conn is not None:
             free_conn(conn)
+
 
 @backoff.on_exception(backoff.expo, DAOException, max_time=30)
 def token_refresh(uname)-> None:
@@ -1049,6 +1095,7 @@ def user_change_password_and_token(new_passwd: str, prev_token: str) -> str:
         if conn is not None:
             free_conn(conn)
 
+
 @backoff.on_exception(backoff.expo, DAOException, max_time=30)
 def token_disable(uname)->None:
     
@@ -1062,6 +1109,7 @@ def token_disable(uname)->None:
         if conn is not None:
             free_conn(conn)
 
+
 @backoff.on_exception(backoff.expo, DAOException, max_time=30)
 def token_enable(uname)-> None:
     try:
@@ -1073,3 +1121,4 @@ def token_enable(uname)-> None:
     finally:
         if conn is not None:
             free_conn(conn)
+            
