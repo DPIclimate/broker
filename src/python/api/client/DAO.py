@@ -881,8 +881,6 @@ def insert_physical_timeseries_message(p_uid: int, ts: datetime, msg):
     try:
         with _get_connection() as conn, conn.cursor() as cursor:
             cursor.execute('insert into physical_timeseries (physical_uid, ts, json_msg) values (%s, %s, %s)', (p_uid, ts, Json(msg)))
-    except psycopg2.errors.UniqueViolation as err:
-        warnings.warn(f'Tried to add duplicate physical message: {ts} {p_uid} {msg}')
     except Exception as err:
         raise DAOException('insert_physical_timeseries_message failed.', err)
     finally:

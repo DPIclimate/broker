@@ -123,8 +123,6 @@ def on_message(channel, method, properties, body):
         # Store message in the physical timeseries table in the brokers processed, standardised msg format.
         dao.insert_physical_timeseries_message(pd.uid, ld.last_seen, msg)
 
-        # Potentially try return status of msg publish below and then insert physical timeseries message if successful. 
-        # There's already duplication detecting in SQL insert statement, but this could reduce db load.
         tx_channel.publish_message('logical_timeseries', msg)
 
         # This tells RabbitMQ the message is handled and can be deleted from the queue.

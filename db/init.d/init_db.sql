@@ -22,16 +22,13 @@ create table if not exists physical_devices (
     properties jsonb not null default '{}'
 );
 
-create table if not exists physical_timeseries {
+create table if not exists physical_timeseries ( 
     uid integer generated always as identity primary key,
     physical_uid integer not null references physical_devices(uid),
     ts timestamptz not null,
     -- The message is stored in the brokers format as a JSONB object.
     json_msg jsonb not null
-};
-
--- Write a SQL statement to create the above table in the database.
--- The table should be called physical_timeseries.
+);
 
 --CREATE TABLE physical_timeseries (
 --    uid SERIAL PRIMARY KEY,
