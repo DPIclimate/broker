@@ -1,4 +1,4 @@
-import copy, datetime, logging, time, unittest, uuid, warnings
+import copy, datetime, logging, time, unittest, uuid, warnings, pytz
 from typing import Tuple
 
 import api.client.DAO as dao
@@ -21,6 +21,7 @@ class TestDAO(unittest.TestCase):
                     truncate logical_devices cascade;
                     truncate physical_logical_map cascade;
                     truncate device_notes cascade;
+                    truncate physical_timeseries cascade;
                     truncate raw_messages cascade''')
         finally:
             dao.free_conn(conn)
@@ -563,6 +564,44 @@ class TestDAO(unittest.TestCase):
         # duplicate UUID, but doesn't throw an exception.
         with self.assertWarns(UserWarning):
             dao.add_raw_json_message('ttn', self.now(), uuid1, obj1)
+
+
+    def test_insert_physical_timeseries_message(self):
+        msg = {
+                "l_uid":6,
+                "p_uid":3,
+                "timestamp":"2023-02-20T07:57:52.090347397Z",
+                "timeseries":[
+                    {
+                        "name":"airTemperature",
+                        "value":35.1
+                    },
+                    {
+                        "name":"atmosphericPressure",
+                        "value":987.2
+                    }
+                ],
+            "broker_correlation_id":"3d7762f6-bcc6-44d4-82ba-49b07e61e601"
+        }
+
+        p_uid = 3
+
+        timestamp_str = '2023-02-20 18:57:52.090347+11'
+        last_seen = datetime.strptime(timestamp_str[:-3], '%Y-%m-%d %H:%M:%S.%f')  # Remove the offset as %z format code won't work with hardcoded timezone.
+        tz_offset = int(timestamp_str[-2:])  # Parse the offset separately
+        timezone = pytz.FixedOffset(tz_offset * 60)  # Create a timezone object from the offset
+        last_seen = last_seen.replace(tzinfo=timezone)  # Add the timezone to the datetime object
+
+        dao.insert_physical_timeseries_message(p_uid, last_seen, msg)
+
+        with dao._get_connection() as conn, conn.cursor() as cursor:
+            cursor.execute('select physical_uid, ts, json_msg from raw_messages')
+            self.assertEqual(1, cursor.rowcount)
+
+            phys_uid, ts, retrieved_msg = cursor.fetchone()
+            self.assertEqual(phys_uid, 3)
+            self.assertEqual(ts, last_seen)
+            self.assertEqual(msg, retrieved_msg)
 
     def test_add_raw_text_message(self):
         uuid1 = uuid.uuid4()
