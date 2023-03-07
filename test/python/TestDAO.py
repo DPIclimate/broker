@@ -567,21 +567,6 @@ class TestDAO(unittest.TestCase):
 
 
     def test_insert_physical_timeseries_message(self):
-        msg = {
-                "p_uid":3,
-                "timestamp":"2023-02-20T07:57:52.090347397Z",
-                "timeseries":[
-                    {
-                        "name":"airTemperature",
-                        "value":35.1
-                    },
-                    {
-                        "name":"atmosphericPressure",
-                        "value":987.2
-                    }
-                ],
-            "broker_correlation_id":"3d7762f6-bcc6-44d4-82ba-49b07e61e601"
-        }
 
         dev, new_dev = self._create_physical_device()
 
@@ -589,7 +574,21 @@ class TestDAO(unittest.TestCase):
         dev.uid = new_dev.uid
         self.assertEqual(dev, new_dev)
 
-        msg['p_uid'] = new_dev.uid
+        msg = {
+            "p_uid":new_dev.uid,
+            "timestamp":"2023-02-20T07:57:52.090347397Z",
+            "timeseries":[
+                {
+                    "name":"airTemperature",
+                    "value":35.1
+                },
+                {
+                    "name":"atmosphericPressure",
+                    "value":987.2
+                }
+            ],
+            "broker_correlation_id":"3d7762f6-bcc6-44d4-82ba-49b07e61e601"
+        }
 
         last_seen = dateutil.parser.isoparse(msg['timestamp'])
 
