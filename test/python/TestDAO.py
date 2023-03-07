@@ -1,4 +1,4 @@
-import copy, datetime, logging, time, unittest, uuid, warnings, pytz
+import copy, datetime, logging, time, unittest, uuid, warnings, dateutil.parser
 from typing import Tuple
 
 import api.client.DAO as dao
@@ -584,22 +584,24 @@ class TestDAO(unittest.TestCase):
             "broker_correlation_id":"3d7762f6-bcc6-44d4-82ba-49b07e61e601"
         }
 
-        p_uid = 3
+        dev, new_dev = self._create_physical_device()
+
+        # Don't fail the equality assertion due to the uid being None in dev. Set ID from db device.
+        dev.uid = new_dev.uid
+        self.assertEqual(dev, new_dev)
+
+        p_uid = new_dev.uid
 
         timestamp_str = '2023-02-20 18:57:52.090347+11'
-        last_seen = datetime.strptime(timestamp_str[:-3], '%Y-%m-%d %H:%M:%S.%f')  # Remove the offset as %z format code won't work with hardcoded timezone.
-        tz_offset = int(timestamp_str[-2:])  # Parse the offset separately
-        timezone = pytz.FixedOffset(tz_offset * 60)  # Create a timezone object from the offset
-        last_seen = last_seen.replace(tzinfo=timezone)  # Add the timezone to the datetime object
+        last_seen = dateutil.parser.isoparse(timestamp_str)
 
         dao.insert_physical_timeseries_message(p_uid, last_seen, msg)
 
         with dao._get_connection() as conn, conn.cursor() as cursor:
-            cursor.execute('select physical_uid, ts, json_msg from raw_messages')
-            self.assertEqual(1, cursor.rowcount)
+            cursor.execute('select physical_uid, ts, json_msg from physical_timeseries')
 
             phys_uid, ts, retrieved_msg = cursor.fetchone()
-            self.assertEqual(phys_uid, 3)
+            self.assertEqual(phys_uid, p_uid)
             self.assertEqual(ts, last_seen)
             self.assertEqual(msg, retrieved_msg)
 
