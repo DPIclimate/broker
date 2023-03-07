@@ -568,7 +568,6 @@ class TestDAO(unittest.TestCase):
 
     def test_insert_physical_timeseries_message(self):
         msg = {
-                "l_uid":6,
                 "p_uid":3,
                 "timestamp":"2023-02-20T07:57:52.090347397Z",
                 "timeseries":[
@@ -590,18 +589,17 @@ class TestDAO(unittest.TestCase):
         dev.uid = new_dev.uid
         self.assertEqual(dev, new_dev)
 
-        p_uid = new_dev.uid
+        msg['p_uid'] = new_dev.uid
 
-        timestamp_str = '2023-02-20 18:57:52.090347+11'
-        last_seen = dateutil.parser.isoparse(timestamp_str)
+        last_seen = dateutil.parser.isoparse(msg['timestamp'])
 
-        dao.insert_physical_timeseries_message(p_uid, last_seen, msg)
+        dao.insert_physical_timeseries_message(msg['p_uid'], last_seen, msg)
 
         with dao._get_connection() as conn, conn.cursor() as cursor:
             cursor.execute('select physical_uid, ts, json_msg from physical_timeseries')
 
             phys_uid, ts, retrieved_msg = cursor.fetchone()
-            self.assertEqual(phys_uid, p_uid)
+            self.assertEqual(phys_uid, msg['p_uid'])
             self.assertEqual(ts, last_seen)
             self.assertEqual(msg, retrieved_msg)
 

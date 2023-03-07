@@ -104,6 +104,9 @@ def on_message(channel, method, properties, body):
 
         lu.cid_logger.info(f'Accepted message from {pd.name}', extra=msg)
 
+        # Store message in the physical timeseries table in the brokers processed, standardised msg format.
+        dao.insert_physical_timeseries_message(pd.uid, msg[BrokerConstants.TIMESTAMP_KEY], msg)
+
         mapping = dao.get_current_device_mapping(p_uid)
         if mapping is None:
             lu.cid_logger.warning(f'No device mapping found for {pd.source_ids}, cannot continue. Dropping message.', extra=msg)
@@ -119,9 +122,6 @@ def on_message(channel, method, properties, body):
         lu.cid_logger.info(f'Timestamp from message for LD last seen update: {ld.last_seen}', extra=msg)
         ld.properties[BrokerConstants.LAST_MSG] = msg
         dao.update_logical_device(ld)
-
-        # Store message in the physical timeseries table in the brokers processed, standardised msg format.
-        dao.insert_physical_timeseries_message(pd.uid, ld.last_seen, msg)
 
         tx_channel.publish_message('logical_timeseries', msg)
 
