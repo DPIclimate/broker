@@ -94,7 +94,7 @@ RabbitMQ also acts as an MQTT broker for sources that publish telemetry via MQTT
 
 ### Database
 
-IoTa uses a PostgreSQL database to store device metadata and raw messages.
+IoTa uses a [PostgreSQL](https://www.postgresql.org/) database to store device metadata and raw messages.
 
 ### Reverse proxy
 
@@ -147,11 +147,11 @@ An example of a message in this standard format:
 
 ## Installation
 
-A simple installation of IoTa is achieved by cloning the GitHub repository, and installing a web server to act as a TLS connection termination point and reverse proxy.
+A simple installation of IoTa is achieved by cloning the GitHub repository, and installing a web server to act as a TLS connection termination point and reverse proxy if desired.
 
-This is how it is deployed by the Digital Agriculture team. We hope the containerised nature of the system assits in deploying to a cloud service but we have not had a reason to do that - a simple docker-compose deployment is sufficient for our scale.
+This is how it is deployed by the Digital Agriculture team. We hope the containerised nature of the system assits in deploying to a cloud service but we have not had a reason to do that - a simple docker compose deployment is sufficient for our scale.
 
-docker must be installed for IoTa to run. If the installed docker does not support the 'docker compose' command then docker-compose must also be installed.
+docker must be installed for IoTa to run, the version of which is recent enough that the `docker compose` command is supported.
 
 > The [ttn-formatters](https://github.com/DPIclimate/ttn-formatters) repo should be cloned in the same directory as the broker
 > repo, ie the ttn-formatters and broker directories share the same parent directory.
@@ -168,16 +168,14 @@ $ git clone https://github.com/DPIclimate/ttn-formatters.git
 
 ### Container environment variables
 
-The main point of configuration is the file `compose/.env`. This is initialised by copying `config/broker.env.template` and filling in the values for each environment variable.
-
-Many variables have default values and can be left as-is. It is important to set the various passwords to a secure value. The various hostnames should be left at their defaults unless the docker-compose file services are also updated to reflect the hostnames.
+The main point of configuration is the file `compose/.env`. Many variables have default values and can be left as-is. It is important to set the passwords to a secure value. The hostnames should be left at their defaults unless the docker-compose file services are also updated to reflect the hostnames.
 
 This .env file must also be symlinked into the `compose/production` and `compose/test` directories.
 
 
 ### Docker volumes
 
-To preserve the state of PostgreSQL and RabbitMQ between `docker-compose down` and `docker-compose up` commands, external volumes are used by the database and RabbitMQ containers when running in production mode.
+To preserve the state of PostgreSQL and RabbitMQ between `docker compose down` and `docker compose up` commands, external volumes are used by the database and RabbitMQ containers when running in production mode.
 
 These external volumes must be created before running IoTa in production mode, using the commands:
 
@@ -199,21 +197,21 @@ IoTa is started using the `run.sh` script.
 
 `run.sh production` starts IoTa in 'production' mode, which starts all the front-end (except GreenBrain), mid-tier, and back-end processors and exposes various IP endpoints to the host for use by the reverse proxy. 
 
-`run.sh test` starts a test instance of IoTa. This can be done on the same host as a production instance but this is not recommended. The test deployment starts an additional container, `test_x_1`, that can be used for running unit tests or other Python scripts. A test instance still runs any back-end processors; you may wish to either disable these or point them at staging environments while becoming familiar with the system in order to avoid polluting a production timeseries database or IoT platform. Test mode uses temporary volumes for the database and message queues, so data will not survive a `docker-compose down` command. Less networking ports are exposed, and some port numbers are changed so they do not conflict with those used in production mode.
+`run.sh test` starts a test instance of IoTa. This can be done on the same host as a production instance but this is not recommended. The test deployment starts an additional container, `test-x-1`, that can be used for running unit tests or other Python scripts. A test instance still runs any back-end processors; you may wish to either disable these or point them at staging environments while becoming familiar with the system in order to avoid polluting a production timeseries database or IoT platform. Test mode uses temporary volumes for the database and message queues, so data will not survive a `docker compose down` command. Less networking ports are exposed, and some port numbers are changed so they do not conflict with those used in production mode.
 
-In either mode the script runs a `docker-compose logs -f` command, leaving the log files scrolling up the screen. You can safely `ctrl-c` out of this and the containers will keep running.
+In either mode the script runs a `docker compose logs -f` command, leaving the log files scrolling up the screen. You can safely `ctrl-c` out of this and the containers will keep running.
 
 ## dc.sh
 
-A script called `dc.sh` exists in both the `broker/compose/production` and `broker/compose/test` directories. This is a convenience script for running `docker-compose` commands with the correct docker-compose file arguments and in the correct directory.
+A script called `dc.sh` exists in both the `broker/compose/production` and `broker/compose/test` directories. This is a convenience script for running `docker compose` commands with the correct docker-compose file arguments and in the correct directory.
 
 Examples:
 
 * `compose/production/dc.sh ps` to show which production containers are running.
 
-* `cd compose/test; ./dc.sh restart x` to restart the test_x_1 container.
+* `cd compose/test; ./dc.sh restart x` to restart the test-x-1 container.
 
-* `./dc.sh down` to bring the docker-compose stack down. The stack that is stopped depends on whether you are in the `broker/compose/production` or `broker/compose/test` directory.
+* `./dc.sh down` to bring the `docker compose` stack down. The stack that is stopped depends on whether you are in the `broker/compose/production` or `broker/compose/test` directory.
 
 * `./dc.sh logs -f lm delivery` follow the logs for the logical mapper and Ubidots delivery containers.
 
@@ -222,21 +220,21 @@ Examples:
 A python script called `broker-cli` can be used to query and update the device data. It must be run in a container using a command similar to:
 
 ```
-docker exec prod_lm_1 python -m broker-cli pd ls --plain
+docker exec prod-lm-1 python -m broker-cli pd ls --plain
 ```
 
-If a container is running a python process, it can be used for running `broker-cli`. It makes no difference which python-enabled container is used, so this document will always use lm_1 - `test_lm_1` or `prod_lm_1`.
+If a container is running a python process, it can be used for running `broker-cli`. It makes no difference which python-enabled container is used, so this document will always use lm_1 - `test-lm-1` or `prod-lm-1`.
 
 The `broker/src/python` directory is mounted into the python-based containers and is the current working directory for processes in those containers. If you wish to provide a file to a command you can place the file in the `broker/src/python` directory and have the command find it:
 
 ```
-docker exec prod_lm_1 python -m broker-cli pd create --file new_device.json
+docker exec prod-lm-1 python -m broker-cli pd create --file new_device.json
 ```
 
 If a command can take JSON via stdin using `--file -` then you must run the command from a shell running in the container:
 
 ```
-host$ docker exec -it prod_lm_1 bash
+host$ docker exec -it prod-lm-1 bash
 broker@529308294:~/python$ cat updated_device.json | python -m broker-cli pd up --puid 123 --file -
 ```
 
@@ -457,6 +455,6 @@ curl -X 'GET' \
 There are unit tests for the database interface and the REST API. To run these, use the following commands while a set of test containers are running (via `run.sh test`):
 
 ```
-$ docker exec test_x_1 python -m unittest TestDAO
-$ docker exec test_x_1 python -m unittest TestRESTAPI
+$ docker exec test-x-1 python -m unittest TestDAO
+$ docker exec test-x-1 python -m unittest TestRESTAPI
 ```
