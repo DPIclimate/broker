@@ -22,6 +22,14 @@ create table if not exists physical_devices (
     properties jsonb not null default '{}'
 );
 
+create table if not exists physical_timeseries ( 
+    uid integer generated always as identity primary key,
+    physical_uid integer not null references physical_devices(uid),
+    ts timestamptz not null,
+    -- The message is stored in the brokers format as a JSONB object.
+    json_msg jsonb not null
+);
+
 create table if not exists raw_messages (
     uid integer generated always as identity primary key,
     source_name text not null references sources,

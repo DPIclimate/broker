@@ -1,4 +1,4 @@
-import copy, datetime, logging, time, unittest, uuid, warnings
+import copy, datetime, logging, time, unittest, uuid, warnings, dateutil.parser
 from typing import Tuple
 
 import api.client.DAO as dao
@@ -21,6 +21,7 @@ class TestDAO(unittest.TestCase):
                     truncate logical_devices cascade;
                     truncate physical_logical_map cascade;
                     truncate device_notes cascade;
+                    truncate physical_timeseries cascade;
                     truncate raw_messages cascade''')
         finally:
             dao.free_conn(conn)
@@ -563,6 +564,43 @@ class TestDAO(unittest.TestCase):
         # duplicate UUID, but doesn't throw an exception.
         with self.assertWarns(UserWarning):
             dao.add_raw_json_message('ttn', self.now(), uuid1, obj1)
+
+
+    def test_insert_physical_timeseries_message(self):
+
+        dev, new_dev = self._create_physical_device()
+
+        # Don't fail the equality assertion due to the uid being None in dev. Set ID from db device.
+        dev.uid = new_dev.uid
+        self.assertEqual(dev, new_dev)
+
+        msg = {
+            "p_uid":new_dev.uid,
+            "timestamp":"2023-02-20T07:57:52.090347397Z",
+            "timeseries":[
+                {
+                    "name":"airTemperature",
+                    "value":35.1
+                },
+                {
+                    "name":"atmosphericPressure",
+                    "value":987.2
+                }
+            ],
+            "broker_correlation_id":"3d7762f6-bcc6-44d4-82ba-49b07e61e601"
+        }
+
+        last_seen = dateutil.parser.isoparse(msg['timestamp'])
+
+        dao.insert_physical_timeseries_message(msg['p_uid'], last_seen, msg)
+
+        with dao._get_connection() as conn, conn.cursor() as cursor:
+            cursor.execute('select physical_uid, ts, json_msg from physical_timeseries')
+
+            phys_uid, ts, retrieved_msg = cursor.fetchone()
+            self.assertEqual(phys_uid, msg['p_uid'])
+            self.assertEqual(ts, last_seen)
+            self.assertEqual(msg, retrieved_msg)
 
     def test_add_raw_text_message(self):
         uuid1 = uuid.uuid4()
