@@ -30,13 +30,6 @@ create table if not exists physical_timeseries (
     json_msg jsonb not null
 );
 
---CREATE TABLE physical_timeseries (
---    uid SERIAL PRIMARY KEY,
---    physical_uid INTEGER NOT NULL REFERENCES physical_devices(uid),
---    ts TIMESTAMP WITH TIME ZONE NOT NULL,
---    json_msg JSONB NOT NULL
---);
-
 create table if not exists raw_messages (
     uid integer generated always as identity primary key,
     source_name text not null references sources,
