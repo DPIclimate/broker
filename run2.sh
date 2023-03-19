@@ -8,10 +8,10 @@ NGINX_ROOT=$(
 	pwd
 )
 cd $NGINX_ROOT
-docker ps | grep -q "nginx-t" >>/dev/null && docker stop nginx-t >>/dev/null && echo "Stopping nginx-t"
+docker ps | grep -q "nginx-t" >>/dev/null && echo "Stopping nginx-t" && docker stop nginx-t >>/dev/null
 docker ps -a | grep -q "nginx-t" >>/dev/null && docker rm nginx-t >>/dev/null
 docker images -a | grep -q "nginx_img" >>/dev/null && docker rmi nginx_img >>/dev/null
-docker images -a | grep -q "nginx" || docker pull nginx && echo "pulling nginx image"
+docker images -a | grep -q "nginx" || echo "pulling nginx image" && docker pull nginx:latest
 docker build -q -t nginx_img .
 docker run --name nginx-t -p 80:80 -d nginx_img:latest >>/dev/null
 echo "starting nginx container"
