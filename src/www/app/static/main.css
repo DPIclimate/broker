@@ -19,6 +19,55 @@ body {
     display: none;
 }
 
+.physical-device-white-icon {
+    display: inline-block;
+    width: 32px;
+    height: 32px;
+    background: url(white-physical-device.png) no-repeat;
+    background-size: contain;
+}
+
+.logical-device-white-icon {
+    display: inline-block;
+    width: 32px;
+    height: 32px;
+    background: url(white-algorithm.png) no-repeat;
+    background-size: contain;
+}
+
+.physical-device-black-icon {
+    display: inline-block;
+    width: 24px;
+    height: 24px;
+    background: url(black-physical-device.png) no-repeat;
+    background-size: contain;
+}
+
+.logical-device-black-icon {
+    display: inline-block;
+    width: 24px;
+    height: 24px;
+    background: url(black-algorithm.png) no-repeat;
+    background-size: contain;
+}
+
+.physical-device-orange-icon {
+    display: inline-block;
+    width: 64px;
+    height: 64px;
+    background: url(orange-physical-device.png) no-repeat;
+    background-size: contain;
+}
+
+.logical-device-orange-icon {
+    display: inline-block;
+    width: 64px;
+    height: 64px;
+    background: url(orange-algorithm.png) no-repeat;
+    background-size: contain;
+}
+
+
 header {
     background: #063f5c;
     color: #ffffff;
@@ -54,12 +103,52 @@ header #header-title h1 {
 
 header nav {
     float: right;
-    margin-top:10px;
+    margin-top:30px;
 }
 
 header a:hover {
     color:#fd7e14;
     font-weight:bold;
+}
+
+.white-map-icon {
+    display: inline-block;
+    width: 32px;
+    height: 32px;
+    background: url(white-maps.png) no-repeat;
+    background-size: contain;
+}
+
+header a:hover .white-map-icon {
+    display: inline-block;
+    width: 32px;
+    height: 32px;
+    background: url(orange-maps.png) no-repeat;
+    background-size: contain;
+}
+
+header a:hover .map-icon {
+    display: inline-block;
+    width: 32px;
+    height: 32px;
+    background: url(orange-physical-device.png) no-repeat;
+    background-size: contain;
+}
+
+header a:hover .physical-device-white-icon {
+    display: inline-block;
+    width: 32px;
+    height: 32px;
+    background: url(orange-physical-device.png) no-repeat;
+    background-size: contain;
+}
+
+header a:hover .logical-device-white-icon {
+    display: inline-block;
+    width: 32px;
+    height: 32px;
+    background: url(orange-algorithm.png) no-repeat;
+    background-size: contain;
 }
 
 .command-bar {

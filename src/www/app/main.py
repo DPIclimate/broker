@@ -1,4 +1,4 @@
-from flask import Flask, render_template, request, make_response, redirect, url_for, session
+from flask import Flask, render_template, request, make_response, redirect, url_for, session, send_from_directory
 import folium
 import os
 from datetime import timedelta
@@ -10,7 +10,7 @@ from utils.api import *
 from werkzeug.middleware.dispatcher import DispatcherMiddleware
 from werkzeug.wrappers import Response
 
-app = Flask(__name__)
+app = Flask(__name__, static_url_path='/static')
 
 debug_enabled = False
 
@@ -365,6 +365,11 @@ def UpdateLogicalDevice():
 
     except requests.exceptions.HTTPError as e:
         return f"Failed with http error {e.response.status_code}", e.response.status_code
+
+
+@app.route('/static/<filename>')
+def get_file(filename):
+    return send_from_directory('static', filename)
 
 
 def formatTimeStamp(unformattedTime):
