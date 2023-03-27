@@ -97,7 +97,7 @@ create table if not exists users(
 
 create index if not exists pd_src_id_idx on physical_devices using GIN (source_ids);
 
-insert into sources values ('ttn'), ('greenbrain'), ('wombat'), ('ydoc');
+insert into sources values ('ttn'), ('greenbrain'), ('wombat'), ('ydoc'), ('ict_eagleio');
 
 -- Enable the PostGIS extensions
 -- CREATE EXTENSION postgis;
