@@ -28,7 +28,7 @@ class TestDAO(unittest.TestCase):
 
     def test_get_all_physical_sources(self):
         sources = dao.get_all_physical_sources()
-        self.assertEqual(sources, ['greenbrain', 'ttn', 'wombat', 'ydoc', 'ict_eagleio'])
+        self.assertEqual(sources, ['greenbrain', 'ict_eagleio', 'ttn', 'wombat', 'ydoc'])
 
     def now(self):
         return datetime.datetime.now(tz=datetime.timezone.utc)
