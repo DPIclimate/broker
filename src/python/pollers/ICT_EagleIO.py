@@ -21,11 +21,11 @@ logging.basicConfig(level=logging.INFO, format=BrokerConstants.LOGGER_FORMAT, da
 
 _BASE_URL="https://api.eagle.io/api/v1/"
 
-_ts_regex = re.compile(r'"currentTime":"(\d\d\d\d-\d\d-\d\dT\d\d:\d\d:\d\d.\d\d\dZ)"')
-
 _eagleio_token = None
 _eagleio_token = os.getenv("EAGLEIO_API_TOKEN")
 _headers = {}
+
+_poll_interval_seconds = 60 * 5
 
 _sensor_group_response_hashes = {}
 
@@ -187,7 +187,7 @@ def process_sensor_node(node_name, node_sensors) -> None:
         BrokerConstants.TIMESERIES_KEY: dots
     }
 
-    logging.info(f"Publishing physical_timeseries message: {p_ts_msg}")
+    logging.info(f"Publishing message for {node_name}: {p_ts_msg}")
 
     msg_id = tx_channel.publish_message('physical_timeseries', p_ts_msg)
 
@@ -200,14 +200,21 @@ mq_client = None
 def get_nodes(_headers) -> None:
     url = f"{_BASE_URL}nodes"
     logging.info(f"Requesting EagleIO nodes from {url}...")
-    request = requests.get(url, headers=_headers)
-    #logging.debug(f"Request: {request}")
-    if request.status_code == 200:
-        logging.info(f"Got EagleIO nodes.")
-        nodes = request.json()
-        return nodes
+    try:
+        request = requests.get(url, headers=_headers, timeout=30)
+    except Exception as e:
+        request = None
+        logging.error(f"Request timeout getting EagleIO nodes. \n{e}")
+
+    if request is not None:
+        if request.status_code == 200:
+            logging.info(f"Got EagleIO nodes.")
+            nodes = request.json()
+            return nodes
+        else:
+            logging.error(f"Error getting EagleIO nodes: {request.status_code} {request.text}")
+            return None
     else:
-        logging.error(f"Error getting EagleIO nodes: {request.status_code} {request.text}")
         return None
 
 
@@ -264,7 +271,8 @@ async def main():
 
     while not finish:
         poll()
-        await asyncio.sleep(60 * 15) # 60 * 60 * 24 = 1 day
+        # Smallest report period for a sensor is 15mins. Polling every 5 mins should be sufficient to allow for 1 missed poll.
+        await asyncio.sleep(_poll_interval_seconds)
 
     while not mq_client.stopped:
         await asyncio.sleep(1)
