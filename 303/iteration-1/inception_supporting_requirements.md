@@ -17,9 +17,6 @@ The scope of the system entails the following:
 #
 # 2. System-Wide Functional Requirements
     
-
--   The system must be able to translate data from the old FDT database into the new time-series database.
-    
 -   The system is required to retrieve messages from a copy of a table in the IoTa database, convert the messages to IoTa's internal message format, and then store them in the time-series database.
     
 -   Data points extracted from new messages received by IoTa must be written to the time-series database.
@@ -99,10 +96,7 @@ The scope of the system entails the following:
 ##### 5.1.1 Output service receives a message.
 If the output service receives a message from RabbitMQ, then the service should extract the data points and store them in the time-series database.
 
-##### 5.1.2 User request for FDT data transform
-If the output service receives a request to transform data containing a copy of a table from the FDT database, the service should convert it into IoTa’s message format, and then save the data into the time-series database.
-
-##### 5.1.3 User request for IoTa data transform
+##### 5.1.2 User request for IoTa data transform
 If the output service receives a request to transform data containing a copy of a table from the old IoTa database, the service should convert it into IoTa’s message format, and then save the data into the time-series database.
 
 ### 5.2 API Handling Rules:
