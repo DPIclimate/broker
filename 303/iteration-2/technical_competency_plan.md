@@ -39,5 +39,5 @@ The below table will highlight what technologies we'll be using.
 |--|--|--|--|
 |0|Send message from RabbitMQ to python|JSON Object|JSON Object|
 |1|Process a message by converting it to another format|JSON Object|CSV|
-|2|Store message 'processed' by python to QuestDB|JSON Object|ack|
+|2|Store message 'processed' by python to QuestDB|JSON Object||
 |3|Retrieve data from QuestDB via CLI API|CLI Command|JSON Object|
