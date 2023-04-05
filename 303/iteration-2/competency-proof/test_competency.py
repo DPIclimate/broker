@@ -87,3 +87,16 @@ def test_json_to_line():
 
     last = db.get_last_insert('test_db')
     assert int(last.split(',')[5]) == testdata
+
+
+#test api ability to retrieve data from def funcname(self, parameter_list):
+def test_api_retrieve_from_db():
+    #send query to python function and return list of nodes
+    #i.e something like
+    #query = select from {table} between these tiems x, y
+    #response = api.query_db(table, query, localhost, port)
+    #assert response == expected data
+    pass
+
+
+
