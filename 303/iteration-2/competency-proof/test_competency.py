@@ -6,6 +6,7 @@ import pika
 import json
 import random
 import time
+import subprocess
 
 #helper to delete queues, as functions only consume a single message,
 #tests can fail by retrieving a different message previously sent
@@ -98,5 +99,30 @@ def test_api_retrieve_from_db():
     #assert response == expected data
     pass
 
+# Test api ability to retrieve data added within a specified timeframe 
+# of 2 seconds prior to the query.
+def test_api_curl_command():
+    # Puts prior DB entries out of range.
+    time.sleep(2)
+    testdata = random.randint(1,100000)
+    testdata2 = random.randint(1,100000)
 
+    # Make two inserts
+    name = 'test_db'
+    symbols = {'device':'test_device', 'type':'test_type'}
+
+    columns = {'test_data': testdata}
+    db.insert_line_protocol(name, symbols, columns, 'localhost', 9009)
+    columns2 = {'test_data': testdata2}
+    db.insert_line_protocol(name, symbols, columns2, 'localhost', 9009)
+
+    # Make query via CLI
+    url = "http://localhost:8000/get/last/2"
+    command = ["curl", url]
+    output = subprocess.check_output(command)
+
+    json_output = json.loads(output.decode('utf-8'))
+    
+    assert testdata == json_output[0][2]
+    assert testdata2 == json_output[1][2]
 
