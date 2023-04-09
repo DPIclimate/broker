@@ -230,3 +230,6 @@ fabric.properties
 swag/*
 !swag/nginx/proxy-confs/dpi-device-manager.subfolder.conf
 *.pem
+
+#303 back up database
+backup-db/
