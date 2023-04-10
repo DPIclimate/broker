@@ -2,4 +2,3 @@ questdb
 requests
 uvicorn
 fastapi
-httpx
