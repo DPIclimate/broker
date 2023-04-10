@@ -57,6 +57,8 @@ We have multiple docker containers:
 - QuestDB for a database - this is a base image direct from docker
 - FastAPI for api implementation (via Uvicorn) - this is build per our own Dockerfile
 
+Pytest is run outside of the containers, it was originally going to be run inside the container, however it made more sense to have it outside the containers.
+
 These are started with:
 ```./start.sh```
 - This one will start our containers, and build/start our api too
