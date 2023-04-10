@@ -11,6 +11,11 @@ from fastapi import FastAPI
 
 app = FastAPI()
 
+@app.get("/")
+async def read_main():
+    return {"msg":"hi there!!"}
+
+
 @app.get("/get/")
 def query_all():
     query = "SELECT * FROM test_db"
@@ -20,11 +25,11 @@ def query_all():
 
     
 @app.get("/get/last/{seconds}")
-def query_by_time(seconds: int = 5):
+def query_by_time(seconds: int = 5, host = "localhost"):
     # Convert to microseconds as Questdb uses.
     time = seconds * 1000000
 
     query = f"SELECT * FROM test_db WHERE timestamp > sysdate() - {time}"
-    response = db.get_http_query(query).json()
+    response = db.get_http_query(query, host).json()
 
     return response['dataset']
