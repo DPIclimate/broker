@@ -7,6 +7,9 @@ import json
 import random
 import time
 import subprocess
+import sys
+import requests
+
 
 #helper to delete queues, as functions only consume a single message,
 #tests can fail by retrieving a different message previously sent
@@ -18,37 +21,35 @@ def delete_queues(h, q):
 
 
 #test sending/receiving via rabbitmq as a string
-def test_receive_as_str():
+def test_receive_as_str(mqhost):
     msg = 'test_message'
-    host = 'localhost'
     queue = 'test_queue'
-    delete_queues(host, queue)
-    send.as_str(msg, host, queue)
-    rec = receive.as_str(host, queue)
+    delete_queues(mqhost, queue)
+    send.as_str(msg, mqhost, queue)
+    rec = receive.as_str(mqhost, queue)
     assert rec == msg
 
 
 #test sending/receiving via rabbitmq json objects
-def test_receive_as_json():
+def test_receive_as_json(mqhost):
     msg = {'id':0, 'msg':'test_message'}
-    host = 'localhost'
     queue = 'test_queue'
-    delete_queues(host, queue)
-    send.as_json(msg, host, queue)
-    rec = receive.as_json(host, queue)
+    delete_queues(mqhost, queue)
+    send.as_json(msg, mqhost, queue)
+    rec = receive.as_json(mqhost, queue)
     assert rec == msg
 
 
 #questDB insert via line protocol
-def test_db_insert():
+def test_db_insert(dbhost):
     name = 'test_db'
     symbols = {'device':'test_device', 'type':'test_type'}
     columns = {'test_data': 12345}
-    db.insert_line_protocol(name, symbols, columns, 'localhost', 9009)
+    db.insert_line_protocol(name, symbols, columns, dbhost, 9009)
 
 
 #questDB query last 
-def test_db_query():
+def test_db_query(dbhost):
     name = 'test_db'
     query = f'SELECT * FROM {name} LIMIT -1'
     testdata = random.randint(1,100000)
@@ -56,12 +57,12 @@ def test_db_query():
     #make an insert
     symbols = {'device':'test_device', 'type':'test_type'}
     columns = {'test_data': testdata}
-    db.insert_line_protocol(name, symbols, columns, 'localhost', 9009)
+    db.insert_line_protocol(name, symbols, columns, dbhost, 9009)
 
     time.sleep(1)   #sleep to prevent previous insert
 
     #query last insert
-    response = db.get_http_query(query, 'localhost', 9000)
+    response = db.get_http_query(query, dbhost, 9000)
     json_response = json.loads(response.text)
     assert json_response['dataset'][0][0] == 'test_device'
     assert json_response['dataset'][0][2] == testdata
@@ -69,39 +70,33 @@ def test_db_query():
 
 #convert json message to line protocol format
 #sends json response from rabbitmq -> receiver -> questdb and then checks that insert was good
-def test_json_to_line():
-    host = 'localhost'
+def test_json_to_line(dbhost, mqhost):
     queue = 'test_queue'
     testdata = random.randint(1,100000)
     msg = {
         'name': 'test_db',
         'symbols': {'device':'test_device', 'type':'test_type'},
         'columns': {'test_data':testdata},
-        'hostname': host,
+        'hostname': dbhost,
         'port' : 9009
     }
-    delete_queues(host, queue)
-    send.as_json(msg, host, queue)
-    receive.json_insert_line_protocol(host, queue)
+    delete_queues(mqhost, queue)
+    send.as_json(msg, mqhost, queue)
+    receive.json_insert_line_protocol(mqhost, queue)
 
     time.sleep(1)   #if no sleep then it will be too quick and get previous insert
 
-    last = db.get_last_insert('test_db')
+    last = db.get_last_insert('test_db', dbhost)
     assert int(last.split(',')[5]) == testdata
 
+#check that we can pull from api
+def test_api_is_alive(aphost):
+    response = requests.get(f"http://{aphost}:8000/")
+    assert response.status_code == 200
+    assert response.json() == {"msg": "hi there!!"}
 
-#test api ability to retrieve data from def funcname(self, parameter_list):
-def test_api_retrieve_from_db():
-    #send query to python function and return list of nodes
-    #i.e something like
-    #query = select from {table} between these tiems x, y
-    #response = api.query_db(table, query, localhost, port)
-    #assert response == expected data
-    pass
 
-# Test api ability to retrieve data added within a specified timeframe 
-# of 2 seconds prior to the query.
-def test_api_curl_command():
+def test_api_curl_command(dbhost, aphost):
     # Puts prior DB entries out of range.
     time.sleep(2)
     testdata = random.randint(1,100000)
@@ -112,12 +107,12 @@ def test_api_curl_command():
     symbols = {'device':'test_device', 'type':'test_type'}
 
     columns = {'test_data': testdata}
-    db.insert_line_protocol(name, symbols, columns, 'localhost', 9009)
+    db.insert_line_protocol(name, symbols, columns, dbhost, 9009)
     columns2 = {'test_data': testdata2}
-    db.insert_line_protocol(name, symbols, columns2, 'localhost', 9009)
+    db.insert_line_protocol(name, symbols, columns2, dbhost, 9009)
 
     # Make query via CLI
-    url = "http://localhost:8000/get/last/2"
+    url = f"http://{aphost}:8000/get/last/2?host={dbhost}"
     command = ["curl", url]
     output = subprocess.check_output(command)
 
@@ -125,4 +120,3 @@ def test_api_curl_command():
     
     assert testdata == json_output[0][2]
     assert testdata2 == json_output[1][2]
-
