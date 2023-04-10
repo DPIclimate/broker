@@ -1,6 +1,6 @@
 ## Technical Competency Plan
 
-***<u>Document Summary</u>***
+#### ***<u>Document Summary</u>***
 
 This document exists to summarise how Team 3 will show competency for our chosen project.
 
@@ -8,7 +8,7 @@ The goal of this plan is to be able to show competency through a simple implemen
 
 We will target a few key use cases to implement in a proof of concept style application.
 
-***<u>Target Platform & Key Technologies</u>***
+#### ***<u>Target Platform & Key Technologies</u>***
 
 To show competency for the project we must mirror the project technology stack.
 
@@ -27,7 +27,7 @@ As our chosen project is to in a simple sense, receive messages from RabbitMQ an
 |Version Control|git|
 |Libs/3rd Party|RabbitMQ, FastAPI|
 
-***<u>Key Notes</u>***
+#### ***<u>Key Notes</u>***
 - The docker containers used will not be identical to the project, they will be basic implementation to show that docker can be used.
 - ^The TSDB we use for proof of competency may not be the TSDB that we will ultimately choose as we will be evaluating multiple TSDB's in the later stages of the project, and as such showing ability to use a single TSDB should be sufficient.
 - The program will not be fluid, it will be designed to complete the tests that will evaluate if the key use cases chosen to show competency have succeeded.
@@ -38,7 +38,7 @@ As our chosen project is to in a simple sense, receive messages from RabbitMQ an
 - Some extra libraries may be linked however these are not constrained by the project as much as the listed ones
 - Some of the bash scripts does not hide or do logic well, and so it will just try stop/remove a container regardless if it exists and will almost always show an error, however the error is safe to ignore.
 
-***<u>Use Cases to be Implemented</u>***
+#### ***<u>Use Cases to be Implemented</u>***
 
 During our correspondence with stakeholders, one use case was removed from project so it has been subsequently removed from here, the use cases seem short however, they run in the technology stack we're using.
 
@@ -50,7 +50,7 @@ There are 7 tests generated to show the use cases working as intended.
 |1|Store message from RabbitMQ by python to QuestDB|JSON Object|
 |2|Retrieve data from QuestDB via CLI API|CLI Command|JSON Object|
 
-<u>***Implementation***</u>
+#### <u>***Implementation***</u>
 
 We have multiple docker containers:
 - RabbitMQ to handle messages - this is a base image direct from docker
