@@ -2,9 +2,9 @@
 
 ***<u>Document Summary</u>***
 
-This document exists to summarise how Team 3 will show competency.
+This document exists to summarise how Team 3 will show competency for our chosen project.
 
-The goal of this plan is to be able to show competency through a simple application verified by a set of tests.
+The goal of this plan is to be able to show competency through a simple implementation of our working stack verified by tests.
 
 We will target a few key use cases to implement in a proof of concept style application.
 
@@ -14,10 +14,13 @@ To show competency for the project we must mirror the project technology stack.
 
 The below table will highlight what technologies we'll be using.
 
+As our chosen project is to in a simple sense, receive messages from RabbitMQ and then send this to a Time Series Database, as well as pull data from the Time Series Database through CLI API, we will target these use cases.
+
+
 |Area|Technology|
 |--|--|
 |Environment|Linux|
-|Container|Docker, Docker Compose|
+|Container|Docker|
 |Language|Python, Bash|
 |Testing|pytest|
 |Database|QuestDB^|
@@ -33,11 +36,35 @@ The below table will highlight what technologies we'll be using.
 - The data types and message formats do not reflect the ones that will be used in real project.
 - Ideally each person to implement a single use case - taken via Trello
 - Some extra libraries may be linked however these are not constrained by the project as much as the listed ones
+- Some of the bash scripts does not hide or do logic well, and so it will just try stop/remove a container regardless if it exists and will almost always show an error, however the error is safe to ignore.
 
 ***<u>Use Cases to be Implemented</u>***
+
+During our correspondence with stakeholders, one use case was removed from project so it has been subsequently removed from here, the use cases seem short however, they run in the technology stack we're using.
+
+There are 7 tests generated to show the use cases working as intended.
+
 |id|use description|input|output|
 |--|--|--|--|
 |0|Send message from RabbitMQ to python|JSON Object|JSON Object|
-|1|Process a message by converting it to another format|JSON Object|CSV|
-|2|Store message 'processed' by python to QuestDB|JSON Object||
-|3|Retrieve data from QuestDB via CLI API|CLI Command|JSON Object|
+|1|Store message from RabbitMQ by python to QuestDB|JSON Object|
+|2|Retrieve data from QuestDB via CLI API|CLI Command|JSON Object|
+
+<u>***Implementation***</u>
+
+We have multiple docker containers:
+- RabbitMQ to handle messages - this is a base image direct from docker
+- QuestDB for a database - this is a base image direct from docker
+- FastAPI for api implementation (via Uvicorn) - this is build per our own Dockerfile
+
+These are started with:
+```./start.sh```
+- This one will start our containers, and build/start our api too
+
+Then we can run our tests via:
+```./test.sh```
+- This will call pytest to run tests, but also figure out the IPAddresses for each docker container and send it to pytest, this is required as some of the containers talk to another and require the IP.
+
+And finally stop the containers via:
+```./stop.sh```
+- This will simply call stop for the containers.
