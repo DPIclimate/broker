@@ -121,7 +121,7 @@ def process_sensor_node(node_name, node_sensors) -> None:
 
     pds = dao.get_pyhsical_devices_using_source_ids(BrokerConstants.ICT_EAGLEIO, source_ids)
     if len(pds) < 1:
-        logging.info(f'Physical device not found for sensor group {node_name}, creating a new one.')
+        lu.cid_logger.info(f'Physical device not found for sensor group {node_name}, creating a new one.', extra=msg_with_cid)
 
         # Add this in for context, but it is not used by the query above
         # so it has to be put in later (ie now).
@@ -201,7 +201,7 @@ def get_nodes(_headers) -> None:
     url = f"{_BASE_URL}nodes"
     logging.info(f"Requesting EagleIO nodes from {url}...")
     try:
-        request = requests.get(url, headers=_headers, timeout=30)
+        request = requests.get(url, headers=_headers, timeout=10)
     except Exception as e:
         request = None
         logging.error(f"Request timeout getting EagleIO nodes. \n{e}")
