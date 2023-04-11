@@ -10,14 +10,13 @@ Since we're allowed to use the API as a customer, updates are at 15min intervals
 """
 
 import asyncio, datetime, dateutil.parser, hashlib, json, logging, os, pathlib, re, requests, signal, uuid
+import util.LoggingUtil as lu
 from glob import glob
 import BrokerConstants
 import api.client.DAO as dao
 from pdmodels.Models import Location, PhysicalDevice
 from pika.exchange_type import ExchangeType
 import api.client.RabbitMQ as mq
-
-logging.basicConfig(level=logging.INFO, format=BrokerConstants.LOGGER_FORMAT, datefmt='%Y-%m-%dT%H:%M:%S%z')
 
 _BASE_URL="https://api.eagle.io/api/v1/"
 
@@ -110,6 +109,7 @@ def process_sensor_node(node_name, node_sensors) -> None:
 
     correlation_id = str(uuid.uuid4())
     dao.add_raw_json_message(BrokerConstants.ICT_EAGLEIO, max_ts, correlation_id, node_sensors)
+    msg_with_cid = {BrokerConstants.CORRELATION_ID_KEY: correlation_id, BrokerConstants.RAW_MESSAGE_KEY: node_sensors}
 
     #
     # Create the physical device if it does not exist, or update the last_seen time if it does.
@@ -138,7 +138,7 @@ def process_sensor_node(node_name, node_sensors) -> None:
         pd = PhysicalDevice(source_name=BrokerConstants.ICT_EAGLEIO, name=node_name, location=None, last_seen=max_ts, source_ids=source_ids, properties=props)
         pd = dao.create_physical_device(pd)
     else:
-        logging.info(f'Physical device found for sensor group {node_name}, updating last seen time to {max_ts}.')
+        lu.cid_logger.info(f'Accepted message from {node_name}, updating last seen time to {max_ts}.', extra=msg_with_cid)
         pd = pds[0]
         pd.last_seen = max_ts
         pd.properties[BrokerConstants.LAST_MESSAGE_HASH_KEY] = hash
@@ -187,7 +187,7 @@ def process_sensor_node(node_name, node_sensors) -> None:
         BrokerConstants.TIMESERIES_KEY: dots
     }
 
-    logging.info(f"Publishing message for {node_name}: {p_ts_msg}")
+    lu.cid_logger.info(f'Publishing message for {node_name}: {p_ts_msg}.', extra=msg_with_cid)
 
     msg_id = tx_channel.publish_message('physical_timeseries', p_ts_msg)
 
