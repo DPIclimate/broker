@@ -1,0 +1,46 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: ydoc
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: ydoc
+  template:
+    metadata:
+      labels:
+        app: ydoc
+    spec:
+      containers:
+      - name: ydoc
+        image: sampixelyork/python-base
+        env:
+        - name: DB_HOST
+          value: db
+        - name: MQ_HOST
+          value: mq
+        envFrom:
+        - configMapRef:
+            name: env-configmap
+        volumeMounts:
+        - name: ydoc-src
+          mountPath: /home/broker/python
+        workingDir: "/home/broker/python"
+        command: ["python", "-m", "ydoc.YDOC"]
+      volumes:
+      - name: ydoc-src
+        hostPath:
+          path: ../src/python
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: ydoc
+spec:
+  selector:
+    app: ydoc
+  ports:
+  - name: http
+    port: 80
+    targetPort: 80

@@ -1,0 +1,26 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: env-configmap
+data:
+  PGHOST: "db"
+  PGPORT: "5432"
+  PGUSER: "postgres"
+  PGPASSWORD: "CHANGEME"
+  PGDATABASE: "broker"
+  POSTGRES_PASSWORD: "CHANGEME"
+  POSTGRES_DB: "broker"
+  DB_INIT: "~/CSU-DPI/broker/db/init.d"
+  PYTHONPATH: "/home/broker/python"
+  TTN_API_TOKEN: "Bearer abc"
+  UBIDOTS_API_TOKEN: "x"
+  RABBITMQ_HOST: "mq"
+  RABBITMQ_PORT: "5672"
+  RABBITMQ_DEFAULT_USER: "broker"
+  RABBITMQ_DEFAULT_PASS: "CHANGEME"
+  RABBITMQ_CONFIG_PATH: "~/CSU-DPI/config/rabbitmq"
+  WEBSITE_PATH: "~/CSU-DPI/src/www"
+  GREENBRAIN_USERS: "abc@abc.com,xyz@xyz.com"
+  GREENBRAIN_PASSWORDS: "pwd1,pwd2"
+  TZ: "Australia/Sydney"
+  DATABOLT_SHARED_DIR: "~/CSU-DPI/databolt"
