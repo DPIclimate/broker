@@ -15,11 +15,14 @@ spec:
       containers:
         - name: mq
           image: rabbitmq:3.9-management
-          envFrom:
-            - configMapRef:
+          env:
+          - name: RABBITMQ_CONFIG_PATH
+            valueFrom:
+              configMapKeyRef:
                 name: env-configmap
+                key: RABBITMQ_CONFIG_PATH
           volumeMounts:
-            - name: rabbitmq-config
+            - name: rabbitmq-config-volume
               mountPath: /etc/rabbitmq
           readinessProbe:
             exec:
@@ -32,12 +35,10 @@ spec:
             - containerPort: 5672
             - containerPort: 15672
       volumes:
-        - name: rabbitmq-config
-          configMap:
-            name: env-configmap
-            items:
-              - key: RABBITMQ_CONFIG_PATH
-                path: rabbitmq
+        - name: rabbitmq-config-volume
+          hostPath:
+            path: /${RABBITMQ_CONFIG_PATH}
+            type: Directory
 ---
 apiVersion: v1
 kind: Service

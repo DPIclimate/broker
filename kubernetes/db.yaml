@@ -14,9 +14,22 @@ spec:
       containers:
         - name: db
           image: postgres:14.2
-          envFrom:
-            - configMapRef:
+          env:
+          - name: DB_INIT
+            valueFrom:
+              configMapKeyRef:
                 name: env-configmap
+                key: DB_INIT
+          - name: PGDATABASE
+            valueFrom:
+              configMapKeyRef:
+                name: env-configmap
+                key: PGDATABASE
+          - name: PGUSER
+            valueFrom:
+              configMapKeyRef:
+                name: env-configmap
+                key: PGUSER
           volumeMounts:
             - name: init-script
               mountPath: /docker-entrypoint-initdb.d
@@ -35,11 +48,8 @@ spec:
             failureThreshold: 6
       volumes:
         - name: init-script
-          configMap:
-            name: env-configmap
-            items:
-              - key: DB_INIT
-                path: init.d
+          hostPath:
+            path: /${DB_INIT}
 ---
 apiVersion: v1
 kind: Service

@@ -16,11 +16,11 @@ spec:
       - name: x
         image: sampixelyork/python-base
         env:
-        - name: PYTHONPATH
-          value: /home/broker/broker/src/python:/home/broker/broker/test/python
-        envFrom:
-        - configMapRef:
-            name: x-config
+        - name: PYTHON_SRC_PATH
+          valueFrom:
+            configMapKeyRef:
+              name: env-configmap
+              key: PYTHON_SRC_PATH
         volumeMounts:
         - name: x-volume
           mountPath: /home/broker/broker
@@ -30,12 +30,9 @@ spec:
       volumes:
       - name: x-volume
         hostPath:
-          path: /path/to/host/volume
-      restartPolicy: Never
+          path: /${PYTHON_SRC_PATH}
+          type: Directory
       dnsPolicy: ClusterFirst
-      imagePullSecrets:
-      - name: regcred
-
 ---
 apiVersion: v1
 kind: Service

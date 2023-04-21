@@ -15,9 +15,17 @@ spec:
       containers:
         - name: ttn-decoder
           image: sampixelyork/ttn_decoder:latest
-          envFrom:
-            - configMapRef:
+          env:
+          - name: TTN_DECODER_SRC_PATH
+            valueFrom:
+              configMapKeyRef:
                 name: env-configmap
+                key: TTN_DECODER_SRC_PATH
+          - name: TTN_FORMATTER_SRC_PATH
+            valueFrom:
+             configMapKeyRef:
+               name: env-configmap
+               key: TTN_FORMATTER_SRC_PATH
           volumeMounts:
             - name: ttn-decoder-volume
               mountPath: /usr/src/ttn_decoder/src
@@ -29,10 +37,12 @@ spec:
       volumes:
         - name: ttn-decoder-volume
           hostPath:
-            path: /home/sam/CSU-DPI/broker/src/js/ttn_decoder/src
+            path: /${TTN_DECODER_SRC_PATH}
+            type: Directory
         - name: ttn-formatters-volume
           hostPath:
-            path: /home/sam/CSU-DPI/ttn-formatters
+            path: /${TTN_FORMATTER_SRC_PATH}
+            type: Directory
 ---
 apiVersion: v1
 kind: Service

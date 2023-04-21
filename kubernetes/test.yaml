@@ -15,5 +15,5 @@ spec:
       containers:
       - name: test-container
         image: sampixelyork/python-base
-        command: [ "sleep" ]
-        args: [ "infinity" ]
+#        command: [ "sleep" ]
+#        args: [ "infinity" ]

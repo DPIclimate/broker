@@ -15,16 +15,20 @@ spec:
       containers:
         - name: website
           image: sampixelyork/mgmt-app
-          envFrom:
-            - configMapRef:
+          env:
+          - name: WEBSITE_PATH
+            valueFrom:
+              configMapKeyRef:
                 name: env-configmap
+                key: WEBSITE_PATH
           volumeMounts:
             - name: website-volume
               mountPath: /app
       volumes:
         - name: website-volume
           hostPath:
-            path: /home/sam/CSU-DPI/broker/src/www
+            path: /${WEBSITE_PATH}
+            type: Directory
 ---
 apiVersion: v1
 kind: Service

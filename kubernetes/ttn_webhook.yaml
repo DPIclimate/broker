@@ -23,9 +23,6 @@ spec:
             configMapKeyRef:
               name: env-configmap
               key: PYTHON_SRC_PATH
-        envFrom:
-        - configMapRef:
-            name: env-configmap
         volumeMounts:
         - name: python-src-volume
           mountPath: /home/broker/python
@@ -36,6 +33,7 @@ spec:
       - name: python-src-volume
         hostPath:
           path: /${PYTHON_SRC_PATH}
+          type: Directory
 ---
 apiVersion: v1
 kind: Service

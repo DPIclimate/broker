@@ -25,13 +25,13 @@ spec:
             - name: python-src-volume
               mountPath: /home/broker/python
           workingDir: /home/broker/python
-          command: ["python", "-m", "logical_mapper.LogicalMapper"]
+          command: ["python"]
+          args: ["-m", "logical_mapper.LogicalMapper"]
       volumes:
         - name: python-src-volume
           hostPath:
             path: /${PYTHON_SRC_PATH}
             type: Directory
-      # Add readiness and liveness probes if required
 ---
 apiVersion: v1
 kind: Service
