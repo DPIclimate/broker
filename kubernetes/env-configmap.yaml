@@ -24,3 +24,4 @@ data:
   GREENBRAIN_PASSWORDS: "pwd1,pwd2"
   TZ: "Australia/Sydney"
   DATABOLT_SHARED_DIR: "~/CSU-DPI/databolt"
+  PYTHON_SRC_PATH: "../src/python"

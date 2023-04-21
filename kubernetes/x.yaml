@@ -1,0 +1,51 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: x-deployment
+spec:
+  selector:
+    matchLabels:
+      app: x
+  replicas: 1
+  template:
+    metadata:
+      labels:
+        app: x
+    spec:
+      containers:
+      - name: x
+        image: sampixelyork/python-base
+        env:
+        - name: PYTHONPATH
+          value: /home/broker/broker/src/python:/home/broker/broker/test/python
+        envFrom:
+        - configMapRef:
+            name: x-config
+        volumeMounts:
+        - name: x-volume
+          mountPath: /home/broker/broker
+        workingDir: /home/broker/broker
+        command: ["/bin/sh"]
+        args: ["-c", "./forever.sh"]
+      volumes:
+      - name: x-volume
+        hostPath:
+          path: /path/to/host/volume
+      restartPolicy: Never
+      dnsPolicy: ClusterFirst
+      imagePullSecrets:
+      - name: regcred
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: x-service
+spec:
+  selector:
+    app: x
+  ports:
+  - name: http
+    port: 80
+    targetPort: 80
+  type: ClusterIP

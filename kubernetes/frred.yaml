@@ -1,0 +1,44 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: frred
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: frred
+  template:
+    metadata:
+      labels:
+        app: frred
+    spec:
+      containers:
+        - name: frred
+          image: broker/python-base
+          envFrom:
+            - configMapRef:
+                name: env-configmap
+          volumeMounts:
+            - name: python-volume
+              mountPath: /home/broker/python
+          workingDir: "/home/broker/python"
+          command: ["python"]
+          args: ["-m", "delivery.FRRED"]
+      volumes:
+        - name: python-volume
+          hostPath:
+            path: ../src/python
+            type: Directory
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: frred
+spec:
+  selector:
+    app: frred
+  ports:
+    - name: http
+      protocol: TCP
+      port: 80
+      targetPort: 80

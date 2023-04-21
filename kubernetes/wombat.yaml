@@ -1,50 +1,44 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: ydoc
+  name: wombat
 spec:
-  replicas: 1
   selector:
     matchLabels:
-      app: ydoc
+      app: wombat
+  replicas: 1
   template:
     metadata:
       labels:
-        app: ydoc
+        app: wombat
     spec:
       containers:
-      - name: ydoc
-        image: sampixelyork/python-base
+      - name: wombat
+        image: sampixelyork/python-base:latest
         env:
-        - name: DB_HOST
-          value: db
-        - name: MQ_HOST
-          value: mq
         - name: PYTHON_SRC_PATH
           valueFrom:
             configMapKeyRef:
               name: env-configmap
               key: PYTHON_SRC_PATH
-        envFrom:
-        - configMapRef:
-            name: env-configmap
         volumeMounts:
         - name: python-src-volume
           mountPath: /home/broker/python
-        workingDir: "/home/broker/python"
-        command: ["python", "-m", "ydoc.YDOC"]
+        workingDir: /home/broker/python
+        command: ["python"]
+        args: ["-m", "ydoc.Wombat"]
       volumes:
-      - name: python-src-volume
+      - name: python-src
         hostPath:
           path: /${PYTHON_SRC_PATH}
 ---
 apiVersion: v1
 kind: Service
 metadata:
-  name: ydoc
+  name: wombat
 spec:
   selector:
-    app: ydoc
+    app: wombat
   ports:
   - name: http
     port: 80

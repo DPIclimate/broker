@@ -1,23 +1,21 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: ydoc
+  name: ttn-webhook
 spec:
   replicas: 1
   selector:
     matchLabels:
-      app: ydoc
+      app: ttn-webhook
   template:
     metadata:
       labels:
-        app: ydoc
+        app: ttn-webhook
     spec:
       containers:
-      - name: ydoc
-        image: sampixelyork/python-base
+      - name: ttn-webhook
+        image: sampixelyork/python-base:latest
         env:
-        - name: DB_HOST
-          value: db
         - name: MQ_HOST
           value: mq
         - name: PYTHON_SRC_PATH
@@ -31,8 +29,9 @@ spec:
         volumeMounts:
         - name: python-src-volume
           mountPath: /home/broker/python
-        workingDir: "/home/broker/python"
-        command: ["python", "-m", "ydoc.YDOC"]
+        workingDir: /home/broker/python/ttn
+        command: ["/home/broker/.local/bin/uvicorn"]
+        args: ["--proxy-headers", "--host", "0.0.0.0", "--port", "5688", "WebHook:app"]
       volumes:
       - name: python-src-volume
         hostPath:
@@ -41,11 +40,12 @@ spec:
 apiVersion: v1
 kind: Service
 metadata:
-  name: ydoc
+  name: ttn-webhook
 spec:
   selector:
-    app: ydoc
+    app: ttn-webhook
   ports:
   - name: http
-    port: 80
-    targetPort: 80
+    port: 5688
+    protocol: TCP
+    targetPort: 5688

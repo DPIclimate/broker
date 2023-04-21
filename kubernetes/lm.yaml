@@ -1,0 +1,46 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: lm
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: lm
+  template:
+    metadata:
+      labels:
+        app: lm
+    spec:
+      containers:
+        - name: lm
+          image: sampixelyork/python-base:latest
+          env:
+          - name: PYTHON_SRC_PATH
+            valueFrom:
+              configMapKeyRef:
+                name: env-configmap
+                key: PYTHON_SRC_PATH
+          volumeMounts:
+            - name: python-src-volume
+              mountPath: /home/broker/python
+          workingDir: /home/broker/python
+          command: ["python", "-m", "logical_mapper.LogicalMapper"]
+      volumes:
+        - name: python-src-volume
+          hostPath:
+            path: /${PYTHON_SRC_PATH}
+            type: Directory
+      # Add readiness and liveness probes if required
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: lm
+spec:
+  selector:
+    app: lm
+  ports:
+    - name: http
+      port: 80
+      targetPort: 80
