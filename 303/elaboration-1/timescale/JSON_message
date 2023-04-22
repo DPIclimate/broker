@@ -1,0 +1,19 @@
+{
+  "l_uid": 101,
+  "p_uid": 102,
+  "timestamp": "2023-04-21T10:45:00Z",
+  "timeseries": [
+    {
+      "name": "temperature",
+      "value": 22.42
+    },
+    {
+      "name": "battery (v)",
+      "value": 4.10
+    },
+    {
+      "name": "pulse_count",
+      "value": 1
+    }
+  ]
+}
