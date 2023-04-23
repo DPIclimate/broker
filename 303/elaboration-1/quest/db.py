@@ -25,28 +25,8 @@ from questdb.ingress import Sender, IngressError
 import requests
 import json
 import sys
-from datetime import datetime
 from dateutil import parser
 
-json_msg ='{   "broker_correlation_od": "83d04e6f-db16-4280-8337-53f11b2335c6",\
-   "p_uid": 301,\
-   "l_uid": 276,\
-   "timestamp": "2023-01-30T06:21:56Z",\
-   "timeseries": [\
-       {\
-       "name": "battery (v)",\
-       "value": 4.16008997\
-       },\
-       {\
-       "name": "pulse_count",\
-       "value": 1\
-       },\
-       {\
-       "name": "1_Temperature",\
-       "value": 21.60000038\
-       }\
-   ]\
-}'
 
 def create_table():
     query = 'CREATE TABLE dpi'\
@@ -75,7 +55,6 @@ def parse_json_msg(msg):
     cols = {item['name'].replace("(","").replace(")","").replace('-','_').replace('/',''):item['value'] for item in msg["timeseries"]}
     cols["p_uid"] = msg["p_uid"]
     cols["l_uid"] = msg["l_uid"]
-    #ts = datetime.strptime(msg["timestamp"], '%Y-%m-%dT%H:%M:%SZ')
     ts = parser.parse(msg['timestamp'])
     insert_jason_msg(syms, cols, ts)
 
@@ -96,9 +75,26 @@ def insert_jason_msg(syms, cols, timestamp):
     except IngressError as e:
         sys.stderr.write(f'error: {e}\n')
 
-#ret = create_table()
-#if ret == 200 or ret == 400:
-parse_input_file()
+
+def get_all_inserts():
+    name = "dpi"
+    host = "localhost"
+    port = 9000
+    
+    return requests.get(
+        f'http://{host}:{port}/exec',
+        {
+            'query':'dpi ORDER BY l_uid;'
+        }
+    ).text
+
+
+ret = create_table()
+if ret == 200 or ret == 400:
+    parse_input_file()
+    print('getting data from dpi db')
+    print(json.dumps(json.loads(get_all_inserts()), indent=2))
+
 
 #parse_json_msg(json.loads(json_msg))
 
