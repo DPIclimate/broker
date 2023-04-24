@@ -66,3 +66,19 @@
 - look at how it might be migrated from docker to Kubernetes
 - would need to look at implementing some sort of health monitoring (inbuilt)
 - would need to plan a schema around our data formatting and requirements
+
+.
+#### Up and Running Guide
+- run docker container ```docker run -d --rm --name questdb -p 9000:9000 -p 9009:9009 -p 8812:8812 -p 9003:9003 questdb/questdb:7.0.1 >/dev/null```
+    - ```--rm``` : remove container after
+    - ```--name``` : name container so easier to find/delete it
+    - ```-p 9000:9000``` : map local port to container port (REST API & WEB CONSOLE)
+    - `9009`: influxDB line protocol, `8812` postgres wire protocl (unused), `9003` minserver health (unused)
+    - no volume is set so no data is kept
+    - ```questdb/questdb:7.0.1 >/dev/null``` : the image we want to use, send output to nowhere
+    - `./start.sh` does this and confirms the container is Running
+    - head to `localhost:9000` in browser and should see webconsole running with nothing inside as there's no database
+    - `python db.py` will insert all data from `.../docs/sample_messages` into database and print the inserted ones to console.
+    - inside webconsole if you run `dpi;` which is just the created tables name, you can view all the inserted data also (~200 rows)
+    - within webconsole you can also create a graph from the data by using the UI
+    - `./stop.sh` simply runs `docker stop questdb` to stop the docker
