@@ -1,212 +1,213 @@
-{"l_uid": 207, "p_uid": 208, "timestamp": "2023-04-03T09:15:10+10:00", "timeseries": [{"name": "Average_Voltage", "value": 3.9, "timestamp": "2023-04-03T09:15:10+10:00"}]}
-{"l_uid": 208, "p_uid": 209, "timestamp": "2023-04-03T09:15:10+10:00", "timeseries": [{"name": "moisture1", "value": 15.98, "timestamp": "2023-04-03T09:15:10+10:00"}]}
-{"l_uid": 43, "p_uid": 45, "timestamp": "2023-04-02T23:24:41.243625637Z", "timeseries": [{"name": "battery", "value": 4.2}]}
-{"l_uid": 155, "p_uid": 162, "timestamp": "2023-04-03T09:15:10+10:00", "timeseries": [{"name": "moisture1", "value": 26.37, "timestamp": "2023-04-03T09:15:10+10:00"}]}
-{"l_uid": 140, "p_uid": 146, "timestamp": "2023-02-06T22:22:32.503269787Z", "timeseries": [{"name": "battery", "value": 5.238}]}
-{"l_uid": 170, "p_uid": 170, "timestamp": "2023-04-03T09:15:10+10:00", "timeseries": [{"name": "moisture1", "value": 11.14, "timestamp": "2023-04-03T09:15:10+10:00"}]}
-{"l_uid": 153, "p_uid": 159, "timestamp": "2023-04-03T09:15:10+10:00", "timeseries": [{"name": "moisture1", "value": 18.49, "timestamp": "2023-04-03T09:15:10+10:00"}]}
-{"l_uid": 206, "p_uid": 207, "timestamp": "2023-04-03T09:15:10+10:00", "timeseries": [{"name": "moisture1", "value": 14.17, "timestamp": "2023-04-03T09:15:10+10:00"}]}
-{"l_uid": 57, "p_uid": 59, "timestamp": "2023-04-02T23:20:16.594889812Z", "timeseries": [{"name": "RTC", "value": 29353169}]}
-{"l_uid": 239, "p_uid": 270, "timestamp": "2023-04-02T23:15:19.809176190Z", "timeseries": [{"name": "avgWindDegrees", "value": 350}]}
-{"l_uid": 103, "p_uid": 107, "timestamp": "2023-04-02T23:03:53.697164029Z", "timeseries": [{"name": "battery", "value": 5.144}]}
-{"l_uid": 36, "p_uid": 37, "timestamp": "2023-04-02T23:29:07.634904464Z", "timeseries": [{"name": "RTC", "value": 49319090}]}
-{"l_uid": 248, "p_uid": 281, "timestamp": "2023-04-02T23:15:17.650206587Z", "timeseries": [{"name": "avgWindDegrees", "value": 63}]}
-{"l_uid": 160, "p_uid": 161, "timestamp": "2023-04-03T09:15:10+10:00", "timeseries": [{"name": "moisture1", "value": 26.43, "timestamp": "2023-04-03T09:15:10+10:00"}]}
-{"l_uid": 265, "p_uid": 272, "timestamp": "2023-04-02T23:16:21.929211505Z", "timeseries": [{"name": "battery", "value": 3.6}]}
-{"l_uid": 41, "p_uid": 42, "timestamp": "2023-04-02T23:15:40.971168340Z", "timeseries": [{"name": "salinity", "value": 28}]}
-{"l_uid": 80, "p_uid": 84, "timestamp": "2023-04-02T23:00:59.516020804Z", "timeseries": [{"name": "rtc", "value": 35514835}]}
-{"l_uid": 169, "p_uid": 169, "timestamp": "2023-04-03T09:15:10+10:00", "timeseries": [{"name": "moisture1", "value": 19.8, "timestamp": "2023-04-03T09:15:10+10:00"}]}
-{"l_uid": 47, "p_uid": 49, "timestamp": "2023-04-02T23:23:07.571138805Z", "timeseries": [{"name": "salinity", "value": 25.93}]}
-{"l_uid": 102, "p_uid": 106, "timestamp": "2023-03-11T15:04:08.402163395Z", "timeseries": [{"name": "battery", "value": 5.235}]}
-{"l_uid": 74, "p_uid": 78, "timestamp": "2023-04-02T23:16:36.776580989Z", "timeseries": [{"name": "RTC", "value": 6317538}]}
-{"l_uid": 51, "p_uid": 53, "timestamp": "2023-04-02T23:28:52.914622115Z", "timeseries": [{"name": "battery", "value": 3.6}]}
-{"l_uid": 197, "p_uid": 200, "timestamp": "2023-04-02T23:25:32.976965141Z", "timeseries": [{"name": "battery", "value": 4.2}]}
-{"l_uid": 215, "p_uid": 233, "timestamp": "2023-03-02T04:33:31.537830246Z", "timeseries": [{"name": "battery", "value": 3.4}]}
-{"l_uid": 211, "p_uid": 210, "timestamp": "2023-04-02T23:26:51.293002180Z", "timeseries": [{"name": "EC", "value": 80}]}
-{"l_uid": 220, "p_uid": 189, "timestamp": "2023-03-14T03:43:43.215630160Z", "timeseries": [{"name": "battery", "value": "NaN"}]}
-{"l_uid": 78, "p_uid": 82, "timestamp": "2023-04-02T23:16:28.994919132Z", "timeseries": [{"name": "RTC", "value": 40850674}]}
-{"l_uid": 37, "p_uid": 38, "timestamp": "2023-04-02T23:17:24.072125605Z", "timeseries": [{"name": "battery", "value": 3.6}]}
-{"l_uid": 26, "p_uid": 27, "timestamp": "2023-04-02T23:16:19.551058809Z", "timeseries": [{"name": "RTC", "value": 16685504}]}
-{"l_uid": 205, "p_uid": 206, "timestamp": "2023-04-03T09:15:10+10:00", "timeseries": [{"name": "windDirection", "value": 43, "timestamp": "2023-04-03T09:15:10+10:00"}]}
-{"l_uid": 85, "p_uid": 89, "timestamp": "2023-04-02T23:28:11.474610794Z", "timeseries": [{"name": "battery", "value": 3.6}]}
-{"l_uid": 243, "p_uid": 276, "timestamp": "2023-04-02T23:15:18.660425968Z", "timeseries": [{"name": "avgWindDegrees", "value": 133}]}
-{"l_uid": 98, "p_uid": 102, "timestamp": "2023-04-02T23:21:13.127681935Z", "timeseries": [{"name": "RTC", "value": 65306589}]}
-{"l_uid": 149, "p_uid": 174, "timestamp": "2023-04-03T09:15:10+10:00", "timeseries": [{"name": "Average_voltage", "value": 4.06, "timestamp": "2023-04-03T09:15:10+10:00"}]}
-{"l_uid": 147, "p_uid": 156, "timestamp": "2023-04-03T09:15:10+10:00", "timeseries": [{"name": "moisture1", "value": 19.54, "timestamp": "2023-04-03T09:15:10+10:00"}]}
-{"l_uid": 77, "p_uid": 81, "timestamp": "2023-04-02T23:24:23.837173148Z", "timeseries": [{"name": "battery", "value": 2.87}]}
-{"l_uid": 158, "p_uid": 168, "timestamp": "2023-04-03T09:15:10+10:00", "timeseries": [{"name": "moisture1", "value": 13.04, "timestamp": "2023-04-03T09:15:10+10:00"}]}
-{"l_uid": 228, "p_uid": 252, "timestamp": "2023-04-02T23:16:50.451153765Z", "timeseries": [{"name": "RTC", "value": 15026602}]}
-{"l_uid": 87, "p_uid": 91, "timestamp": "2023-04-02T23:27:43.054660673Z", "timeseries": [{"name": "header", "value": 32}]}
-{"l_uid": 204, "p_uid": 221, "timestamp": "2023-04-03T09:15:15+10:00", "timeseries": [{"name": "moisture1", "value": 27.68, "timestamp": "2023-04-03T09:15:15+10:00"}]}
-{"l_uid": 171, "p_uid": 180, "timestamp": "2023-04-03T09:15:10+10:00", "timeseries": [{"name": "Average_voltage", "value": 3.88, "timestamp": "2023-04-03T09:15:10+10:00"}]}
-{"l_uid": 93, "p_uid": 97, "timestamp": "2023-04-02T23:23:49.700905441Z", "timeseries": [{"name": "battery", "value": 3.6}]}
-{"l_uid": 100, "p_uid": 299, "timestamp": "2023-04-02T23:24:54.702470841Z", "timeseries": [{"name": "battery", "value": 3.6}]}
-{"l_uid": 38, "p_uid": 39, "timestamp": "2023-04-02T23:27:47.708163434Z", "timeseries": [{"name": "RTC", "value": 48712573}]}
-{"l_uid": 44, "p_uid": 46, "timestamp": "2023-04-02T23:21:18.923459777Z", "timeseries": [{"name": "battery", "value": 4.265}]}
-{"l_uid": 73, "p_uid": 77, "timestamp": "2023-04-02T22:55:20.959663815Z", "timeseries": [{"name": "battery", "value": 3.6}]}
-{"l_uid": 167, "p_uid": 172, "timestamp": "2023-04-03T09:15:10+10:00", "timeseries": [{"name": "moisture1", "value": 16.9, "timestamp": "2023-04-03T09:15:10+10:00"}]}
-{"l_uid": 202, "p_uid": 219, "timestamp": "2023-04-03T09:15:15+10:00", "timeseries": [{"name": "moisture1", "value": 32.21, "timestamp": "2023-04-03T09:15:15+10:00"}]}
-{"l_uid": 56, "p_uid": 58, "timestamp": "2023-04-02T23:29:53.974725056Z", "timeseries": [{"name": "header", "value": 32}]}
-{"l_uid": 261, "p_uid": 292, "timestamp": "2023-02-06T09:45:17.889164987Z", "timeseries": [{"name": "avgWindDegrees", "value": 340}]}
-{"l_uid": 53, "p_uid": 55, "timestamp": "2023-04-02T23:17:23.879738740Z", "timeseries": [{"name": "battery", "value": 3.6}]}
-{"l_uid": 65, "p_uid": 69, "timestamp": "2023-04-02T23:28:51.958625617Z", "timeseries": [{"name": "battery", "value": 3.15}]}
-{"l_uid": 139, "p_uid": 145, "timestamp": "2023-04-02T23:29:02.315329380Z", "timeseries": [{"name": "RTC", "value": 47701786}]}
-{"l_uid": 14, "p_uid": 14, "timestamp": "2023-04-02T23:25:49.383801073Z", "timeseries": [{"name": "Actuator", "value": "0"}]}
-{"l_uid": 168, "p_uid": 179, "timestamp": "2023-03-31T15:15:10+10:00", "timeseries": [{"name": "Average_voltage", "value": 2.64, "timestamp": "2023-03-31T15:15:10+10:00"}]}
-{"l_uid": 165, "p_uid": 166, "timestamp": "2023-03-31T19:15:10+10:00", "timeseries": [{"name": "moisture1", "value": 17.59, "timestamp": "2023-03-31T19:15:10+10:00"}]}
-{"l_uid": 81, "p_uid": 85, "timestamp": "2023-04-02T23:23:28.684885299Z", "timeseries": [{"name": "RTC", "value": 49308900}]}
-{"l_uid": 191, "p_uid": 196, "timestamp": "2023-04-02T23:24:23.331216612Z", "timeseries": [{"name": "salinity", "value": 28.28}]}
-{"l_uid": 71, "p_uid": 75, "timestamp": "2023-04-02T23:25:48.136651945Z", "timeseries": [{"name": "battery", "value": 3.6}]}
-{"l_uid": 190, "p_uid": 201, "timestamp": "2023-04-02T23:26:10.405686870Z", "timeseries": [{"name": "salinity", "value": 33.78}]}
-{"l_uid": 268, "p_uid": 247, "timestamp": "2023-04-02T23:18:22.575658265Z", "timeseries": [{"name": "S1_EC", "value": "132.0"}]}
-{"l_uid": 272, "p_uid": 297, "timestamp": "2023-02-08T06:02:01.444674828Z", "timeseries": [{"name": "batteryVoltage", "value": 2.1}]}
-{"l_uid": 17, "p_uid": 17, "timestamp": "2023-04-02T23:28:09.536625190Z", "timeseries": [{"name": "Actuator", "value": "0"}]}
-{"l_uid": 66, "p_uid": 70, "timestamp": "2023-04-02T23:25:02.335102518Z", "timeseries": [{"name": "RTC", "value": 47701256}]}
-{"l_uid": 32, "p_uid": 33, "timestamp": "2023-04-02T23:18:21.104607435Z", "timeseries": [{"name": "RTC", "value": 47695517}]}
-{"l_uid": 150, "p_uid": 163, "timestamp": "2023-04-01T14:15:10+10:00", "timeseries": [{"name": "moisture1", "value": 16.1, "timestamp": "2023-04-01T14:15:10+10:00"}]}
-{"l_uid": 273, "p_uid": 298, "timestamp": "2023-02-14T22:32:35.095025026Z", "timeseries": [{"name": "batteryVoltage", "value": 3.1}]}
-{"l_uid": 95, "p_uid": 99, "timestamp": "2023-04-02T22:52:52.715021143Z", "timeseries": [{"name": "RTC", "value": 48711384}]}
-{"l_uid": 45, "p_uid": 47, "timestamp": "2023-04-02T23:27:55.998666386Z", "timeseries": [{"name": "UNIX_time", "value": 1680477600}]}
-{"l_uid": 267, "p_uid": 245, "timestamp": "2023-04-02T23:20:13.189783336Z", "timeseries": [{"name": "S1_EC", "value": "116.0"}]}
-{"l_uid": 126, "p_uid": 132, "timestamp": "2023-04-02T22:43:32.118724400Z", "timeseries": [{"name": "battery", "value": 3.4}]}
-{"l_uid": 144, "p_uid": 152, "timestamp": "2023-03-31T18:42:26.169857495Z", "timeseries": [{"name": "battery", "value": 5.238}]}
-{"l_uid": 162, "p_uid": 157, "timestamp": "2023-03-31T15:15:10+10:00", "timeseries": [{"name": "moisture1", "value": 16.79, "timestamp": "2023-03-31T15:15:10+10:00"}]}
-{"l_uid": 163, "p_uid": 158, "timestamp": "2023-03-31T15:15:10+10:00", "timeseries": [{"name": "moisture1", "value": 17.37, "timestamp": "2023-03-31T15:15:10+10:00"}]}
-{"l_uid": 173, "p_uid": 185, "timestamp": "2023-04-02T20:30:10+10:00", "timeseries": [{"name": "Average_Voltage", "value": 2.58, "timestamp": "2023-04-02T20:30:10+10:00"}]}
-{"l_uid": 176, "p_uid": 188, "timestamp": "2023-04-02T20:30:10+10:00", "timeseries": [{"name": "moisture1", "value": 5.95, "timestamp": "2023-04-02T20:30:10+10:00"}]}
-{"l_uid": 174, "p_uid": 186, "timestamp": "2023-04-02T20:30:10+10:00", "timeseries": [{"name": "windDirection", "value": 258, "timestamp": "2023-04-02T20:30:10+10:00"}]}
-{"l_uid": 175, "p_uid": 187, "timestamp": "2023-04-02T20:30:10+10:00", "timeseries": [{"name": "moisture1", "value": 11.44, "timestamp": "2023-04-02T20:30:10+10:00"}]}
-{"l_uid": 164, "p_uid": 165, "timestamp": "2023-03-31T19:15:10+10:00", "timeseries": [{"name": "moisture1", "value": 16.4, "timestamp": "2023-03-31T19:15:10+10:00"}]}
-{"l_uid": 148, "p_uid": 173, "timestamp": "2023-03-31T19:15:10+10:00", "timeseries": [{"name": "Average_voltage", "value": 2.62, "timestamp": "2023-03-31T19:15:10+10:00"}]}
-{"l_uid": 122, "p_uid": 212, "timestamp": "2023-04-02T23:05:34.063655483Z", "timeseries": [{"name": "battery", "value": 3.5}]}
-{"l_uid": 152, "p_uid": 176, "timestamp": "2023-04-01T14:15:10+10:00", "timeseries": [{"name": "Average_voltage", "value": 2.62, "timestamp": "2023-04-01T14:15:10+10:00"}]}
-{"l_uid": 151, "p_uid": 164, "timestamp": "2023-04-01T14:15:10+10:00", "timeseries": [{"name": "moisture1", "value": 15.96, "timestamp": "2023-04-01T14:15:10+10:00"}]}
-{"l_uid": 19, "p_uid": 19, "timestamp": "2023-04-02T22:59:53.965839253Z", "timeseries": [{"name": "soiltemp", "value": 16.100000381469727}]}
-{"l_uid": 25, "p_uid": 26, "timestamp": "2023-04-02T22:45:53.067500562Z", "timeseries": [{"name": "battery", "value": 4.842}]}
-{"l_uid": 34, "p_uid": 35, "timestamp": "2023-04-02T20:55:50.512934755Z", "timeseries": [{"name": "battery", "value": 3.4}]}
-{"l_uid": 113, "p_uid": 213, "timestamp": "2023-04-02T22:56:04.594042093Z", "timeseries": [{"name": "battery", "value": 3.4}]}
-{"l_uid": 132, "p_uid": 138, "timestamp": "2023-04-02T23:05:16.784922506Z", "timeseries": [{"name": "battery", "value": 3.3}]}
-{"l_uid": 135, "p_uid": 141, "timestamp": "2023-04-02T23:14:59.119596412Z", "timeseries": [{"name": "battery", "value": 3.5}]}
-{"l_uid": 133, "p_uid": 139, "timestamp": "2023-04-02T23:19:15.136681633Z", "timeseries": [{"name": "battery", "value": 3.4}]}
-{"l_uid": 40, "p_uid": 41, "timestamp": "2023-04-02T23:28:54.275090118Z", "timeseries": [{"name": "RTC", "value": 49306914}]}
-{"l_uid": 124, "p_uid": 130, "timestamp": "2023-04-02T21:31:36.471767080Z", "timeseries": [{"name": "battery", "value": 3.4}]}
-{"l_uid": 112, "p_uid": 117, "timestamp": "2023-04-02T21:33:08.454651193Z", "timeseries": [{"name": "battery", "value": 3.4}]}
-{"l_uid": 279, "p_uid": 306, "timestamp": "2023-04-02T19:38:39.018882669Z", "timeseries": [{"name": "battery", "value": 3.4}]}
-{"l_uid": 136, "p_uid": 142, "timestamp": "2023-04-02T21:39:33.615507097Z", "timeseries": [{"name": "battery", "value": 3.5}]}
-{"l_uid": 130, "p_uid": 136, "timestamp": "2023-04-02T21:42:11.502659356Z", "timeseries": [{"name": "battery", "value": 3.4}]}
-{"l_uid": 63, "p_uid": 67, "timestamp": "2023-04-02T21:45:08.557885535Z", "timeseries": [{"name": "battery", "value": 3.4}]}
-{"l_uid": 118, "p_uid": 123, "timestamp": "2023-04-02T22:48:56.366030028Z", "timeseries": [{"name": "battery", "value": 5.219}]}
-{"l_uid": 35, "p_uid": 36, "timestamp": "2023-04-02T23:29:56.993759967Z", "timeseries": [{"name": "battery", "value": 5.126}]}
-{"l_uid": 119, "p_uid": 125, "timestamp": "2023-04-02T22:57:38.302458675Z", "timeseries": [{"name": "battery", "value": 4.643}]}
-{"l_uid": 3, "p_uid": 3, "timestamp": "2023-04-02T22:58:50.263856492Z", "timeseries": [{"name": "soiltemp", "value": -9999}]}
-{"l_uid": 9, "p_uid": 9, "timestamp": "2023-04-02T22:59:16.840410850Z", "timeseries": [{"name": "soiltemp", "value": 14.300000190734863}]}
-{"l_uid": 8, "p_uid": 8, "timestamp": "2023-04-02T22:59:24.399597889Z", "timeseries": [{"name": "soiltemp", "value": 16.600000381469727}]}
-{"l_uid": 5, "p_uid": 5, "timestamp": "2023-04-02T22:59:31.908065277Z", "timeseries": [{"name": "soiltemp", "value": 16}]}
-{"l_uid": 20, "p_uid": 20, "timestamp": "2023-04-02T22:59:41.640512305Z", "timeseries": [{"name": "soiltemp", "value": 14.300000190734863}]}
-{"l_uid": 104, "p_uid": 108, "timestamp": "2023-04-02T23:02:14.013807652Z", "timeseries": [{"name": "battery", "value": 5.156}]}
-{"l_uid": 10, "p_uid": 10, "timestamp": "2023-03-29T21:01:49.675336475Z", "timeseries": [{"name": "battery", "value": 3.48}]}
-{"l_uid": 62, "p_uid": 66, "timestamp": "2023-04-02T23:05:18.807007979Z", "timeseries": [{"name": "RTC", "value": 48707756}]}
-{"l_uid": 109, "p_uid": 113, "timestamp": "2023-04-02T20:04:41.520729729Z", "timeseries": [{"name": "battery", "value": 3.4}]}
-{"l_uid": 128, "p_uid": 134, "timestamp": "2023-04-02T22:06:02.989107887Z", "timeseries": [{"name": "battery", "value": 3.5}]}
-{"l_uid": 115, "p_uid": 120, "timestamp": "2023-04-02T22:06:08.141710451Z", "timeseries": [{"name": "battery", "value": 3.6}]}
-{"l_uid": 186, "p_uid": 184, "timestamp": "2023-04-02T23:09:58.124363021Z", "timeseries": [{"name": "battery", "value": 3.6}]}
-{"l_uid": 107, "p_uid": 111, "timestamp": "2023-04-02T23:09:09.238866773Z", "timeseries": [{"name": "battery", "value": 5.188}]}
-{"l_uid": 64, "p_uid": 68, "timestamp": "2023-04-02T23:15:00.386364714Z", "timeseries": [{"name": "battery", "value": 3.6}]}
-{"l_uid": 117, "p_uid": 122, "timestamp": "2023-04-02T22:16:02.856925202Z", "timeseries": [{"name": "battery", "value": 3.5}]}
-{"l_uid": 4, "p_uid": 4, "timestamp": "2023-04-02T23:18:33.235586602Z", "timeseries": [{"name": "soiltemp", "value": 15}]}
-{"l_uid": 110, "p_uid": 114, "timestamp": "2023-04-02T22:21:51.576885286Z", "timeseries": [{"name": "battery", "value": 3.1}]}
-{"l_uid": 42, "p_uid": 44, "timestamp": "2023-04-02T23:25:05.401644838Z", "timeseries": [{"name": "battery", "value": 3.6}]}
-{"l_uid": 236, "p_uid": 254, "timestamp": "2023-04-02T23:19:25.804267572Z", "timeseries": [{"name": "battery", "value": 3.6}]}
-{"l_uid": 269, "p_uid": 244, "timestamp": "2023-04-02T23:25:14.602617998Z", "timeseries": [{"name": "accMotion", "value": 0}]}
-{"l_uid": 254, "p_uid": 290, "timestamp": "2023-04-02T23:27:44.179426036Z", "timeseries": [{"name": "EC", "value": 220}]}
-{"l_uid": 123, "p_uid": 129, "timestamp": "2023-04-02T23:28:18.149057765Z", "timeseries": [{"name": "battery", "value": 3.6}]}
-{"l_uid": 280, "p_uid": 305, "timestamp": "2023-04-02T20:29:31.001765397Z", "timeseries": [{"name": "battery", "value": 3.4}]}
-{"l_uid": 134, "p_uid": 140, "timestamp": "2023-04-02T22:30:18.967479184Z", "timeseries": [{"name": "battery", "value": 3.6}]}
-{"l_uid": 21, "p_uid": 22, "timestamp": "2023-04-02T23:18:50.207675528Z", "timeseries": [{"name": "rtc", "value": 45865732}]}
-{"l_uid": 189, "p_uid": 199, "timestamp": "2023-04-02T23:16:36.201148915Z", "timeseries": [{"name": "EC", "value": 173}]}
-{"l_uid": 60, "p_uid": 63, "timestamp": "2023-04-02T23:19:27.628912260Z", "timeseries": [{"name": "battery", "value": 3.6}]}
-{"l_uid": 143, "p_uid": 149, "timestamp": "2023-04-02T16:41:24.026580614Z", "timeseries": [{"name": "battery", "value": 4.934}]}
-{"l_uid": 61, "p_uid": 64, "timestamp": "2023-04-02T22:51:53.124502230Z", "timeseries": [{"name": "battery", "value": 3.6}]}
-{"l_uid": 54, "p_uid": 56, "timestamp": "2023-04-02T22:41:54.391911814Z", "timeseries": [{"name": "battery", "value": 5.135}]}
-{"l_uid": 70, "p_uid": 74, "timestamp": "2023-04-02T23:22:47.541578757Z", "timeseries": [{"name": "salinity", "value": 21.64}]}
-{"l_uid": 106, "p_uid": 110, "timestamp": "2023-04-02T22:34:30.708409871Z", "timeseries": [{"name": "battery", "value": 5.069}]}
-{"l_uid": 223, "p_uid": 262, "timestamp": "2023-04-02T23:09:58.435473378Z", "timeseries": [{"name": "battery", "value": 3.6}]}
-{"l_uid": 111, "p_uid": 30, "timestamp": "2023-04-02T22:38:09.333628532Z", "timeseries": [{"name": "accMotion", "value": 0}]}
-{"l_uid": 251, "p_uid": 288, "timestamp": "2023-04-02T23:23:30.448312533Z", "timeseries": [{"name": "EC", "value": 93}]}
-{"l_uid": 222, "p_uid": 264, "timestamp": "2023-04-02T23:25:38.426815620Z", "timeseries": [{"name": "battery", "value": 3.6}]}
-{"l_uid": 49, "p_uid": 51, "timestamp": "2023-04-02T23:24:09.014265470Z", "timeseries": [{"name": "salinity", "value": 30.8}]}
-{"l_uid": 192, "p_uid": 195, "timestamp": "2023-04-02T23:26:59.996846412Z", "timeseries": [{"name": "RTC", "value": 28743221}]}
-{"l_uid": 31, "p_uid": 32, "timestamp": "2023-04-02T23:25:40.348164668Z", "timeseries": [{"name": "salinity", "value": 31.22}]}
-{"l_uid": 257, "p_uid": 284, "timestamp": "2023-04-02T23:09:50.959254110Z", "timeseries": [{"name": "EC", "value": 158}]}
-{"l_uid": 2, "p_uid": 2, "timestamp": "2023-04-02T23:13:35.578001265Z", "timeseries": [{"name": "battery", "value": 3.6}]}
-{"l_uid": 230, "p_uid": 259, "timestamp": "2023-04-02T23:27:50.249331445Z", "timeseries": [{"name": "battery", "value": 3.6}]}
-{"l_uid": 82, "p_uid": 86, "timestamp": "2023-04-02T23:27:53.932371091Z", "timeseries": [{"name": "battery", "value": 3.6}]}
-{"l_uid": 55, "p_uid": 57, "timestamp": "2023-04-02T23:23:56.051603982Z", "timeseries": [{"name": "salinity", "value": 25.4}]}
-{"l_uid": 59, "p_uid": 62, "timestamp": "2023-04-02T23:28:40.707022163Z", "timeseries": [{"name": "battery", "value": 3.6}]}
-{"l_uid": 91, "p_uid": 95, "timestamp": "2023-04-02T23:29:20.766693857Z", "timeseries": [{"name": "battery", "value": 3.6}]}
-{"l_uid": 79, "p_uid": 83, "timestamp": "2023-04-02T23:29:32.432802027Z", "timeseries": [{"name": "RTC", "value": 47694135}]}
-{"l_uid": 48, "p_uid": 50, "timestamp": "2023-04-02T23:15:24.582810231Z", "timeseries": [{"name": "battery", "value": 3.6}]}
-{"l_uid": 219, "p_uid": 249, "timestamp": "2023-04-02T23:16:07.334859677Z", "timeseries": [{"name": "Device", "value": "R718A"}]}
-{"l_uid": 137, "p_uid": 143, "timestamp": "2023-04-02T22:44:47.020862225Z", "timeseries": [{"name": "battery", "value": 3.4}]}
-{"l_uid": 23, "p_uid": 24, "timestamp": "2023-04-02T23:19:06.694871802Z", "timeseries": [{"name": "RTC", "value": 37141587}]}
-{"l_uid": 244, "p_uid": 277, "timestamp": "2023-04-02T23:15:16.370036693Z", "timeseries": [{"name": "avgWindDegrees", "value": 91}]}
-{"l_uid": 245, "p_uid": 278, "timestamp": "2023-04-02T23:15:20.450063554Z", "timeseries": [{"name": "avgWindDegrees", "value": 33}]}
-{"l_uid": 203, "p_uid": 220, "timestamp": "2023-04-03T09:15:15+10:00", "timeseries": [{"name": "Signal", "value": 2, "timestamp": "2023-04-03T09:15:15+10:00"}]}
-{"l_uid": 201, "p_uid": 218, "timestamp": "2023-04-03T09:15:15+10:00", "timeseries": [{"name": "windDirection", "value": 57, "timestamp": "2023-04-03T09:15:15+10:00"}]}
-{"l_uid": 226, "p_uid": 265, "timestamp": "2023-04-02T23:15:47.332929550Z", "timeseries": [{"name": "S1_Temp_10cm", "value": "15.036 "}]}
-{"l_uid": 156, "p_uid": 177, "timestamp": "2023-04-03T09:15:10+10:00", "timeseries": [{"name": "Average_voltage", "value": 3.3, "timestamp": "2023-04-03T09:15:10+10:00"}]}
-{"l_uid": 161, "p_uid": 178, "timestamp": "2023-04-03T09:15:10+10:00", "timeseries": [{"name": "Average_voltage", "value": 4.05, "timestamp": "2023-04-03T09:15:10+10:00"}]}
-{"l_uid": 154, "p_uid": 160, "timestamp": "2023-04-03T09:15:10+10:00", "timeseries": [{"name": "moisture1", "value": 16.99, "timestamp": "2023-04-03T09:15:10+10:00"}]}
-{"l_uid": 172, "p_uid": 181, "timestamp": "2023-04-03T09:15:10+10:00", "timeseries": [{"name": "Average_voltage", "value": 3.92, "timestamp": "2023-04-03T09:15:10+10:00"}]}
-{"l_uid": 166, "p_uid": 171, "timestamp": "2023-04-03T09:15:10+10:00", "timeseries": [{"name": "moisture1", "value": 14.07, "timestamp": "2023-04-03T09:15:10+10:00"}]}
-{"l_uid": 146, "p_uid": 155, "timestamp": "2023-04-03T09:15:10+10:00", "timeseries": [{"name": "moisture1", "value": 14.22, "timestamp": "2023-04-03T09:15:10+10:00"}]}
-{"l_uid": 157, "p_uid": 167, "timestamp": "2023-04-03T09:15:10+10:00", "timeseries": [{"name": "moisture1", "value": 15.04, "timestamp": "2023-04-03T09:15:10+10:00"}]}
-{"l_uid": 159, "p_uid": 175, "timestamp": "2023-04-03T09:15:10+10:00", "timeseries": [{"name": "Average_voltage", "value": 3.92, "timestamp": "2023-04-03T09:15:10+10:00"}]}
-{"l_uid": 224, "p_uid": 263, "timestamp": "2023-04-02T23:18:07.955731810Z", "timeseries": [{"name": "battery", "value": 3.6}]}
-{"l_uid": 131, "p_uid": 137, "timestamp": "2023-04-02T22:46:20.348832713Z", "timeseries": [{"name": "battery", "value": 3.4}]}
-{"l_uid": 28, "p_uid": 29, "timestamp": "2023-04-02T23:18:37.325690230Z", "timeseries": [{"name": "battery", "value": 3.5}]}
-{"l_uid": 58, "p_uid": 61, "timestamp": "2023-04-02T23:19:30.706652231Z", "timeseries": [{"name": "battery", "value": 3.6}]}
-{"l_uid": 92, "p_uid": 96, "timestamp": "2023-04-02T23:19:33.352832898Z", "timeseries": [{"name": "battery", "value": 3.6}]}
-{"l_uid": 24, "p_uid": 25, "timestamp": "2023-04-02T23:27:52.097779527Z", "timeseries": [{"name": "header", "value": 32}]}
-{"l_uid": 227, "p_uid": 266, "timestamp": "2023-04-02T23:17:16.471935956Z", "timeseries": [{"name": "S1_Temp_10cm", "value": "14.603 "}]}
-{"l_uid": 30, "p_uid": 31, "timestamp": "2023-04-02T23:17:43.305622435Z", "timeseries": [{"name": "RTC", "value": 44653002}]}
-{"l_uid": 75, "p_uid": 79, "timestamp": "2023-04-02T23:20:01.715010310Z", "timeseries": [{"name": "battery", "value": 3.6}]}
-{"l_uid": 266, "p_uid": 295, "timestamp": "2023-04-02T23:21:12.495346442Z", "timeseries": [{"name": "battery", "value": 3.6}]}
-{"l_uid": 253, "p_uid": 282, "timestamp": "2023-04-02T23:17:55.488537005Z", "timeseries": [{"name": "EC", "value": 222}]}
-{"l_uid": 255, "p_uid": 285, "timestamp": "2023-04-02T23:19:12.719327172Z", "timeseries": [{"name": "EC", "value": 241}]}
-{"l_uid": 27, "p_uid": 28, "timestamp": "2023-04-02T23:22:37.624863785Z", "timeseries": [{"name": "RTC", "value": 49313896}]}
-{"l_uid": 188, "p_uid": 198, "timestamp": "2023-04-02T23:15:14.025460475Z", "timeseries": [{"name": "RTC", "value": 35939466}]}
-{"l_uid": 46, "p_uid": 48, "timestamp": "2023-04-02T22:52:58.515705952Z", "timeseries": [{"name": "battery", "value": 3.6}]}
-{"l_uid": 181, "p_uid": 65, "timestamp": "2023-04-02T23:25:57.186888195Z", "timeseries": [{"name": "battery", "value": 4.219}]}
-{"l_uid": 76, "p_uid": 80, "timestamp": "2023-04-02T23:18:36.560792553Z", "timeseries": [{"name": "RTC", "value": 46818460}]}
-{"l_uid": 39, "p_uid": 40, "timestamp": "2023-04-02T22:51:03.256085680Z", "timeseries": [{"name": "battery", "value": 3.4}]}
-{"l_uid": 67, "p_uid": 71, "timestamp": "2023-04-02T23:24:26.726610838Z", "timeseries": [{"name": "battery", "value": 3.6}]}
-{"l_uid": 72, "p_uid": 76, "timestamp": "2023-04-02T23:19:58.381830910Z", "timeseries": [{"name": "battery", "value": 3.29}]}
-{"l_uid": 16, "p_uid": 16, "timestamp": "2023-04-02T23:16:42.384703031Z", "timeseries": [{"name": "Actuator", "value": "0"}]}
-{"l_uid": 97, "p_uid": 101, "timestamp": "2023-04-02T23:25:30.573106433Z", "timeseries": [{"name": "battery", "value": 3.6}]}
-{"l_uid": 199, "p_uid": 253, "timestamp": "2023-04-02T22:53:29.428059425Z", "timeseries": [{"name": "battery", "value": 3.4}]}
-{"l_uid": 22, "p_uid": 23, "timestamp": "2023-04-02T23:26:04.451759894Z", "timeseries": [{"name": "battery", "value": 3.6}]}
-{"l_uid": 252, "p_uid": 230, "timestamp": "2023-04-02T23:21:08.168998063Z", "timeseries": [{"name": "EC", "value": 273}]}
-{"l_uid": 96, "p_uid": 100, "timestamp": "2023-04-02T23:22:22.122431109Z", "timeseries": [{"name": "battery", "value": 3.6}]}
-{"l_uid": 229, "p_uid": 260, "timestamp": "2023-04-02T23:16:36.741221548Z", "timeseries": [{"name": "battery", "value": 3.6}]}
-{"l_uid": 83, "p_uid": 87, "timestamp": "2023-04-02T23:21:52.837770443Z", "timeseries": [{"name": "RTC", "value": 15976335}]}
-{"l_uid": 180, "p_uid": 60, "timestamp": "2023-04-02T23:28:15.942924466Z", "timeseries": [{"name": "average-flow-velocity0_0_m/s", "value": 0}]}
-{"l_uid": 89, "p_uid": 93, "timestamp": "2023-04-02T23:27:40.378369705Z", "timeseries": [{"name": "battery", "value": 3.6}]}
-{"l_uid": 263, "p_uid": 293, "timestamp": "2023-02-25T15:30:16.845274110Z", "timeseries": [{"name": "avgWindDegrees", "value": 238}]}
-{"l_uid": 50, "p_uid": 52, "timestamp": "2023-04-02T23:14:59.874888907Z", "timeseries": [{"name": "RTC", "value": 49318432}]}
-{"l_uid": 262, "p_uid": 294, "timestamp": "2023-04-02T23:16:39.911449090Z", "timeseries": [{"name": "EC", "value": 90}]}
-{"l_uid": 260, "p_uid": 289, "timestamp": "2023-04-02T23:17:17.963074965Z", "timeseries": [{"name": "EC", "value": 129}]}
-{"l_uid": 247, "p_uid": 280, "timestamp": "2023-04-02T21:45:15.861042399Z", "timeseries": [{"name": "avgWindDegrees", "value": 358}]}
-{"l_uid": 246, "p_uid": 279, "timestamp": "2023-04-02T23:15:15.481512134Z", "timeseries": [{"name": "avgWindDegrees", "value": 47}]}
-{"l_uid": 232, "p_uid": 257, "timestamp": "2023-04-02T23:29:43.321120712Z", "timeseries": [{"name": "battery", "value": 3.6}]}
-{"l_uid": 242, "p_uid": 275, "timestamp": "2023-04-02T23:15:17.059948157Z", "timeseries": [{"name": "avgWindDegrees", "value": 93}]}
-{"l_uid": 258, "p_uid": 283, "timestamp": "2023-04-02T23:20:12.811041676Z", "timeseries": [{"name": "EC", "value": 241}]}
-{"l_uid": 225, "p_uid": 261, "timestamp": "2023-04-02T23:26:06.357073459Z", "timeseries": [{"name": "battery", "value": 3.6}]}
-{"l_uid": 256, "p_uid": 286, "timestamp": "2023-04-02T23:27:49.208099960Z", "timeseries": [{"name": "EC", "value": 142}]}
-{"l_uid": 7, "p_uid": 7, "timestamp": "2023-04-02T22:59:19.240800601Z", "timeseries": [{"name": "soiltemp", "value": 14.800000190734863}]}
-{"l_uid": 235, "p_uid": 214, "timestamp": "2023-04-02T23:16:13.411275241Z", "timeseries": [{"name": "Device", "value": "R718A"}]}
-{"l_uid": 33, "p_uid": 34, "timestamp": "2023-04-02T23:21:08.980003047Z", "timeseries": [{"name": "battery", "value": 3.6}]}
-{"l_uid": 231, "p_uid": 256, "timestamp": "2023-04-02T23:27:04.448301315Z", "timeseries": [{"name": "battery", "value": 3.6}]}
-{"l_uid": 259, "p_uid": 287, "timestamp": "2023-04-02T23:29:14.825901349Z", "timeseries": [{"name": "EC", "value": 146}]}
-{"l_uid": 94, "p_uid": 98, "timestamp": "2023-04-02T23:24:38.828233506Z", "timeseries": [{"name": "battery", "value": 3.6}]}
+{"values": [{"l_uid": 207, "p_uid": 208, "timestamp": "2023-04-03T09:15:10+10:00", "timeseries": [{"name": "Average_Voltage", "value": 3.9, "timestamp": "2023-04-03T09:15:10+10:00"}]},
+{"l_uid": 208, "p_uid": 209, "timestamp": "2023-04-03T09:15:10+10:00", "timeseries": [{"name": "moisture1", "value": 15.98, "timestamp": "2023-04-03T09:15:10+10:00"}]},
+{"l_uid": 43, "p_uid": 45, "timestamp": "2023-04-02T23:24:41.243625637Z", "timeseries": [{"name": "battery", "value": 4.2}]},
+{"l_uid": 155, "p_uid": 162, "timestamp": "2023-04-03T09:15:10+10:00", "timeseries": [{"name": "moisture1", "value": 26.37, "timestamp": "2023-04-03T09:15:10+10:00"}]},
+{"l_uid": 140, "p_uid": 146, "timestamp": "2023-02-06T22:22:32.503269787Z", "timeseries": [{"name": "battery", "value": 5.238}]},
+{"l_uid": 170, "p_uid": 170, "timestamp": "2023-04-03T09:15:10+10:00", "timeseries": [{"name": "moisture1", "value": 11.14, "timestamp": "2023-04-03T09:15:10+10:00"}]},
+{"l_uid": 153, "p_uid": 159, "timestamp": "2023-04-03T09:15:10+10:00", "timeseries": [{"name": "moisture1", "value": 18.49, "timestamp": "2023-04-03T09:15:10+10:00"}]},
+{"l_uid": 206, "p_uid": 207, "timestamp": "2023-04-03T09:15:10+10:00", "timeseries": [{"name": "moisture1", "value": 14.17, "timestamp": "2023-04-03T09:15:10+10:00"}]},
+{"l_uid": 57, "p_uid": 59, "timestamp": "2023-04-02T23:20:16.594889812Z", "timeseries": [{"name": "RTC", "value": 29353169}]},
+{"l_uid": 239, "p_uid": 270, "timestamp": "2023-04-02T23:15:19.809176190Z", "timeseries": [{"name": "avgWindDegrees", "value": 350}]},
+{"l_uid": 103, "p_uid": 107, "timestamp": "2023-04-02T23:03:53.697164029Z", "timeseries": [{"name": "battery", "value": 5.144}]},
+{"l_uid": 36, "p_uid": 37, "timestamp": "2023-04-02T23:29:07.634904464Z", "timeseries": [{"name": "RTC", "value": 49319090}]},
+{"l_uid": 248, "p_uid": 281, "timestamp": "2023-04-02T23:15:17.650206587Z", "timeseries": [{"name": "avgWindDegrees", "value": 63}]},
+{"l_uid": 160, "p_uid": 161, "timestamp": "2023-04-03T09:15:10+10:00", "timeseries": [{"name": "moisture1", "value": 26.43, "timestamp": "2023-04-03T09:15:10+10:00"}]},
+{"l_uid": 265, "p_uid": 272, "timestamp": "2023-04-02T23:16:21.929211505Z", "timeseries": [{"name": "battery", "value": 3.6}]},
+{"l_uid": 41, "p_uid": 42, "timestamp": "2023-04-02T23:15:40.971168340Z", "timeseries": [{"name": "salinity", "value": 28}]},
+{"l_uid": 80, "p_uid": 84, "timestamp": "2023-04-02T23:00:59.516020804Z", "timeseries": [{"name": "rtc", "value": 35514835}]},
+{"l_uid": 169, "p_uid": 169, "timestamp": "2023-04-03T09:15:10+10:00", "timeseries": [{"name": "moisture1", "value": 19.8, "timestamp": "2023-04-03T09:15:10+10:00"}]},
+{"l_uid": 47, "p_uid": 49, "timestamp": "2023-04-02T23:23:07.571138805Z", "timeseries": [{"name": "salinity", "value": 25.93}]},
+{"l_uid": 102, "p_uid": 106, "timestamp": "2023-03-11T15:04:08.402163395Z", "timeseries": [{"name": "battery", "value": 5.235}]},
+{"l_uid": 74, "p_uid": 78, "timestamp": "2023-04-02T23:16:36.776580989Z", "timeseries": [{"name": "RTC", "value": 6317538}]},
+{"l_uid": 51, "p_uid": 53, "timestamp": "2023-04-02T23:28:52.914622115Z", "timeseries": [{"name": "battery", "value": 3.6}]},
+{"l_uid": 197, "p_uid": 200, "timestamp": "2023-04-02T23:25:32.976965141Z", "timeseries": [{"name": "battery", "value": 4.2}]},
+{"l_uid": 215, "p_uid": 233, "timestamp": "2023-03-02T04:33:31.537830246Z", "timeseries": [{"name": "battery", "value": 3.4}]},
+{"l_uid": 211, "p_uid": 210, "timestamp": "2023-04-02T23:26:51.293002180Z", "timeseries": [{"name": "EC", "value": 80}]},
+{"l_uid": 220, "p_uid": 189, "timestamp": "2023-03-14T03:43:43.215630160Z", "timeseries": [{"name": "battery", "value": "NaN"}]},
+{"l_uid": 78, "p_uid": 82, "timestamp": "2023-04-02T23:16:28.994919132Z", "timeseries": [{"name": "RTC", "value": 40850674}]},
+{"l_uid": 37, "p_uid": 38, "timestamp": "2023-04-02T23:17:24.072125605Z", "timeseries": [{"name": "battery", "value": 3.6}]},
+{"l_uid": 26, "p_uid": 27, "timestamp": "2023-04-02T23:16:19.551058809Z", "timeseries": [{"name": "RTC", "value": 16685504}]},
+{"l_uid": 205, "p_uid": 206, "timestamp": "2023-04-03T09:15:10+10:00", "timeseries": [{"name": "windDirection", "value": 43, "timestamp": "2023-04-03T09:15:10+10:00"}]},
+{"l_uid": 85, "p_uid": 89, "timestamp": "2023-04-02T23:28:11.474610794Z", "timeseries": [{"name": "battery", "value": 3.6}]},
+{"l_uid": 243, "p_uid": 276, "timestamp": "2023-04-02T23:15:18.660425968Z", "timeseries": [{"name": "avgWindDegrees", "value": 133}]},
+{"l_uid": 98, "p_uid": 102, "timestamp": "2023-04-02T23:21:13.127681935Z", "timeseries": [{"name": "RTC", "value": 65306589}]},
+{"l_uid": 149, "p_uid": 174, "timestamp": "2023-04-03T09:15:10+10:00", "timeseries": [{"name": "Average_voltage", "value": 4.06, "timestamp": "2023-04-03T09:15:10+10:00"}]},
+{"l_uid": 147, "p_uid": 156, "timestamp": "2023-04-03T09:15:10+10:00", "timeseries": [{"name": "moisture1", "value": 19.54, "timestamp": "2023-04-03T09:15:10+10:00"}]},
+{"l_uid": 77, "p_uid": 81, "timestamp": "2023-04-02T23:24:23.837173148Z", "timeseries": [{"name": "battery", "value": 2.87}]},
+{"l_uid": 158, "p_uid": 168, "timestamp": "2023-04-03T09:15:10+10:00", "timeseries": [{"name": "moisture1", "value": 13.04, "timestamp": "2023-04-03T09:15:10+10:00"}]},
+{"l_uid": 228, "p_uid": 252, "timestamp": "2023-04-02T23:16:50.451153765Z", "timeseries": [{"name": "RTC", "value": 15026602}]},
+{"l_uid": 87, "p_uid": 91, "timestamp": "2023-04-02T23:27:43.054660673Z", "timeseries": [{"name": "header", "value": 32}]},
+{"l_uid": 204, "p_uid": 221, "timestamp": "2023-04-03T09:15:15+10:00", "timeseries": [{"name": "moisture1", "value": 27.68, "timestamp": "2023-04-03T09:15:15+10:00"}]},
+{"l_uid": 171, "p_uid": 180, "timestamp": "2023-04-03T09:15:10+10:00", "timeseries": [{"name": "Average_voltage", "value": 3.88, "timestamp": "2023-04-03T09:15:10+10:00"}]},
+{"l_uid": 93, "p_uid": 97, "timestamp": "2023-04-02T23:23:49.700905441Z", "timeseries": [{"name": "battery", "value": 3.6}]},
+{"l_uid": 100, "p_uid": 299, "timestamp": "2023-04-02T23:24:54.702470841Z", "timeseries": [{"name": "battery", "value": 3.6}]},
+{"l_uid": 38, "p_uid": 39, "timestamp": "2023-04-02T23:27:47.708163434Z", "timeseries": [{"name": "RTC", "value": 48712573}]},
+{"l_uid": 44, "p_uid": 46, "timestamp": "2023-04-02T23:21:18.923459777Z", "timeseries": [{"name": "battery", "value": 4.265}]},
+{"l_uid": 73, "p_uid": 77, "timestamp": "2023-04-02T22:55:20.959663815Z", "timeseries": [{"name": "battery", "value": 3.6}]},
+{"l_uid": 167, "p_uid": 172, "timestamp": "2023-04-03T09:15:10+10:00", "timeseries": [{"name": "moisture1", "value": 16.9, "timestamp": "2023-04-03T09:15:10+10:00"}]},
+{"l_uid": 202, "p_uid": 219, "timestamp": "2023-04-03T09:15:15+10:00", "timeseries": [{"name": "moisture1", "value": 32.21, "timestamp": "2023-04-03T09:15:15+10:00"}]},
+{"l_uid": 56, "p_uid": 58, "timestamp": "2023-04-02T23:29:53.974725056Z", "timeseries": [{"name": "header", "value": 32}]},
+{"l_uid": 261, "p_uid": 292, "timestamp": "2023-02-06T09:45:17.889164987Z", "timeseries": [{"name": "avgWindDegrees", "value": 340}]},
+{"l_uid": 53, "p_uid": 55, "timestamp": "2023-04-02T23:17:23.879738740Z", "timeseries": [{"name": "battery", "value": 3.6}]},
+{"l_uid": 65, "p_uid": 69, "timestamp": "2023-04-02T23:28:51.958625617Z", "timeseries": [{"name": "battery", "value": 3.15}]},
+{"l_uid": 139, "p_uid": 145, "timestamp": "2023-04-02T23:29:02.315329380Z", "timeseries": [{"name": "RTC", "value": 47701786}]},
+{"l_uid": 14, "p_uid": 14, "timestamp": "2023-04-02T23:25:49.383801073Z", "timeseries": [{"name": "Actuator", "value": "0"}]},
+{"l_uid": 168, "p_uid": 179, "timestamp": "2023-03-31T15:15:10+10:00", "timeseries": [{"name": "Average_voltage", "value": 2.64, "timestamp": "2023-03-31T15:15:10+10:00"}]},
+{"l_uid": 165, "p_uid": 166, "timestamp": "2023-03-31T19:15:10+10:00", "timeseries": [{"name": "moisture1", "value": 17.59, "timestamp": "2023-03-31T19:15:10+10:00"}]},
+{"l_uid": 81, "p_uid": 85, "timestamp": "2023-04-02T23:23:28.684885299Z", "timeseries": [{"name": "RTC", "value": 49308900}]},
+{"l_uid": 191, "p_uid": 196, "timestamp": "2023-04-02T23:24:23.331216612Z", "timeseries": [{"name": "salinity", "value": 28.28}]},
+{"l_uid": 71, "p_uid": 75, "timestamp": "2023-04-02T23:25:48.136651945Z", "timeseries": [{"name": "battery", "value": 3.6}]},
+{"l_uid": 190, "p_uid": 201, "timestamp": "2023-04-02T23:26:10.405686870Z", "timeseries": [{"name": "salinity", "value": 33.78}]},
+{"l_uid": 268, "p_uid": 247, "timestamp": "2023-04-02T23:18:22.575658265Z", "timeseries": [{"name": "S1_EC", "value": "132.0"}]},
+{"l_uid": 272, "p_uid": 297, "timestamp": "2023-02-08T06:02:01.444674828Z", "timeseries": [{"name": "batteryVoltage", "value": 2.1}]},
+{"l_uid": 17, "p_uid": 17, "timestamp": "2023-04-02T23:28:09.536625190Z", "timeseries": [{"name": "Actuator", "value": "0"}]},
+{"l_uid": 66, "p_uid": 70, "timestamp": "2023-04-02T23:25:02.335102518Z", "timeseries": [{"name": "RTC", "value": 47701256}]},
+{"l_uid": 32, "p_uid": 33, "timestamp": "2023-04-02T23:18:21.104607435Z", "timeseries": [{"name": "RTC", "value": 47695517}]},
+{"l_uid": 150, "p_uid": 163, "timestamp": "2023-04-01T14:15:10+10:00", "timeseries": [{"name": "moisture1", "value": 16.1, "timestamp": "2023-04-01T14:15:10+10:00"}]},
+{"l_uid": 273, "p_uid": 298, "timestamp": "2023-02-14T22:32:35.095025026Z", "timeseries": [{"name": "batteryVoltage", "value": 3.1}]},
+{"l_uid": 95, "p_uid": 99, "timestamp": "2023-04-02T22:52:52.715021143Z", "timeseries": [{"name": "RTC", "value": 48711384}]},
+{"l_uid": 45, "p_uid": 47, "timestamp": "2023-04-02T23:27:55.998666386Z", "timeseries": [{"name": "UNIX_time", "value": 1680477600}]},
+{"l_uid": 267, "p_uid": 245, "timestamp": "2023-04-02T23:20:13.189783336Z", "timeseries": [{"name": "S1_EC", "value": "116.0"}]},
+{"l_uid": 126, "p_uid": 132, "timestamp": "2023-04-02T22:43:32.118724400Z", "timeseries": [{"name": "battery", "value": 3.4}]},
+{"l_uid": 144, "p_uid": 152, "timestamp": "2023-03-31T18:42:26.169857495Z", "timeseries": [{"name": "battery", "value": 5.238}]},
+{"l_uid": 162, "p_uid": 157, "timestamp": "2023-03-31T15:15:10+10:00", "timeseries": [{"name": "moisture1", "value": 16.79, "timestamp": "2023-03-31T15:15:10+10:00"}]},
+{"l_uid": 163, "p_uid": 158, "timestamp": "2023-03-31T15:15:10+10:00", "timeseries": [{"name": "moisture1", "value": 17.37, "timestamp": "2023-03-31T15:15:10+10:00"}]},
+{"l_uid": 173, "p_uid": 185, "timestamp": "2023-04-02T20:30:10+10:00", "timeseries": [{"name": "Average_Voltage", "value": 2.58, "timestamp": "2023-04-02T20:30:10+10:00"}]},
+{"l_uid": 176, "p_uid": 188, "timestamp": "2023-04-02T20:30:10+10:00", "timeseries": [{"name": "moisture1", "value": 5.95, "timestamp": "2023-04-02T20:30:10+10:00"}]},
+{"l_uid": 174, "p_uid": 186, "timestamp": "2023-04-02T20:30:10+10:00", "timeseries": [{"name": "windDirection", "value": 258, "timestamp": "2023-04-02T20:30:10+10:00"}]},
+{"l_uid": 175, "p_uid": 187, "timestamp": "2023-04-02T20:30:10+10:00", "timeseries": [{"name": "moisture1", "value": 11.44, "timestamp": "2023-04-02T20:30:10+10:00"}]},
+{"l_uid": 164, "p_uid": 165, "timestamp": "2023-03-31T19:15:10+10:00", "timeseries": [{"name": "moisture1", "value": 16.4, "timestamp": "2023-03-31T19:15:10+10:00"}]},
+{"l_uid": 148, "p_uid": 173, "timestamp": "2023-03-31T19:15:10+10:00", "timeseries": [{"name": "Average_voltage", "value": 2.62, "timestamp": "2023-03-31T19:15:10+10:00"}]},
+{"l_uid": 122, "p_uid": 212, "timestamp": "2023-04-02T23:05:34.063655483Z", "timeseries": [{"name": "battery", "value": 3.5}]},
+{"l_uid": 152, "p_uid": 176, "timestamp": "2023-04-01T14:15:10+10:00", "timeseries": [{"name": "Average_voltage", "value": 2.62, "timestamp": "2023-04-01T14:15:10+10:00"}]},
+{"l_uid": 151, "p_uid": 164, "timestamp": "2023-04-01T14:15:10+10:00", "timeseries": [{"name": "moisture1", "value": 15.96, "timestamp": "2023-04-01T14:15:10+10:00"}]},
+{"l_uid": 19, "p_uid": 19, "timestamp": "2023-04-02T22:59:53.965839253Z", "timeseries": [{"name": "soiltemp", "value": 16.100000381469727}]},
+{"l_uid": 25, "p_uid": 26, "timestamp": "2023-04-02T22:45:53.067500562Z", "timeseries": [{"name": "battery", "value": 4.842}]},
+{"l_uid": 34, "p_uid": 35, "timestamp": "2023-04-02T20:55:50.512934755Z", "timeseries": [{"name": "battery", "value": 3.4}]},
+{"l_uid": 113, "p_uid": 213, "timestamp": "2023-04-02T22:56:04.594042093Z", "timeseries": [{"name": "battery", "value": 3.4}]},
+{"l_uid": 132, "p_uid": 138, "timestamp": "2023-04-02T23:05:16.784922506Z", "timeseries": [{"name": "battery", "value": 3.3}]},
+{"l_uid": 135, "p_uid": 141, "timestamp": "2023-04-02T23:14:59.119596412Z", "timeseries": [{"name": "battery", "value": 3.5}]},
+{"l_uid": 133, "p_uid": 139, "timestamp": "2023-04-02T23:19:15.136681633Z", "timeseries": [{"name": "battery", "value": 3.4}]},
+{"l_uid": 40, "p_uid": 41, "timestamp": "2023-04-02T23:28:54.275090118Z", "timeseries": [{"name": "RTC", "value": 49306914}]},
+{"l_uid": 124, "p_uid": 130, "timestamp": "2023-04-02T21:31:36.471767080Z", "timeseries": [{"name": "battery", "value": 3.4}]},
+{"l_uid": 112, "p_uid": 117, "timestamp": "2023-04-02T21:33:08.454651193Z", "timeseries": [{"name": "battery", "value": 3.4}]},
+{"l_uid": 279, "p_uid": 306, "timestamp": "2023-04-02T19:38:39.018882669Z", "timeseries": [{"name": "battery", "value": 3.4}]},
+{"l_uid": 136, "p_uid": 142, "timestamp": "2023-04-02T21:39:33.615507097Z", "timeseries": [{"name": "battery", "value": 3.5}]},
+{"l_uid": 130, "p_uid": 136, "timestamp": "2023-04-02T21:42:11.502659356Z", "timeseries": [{"name": "battery", "value": 3.4}]},
+{"l_uid": 63, "p_uid": 67, "timestamp": "2023-04-02T21:45:08.557885535Z", "timeseries": [{"name": "battery", "value": 3.4}]},
+{"l_uid": 118, "p_uid": 123, "timestamp": "2023-04-02T22:48:56.366030028Z", "timeseries": [{"name": "battery", "value": 5.219}]},
+{"l_uid": 35, "p_uid": 36, "timestamp": "2023-04-02T23:29:56.993759967Z", "timeseries": [{"name": "battery", "value": 5.126}]},
+{"l_uid": 119, "p_uid": 125, "timestamp": "2023-04-02T22:57:38.302458675Z", "timeseries": [{"name": "battery", "value": 4.643}]},
+{"l_uid": 3, "p_uid": 3, "timestamp": "2023-04-02T22:58:50.263856492Z", "timeseries": [{"name": "soiltemp", "value": -9999}]},
+{"l_uid": 9, "p_uid": 9, "timestamp": "2023-04-02T22:59:16.840410850Z", "timeseries": [{"name": "soiltemp", "value": 14.300000190734863}]},
+{"l_uid": 8, "p_uid": 8, "timestamp": "2023-04-02T22:59:24.399597889Z", "timeseries": [{"name": "soiltemp", "value": 16.600000381469727}]},
+{"l_uid": 5, "p_uid": 5, "timestamp": "2023-04-02T22:59:31.908065277Z", "timeseries": [{"name": "soiltemp", "value": 16}]},
+{"l_uid": 20, "p_uid": 20, "timestamp": "2023-04-02T22:59:41.640512305Z", "timeseries": [{"name": "soiltemp", "value": 14.300000190734863}]},
+{"l_uid": 104, "p_uid": 108, "timestamp": "2023-04-02T23:02:14.013807652Z", "timeseries": [{"name": "battery", "value": 5.156}]},
+{"l_uid": 10, "p_uid": 10, "timestamp": "2023-03-29T21:01:49.675336475Z", "timeseries": [{"name": "battery", "value": 3.48}]},
+{"l_uid": 62, "p_uid": 66, "timestamp": "2023-04-02T23:05:18.807007979Z", "timeseries": [{"name": "RTC", "value": 48707756}]},
+{"l_uid": 109, "p_uid": 113, "timestamp": "2023-04-02T20:04:41.520729729Z", "timeseries": [{"name": "battery", "value": 3.4}]},
+{"l_uid": 128, "p_uid": 134, "timestamp": "2023-04-02T22:06:02.989107887Z", "timeseries": [{"name": "battery", "value": 3.5}]},
+{"l_uid": 115, "p_uid": 120, "timestamp": "2023-04-02T22:06:08.141710451Z", "timeseries": [{"name": "battery", "value": 3.6}]},
+{"l_uid": 186, "p_uid": 184, "timestamp": "2023-04-02T23:09:58.124363021Z", "timeseries": [{"name": "battery", "value": 3.6}]},
+{"l_uid": 107, "p_uid": 111, "timestamp": "2023-04-02T23:09:09.238866773Z", "timeseries": [{"name": "battery", "value": 5.188}]},
+{"l_uid": 64, "p_uid": 68, "timestamp": "2023-04-02T23:15:00.386364714Z", "timeseries": [{"name": "battery", "value": 3.6}]},
+{"l_uid": 117, "p_uid": 122, "timestamp": "2023-04-02T22:16:02.856925202Z", "timeseries": [{"name": "battery", "value": 3.5}]},
+{"l_uid": 4, "p_uid": 4, "timestamp": "2023-04-02T23:18:33.235586602Z", "timeseries": [{"name": "soiltemp", "value": 15}]},
+{"l_uid": 110, "p_uid": 114, "timestamp": "2023-04-02T22:21:51.576885286Z", "timeseries": [{"name": "battery", "value": 3.1}]},
+{"l_uid": 42, "p_uid": 44, "timestamp": "2023-04-02T23:25:05.401644838Z", "timeseries": [{"name": "battery", "value": 3.6}]},
+{"l_uid": 236, "p_uid": 254, "timestamp": "2023-04-02T23:19:25.804267572Z", "timeseries": [{"name": "battery", "value": 3.6}]},
+{"l_uid": 269, "p_uid": 244, "timestamp": "2023-04-02T23:25:14.602617998Z", "timeseries": [{"name": "accMotion", "value": 0}]},
+{"l_uid": 254, "p_uid": 290, "timestamp": "2023-04-02T23:27:44.179426036Z", "timeseries": [{"name": "EC", "value": 220}]},
+{"l_uid": 123, "p_uid": 129, "timestamp": "2023-04-02T23:28:18.149057765Z", "timeseries": [{"name": "battery", "value": 3.6}]},
+{"l_uid": 280, "p_uid": 305, "timestamp": "2023-04-02T20:29:31.001765397Z", "timeseries": [{"name": "battery", "value": 3.4}]},
+{"l_uid": 134, "p_uid": 140, "timestamp": "2023-04-02T22:30:18.967479184Z", "timeseries": [{"name": "battery", "value": 3.6}]},
+{"l_uid": 21, "p_uid": 22, "timestamp": "2023-04-02T23:18:50.207675528Z", "timeseries": [{"name": "rtc", "value": 45865732}]},
+{"l_uid": 189, "p_uid": 199, "timestamp": "2023-04-02T23:16:36.201148915Z", "timeseries": [{"name": "EC", "value": 173}]},
+{"l_uid": 60, "p_uid": 63, "timestamp": "2023-04-02T23:19:27.628912260Z", "timeseries": [{"name": "battery", "value": 3.6}]},
+{"l_uid": 143, "p_uid": 149, "timestamp": "2023-04-02T16:41:24.026580614Z", "timeseries": [{"name": "battery", "value": 4.934}]},
+{"l_uid": 61, "p_uid": 64, "timestamp": "2023-04-02T22:51:53.124502230Z", "timeseries": [{"name": "battery", "value": 3.6}]},
+{"l_uid": 54, "p_uid": 56, "timestamp": "2023-04-02T22:41:54.391911814Z", "timeseries": [{"name": "battery", "value": 5.135}]},
+{"l_uid": 70, "p_uid": 74, "timestamp": "2023-04-02T23:22:47.541578757Z", "timeseries": [{"name": "salinity", "value": 21.64}]},
+{"l_uid": 106, "p_uid": 110, "timestamp": "2023-04-02T22:34:30.708409871Z", "timeseries": [{"name": "battery", "value": 5.069}]},
+{"l_uid": 223, "p_uid": 262, "timestamp": "2023-04-02T23:09:58.435473378Z", "timeseries": [{"name": "battery", "value": 3.6}]},
+{"l_uid": 111, "p_uid": 30, "timestamp": "2023-04-02T22:38:09.333628532Z", "timeseries": [{"name": "accMotion", "value": 0}]},
+{"l_uid": 251, "p_uid": 288, "timestamp": "2023-04-02T23:23:30.448312533Z", "timeseries": [{"name": "EC", "value": 93}]},
+{"l_uid": 222, "p_uid": 264, "timestamp": "2023-04-02T23:25:38.426815620Z", "timeseries": [{"name": "battery", "value": 3.6}]},
+{"l_uid": 49, "p_uid": 51, "timestamp": "2023-04-02T23:24:09.014265470Z", "timeseries": [{"name": "salinity", "value": 30.8}]},
+{"l_uid": 192, "p_uid": 195, "timestamp": "2023-04-02T23:26:59.996846412Z", "timeseries": [{"name": "RTC", "value": 28743221}]},
+{"l_uid": 31, "p_uid": 32, "timestamp": "2023-04-02T23:25:40.348164668Z", "timeseries": [{"name": "salinity", "value": 31.22}]},
+{"l_uid": 257, "p_uid": 284, "timestamp": "2023-04-02T23:09:50.959254110Z", "timeseries": [{"name": "EC", "value": 158}]},
+{"l_uid": 2, "p_uid": 2, "timestamp": "2023-04-02T23:13:35.578001265Z", "timeseries": [{"name": "battery", "value": 3.6}]},
+{"l_uid": 230, "p_uid": 259, "timestamp": "2023-04-02T23:27:50.249331445Z", "timeseries": [{"name": "battery", "value": 3.6}]},
+{"l_uid": 82, "p_uid": 86, "timestamp": "2023-04-02T23:27:53.932371091Z", "timeseries": [{"name": "battery", "value": 3.6}]},
+{"l_uid": 55, "p_uid": 57, "timestamp": "2023-04-02T23:23:56.051603982Z", "timeseries": [{"name": "salinity", "value": 25.4}]},
+{"l_uid": 59, "p_uid": 62, "timestamp": "2023-04-02T23:28:40.707022163Z", "timeseries": [{"name": "battery", "value": 3.6}]},
+{"l_uid": 91, "p_uid": 95, "timestamp": "2023-04-02T23:29:20.766693857Z", "timeseries": [{"name": "battery", "value": 3.6}]},
+{"l_uid": 79, "p_uid": 83, "timestamp": "2023-04-02T23:29:32.432802027Z", "timeseries": [{"name": "RTC", "value": 47694135}]},
+{"l_uid": 48, "p_uid": 50, "timestamp": "2023-04-02T23:15:24.582810231Z", "timeseries": [{"name": "battery", "value": 3.6}]},
+{"l_uid": 219, "p_uid": 249, "timestamp": "2023-04-02T23:16:07.334859677Z", "timeseries": [{"name": "Device", "value": "R718A"}]},
+{"l_uid": 137, "p_uid": 143, "timestamp": "2023-04-02T22:44:47.020862225Z", "timeseries": [{"name": "battery", "value": 3.4}]},
+{"l_uid": 23, "p_uid": 24, "timestamp": "2023-04-02T23:19:06.694871802Z", "timeseries": [{"name": "RTC", "value": 37141587}]},
+{"l_uid": 244, "p_uid": 277, "timestamp": "2023-04-02T23:15:16.370036693Z", "timeseries": [{"name": "avgWindDegrees", "value": 91}]},
+{"l_uid": 245, "p_uid": 278, "timestamp": "2023-04-02T23:15:20.450063554Z", "timeseries": [{"name": "avgWindDegrees", "value": 33}]},
+{"l_uid": 203, "p_uid": 220, "timestamp": "2023-04-03T09:15:15+10:00", "timeseries": [{"name": "Signal", "value": 2, "timestamp": "2023-04-03T09:15:15+10:00"}]},
+{"l_uid": 201, "p_uid": 218, "timestamp": "2023-04-03T09:15:15+10:00", "timeseries": [{"name": "windDirection", "value": 57, "timestamp": "2023-04-03T09:15:15+10:00"}]},
+{"l_uid": 226, "p_uid": 265, "timestamp": "2023-04-02T23:15:47.332929550Z", "timeseries": [{"name": "S1_Temp_10cm", "value": "15.036 "}]},
+{"l_uid": 156, "p_uid": 177, "timestamp": "2023-04-03T09:15:10+10:00", "timeseries": [{"name": "Average_voltage", "value": 3.3, "timestamp": "2023-04-03T09:15:10+10:00"}]},
+{"l_uid": 161, "p_uid": 178, "timestamp": "2023-04-03T09:15:10+10:00", "timeseries": [{"name": "Average_voltage", "value": 4.05, "timestamp": "2023-04-03T09:15:10+10:00"}]},
+{"l_uid": 154, "p_uid": 160, "timestamp": "2023-04-03T09:15:10+10:00", "timeseries": [{"name": "moisture1", "value": 16.99, "timestamp": "2023-04-03T09:15:10+10:00"}]},
+{"l_uid": 172, "p_uid": 181, "timestamp": "2023-04-03T09:15:10+10:00", "timeseries": [{"name": "Average_voltage", "value": 3.92, "timestamp": "2023-04-03T09:15:10+10:00"}]},
+{"l_uid": 166, "p_uid": 171, "timestamp": "2023-04-03T09:15:10+10:00", "timeseries": [{"name": "moisture1", "value": 14.07, "timestamp": "2023-04-03T09:15:10+10:00"}]},
+{"l_uid": 146, "p_uid": 155, "timestamp": "2023-04-03T09:15:10+10:00", "timeseries": [{"name": "moisture1", "value": 14.22, "timestamp": "2023-04-03T09:15:10+10:00"}]},
+{"l_uid": 157, "p_uid": 167, "timestamp": "2023-04-03T09:15:10+10:00", "timeseries": [{"name": "moisture1", "value": 15.04, "timestamp": "2023-04-03T09:15:10+10:00"}]},
+{"l_uid": 159, "p_uid": 175, "timestamp": "2023-04-03T09:15:10+10:00", "timeseries": [{"name": "Average_voltage", "value": 3.92, "timestamp": "2023-04-03T09:15:10+10:00"}]},
+{"l_uid": 224, "p_uid": 263, "timestamp": "2023-04-02T23:18:07.955731810Z", "timeseries": [{"name": "battery", "value": 3.6}]},
+{"l_uid": 131, "p_uid": 137, "timestamp": "2023-04-02T22:46:20.348832713Z", "timeseries": [{"name": "battery", "value": 3.4}]},
+{"l_uid": 28, "p_uid": 29, "timestamp": "2023-04-02T23:18:37.325690230Z", "timeseries": [{"name": "battery", "value": 3.5}]},
+{"l_uid": 58, "p_uid": 61, "timestamp": "2023-04-02T23:19:30.706652231Z", "timeseries": [{"name": "battery", "value": 3.6}]},
+{"l_uid": 92, "p_uid": 96, "timestamp": "2023-04-02T23:19:33.352832898Z", "timeseries": [{"name": "battery", "value": 3.6}]},
+{"l_uid": 24, "p_uid": 25, "timestamp": "2023-04-02T23:27:52.097779527Z", "timeseries": [{"name": "header", "value": 32}]},
+{"l_uid": 227, "p_uid": 266, "timestamp": "2023-04-02T23:17:16.471935956Z", "timeseries": [{"name": "S1_Temp_10cm", "value": "14.603 "}]},
+{"l_uid": 30, "p_uid": 31, "timestamp": "2023-04-02T23:17:43.305622435Z", "timeseries": [{"name": "RTC", "value": 44653002}]},
+{"l_uid": 75, "p_uid": 79, "timestamp": "2023-04-02T23:20:01.715010310Z", "timeseries": [{"name": "battery", "value": 3.6}]},
+{"l_uid": 266, "p_uid": 295, "timestamp": "2023-04-02T23:21:12.495346442Z", "timeseries": [{"name": "battery", "value": 3.6}]},
+{"l_uid": 253, "p_uid": 282, "timestamp": "2023-04-02T23:17:55.488537005Z", "timeseries": [{"name": "EC", "value": 222}]},
+{"l_uid": 255, "p_uid": 285, "timestamp": "2023-04-02T23:19:12.719327172Z", "timeseries": [{"name": "EC", "value": 241}]},
+{"l_uid": 27, "p_uid": 28, "timestamp": "2023-04-02T23:22:37.624863785Z", "timeseries": [{"name": "RTC", "value": 49313896}]},
+{"l_uid": 188, "p_uid": 198, "timestamp": "2023-04-02T23:15:14.025460475Z", "timeseries": [{"name": "RTC", "value": 35939466}]},
+{"l_uid": 46, "p_uid": 48, "timestamp": "2023-04-02T22:52:58.515705952Z", "timeseries": [{"name": "battery", "value": 3.6}]},
+{"l_uid": 181, "p_uid": 65, "timestamp": "2023-04-02T23:25:57.186888195Z", "timeseries": [{"name": "battery", "value": 4.219}]},
+{"l_uid": 76, "p_uid": 80, "timestamp": "2023-04-02T23:18:36.560792553Z", "timeseries": [{"name": "RTC", "value": 46818460}]},
+{"l_uid": 39, "p_uid": 40, "timestamp": "2023-04-02T22:51:03.256085680Z", "timeseries": [{"name": "battery", "value": 3.4}]},
+{"l_uid": 67, "p_uid": 71, "timestamp": "2023-04-02T23:24:26.726610838Z", "timeseries": [{"name": "battery", "value": 3.6}]},
+{"l_uid": 72, "p_uid": 76, "timestamp": "2023-04-02T23:19:58.381830910Z", "timeseries": [{"name": "battery", "value": 3.29}]},
+{"l_uid": 16, "p_uid": 16, "timestamp": "2023-04-02T23:16:42.384703031Z", "timeseries": [{"name": "Actuator", "value": "0"}]},
+{"l_uid": 97, "p_uid": 101, "timestamp": "2023-04-02T23:25:30.573106433Z", "timeseries": [{"name": "battery", "value": 3.6}]},
+{"l_uid": 199, "p_uid": 253, "timestamp": "2023-04-02T22:53:29.428059425Z", "timeseries": [{"name": "battery", "value": 3.4}]},
+{"l_uid": 22, "p_uid": 23, "timestamp": "2023-04-02T23:26:04.451759894Z", "timeseries": [{"name": "battery", "value": 3.6}]},
+{"l_uid": 252, "p_uid": 230, "timestamp": "2023-04-02T23:21:08.168998063Z", "timeseries": [{"name": "EC", "value": 273}]},
+{"l_uid": 96, "p_uid": 100, "timestamp": "2023-04-02T23:22:22.122431109Z", "timeseries": [{"name": "battery", "value": 3.6}]},
+{"l_uid": 229, "p_uid": 260, "timestamp": "2023-04-02T23:16:36.741221548Z", "timeseries": [{"name": "battery", "value": 3.6}]},
+{"l_uid": 83, "p_uid": 87, "timestamp": "2023-04-02T23:21:52.837770443Z", "timeseries": [{"name": "RTC", "value": 15976335}]},
+{"l_uid": 180, "p_uid": 60, "timestamp": "2023-04-02T23:28:15.942924466Z", "timeseries": [{"name": "average-flow-velocity0_0_m/s", "value": 0}]},
+{"l_uid": 89, "p_uid": 93, "timestamp": "2023-04-02T23:27:40.378369705Z", "timeseries": [{"name": "battery", "value": 3.6}]},
+{"l_uid": 263, "p_uid": 293, "timestamp": "2023-02-25T15:30:16.845274110Z", "timeseries": [{"name": "avgWindDegrees", "value": 238}]},
+{"l_uid": 50, "p_uid": 52, "timestamp": "2023-04-02T23:14:59.874888907Z", "timeseries": [{"name": "RTC", "value": 49318432}]},
+{"l_uid": 262, "p_uid": 294, "timestamp": "2023-04-02T23:16:39.911449090Z", "timeseries": [{"name": "EC", "value": 90}]},
+{"l_uid": 260, "p_uid": 289, "timestamp": "2023-04-02T23:17:17.963074965Z", "timeseries": [{"name": "EC", "value": 129}]},
+{"l_uid": 247, "p_uid": 280, "timestamp": "2023-04-02T21:45:15.861042399Z", "timeseries": [{"name": "avgWindDegrees", "value": 358}]},
+{"l_uid": 246, "p_uid": 279, "timestamp": "2023-04-02T23:15:15.481512134Z", "timeseries": [{"name": "avgWindDegrees", "value": 47}]},
+{"l_uid": 232, "p_uid": 257, "timestamp": "2023-04-02T23:29:43.321120712Z", "timeseries": [{"name": "battery", "value": 3.6}]},
+{"l_uid": 242, "p_uid": 275, "timestamp": "2023-04-02T23:15:17.059948157Z", "timeseries": [{"name": "avgWindDegrees", "value": 93}]},
+{"l_uid": 258, "p_uid": 283, "timestamp": "2023-04-02T23:20:12.811041676Z", "timeseries": [{"name": "EC", "value": 241}]},
+{"l_uid": 225, "p_uid": 261, "timestamp": "2023-04-02T23:26:06.357073459Z", "timeseries": [{"name": "battery", "value": 3.6}]},
+{"l_uid": 256, "p_uid": 286, "timestamp": "2023-04-02T23:27:49.208099960Z", "timeseries": [{"name": "EC", "value": 142}]},
+{"l_uid": 7, "p_uid": 7, "timestamp": "2023-04-02T22:59:19.240800601Z", "timeseries": [{"name": "soiltemp", "value": 14.800000190734863}]},
+{"l_uid": 235, "p_uid": 214, "timestamp": "2023-04-02T23:16:13.411275241Z", "timeseries": [{"name": "Device", "value": "R718A"}]},
+{"l_uid": 33, "p_uid": 34, "timestamp": "2023-04-02T23:21:08.980003047Z", "timeseries": [{"name": "battery", "value": 3.6}]},
+{"l_uid": 231, "p_uid": 256, "timestamp": "2023-04-02T23:27:04.448301315Z", "timeseries": [{"name": "battery", "value": 3.6}]},
+{"l_uid": 259, "p_uid": 287, "timestamp": "2023-04-02T23:29:14.825901349Z", "timeseries": [{"name": "EC", "value": 146}]},
+{"l_uid": 94, "p_uid": 98, "timestamp": "2023-04-02T23:24:38.828233506Z", "timeseries": [{"name": "battery", "value": 3.6}]},
 {"l_uid": 234, "p_uid": 255, "timestamp": "2023-04-02T23:26:55.398181573Z", "timeseries": [{"name": "battery", "value": 3.6}]}
+]}
