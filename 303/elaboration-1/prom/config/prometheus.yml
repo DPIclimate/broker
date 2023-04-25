@@ -1,0 +1,28 @@
+scrape_configs:
+
+- job_name: prometheus
+  static_configs:
+    - targets:
+      - host.docker.internal:9090
+
+- job_name: json_exporter
+  static_configs:
+   - targets:
+      - host.docker.internal:7979 
+
+  ## gather the metrics from third party json sources, via the json exporter
+- job_name: json
+  metrics_path: /probe
+  params:
+    module: [default]
+  static_configs:
+    - targets:
+      - http://127.0.0.1:8080/sample_messages.json
+  relabel_configs:
+    - source_labels: [__address__]
+      target_label: __param_target
+    - source_labels: [__param_target]
+      target_label: instance
+    - target_label: __address__
+      ## Location of the json exporter's real <hostname>:<port>
+      replacement: host.docker.internal:7979 
