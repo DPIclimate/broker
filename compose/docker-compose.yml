@@ -154,6 +154,21 @@ services:
     working_dir: "/home/broker/python"
     entrypoint: [ "python", "-m", "delivery.UbidotsWriter" ]
 
+  pollers:
+    image: broker/python-base
+    restart: unless-stopped
+    env_file:
+      - .env
+    depends_on:
+      db:
+        condition: "service_healthy"
+      mq:
+        condition: "service_healthy"
+    volumes:
+      - ../src/python:/home/broker/python
+    working_dir: "/home/broker/python"
+    entrypoint: [ "python", "-m", "pollers.ICT_EagleIO" ]
+
   frred:
     image: broker/python-base
     restart: unless-stopped
