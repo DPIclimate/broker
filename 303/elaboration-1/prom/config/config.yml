@@ -3,11 +3,11 @@ modules:
   default:
     metrics:
     - name: l_uid 
-      path: "{ .values.l_uid }"
-      epochTimestamp: "{ .values.timestamp }"
+      path: "{ .l_uid }"
+      epochTimestamp: "{ .timestamp }"
       help: logical id
       labels:
-        p_uid: "{ .values.p_uid }"
-        deviceName: "{ .values.timeseries.name }"
+        p_uid: "{ .p_uid }"
+        deviceName: "{ .name }"
       values:
-        deviceValue: "{ .values.timeseries.value }"    
+        deviceValue: "{ .value }"    
