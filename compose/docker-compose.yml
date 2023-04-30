@@ -29,7 +29,6 @@ services:
 
   timescaledb:
     image: timescale/timescaledb:latest-pg15
-    container_name: timescaledb
     restart: "no"
     environment:
       POSTGRES_PASSWORD: admin
@@ -38,6 +37,21 @@ services:
       - ../timescale/data:/var/lib/postgresql/data
     ports:
       - "127.0.0.1:5433:5432"
+      
+  zak_python:
+    image: broker/python-base
+    restart: "no"
+    env_file:
+      - .env
+    depends_on:
+      timescaledb:
+        condition: "service_healthy"
+      mq:
+        condition: "service_healthy"
+    volumes:
+      - ../src/python:/home/broker/python
+    working_dir: "/home/broker/python"
+    entrypoint: [ "python", "-m", "timescale.mqlistener" ]
 
   restapi:
     image: broker/python-base
