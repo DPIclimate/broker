@@ -20,7 +20,7 @@ for value in range(5):
     .tag("tagname1", "tagvalue1")
     .field("field1", value)
   )
-  write_api.write(bucket=bucket, org="ITC303", record=point)
+  write_api.write(bucket="DPI", org="ITC303", record=point)
   time.sleep(1) # separate points by 1 second
 
 query_api = client.query_api()
