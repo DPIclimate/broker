@@ -9,6 +9,4 @@ docker run -d --rm --name influxdb -p 8086:8086  \
 -e DOCKER_INFLUXDB_INIT_BUCKET=DPI \
 influxdb:2.7.0 >/dev/null
 
-export INFLUXDB_TOKEN=j6OEucJqRI0o-pJLHW6ZtoUBLLCIaP7Aml8NMUp86WIc-kkH56BwJcvZto6TclPpJvxs5rLYiCBR_WLWIKsm5Q==
-
 docker ps | grep -q "influxdb" && echo "influxdb running"
