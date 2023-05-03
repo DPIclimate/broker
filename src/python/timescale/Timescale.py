@@ -124,6 +124,24 @@ def query_avg_value(interval_hrs: int = 24, connection: str = CONNECTION, table_
 #     conn.commit()
 #     conn.close()
 
+def parse_json(json_obj: dict) -> list:
+    parsed_data = []
+    
+    try:
+        l_uid = json_obj['l_uid']
+        p_uid = json_obj['p_uid']
+        timestamp = parser.parse(json_obj['timestamp'])
+        timeseries = json_obj['timeseries']
+
+        for tsd in timeseries:
+            name = tsd['name']
+            value = tsd['value']
+            parsed_data.append((l_uid, p_uid, timestamp, name, value))
+    except KeyError:
+        pass
+    
+    return parsed_data
+
 
 def parse_json_string(json_string: str) -> list:
     parsed_data = []

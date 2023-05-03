@@ -17,6 +17,8 @@ services:
   mq:
     hostname: "mq"
     image: rabbitmq:3.9-management
+    ports:
+      - 15672:15672
     restart: "no"
     env_file:
       - .env
@@ -37,7 +39,12 @@ services:
       - ../timescale/data:/var/lib/postgresql/data
     ports:
       - "127.0.0.1:5433:5432"
-      
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+
   zak_python:
     image: broker/python-base
     restart: "no"
