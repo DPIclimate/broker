@@ -1,6 +1,6 @@
 import datetime, dateutil.parser
 
-import asyncio, json, logging, re, signal, sys, uuid
+import asyncio, json, logging, pkgutil, re, signal, sys, uuid
 from typing import Dict, Optional
 
 import BrokerConstants
@@ -15,12 +15,15 @@ import api.client.DAO as dao
 import util.LoggingUtil as lu
 import util.Timestamps as ts
 
+import plugins
+
 std_logger = logging.getLogger(__name__)
 
-rx_channel: mq.RxChannel = None
 tx_channel: mq.TxChannel = None
 mq_client: mq.RabbitMQConnection = None
 finish = False
+
+plugin_modules = []
 
 def sigterm_handler(sig_no, stack_frame) -> None:
     """
@@ -44,17 +47,39 @@ async def main():
 
     It would be good to find a better way to do nothing than the current loop.
     """
-    global mq_client, rx_channel, tx_channel, finish
+    global mq_client, tx_channel, finish, plugin_modules
 
     logging.info('===============================================================')
     logging.info('               STARTING MQTT Processor LISTENER')
     logging.info('===============================================================')
     
-    # TODO - Iterate over plugins and load each one
+    # Load each plugin module
+    package = plugins
+    prefix = package.__name__ + "."
+    for importer, modname, ispkg in pkgutil.iter_modules(package.__path__, prefix):
+        print("Found submodule %s (is a package: %s)" % (modname, ispkg))
+        module = __import__(modname, fromlist="dummy")
+        std_logger.info("Imported Plugin", module)
+        plugin_modules.append(module)
+    
+    # Subscribe each plugin to its topic
+    rx_channels = []
+    for plugin in plugin_modules:
+        try:
+            rx_channel = mq.RxChannel('amq.topic', exchange_type=ExchangeType.topic, queue_name=plugin.__name__, on_message=plugin.on_message, routing_key=plugin.TOPIC)
+            rx_channels.append(rx_channel)
+        except Exception as e:
+            std_logger.error("Failed to subscribe plugin to MQTT topic", e)
+    
+    # Set up the transmit channel and finally create the client
+    tx_channel = mq.TxChannel(exchange_name=BrokerConstants.PHYSICAL_TIMESERIES_EXCHANGE_NAME, exchange_type=ExchangeType.fanout)
+    mq_client = mq.RabbitMQConnection(channels=rx_channels + tx_channel)
+    asyncio.create_task(mq_client.connect())
 
+    # TODO - Figure out a better way to do this
     #while not (rx_channel.is_open and tx_channel.is_open):
-    while not (rx_channel.is_open):
-        await asyncio.sleep(0)
+    #while not (rx_channel.is_open):
+        #await asyncio.sleep(0)
 
     while not finish:
         await asyncio.sleep(2)
@@ -67,14 +92,14 @@ def on_message(channel, method, properties, body):
     """
     This function is called when a message arrives from RabbitMQ.
     """
-    global rx_channel, tx_channel, finish
+    global tx_channel, finish
 
     delivery_tag = method.delivery_tag
 
     # If the finish flag is set, reject the message so RabbitMQ will re-queue it
     # and return early.
     if finish:
-        rx_channel._channel.basic_reject(delivery_tag)
+        channel.basic_reject(delivery_tag)
         return
 
     try:
@@ -82,7 +107,7 @@ def on_message(channel, method, properties, body):
         logging.info("Message Received")
     except Exception as e:
         std_logger.exception('Error while processing message.')
-        rx_channel._channel.basic_ack(delivery_tag)
+        channel.basic_ack(delivery_tag)
 
 
 if __name__ == '__main__':
