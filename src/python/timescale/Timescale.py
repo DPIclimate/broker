@@ -43,20 +43,33 @@ def generate_test_message():
         json_example.append(json_item)
         return json_example
 
-def insert_lines(json_entries: list = generate_test_message(), connection: str = CONNECTION,):
+# def insert_lines(json_entries: list = generate_test_message(), connection: str = CONNECTION,):
+#     conn = psycopg2.connect(connection)
+#     cursor = conn.cursor()
+#     try:
+#         for json_data in json_entries:
+#         # Parse the JSON message and extract the relevant data fields
+#             data = json.loads(json_data)
+#             l_uid = data['l_uid']
+#             p_uid = data['p_uid']
+#             name = data['name']
+#             value = data['value']
+
+#             cursor.execute("INSERT INTO test_table (l_uid, p_uid, timestamp, name, value) VALUES (%s, %s, CURRENT_TIMESTAMP, %s, %s);",
+#                            (l_uid, p_uid, name, value))
+#     except (Exception, psycopg2.Error) as error:
+#         print(error)
+#     conn.commit()
+
+def insert_lines(parsed_data: list, connection: str = CONNECTION):
     conn = psycopg2.connect(connection)
     cursor = conn.cursor()
     try:
-        for json_data in json_entries:
-        # Parse the JSON message and extract the relevant data fields
-            data = json.loads(json_data)
-            l_uid = data['l_uid']
-            p_uid = data['p_uid']
-            name = data['name']
-            value = data['value']
-
-            cursor.execute("INSERT INTO test_table (l_uid, p_uid, timestamp, name, value) VALUES (%s, %s, CURRENT_TIMESTAMP, %s, %s);",
-                           (l_uid, p_uid, name, value))
+        for entry in parsed_data:
+            l_uid, p_uid, timestamp, name, value = entry
+            cursor.execute(
+                "INSERT INTO test_table (l_uid, p_uid, timestamp, name, value) VALUES (%s, %s, %s, %s, %s);",
+                (l_uid, p_uid, timestamp, name, value))
     except (Exception, psycopg2.Error) as error:
         print(error)
     conn.commit()
@@ -210,9 +223,33 @@ def insert_data_to_db(filename: str, connection: str = CONNECTION, table_name: s
     conn.commit()
     conn.close()
 
+test_message = """{
+  "broker_correlation_id": "83d04e6f-db16-4280-8337-53f11b2335c6",
+  "p_uid": 301,
+  "l_uid": 276,
+  "timestamp": "2023-01-30T06:21:56Z",
+  "timeseries": [
+    {
+      "name": "battery (v)",
+      "value": 4.16008997
+    },
+    {
+      "name": "pulse_count",
+      "value": 1
+    },
+    {
+      "name": "1_Temperature",
+      "value": 21.60000038
+    }
+  ]
+}
+"""
+
 if __name__ == "__main__":
     create_test_table()
-    insert_lines()
+    #lol = parse_json_string(test_message)
+    #print(lol)
+    #insert_lines(lol)
     #insert_data_to_db("JSON_message")
-    # insert_data_to_db("sample_messages")
+    #insert_data_to_db("sample_messages")
     print(query_all_data())

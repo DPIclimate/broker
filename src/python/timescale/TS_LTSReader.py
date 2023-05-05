@@ -12,7 +12,7 @@ from pika.exchange_type import ExchangeType
 import api.client.RabbitMQ as mq
 import BrokerConstants
 import util.LoggingUtil as lu
-import timescale as ts
+import timescale.Timescale as ts
 
 rx_channel = None
 mq_client = None
@@ -81,6 +81,7 @@ def on_message(channel, method, properties, body):
     #
     # Message processing goes here
     #
+    print("The message passed to my boy is: " + str(msg))
     json_lines = ts.parse_json(msg)
     ts.insert_lines(json_lines)
 

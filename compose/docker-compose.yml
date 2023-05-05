@@ -28,6 +28,12 @@ services:
       test: rabbitmq-diagnostics check_port_connectivity || exit 1
       interval: 30s
       start_period: 30s
+      
+  nginx:
+    build: ../303/nginx/
+    ports:
+      - 80:80
+      - 8080:80
 
   timescaledb:
     image: timescale/timescaledb:latest-pg15
@@ -38,7 +44,7 @@ services:
     volumes:
       - ../timescale/data:/var/lib/postgresql/data
     ports:
-      - "127.0.0.1:5433:5432"
+      - "5433:5433"
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U postgres"]
       interval: 10s
@@ -58,7 +64,7 @@ services:
     volumes:
       - ../src/python:/home/broker/python
     working_dir: "/home/broker/python"
-    entrypoint: [ "python", "-m", "timescale.mqlistener" ]
+    entrypoint: [ "python", "-m", "timescale.TS_LTSReader" ]
 
   restapi:
     image: broker/python-base
