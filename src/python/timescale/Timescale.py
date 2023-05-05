@@ -7,8 +7,8 @@ from dateutil import parser
 
 username = "postgres"
 password = "admin"
-host = "localhost"
-port = 5433     # Not 5432 since postgres already exists in stack
+host = "tsdb"
+port = 5432     # Not 5432 since postgres already exists in stack
 dbname = "postgres"
 CONNECTION = f"postgres://{username}:{password}@{host}:{port}/{dbname}"
 
