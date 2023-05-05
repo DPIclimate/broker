@@ -43,20 +43,33 @@ def generate_test_message():
         json_example.append(json_item)
         return json_example
 
-def insert_lines(json_entries: list = generate_test_message(), connection: str = CONNECTION,):
+# def insert_lines(json_entries: list = generate_test_message(), connection: str = CONNECTION,):
+#     conn = psycopg2.connect(connection)
+#     cursor = conn.cursor()
+#     try:
+#         for json_data in json_entries:
+#         # Parse the JSON message and extract the relevant data fields
+#             data = json.loads(json_data)
+#             l_uid = data['l_uid']
+#             p_uid = data['p_uid']
+#             name = data['name']
+#             value = data['value']
+
+#             cursor.execute("INSERT INTO test_table (l_uid, p_uid, timestamp, name, value) VALUES (%s, %s, CURRENT_TIMESTAMP, %s, %s);",
+#                            (l_uid, p_uid, name, value))
+#     except (Exception, psycopg2.Error) as error:
+#         print(error)
+#     conn.commit()
+
+def insert_lines(parsed_data: list, connection: str = CONNECTION):
     conn = psycopg2.connect(connection)
     cursor = conn.cursor()
     try:
-        for json_data in json_entries:
-        # Parse the JSON message and extract the relevant data fields
-            data = json.loads(json_data)
-            l_uid = data['l_uid']
-            p_uid = data['p_uid']
-            name = data['name']
-            value = data['value']
-
-            cursor.execute("INSERT INTO test_table (l_uid, p_uid, timestamp, name, value) VALUES (%s, %s, CURRENT_TIMESTAMP, %s, %s);",
-                           (l_uid, p_uid, name, value))
+        for entry in parsed_data:
+            l_uid, p_uid, timestamp, name, value = entry
+            cursor.execute(
+                "INSERT INTO test_table (l_uid, p_uid, timestamp, name, value) VALUES (%s, %s, %s, %s, %s);",
+                (l_uid, p_uid, timestamp, name, value))
     except (Exception, psycopg2.Error) as error:
         print(error)
     conn.commit()

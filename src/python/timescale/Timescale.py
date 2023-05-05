@@ -7,8 +7,8 @@ from dateutil import parser
 
 username = "postgres"
 password = "admin"
-host = "tsdb"
-port = 5432     # Not 5432 since postgres already exists in stack
+host = "tsdb"   # Container hostname, for Docker communication.
+port = 5432 
 dbname = "postgres"
 CONNECTION = f"postgres://{username}:{password}@{host}:{port}/{dbname}"
 
