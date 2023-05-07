@@ -13,7 +13,7 @@ client = influxdb_client.InfluxDBClient(url=url, token=token, org=org)
 bucket="DPI"
 
 write_api = client.write_api(write_options=SYNCHRONOUS)
-   
+
 for value in range(5):
   point = (
     Point("measurement1")
@@ -26,12 +26,10 @@ for value in range(5):
 query_api = client.query_api()
 
 query = """from(bucket: "DPI")
- |> range(start: -10m)
- |> filter(fn: (r) => r._measurement == "measurement1")"""
+  |> range(start: -10m)
+  |> filter(fn: (r) => r._measurement == "measurement1")"""
 tables = query_api.query(query, org="ITC303")
 
 for table in tables:
   for record in table.records:
     print(record)
-
-
