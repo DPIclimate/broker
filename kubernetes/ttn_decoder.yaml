@@ -14,14 +14,15 @@ spec:
     spec:
       containers:
         - name: ttn-decoder
-          image: sampixelyork/ttn_decoder:latest
+          image: broker/ttn_decoder:latest
+          imagePullPolicy: Never
           env:
-          - name: TTN_DECODER_SRC_PATH
+          - name: ttn_decoder_src_path
             valueFrom:
               configMapKeyRef:
                 name: env-configmap
                 key: TTN_DECODER_SRC_PATH
-          - name: TTN_FORMATTER_SRC_PATH
+          - name: ttn_formatter_src_path
             valueFrom:
              configMapKeyRef:
                name: env-configmap
@@ -37,12 +38,10 @@ spec:
       volumes:
         - name: ttn-decoder-volume
           hostPath:
-            path: /${TTN_DECODER_SRC_PATH}
-            type: Directory
+            path: ttn_decoder_src_path
         - name: ttn-formatters-volume
           hostPath:
-            path: /${TTN_FORMATTER_SRC_PATH}
-            type: Directory
+            path: ttn_formatter_src_path
 ---
 apiVersion: v1
 kind: Service

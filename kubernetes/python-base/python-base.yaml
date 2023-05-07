@@ -1,0 +1,27 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: python-base
+spec:
+  selector:
+    matchLabels:
+      app: python-base
+  replicas: 1
+  template:
+    metadata:
+      labels:
+        app: python-base
+    spec:
+      containers:
+      - name: python-base
+        image: broker/python-base
+        imagePullPolicy: Never
+        resources:
+          limits:
+            cpu: 2000m
+            memory: 2048Mi
+          requests:
+            cpu: 1000m
+            memory: 1024Mi
+        ports:
+        - containerPort: 80

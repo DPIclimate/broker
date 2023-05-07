@@ -13,7 +13,5 @@ spec:
         app: test-app
     spec:
       containers:
-      - name: test-container
-        image: sampixelyork/python-base
-#        command: [ "sleep" ]
-#        args: [ "infinity" ]
+      - name: init-test-container
+        image: busybox

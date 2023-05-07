@@ -16,7 +16,7 @@ spec:
         - name: mq
           image: rabbitmq:3.9-management
           env:
-          - name: RABBITMQ_CONFIG_PATH
+          - name: rabbitmq_config_path
             valueFrom:
               configMapKeyRef:
                 name: env-configmap
@@ -37,8 +37,7 @@ spec:
       volumes:
         - name: rabbitmq-config-volume
           hostPath:
-            path: /${RABBITMQ_CONFIG_PATH}
-            type: Directory
+            path: rabbitmq_config_path
 ---
 apiVersion: v1
 kind: Service

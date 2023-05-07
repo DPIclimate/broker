@@ -15,7 +15,7 @@ spec:
         - name: db
           image: postgres:14.2
           env:
-          - name: DB_INIT
+          - name: db_init
             valueFrom:
               configMapKeyRef:
                 name: env-configmap
@@ -49,7 +49,7 @@ spec:
       volumes:
         - name: init-script
           hostPath:
-            path: /${DB_INIT}
+            path: db_init
 ---
 apiVersion: v1
 kind: Service

@@ -14,9 +14,10 @@ spec:
     spec:
       containers:
         - name: website
-          image: sampixelyork/mgmt-app
+          image: broker/mgmt-app
+          imagePullPolicy: Never
           env:
-          - name: WEBSITE_PATH
+          - name: website_path
             valueFrom:
               configMapKeyRef:
                 name: env-configmap
@@ -27,8 +28,7 @@ spec:
       volumes:
         - name: website-volume
           hostPath:
-            path: /${WEBSITE_PATH}
-            type: Directory
+            path: website_path
 ---
 apiVersion: v1
 kind: Service

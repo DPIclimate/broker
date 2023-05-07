@@ -14,11 +14,12 @@ spec:
     spec:
       containers:
       - name: ttn-webhook
-        image: sampixelyork/python-base:latest
+        image: broker/python-base:latest
+        imagePullPolicy: Never
         env:
         - name: MQ_HOST
           value: mq
-        - name: PYTHON_SRC_PATH
+        - name: python_src_path
           valueFrom:
             configMapKeyRef:
               name: env-configmap
@@ -32,8 +33,7 @@ spec:
       volumes:
       - name: python-src-volume
         hostPath:
-          path: /${PYTHON_SRC_PATH}
-          type: Directory
+          path: python_src_path
 ---
 apiVersion: v1
 kind: Service
