@@ -1,0 +1,20 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: ttn-decoder
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app: ttn-decoder
+  template:
+    metadata:
+      labels:
+        app: ttn-decoder
+    spec:
+      containers:
+      - name: ttn-decoder
+        image: broker/ttn_decoder
+        imagePullPolicy: Never
+        ports:
+        - containerPort: 80

@@ -16,32 +16,27 @@ spec:
         - name: ttn-decoder
           image: broker/ttn_decoder:latest
           imagePullPolicy: Never
-          env:
-          - name: ttn_decoder_src_path
-            valueFrom:
-              configMapKeyRef:
+          envFrom:
+            - configMapRef:
                 name: env-configmap
-                key: TTN_DECODER_SRC_PATH
-          - name: ttn_formatter_src_path
-            valueFrom:
-             configMapKeyRef:
-               name: env-configmap
-               key: TTN_FORMATTER_SRC_PATH
           volumeMounts:
             - name: ttn-decoder-volume
               mountPath: /usr/src/ttn_decoder/src
             - name: ttn-formatters-volume
               mountPath: /usr/src/ttn_formatters
           workingDir: "/usr/src/ttn_decoder"
-          command: ["node"]
-          args: ["src"]
+          command:
+            - sh
+            - -c
+            - node
+            - src
       volumes:
         - name: ttn-decoder-volume
           hostPath:
-            path: ttn_decoder_src_path
+            path: /home/broker/src/js/ttn_decoder/src
         - name: ttn-formatters-volume
           hostPath:
-            path: ttn_formatter_src_path
+            path: /home/ttn-formatters
 ---
 apiVersion: v1
 kind: Service

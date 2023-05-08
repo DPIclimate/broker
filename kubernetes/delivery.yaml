@@ -16,22 +16,25 @@ spec:
       - name: delivery
         image: broker/python-base:latest
         imagePullPolicy: Never
-        env:
-        - name: python_src_path
-          valueFrom:
-            configMapKeyRef:
+        envFrom:
+          - configMapRef:
               name: env-configmap
-              key: PYTHON_SRC_PATH
         volumeMounts:
         - name: python-src-volume
           mountPath: /home/broker/python
         workingDir: /home/broker/python
-        command: ["python"]
-        args: ["-m", "delivery.UbidotsWriter"]
+        command:
+          - sh
+          - -c
+#          - tail -f /dev/null
+          - python
+          - -m
+          - delivery.UbidotsWriter
+#        command: ["sh", "-c", "python", "-m", "delivery.UbidotsWriter"]
       volumes:
       - name: python-src-volume
         hostPath:
-          path: python_src_path
+          path: /home/broker/src/python
 ---
 apiVersion: v1
 kind: Service

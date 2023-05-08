@@ -3,25 +3,35 @@ kind: Deployment
 metadata:
   name: python-base
 spec:
+  replicas: 3
   selector:
     matchLabels:
       app: python-base
-  replicas: 1
   template:
     metadata:
       labels:
         app: python-base
     spec:
       containers:
-      - name: python-base
-        image: broker/python-base
-        imagePullPolicy: Never
-        resources:
-          limits:
-            cpu: 2000m
-            memory: 2048Mi
-          requests:
-            cpu: 1000m
-            memory: 1024Mi
-        ports:
-        - containerPort: 80
+        - name: python-base
+          image: broker/python-base
+          imagePullPolicy: Never
+          volumeMounts:
+            - name: python-src-volume
+              mountPath: /home/broker/python
+            - name: test-volume
+              mountPath: /home/broker/test
+#          workingDir: "/home/broker/python"
+#          ports:
+#            - containerPort: 80
+          command:
+            - sh
+            - -c
+            - tail -f /dev/null
+      volumes:
+        - name: python-src-volume
+          hostPath:
+            path: /home/sam/csu-dpi/broker/src/python
+        - name: test-volume
+          hostPath:
+            path: /home/sam/csu-dpi/broker/kubernetes/python-base/test-volume

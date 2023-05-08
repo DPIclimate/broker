@@ -16,19 +16,21 @@ spec:
         - name: website
           image: broker/mgmt-app
           imagePullPolicy: Never
-          env:
-          - name: website_path
-            valueFrom:
-              configMapKeyRef:
+          envFrom:
+            - configMapRef:
                 name: env-configmap
-                key: WEBSITE_PATH
           volumeMounts:
             - name: website-volume
               mountPath: /app
+#          command:
+#            - sh
+#            - -c
+#            - tail -f /dev/null
       volumes:
         - name: website-volume
           hostPath:
-            path: website_path
+            path: /home/broker/src/www
+            type: Directory
 ---
 apiVersion: v1
 kind: Service

@@ -15,12 +15,9 @@ spec:
       containers:
         - name: mq
           image: rabbitmq:3.9-management
-          env:
-          - name: rabbitmq_config_path
-            valueFrom:
-              configMapKeyRef:
+          envFrom:
+            - configMapRef:
                 name: env-configmap
-                key: RABBITMQ_CONFIG_PATH
           volumeMounts:
             - name: rabbitmq-config-volume
               mountPath: /etc/rabbitmq
@@ -37,7 +34,7 @@ spec:
       volumes:
         - name: rabbitmq-config-volume
           hostPath:
-            path: rabbitmq_config_path
+            path: /home/broker/config/rabbitmq
 ---
 apiVersion: v1
 kind: Service

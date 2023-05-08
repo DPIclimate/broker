@@ -1,14 +1,38 @@
-apiVersion: batch/v1
-kind: Job
+apiVersion: apps/v1
+kind: Deployment
 metadata:
-  name: hello-world
+  name: hello-world-deployment
 spec:
+  selector:
+    matchLabels:
+      app: hello-world
+  replicas: 3
   template:
     metadata:
-      name: hello-world-pod
+      labels:
+        app: hello-world
     spec:
       containers:
-      - name: hello-world
+      - name: hello-world-container
         image: broker/hello-world
         imagePullPolicy: Never
-      restartPolicy: Never
+        volumeMounts:
+#          - mountPath: /home/hello-world
+#            name: hello-world-volume
+          - mountPath: /home/broker
+            name: broker-volume
+        command:
+          - sh
+          - -c
+          - tail -f /dev/null
+      volumes:
+#        - name: hello-world-volume
+#          hostPath:
+#            path: /home/sam/hello-world
+#            type: Directory
+        - name: broker-volume
+          hostPath:
+            path: /home/broker
+            type: Directory
+#          persistentVolumeClaim:
+#            claimName: my-pvc

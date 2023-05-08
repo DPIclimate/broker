@@ -16,22 +16,22 @@ spec:
       - name: ttn-processor
         image: broker/python-base:latest
         imagePullPolicy: Never
-        env:
-        - name: python_src_path
-          valueFrom:
-            configMapKeyRef:
+        envFrom:
+          - configMapRef:
               name: env-configmap
-              key: PYTHON_SRC_PATH
         volumeMounts:
         - name: python-src-volume
           mountPath: /home/broker/python
         workingDir: /home/broker/python/ttn
-        command: [ "python" ]
-        args: [ "AllMsgsWriter.py" ]
+        command:
+          - sh
+          - -c
+          - python
+          - AllMsgsWriter.py
       volumes:
       - name: python-src-volume
         hostPath:
-          path: python_src_path
+          path: /home/broker/src/python
 ---
 apiVersion: v1
 kind: Service

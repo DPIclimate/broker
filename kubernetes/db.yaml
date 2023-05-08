@@ -14,22 +14,9 @@ spec:
       containers:
         - name: db
           image: postgres:14.2
-          env:
-          - name: db_init
-            valueFrom:
-              configMapKeyRef:
+          envFrom:
+            - configMapRef:
                 name: env-configmap
-                key: DB_INIT
-          - name: PGDATABASE
-            valueFrom:
-              configMapKeyRef:
-                name: env-configmap
-                key: PGDATABASE
-          - name: PGUSER
-            valueFrom:
-              configMapKeyRef:
-                name: env-configmap
-                key: PGUSER
           volumeMounts:
             - name: init-script
               mountPath: /docker-entrypoint-initdb.d
@@ -49,7 +36,7 @@ spec:
       volumes:
         - name: init-script
           hostPath:
-            path: db_init
+            path: /home/broker/db/init.d
 ---
 apiVersion: v1
 kind: Service

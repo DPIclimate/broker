@@ -13,25 +13,24 @@ spec:
         app: x
     spec:
       containers:
-      - name: x
-        image: broker/python-base:latest
-        imagePullPolicy: Never
-        env:
-        - name: python_src_path
-          valueFrom:
-            configMapKeyRef:
-              name: env-configmap
-              key: PYTHON_SRC_PATH
-        volumeMounts:
-        - name: x-volume
-          mountPath: /home/broker/broker
-        workingDir: /home/broker/broker
-        command: ["/bin/sh"]
-        args: ["-c", "./forever.sh"]
+        - name: x
+          image: broker/python-base:latest
+          imagePullPolicy: Never
+          envFrom:
+            - configMapRef:
+                name: env-configmap
+          volumeMounts:
+            - name: x-volume
+              mountPath: /home/broker/broker
+          workingDir: /home/broker/broker
+          command:
+            - sh
+            - -c
+            - ./forever.sh
       volumes:
-      - name: x-volume
-        hostPath:
-          path: python_src_path
+        - name: x-volume
+          hostPath:
+            path: /home/broker/src/python
       dnsPolicy: ClusterFirst
 ---
 apiVersion: v1
@@ -42,7 +41,7 @@ spec:
   selector:
     app: x
   ports:
-  - name: http
-    port: 80
-    targetPort: 80
+    - name: http
+      port: 80
+      targetPort: 80
   type: ClusterIP
