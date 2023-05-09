@@ -15,7 +15,7 @@ import api.client.DAO as dao
 import util.LoggingUtil as lu
 import util.Timestamps as ts
 
-import plugins
+import mqtt_processors.plugins as plugins
 
 std_logger = logging.getLogger(__name__)
 
@@ -57,9 +57,8 @@ async def main():
     package = plugins
     prefix = package.__name__ + "."
     for importer, modname, ispkg in pkgutil.iter_modules(package.__path__, prefix):
-        print("Found submodule %s (is a package: %s)" % (modname, ispkg))
         module = __import__(modname, fromlist="dummy")
-        std_logger.info("Imported Plugin", module)
+        std_logger.info("Imported Plugin %s" % (module))
         plugin_modules.append(module)
     
     # Subscribe each plugin to its topic
@@ -69,11 +68,14 @@ async def main():
             rx_channel = mq.RxChannel('amq.topic', exchange_type=ExchangeType.topic, queue_name=plugin.__name__, on_message=plugin.on_message, routing_key=plugin.TOPIC)
             rx_channels.append(rx_channel)
         except Exception as e:
-            std_logger.error("Failed to subscribe plugin to MQTT topic", e)
+            std_logger.error("Failed to subscribe plugin to MQTT topic %s" % (e))
     
     # Set up the transmit channel and finally create the client
     tx_channel = mq.TxChannel(exchange_name=BrokerConstants.PHYSICAL_TIMESERIES_EXCHANGE_NAME, exchange_type=ExchangeType.fanout)
-    mq_client = mq.RabbitMQConnection(channels=rx_channels + tx_channel)
+    all_channels = []
+    all_channels.extend(rx_channels)
+    all_channels.append(tx_channel)
+    mq_client = mq.RabbitMQConnection(channels=all_channels)
     asyncio.create_task(mq_client.connect())
 
     # TODO - Figure out a better way to do this
