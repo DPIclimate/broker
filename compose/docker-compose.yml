@@ -94,7 +94,7 @@ services:
     working_dir: "/usr/src/ttn_decoder"
     entrypoint: [ "node", "src" ]
 
-  ydoc:
+  mqtt_processors:
     image: broker/python-base
     restart: "no"
     env_file:
@@ -107,22 +107,7 @@ services:
     volumes:
       - ../src/python:/home/broker/python
     working_dir: "/home/broker/python"
-    entrypoint: [ "python", "-m", "ydoc.YDOC" ]
-
-  wombat:
-    image: broker/python-base
-    restart: "no"
-    env_file:
-      - .env
-    depends_on:
-      db:
-        condition: "service_healthy"
-      mq:
-        condition: "service_healthy"
-    volumes:
-      - ../src/python:/home/broker/python
-    working_dir: "/home/broker/python"
-    entrypoint: [ "python", "-m", "ydoc.Wombat" ]
+    entrypoint: [ "python", "-m", "mqtt_processors.MQTTProcessors" ]
 
   lm:
     image: broker/python-base
