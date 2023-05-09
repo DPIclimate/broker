@@ -22,4 +22,10 @@ The `on_message` function will be passed the following parameters.
 
 ### `on_message` return
 
-The `on_message` function should return the processed message or throw an exception if there is an issue.
+The `on_message` function should return a dictionary formatted as below.  
+If the raw message cannot be processed, an exception should be raised.
+
+| Key | Type | Description |
+|:---:|:---:|:---:|
+| messages | <kbd>array</kbd> | An array of processed messaged to be sent to the Physical Timeseries. |
+| errors | <kbd>array</kbd> | An array of strings or exceptions to be logged |
