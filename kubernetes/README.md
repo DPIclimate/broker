@@ -89,7 +89,7 @@ To mount these directories to the node, each command must be in its own terminal
 
 Change to the `kubernetes` directory and execute the following command to run all the YAML files within that folder:
 
-- `minikube apply -f .`
+- `kubectl apply -f .`
 
 To view a dashboard of the node and pods, use this command:
 
