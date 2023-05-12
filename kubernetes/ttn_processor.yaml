@@ -24,8 +24,8 @@ spec:
           mountPath: /home/broker/python
         workingDir: /home/broker/python/ttn
         command:
-          - sh
-          - -c
+#          - sh
+#          - -c
           - python
           - AllMsgsWriter.py
       volumes:

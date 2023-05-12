@@ -24,8 +24,8 @@ spec:
               mountPath: /home/broker/broker
           workingDir: /home/broker/broker
           command:
-            - sh
-            - -c
+#            - sh
+#            - -c
             - ./forever.sh
       volumes:
         - name: x-volume

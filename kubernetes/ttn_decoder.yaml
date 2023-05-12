@@ -26,8 +26,8 @@ spec:
               mountPath: /usr/src/ttn_formatters
           workingDir: "/usr/src/ttn_decoder"
           command:
-            - sh
-            - -c
+#            - sh
+#            - -c
             - node
             - src
       volumes:

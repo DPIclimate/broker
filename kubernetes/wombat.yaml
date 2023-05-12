@@ -24,8 +24,8 @@ spec:
           mountPath: /home/broker/python
         workingDir: /home/broker/python
         command:
-          - sh
-          - -c
+#          - sh
+#          - -c
 #          - tail -f /dev/null
           - python
           - -m
