@@ -24,9 +24,10 @@ spec:
               mountPath: /home/broker/broker
           workingDir: /home/broker/broker
           command:
-#            - sh
-#            - -c
-            - ./forever.sh
+            - sh
+            - -c
+            - tail -f /dev/null
+#            - ./forever.sh
       volumes:
         - name: x-volume
           hostPath:

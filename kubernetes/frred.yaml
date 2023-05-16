@@ -22,6 +22,8 @@ spec:
           volumeMounts:
             - name: python-src-volume
               mountPath: /home/broker/python
+            - name: databolt-src-volume
+              mountPath: /raw_data
           workingDir: /home/broker/python
           command:
 #          - sh
@@ -34,6 +36,9 @@ spec:
         - name: python-src-volume
           hostPath:
             path: /home/broker/src/python
+        - name: databolt-src-volume
+          hostPath:
+            path: /home/databolt
 ---
 apiVersion: v1
 kind: Service
