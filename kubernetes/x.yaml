@@ -21,17 +21,17 @@ spec:
                 name: env-configmap
           volumeMounts:
             - name: x-volume
-              mountPath: /home/broker/broker
-          workingDir: /home/broker/broker
+              mountPath: /home/broker
+          workingDir: /home/broker
           command:
-            - sh
-            - -c
-            - tail -f /dev/null
-#            - ./forever.sh
+#            - sh
+#            - -c
+#            - tail -f /dev/null
+            - ./forever.sh
       volumes:
         - name: x-volume
           hostPath:
-            path: /home/broker/src/python
+            path: /home/broker
       dnsPolicy: ClusterFirst
 ---
 apiVersion: v1
