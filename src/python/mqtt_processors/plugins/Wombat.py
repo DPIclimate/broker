@@ -1,6 +1,4 @@
-import dateutil.parser
-import json
-import uuid
+import dateutil.parser, json, uuid
 import BrokerConstants
 from pdmodels.Models import PhysicalDevice
 import util.LoggingUtil as lu
@@ -8,11 +6,9 @@ import api.client.DAO as dao
 
 TOPIC = 'wombat'
 
-
 def on_message(message, properties):
     correlation_id = str(uuid.uuid4())
-    lu.cid_logger.info(f'Message as received: {message}', extra={
-                       BrokerConstants.CORRELATION_ID_KEY: correlation_id})
+    lu.cid_logger.info(f'Message as received: {message}', extra={BrokerConstants.CORRELATION_ID_KEY: correlation_id})
 
     msg = {}
     try:
@@ -24,28 +20,23 @@ def on_message(message, properties):
     # logger calls. However, for consistency with other modules and to avoid problems if this code
     # is ever copy/pasted somewhere we will stick with building a msg_with_cid object and using
     # that for logging.
-    msg_with_cid = {BrokerConstants.CORRELATION_ID_KEY: correlation_id,
-                    BrokerConstants.RAW_MESSAGE_KEY: msg}
+    msg_with_cid = {BrokerConstants.CORRELATION_ID_KEY: correlation_id, BrokerConstants.RAW_MESSAGE_KEY: msg}
 
     # Record the message to the all messages table before doing anything else to ensure it
     # is saved. Attempts to add duplicate messages are ignored in the DAO.
     msg_ts = dateutil.parser.isoparse(msg[BrokerConstants.TIMESTAMP_KEY])
-    dao.add_raw_json_message(BrokerConstants.WOMBAT,
-                             msg_ts, correlation_id, msg)
+    dao.add_raw_json_message(BrokerConstants.WOMBAT, msg_ts, correlation_id, msg)
 
     source_ids = msg['source_ids']
     serial_no = source_ids['serial_no']
-    lu.cid_logger.info(
-        f'Accepted message from {serial_no}', extra=msg_with_cid)
+    lu.cid_logger.info(f'Accepted message from {serial_no}', extra=msg_with_cid)
 
-    pds = dao.get_pyhsical_devices_using_source_ids(
-        BrokerConstants.WOMBAT, source_ids)
+    pds = dao.get_pyhsical_devices_using_source_ids(BrokerConstants.WOMBAT, source_ids)
     if len(pds) < 1:
         lu.cid_logger.info(f'Message from a new device.', extra=msg_with_cid)
         lu.cid_logger.info(message, extra=msg_with_cid)
 
-        lu.cid_logger.info(
-            'Device not found, creating physical device.', extra=msg_with_cid)
+        lu.cid_logger.info('Device not found, creating physical device.', extra=msg_with_cid)
 
         props = {
             BrokerConstants.CREATION_CORRELATION_ID_KEY: correlation_id,
@@ -53,8 +44,7 @@ def on_message(message, properties):
         }
 
         device_name = f'Wombat-{serial_no}'
-        pd = PhysicalDevice(source_name=BrokerConstants.WOMBAT, name=device_name,
-                            location=None, last_seen=msg_ts, source_ids=source_ids, properties=props)
+        pd = PhysicalDevice(source_name=BrokerConstants.WOMBAT, name=device_name, location=None, last_seen=msg_ts, source_ids=source_ids, properties=props)
         pd = dao.create_physical_device(pd)
     else:
         pd = pds[0]
@@ -63,8 +53,7 @@ def on_message(message, properties):
         pd = dao.update_physical_device(pd)
 
     if pd is None:
-        lu.cid_logger.error(
-            f'Physical device not found, message processing ends now. {correlation_id}', extra=msg_with_cid)
+        lu.cid_logger.error(f'Physical device not found, message processing ends now. {correlation_id}', extra=msg_with_cid)
         raise Exception(f'Physical device not found')
 
     msg[BrokerConstants.CORRELATION_ID_KEY] = correlation_id

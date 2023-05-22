@@ -1,14 +1,19 @@
-import asyncio
-import logging
-import pkgutil
-import signal
+import datetime, dateutil.parser
+
+import asyncio, json, logging, pkgutil, re, signal, sys, uuid
+from typing import Dict, Optional
 
 import BrokerConstants
+from pdmodels.Models import PhysicalDevice
 from pika.exchange_type import ExchangeType
 
 import api.client.RabbitMQ as mq
+import api.client.TTNAPI as ttn
 
 import api.client.DAO as dao
+
+import util.LoggingUtil as lu
+import util.Timestamps as ts
 
 import mqtt_processors.plugins as plugins
 
@@ -19,7 +24,6 @@ mq_client: mq.RabbitMQConnection = None
 finish = False
 
 plugin_modules = []
-
 
 def sigterm_handler(sig_no, stack_frame) -> None:
     """
@@ -48,7 +52,7 @@ async def main():
     logging.info('===============================================================')
     logging.info('               STARTING MQTT Processor LISTENER')
     logging.info('===============================================================')
-
+    
     # Load each plugin module
     package = plugins
     prefix = package.__name__ + "."
@@ -56,23 +60,19 @@ async def main():
         module = __import__(modname, fromlist="dummy")
         std_logger.info("Imported Plugin %s" % (module))
         plugin_modules.append(module)
-
+    
     # Subscribe each plugin to its topic
     rx_channels = []
     for plugin in plugin_modules:
         try:
-            def plugin_specific_function(channel, method, properties, body): return on_message(
-                channel, method, properties, body, plugin)
-            rx_channel = mq.RxChannel('amq.topic', exchange_type=ExchangeType.topic,
-                                      queue_name=plugin.__name__, on_message=plugin_specific_function, routing_key=plugin.TOPIC)
+            plugin_specific_function = lambda channel, method, properties, body: on_message(channel, method, properties, body, plugin)
+            rx_channel = mq.RxChannel('amq.topic', exchange_type=ExchangeType.topic, queue_name=plugin.__name__, on_message=plugin_specific_function, routing_key=plugin.TOPIC)
             rx_channels.append(rx_channel)
         except Exception as e:
-            std_logger.error(
-                "Failed to subscribe plugin to MQTT topic %s" % (e))
-
+            std_logger.error("Failed to subscribe plugin to MQTT topic %s" % (e))
+    
     # Set up the transmit channel and finally create the client
-    tx_channel = mq.TxChannel(
-        exchange_name=BrokerConstants.PHYSICAL_TIMESERIES_EXCHANGE_NAME, exchange_type=ExchangeType.fanout)
+    tx_channel = mq.TxChannel(exchange_name=BrokerConstants.PHYSICAL_TIMESERIES_EXCHANGE_NAME, exchange_type=ExchangeType.fanout)
     all_channels = []
     all_channels.extend(rx_channels)
     all_channels.append(tx_channel)
@@ -80,9 +80,9 @@ async def main():
     asyncio.create_task(mq_client.connect())
 
     # TODO - Figure out a better way to do this
-    # while not (rx_channel.is_open and tx_channel.is_open):
-    # while not (rx_channel.is_open):
-    # await asyncio.sleep(0)
+    #while not (rx_channel.is_open and tx_channel.is_open):
+    #while not (rx_channel.is_open):
+        #await asyncio.sleep(0)
 
     while not finish:
         await asyncio.sleep(2)
@@ -108,21 +108,20 @@ def on_message(channel, method, properties, body, plugin):
     try:
         # process message
         std_logger.info(f"Message Received for {plugin.__name__}")
-        processed_message = plugin.on_message(
-            body, {'channel': channel, 'method': method, 'properties': properties, 'body': body})
-
+        processed_message = plugin.on_message(body, { 'channel': channel, 'method': method, 'properties': properties, 'body': body })
+        
         # Publish Messages to Physical Timeseries
         for message in processed_message['messages']:
             tx_channel.publish_message('physical_timeseries', message)
-
+        
         # Log Errors
         for error in processed_message['errors']:
             std_logger.error(error)
-
+            
     except Exception as e:
         # Log the exception
         std_logger.exception('Error while processing message.')
-
+        
     finally:
         # Tell RabbitMQ the message has been processed
         channel.basic_ack(delivery_tag)
