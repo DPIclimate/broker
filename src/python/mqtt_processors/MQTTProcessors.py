@@ -23,7 +23,7 @@ tx_channel: mq.TxChannel = None
 mq_client: mq.RabbitMQConnection = None
 finish = False
 
-plugin_modules = []
+plugin_modules = dict()
 
 def sigterm_handler(sig_no, stack_frame) -> None:
     """
@@ -36,6 +36,9 @@ def sigterm_handler(sig_no, stack_frame) -> None:
     finish = True
     dao.stop()
     mq_client.stop()
+    
+def plugin_specific_function(plugin_name):
+  return lambda channel, method, properties, body: on_message(channel, method, properties, body, plugin_name)
 
 
 async def main():
@@ -59,14 +62,14 @@ async def main():
     for importer, modname, ispkg in pkgutil.iter_modules(package.__path__, prefix):
         module = __import__(modname, fromlist="dummy")
         std_logger.info("Imported Plugin %s" % (module))
-        plugin_modules.append(module)
+        plugin_modules[module.__name__] = module
     
     # Subscribe each plugin to its topic
     rx_channels = []
-    for plugin in plugin_modules:
+    for plugin_name in plugin_modules:
+        plugin = plugin_modules[plugin_name]
         try:
-            plugin_specific_function = lambda channel, method, properties, body: on_message(channel, method, properties, body, plugin)
-            rx_channel = mq.RxChannel('amq.topic', exchange_type=ExchangeType.topic, queue_name=plugin.__name__, on_message=plugin_specific_function, routing_key=plugin.TOPIC)
+            rx_channel = mq.RxChannel('amq.topic', exchange_type=ExchangeType.topic, queue_name=plugin_name, on_message=plugin_specific_function(plugin_name), routing_key=plugin.TOPIC)
             rx_channels.append(rx_channel)
         except Exception as e:
             std_logger.error("Failed to subscribe plugin to MQTT topic %s" % (e))
@@ -91,7 +94,7 @@ async def main():
         await asyncio.sleep(1)
 
 
-def on_message(channel, method, properties, body, plugin):
+def on_message(channel, method, properties, body, plugin_name):
     """
     This function is called when a message arrives from RabbitMQ.
     """
@@ -107,8 +110,9 @@ def on_message(channel, method, properties, body, plugin):
 
     try:
         # process message
-        std_logger.info(f"Message Received for {plugin.__name__}")
-        processed_message = plugin.on_message(body, { 'channel': channel, 'method': method, 'properties': properties, 'body': body })
+        std_logger.info(f"{channel}")
+        std_logger.info(f"Message Received for {plugin_name}")
+        processed_message = plugin_modules[plugin_name].on_message(body, { 'channel': channel, 'method': method, 'properties': properties, 'body': body })
         
         # Publish Messages to Physical Timeseries
         for message in processed_message['messages']:
