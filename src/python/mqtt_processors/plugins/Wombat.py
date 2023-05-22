@@ -60,4 +60,7 @@ def on_message(message, properties):
     msg[BrokerConstants.PHYSICAL_DEVICE_UID_KEY] = pd.uid
 
     lu.cid_logger.debug(f'Publishing message: {msg}', extra=msg_with_cid)
-    return {'messages': [msg]}
+    return {
+        'messages': [msg],
+        'errors': []
+    }

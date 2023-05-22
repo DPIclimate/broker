@@ -65,7 +65,7 @@ async def main():
     rx_channels = []
     for plugin in plugin_modules:
         try:
-            plugin_specific_function = lambda channel, method, properties, body: on_message(channel, method, properties, body, plugin.on_message)
+            plugin_specific_function = lambda channel, method, properties, body: on_message(channel, method, properties, body, plugin)
             rx_channel = mq.RxChannel('amq.topic', exchange_type=ExchangeType.topic, queue_name=plugin.__name__, on_message=plugin_specific_function, routing_key=plugin.TOPIC)
             rx_channels.append(rx_channel)
         except Exception as e:
@@ -91,7 +91,7 @@ async def main():
         await asyncio.sleep(1)
 
 
-def on_message(channel, method, properties, body, plugin_on_message):
+def on_message(channel, method, properties, body, plugin):
     """
     This function is called when a message arrives from RabbitMQ.
     """
@@ -107,18 +107,19 @@ def on_message(channel, method, properties, body, plugin_on_message):
 
     try:
         # process message
-        std_logger.info("Message Received")
-        processed_message = plugin_on_message(body, {channel, method, properties, body})
+        std_logger.info(f"Message Received for {plugin.__name__}")
+        processed_message = plugin.on_message(body, { 'channel': channel, 'method': method, 'properties': properties, 'body': body })
         
         # Publish Messages to Physical Timeseries
-        for message in processed_message.messages:
+        for message in processed_message['messages']:
             tx_channel.publish_message('physical_timeseries', message)
         
         # Log Errors
-        for error in processed_message.errors:
+        for error in processed_message['errors']:
             std_logger.error(error)
             
     except Exception as e:
+        # Log the exception
         std_logger.exception('Error while processing message.')
         
     finally:

@@ -216,7 +216,10 @@ def on_message(message, properties):
 
         lu.cid_logger.debug(f'Publishing message: {p_ts_msg}', extra=msg_with_cid)
         messages.append(p_ts_msg)
-    return {messages, errors}
+    return {
+        'messages': messages,
+        'errors': errors
+    }
 
 
 """ EXAMPLE Message
