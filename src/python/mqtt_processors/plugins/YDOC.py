@@ -1,5 +1,9 @@
-import datetime, dateutil.parser
-import json, logging, re, uuid
+import datetime
+import dateutil.parser
+import json
+import logging
+import re
+import uuid
 import BrokerConstants
 import api.client.DAO as dao
 import util.LoggingUtil as lu
@@ -10,6 +14,7 @@ from typing import Dict, Optional
 # The default MQTT topic of YDOC devices is YDOC/<serial#> which RabbitMQ converts into a routing key of YDOC.<serial#>.
 # It seems we can use the MQTT topic wildcard of # to get all YDOC messages. 'YDOC.#'
 TOPIC = 'YDOC.#'
+
 
 def parse_ydoc_ts(ydoc_ts) -> Optional[datetime.datetime]:
     """
@@ -28,8 +33,9 @@ def parse_ydoc_ts(ydoc_ts) -> Optional[datetime.datetime]:
         return ts
     except Exception as err:
         logging.exception('parse_ydoc_ts error.')
-    
+
     return None
+
 
 # This re is used to get the sensor # and reading name prefix from the YDOC json.
 # The YDOC may send upper or lower case so the code lower-cases the string before
@@ -41,6 +47,7 @@ def parse_ydoc_ts(ydoc_ts) -> Optional[datetime.datetime]:
 _sensor_code_re = re.compile(r'^([a-z]\d+)([a-z]\d+)')
 
 _non_alpha_numeric = re.compile(r'\W')
+
 
 def process_message(msg_with_cid: Dict) -> Dict[str, Dict]:
     # Create a map of the channel objects keyed by channel code to make it simple
@@ -83,7 +90,8 @@ def process_message(msg_with_cid: Dict) -> Dict[str, Dict]:
                 continue
 
             if k == '$msg':
-                lu.cid_logger.debug(f'Ignoring message element: {v}', extra=msg_with_cid)
+                lu.cid_logger.debug(
+                    f'Ignoring message element: {v}', extra=msg_with_cid)
                 break
 
             if not k in channels:
@@ -95,7 +103,8 @@ def process_message(msg_with_cid: Dict) -> Dict[str, Dict]:
                 # If the channel id does not match our convention of s<n>... then assume it is a node
                 # level value such as voltage or processor temperature.
                 channel = channels[k]
-                lu.cid_logger.debug(f'YDOC node level data : ({k}) {channel["name"]} = {v} {channel["unit"]}', extra=msg_with_cid)
+                lu.cid_logger.debug(
+                    f'YDOC node level data : ({k}) {channel["name"]} = {v} {channel["unit"]}', extra=msg_with_cid)
                 dev_id = f'ydoc-{serial_no}'
                 logical_dev_name = f'{dev_name.strip()} ({dev_id})'
                 # Set a prefix that cannot be matched down where the var_name is set so that the node
@@ -117,23 +126,28 @@ def process_message(msg_with_cid: Dict) -> Dict[str, Dict]:
             device = devices[dev_id]
 
             channel_name: str = channels[k]['name']
-            var_name = channel_name[2:] if channel_name.startswith(s_prefix) else _non_alpha_numeric.sub('_', channel_name)
+            var_name = channel_name[2:] if channel_name.startswith(
+                s_prefix) else _non_alpha_numeric.sub('_', channel_name)
 
             try:
-                dot = { BrokerConstants.TIMESTAMP_KEY: ts, 'name': var_name, 'value': float(v) }
+                dot = {BrokerConstants.TIMESTAMP_KEY: ts,
+                       'name': var_name, 'value': float(v)}
                 device['dots'].append(dot)
             except:
-                lu.cid_logger.info(f'YDOC variable {var_name} nan, got {v} instead.', extra=msg_with_cid)
+                lu.cid_logger.info(
+                    f'YDOC variable {var_name} nan, got {v} instead.', extra=msg_with_cid)
 
     return devices
+
 
 def on_message(message, properties):
     if message[0] != 123 or message[1] != 34:
         raise Exception(f'Ignoring non-JSON message: {message}')
-    
+
     # The message from the webhook process already has the correlation id in it.
     correlation_id = str(uuid.uuid4())
-    lu.cid_logger.info(f'Message as received: {message}', extra={BrokerConstants.CORRELATION_ID_KEY: correlation_id})
+    lu.cid_logger.info(f'Message as received: {message}', extra={
+                       BrokerConstants.CORRELATION_ID_KEY: correlation_id})
 
     msg = {}
     try:
@@ -141,26 +155,31 @@ def on_message(message, properties):
     except Exception as e:
         raise Exception(f'JSON parsing failed')
 
-    msg_with_cid = {BrokerConstants.CORRELATION_ID_KEY: correlation_id, BrokerConstants.RAW_MESSAGE_KEY: msg}
+    msg_with_cid = {BrokerConstants.CORRELATION_ID_KEY: correlation_id,
+                    BrokerConstants.RAW_MESSAGE_KEY: msg}
 
     # Record the message to the all messages table before doing anything else to ensure it
     # is saved. Attempts to add duplicate messages are ignored in the DAO.
     # The 'now' timestamp is used so the message can be recorded ASAP and before any processing
     # that might fail or cause the message to be ignored is performed.
-    dao.add_raw_json_message(BrokerConstants.YDOC, ts.now_utc(), correlation_id, msg)
+    dao.add_raw_json_message(BrokerConstants.YDOC,
+                             ts.now_utc(), correlation_id, msg)
 
     if 'data' not in msg:
-        lu.cid_logger.info(f'Ignoring message because it has no data element.', extra=msg_with_cid)
+        lu.cid_logger.info(
+            f'Ignoring message because it has no data element.', extra=msg_with_cid)
         raise Exception(f'Ignoring message because it has no data element.')
 
     serial_no = msg['device']['sn']
     dev_name = msg['device']['name']
 
-    lu.cid_logger.info(f'Accepted message from {dev_name} {serial_no}', extra=msg_with_cid)
+    lu.cid_logger.info(
+        f'Accepted message from {dev_name} {serial_no}', extra=msg_with_cid)
 
     printed_msg = False
     devices = process_message(msg_with_cid)
-    lu.cid_logger.info(f'Processed message {dev_name} {serial_no}', extra=msg_with_cid)
+    lu.cid_logger.info(
+        f'Processed message {dev_name} {serial_no}', extra=msg_with_cid)
     lu.cid_logger.info(devices, extra=msg_with_cid)
     messages = []
     errors = []
@@ -170,19 +189,23 @@ def on_message(message, properties):
         }
 
         if len(device['dots']) > 0:
-            max_ts_dot = max(device['dots'], key=lambda d: dateutil.parser.parse(d[BrokerConstants.TIMESTAMP_KEY]))
+            max_ts_dot = max(device['dots'], key=lambda d: dateutil.parser.parse(
+                d[BrokerConstants.TIMESTAMP_KEY]))
             last_seen = max_ts_dot[BrokerConstants.TIMESTAMP_KEY]
         else:
             continue
 
-        pds = dao.get_pyhsical_devices_using_source_ids(BrokerConstants.YDOC, source_ids)
+        pds = dao.get_pyhsical_devices_using_source_ids(
+            BrokerConstants.YDOC, source_ids)
         if len(pds) < 1:
             if not printed_msg:
                 printed_msg = True
-                lu.cid_logger.info(f'Message from a new device.', extra=msg_with_cid)
+                lu.cid_logger.info(
+                    f'Message from a new device.', extra=msg_with_cid)
                 lu.cid_logger.info(message, extra=msg_with_cid)
 
-            lu.cid_logger.info('Device not found, creating physical device.', extra=msg_with_cid)
+            lu.cid_logger.info(
+                'Device not found, creating physical device.', extra=msg_with_cid)
 
             props = {
                 BrokerConstants.YDOC: msg,
@@ -190,7 +213,8 @@ def on_message(message, properties):
                 BrokerConstants.LAST_MSG: msg
             }
 
-            pd = PhysicalDevice(source_name=BrokerConstants.YDOC, name=device['name'], location=None, last_seen=last_seen, source_ids=source_ids, properties=props)
+            pd = PhysicalDevice(source_name=BrokerConstants.YDOC,
+                                name=device['name'], location=None, last_seen=last_seen, source_ids=source_ids, properties=props)
             pd = dao.create_physical_device(pd)
         else:
             pd = pds[0]
@@ -200,12 +224,15 @@ def on_message(message, properties):
                 pd = dao.update_physical_device(pd)
 
         if pd is None:
-            lu.cid_logger.error(f'Physical device not found, message processing ends now. {correlation_id}', extra=msg_with_cid)
+            lu.cid_logger.error(
+                f'Physical device not found, message processing ends now. {correlation_id}', extra=msg_with_cid)
             errors.append(f'Physical device not found')
             continue
 
-        min_ts_dot = min(device['dots'], key=lambda d: dateutil.parser.parse(d[BrokerConstants.TIMESTAMP_KEY]))
-        lu.cid_logger.debug(f'From {device["dots"]}, min_ts is {min_ts_dot}', extra=msg_with_cid)
+        min_ts_dot = min(device['dots'], key=lambda d: dateutil.parser.parse(
+            d[BrokerConstants.TIMESTAMP_KEY]))
+        lu.cid_logger.debug(
+            f'From {device["dots"]}, min_ts is {min_ts_dot}', extra=msg_with_cid)
 
         p_ts_msg = {
             BrokerConstants.CORRELATION_ID_KEY: correlation_id,
@@ -214,7 +241,8 @@ def on_message(message, properties):
             BrokerConstants.TIMESERIES_KEY: device['dots']
         }
 
-        lu.cid_logger.debug(f'Publishing message: {p_ts_msg}', extra=msg_with_cid)
+        lu.cid_logger.debug(
+            f'Publishing message: {p_ts_msg}', extra=msg_with_cid)
         messages.append(p_ts_msg)
     return {
         'messages': messages,
