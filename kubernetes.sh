@@ -24,4 +24,5 @@ cd kubernetes
 kubectl apply -f .
 
 # Open minikube dashboard
+minikube addons enable metrics-server
 minikube dashboard
