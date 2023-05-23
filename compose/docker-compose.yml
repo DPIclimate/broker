@@ -38,12 +38,13 @@ services:
   timescaledb:
     hostname: "tsdb"
     image: timescale/timescaledb:latest-pg15
-    restart: "no"
+    restart: "no"    
     environment:
       POSTGRES_PASSWORD: admin
       POSTGRES_PORT: 5432
     volumes:
       - ../timescale/data:/var/lib/postgresql/data
+      - ../timescale/init.sql:/docker-entrypoint-initdb.d/init.sql
     ports:
       - "5433:5432"
     healthcheck:
