@@ -68,7 +68,8 @@ To rebuild each of the three local Docker images (you will need to be in the `br
 
 # Mount local directories
 
-Most of the microservices need to read from a particular directory in the `broker`, `ttn_formatter`, or `databolt` folders. These folders first need to be
+Most of the microservices need to read from a particular directory in the `broker`, `ttn_formatter`, or `databolt`
+folders. These folders first need to be
 made available to the node, where the node then mounts the relevant folder into the pod that requires it.
 
 For my example I have these three directories as so on my local device:
@@ -77,7 +78,8 @@ For my example I have these three directories as so on my local device:
 - `/home/sam/csu-dpi/ttn_formatters`
 - `/home/sam/csu-dpi/databolt`
 
-To mount these directories to the node, each command must be in its own terminal and the terminal must remain live (closing the terminal will close the mount)
+To mount these directories to the node, each command must be in its own terminal and the terminal must remain live (
+closing the terminal will close the mount)
 
 - `minikube mount /home/sam/csu-dpi/broker:/home/broker`
 - `minikube mount /home/sam/csu-dpi/ttn-formatters:/home/ttn-formatters`
@@ -89,12 +91,24 @@ To mount these directories to the node, each command must be in its own terminal
 
 Change to the `kubernetes` directory and execute the following command to run all the YAML files within that folder:
 
-- `kubectl apply -f .` 
+- `kubectl apply -f .`
 
 To view a dashboard of the node and pods, use this command:
 
 - `minikube dashboard`
 
-# To do
+# Script
 
-Create a script that starts the node, builds the images, mounts the directories, then starts the microservices.
+Within the `broker` folder is a `kubernetes.sh` bash script. This will automate all the above steps, assuming `kubectl`
+and `minikube` are already installed, and the parent folder of `broker` also contains the `ttn-formatters`
+and `databolt` folders.
+
+Script will:
+
+1. Get the parent directory of the `broker` folder
+1. Start `minikube`
+1. Set minikube to the docker environment for local images
+1. Build local images docker images
+1. Mount relevant directories into minikube node
+1. Start the Kubernetes deployments
+1. Open the `minikube dashboard`
