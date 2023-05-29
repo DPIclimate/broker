@@ -162,6 +162,7 @@ def on_message(channel, method, properties, body):
         msg_uuid = msg[BrokerConstants.CORRELATION_ID_KEY]
 
         try:
+            lu.cid_logger.info(json.dumps(msg), extra=msg)
             os.mkdir(f'{_raw_data_name}/{msg_uuid}')
             with open(f'{_raw_data_name}/{msg_uuid}/{msg_uuid}.json', 'w') as f:
                 # The body argument is bytes, not a string. Uisng json.dump is a
