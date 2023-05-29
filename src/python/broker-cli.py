@@ -70,7 +70,8 @@ ld_ls_parser = ld_sub_parsers.add_parser('ls', help='list logical devices')
 ## Create logical devices
 ld_mk_parser = ld_sub_parsers.add_parser('create', help='create logical device')
 group = ld_mk_parser.add_mutually_exclusive_group(required=True)
-group.add_argument('--json', type=str_to_dict, help='Physical device JSON', dest='pd')
+# NOTE: dest=pd is not a typo - pd is used due to how dict_from_file_or_string works.
+group.add_argument('--json', type=str_to_dict, help='Logical device JSON', dest='pd')
 group.add_argument('--file', help='Read json from file, - for stdin', dest='in_filename')
 
 ## Get logical device
@@ -171,7 +172,7 @@ def pretty_print_json(object: List | Dict | BaseModel) -> str:
 
 
 def get_last_seen(d: PhysicalDevice | LogicalDevice) -> str:
-#                    2022-04-14T13:52+10:00    
+    # Example: 2022-04-14T13:52+10:00
     log_last_seen = 'Never                 '
     if d.last_seen is not None:
         log_last_seen = d.last_seen.isoformat(timespec="minutes")
@@ -196,18 +197,18 @@ def dict_from_file_or_string() -> dict:
         raise RuntimeError('error: --json and --file are mutually exclusive.')
 
     json_obj = None
-    if hasattr(args, 'in_filename'):
+    if args.in_filename is not None:
         if args.in_filename == '-':
             json_obj = json.load(sys.stdin)
         else:
             with open(args.in_filename) as jf:
                 json_obj = json.load(jf)
 
-    elif hasattr(args, 'pd'):
+    elif args.pd is not None:
         json_obj = args.pd
 
     if json_obj is None:
-        raise RuntimeError('No physical device object given via either --json or --file.')
+        raise RuntimeError('No device object given via either --json or --file.')
 
     return json_obj
 
@@ -271,7 +272,10 @@ def main() -> None:
             devs = dao.get_logical_devices()
             tmp_list = list(map(lambda dev: dev.dict(exclude={'properties'}), devs))
             print(pretty_print_json(tmp_list))
-        elif args.cmd2 == 'create' and args.ld is not None:
+        # NOTE: args.pd is not a typo - dict_from_file_or_string() only looks at
+        # args.pd and args.in_filename so the create logical device code also uses
+        # args.pd.
+        elif args.cmd2 == 'create' and (args.pd is not None or args.in_filename is not None):
             dev = LogicalDevice.parse_obj(dict_from_file_or_string())
             print(dao.create_logical_device(dev))
         elif args.cmd2 == 'get':
