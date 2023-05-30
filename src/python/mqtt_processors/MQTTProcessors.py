@@ -69,8 +69,9 @@ async def main():
     for plugin_name in plugin_modules:
         plugin = plugin_modules[plugin_name]
         try:
-            rx_channel = mq.RxChannel('amq.topic', exchange_type=ExchangeType.topic, queue_name=plugin_name, on_message=plugin_specific_function(plugin_name), routing_key=plugin.TOPIC)
-            rx_channels.append(rx_channel)
+            for topic in plugin.TOPICS:
+                rx_channel = mq.RxChannel('amq.topic', exchange_type=ExchangeType.topic, queue_name=plugin_name, on_message=plugin_specific_function(plugin_name), routing_key=topic)
+                rx_channels.append(rx_channel)
         except Exception as e:
             std_logger.error("Failed to subscribe plugin to MQTT topic %s" % (e))
     

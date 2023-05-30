@@ -1,7 +1,7 @@
 import logging
 std_logger = logging.getLogger(__name__)
 
-TOPIC = 'test'
+TOPICS = ['test']
 
 
 def on_message(message):

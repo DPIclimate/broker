@@ -4,7 +4,7 @@ from pdmodels.Models import PhysicalDevice
 import util.LoggingUtil as lu
 import api.client.DAO as dao
 
-TOPIC = 'wombat'
+TOPICS = ['wombat']
 
 def on_message(message, properties):
     correlation_id = str(uuid.uuid4())
