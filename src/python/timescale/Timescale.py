@@ -2,6 +2,7 @@ import psycopg2
 import sys
 import json
 import random
+import logging
 from datetime import datetime
 from dateutil import parser
 
@@ -77,7 +78,6 @@ def insert_lines(parsed_data: list, connection: str = CONNECTION, table: str = t
         print(error)
     conn.commit()
     
-
 def query_all_data(connection: str = CONNECTION, table: str = table_name):
     conn = psycopg2.connect(connection)
     cursor = conn.cursor()
@@ -116,31 +116,19 @@ def query_avg_value(interval_hrs: int = 24, connection: str = CONNECTION, table:
     cursor.close()
     return result
 
-#     # Old file method, format specific.
-# def insert_data_json_file(filename: str, connection: str = CONNECTION, table_name: str = "test_table"):
-#     # Open the JSON file and load its contents
-#     with open(filename, 'r') as f:
-#         data = json.load(f)
+def remove_data_with_value(value: str = "",connection: str = CONNECTION, table: str = table_name):
+    if (value == ""):
+        query = f"DELETE FROM {table}"
+    else:
+        query = f"""DELETE FROM {table}
+                WHERE value = '{value}';"""
+    conn = psycopg2.connect(connection)
+    cursor = conn.cursor()
+    cursor.execute(query)
+    conn.commit()
+    cursor.close()
 
-#     # Extract the ID, timestamp, and timeseries data from the JSON data
-#     l_uid = data['l_uid']
-#     p_uid = data['p_uid']
-#     timestamp = datetime.strptime(data['timestamp'], '%Y-%m-%dT%H:%M:%SZ')
-#     timeseries = data['timeseries']
-
-#     conn = psycopg2.connect(connection)
-#     cur = conn.cursor()
-
-#     # Extract the timeseries data and insert it into the database
-#     for tsd in timeseries:
-#         name = tsd['name']
-#         value = tsd['value']
-#         insert_query = f"INSERT INTO {table_name} (l_uid, p_uid, timestamp, name, value) VALUES (%s, %s, %s, %s, %s)"
-#         cur.execute(insert_query, (l_uid, p_uid, timestamp, name, value))
-
-#     conn.commit()
-#     conn.close()
-
+# Main parser used at this time, takes a json.loads object.
 def parse_json(json_obj: dict) -> list:
     parsed_data = []
     
@@ -155,36 +143,46 @@ def parse_json(json_obj: dict) -> list:
             name = tsd['name']
             value = tsd['value']
             parsed_data.append((broker_id, l_uid, p_uid, timestamp, name, value))
-    except KeyError:
-        pass
+    except KeyError as e:
+        logging.error(f"An error occurred: {str(e)}")
+        return []
     
     return parsed_data
 
-
 def parse_json_string(json_string: str) -> list:
-    parsed_data = []
-    json_str = ""
+    try:
+        json_obj = json.loads(json_string)
+        return parse_json(json_obj)
+    except json.JSONDecodeError as e:
+        logging.error(f"An error occurred: {str(e)}")
+        return []
 
-    for line in json_string.split('\n'):
-        json_str += line.strip()
-        try:
-            json_data = json.loads(json_str)
-            broker_id = json_data['broker_correlation_id']
-            l_uid = json_data['l_uid']
-            p_uid = json_data['p_uid']
-            timestamp = parser.parse(json_data['timestamp'])
-            timeseries = json_data['timeseries']
 
-            for tsd in timeseries:
-                name = tsd['name']
-                value = tsd['value']
-                parsed_data.append((broker_id, l_uid, p_uid, timestamp, name, value))
+# def parse_json_string(json_string: str) -> list:
+#     parsed_data = []
+#     json_str = ""
 
-            json_str = ""
-        except json.decoder.JSONDecodeError:
-            pass
+#     for line in json_string.split('\n'):
+#         json_str += line.strip()
+#         try:
+#             json_obj = json.loads(json_str)
+#             broker_id = json_obj['broker_correlation_id']
+#             l_uid = json_obj['l_uid']
+#             p_uid = json_obj['p_uid']
+#             timestamp = parser.parse(json_obj['timestamp'])
+#             timeseries = json_obj['timeseries']
 
-    return parsed_data
+#             for tsd in timeseries:
+#                 name = tsd['name']
+#                 value = tsd['value']
+#                 parsed_data.append((broker_id, l_uid, p_uid, timestamp, name, value))
+
+#             json_str = ""
+#         except json.decoder.JSONDecodeError as e:
+#             logging.error(f"An error occurred: {str(e)}")
+#             pass
+
+#     return parsed_data
 
 
 def parse_json_file(filename: str) -> list:
@@ -209,6 +207,7 @@ def parse_json_file(filename: str) -> list:
 
                 json_str = ""
             except json.decoder.JSONDecodeError:
+                logging.error(f"An error occurred: {str(e)}")
                 pass
 
     return parsed_data
@@ -217,7 +216,6 @@ def parse_json_file(filename: str) -> list:
 def insert_data_to_db(filename: str, connection: str = CONNECTION, table_name: str = table_name):
     # Parse the JSON file
     parsed_data = parse_json_file(filename)
-
     conn = psycopg2.connect(connection)
     cur = conn.cursor()
 

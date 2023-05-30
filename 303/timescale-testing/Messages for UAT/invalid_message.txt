@@ -1,0 +1,12 @@
+{
+  "borked_correlation_id": "420",
+  "l_uid": 999,
+  "p_uid": 999,
+  "timestamp": "2023-04-21T10:45:00Z",
+  "timeseries": [
+    {
+      "name": "Invalid UAT Test",
+      "value": 2
+    }
+  ]
+}

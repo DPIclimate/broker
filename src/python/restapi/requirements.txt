@@ -19,6 +19,7 @@ Jinja2==3.0.3
 MarkupSafe==2.0.1
 psycopg2-binary==2.9.3
 pydantic==1.9.0
+pytest==7.3.1
 python-multipart==0.0.5
 PyYAML==6.0
 requests==2.27.1

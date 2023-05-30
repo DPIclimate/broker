@@ -43,7 +43,8 @@ services:
       POSTGRES_PASSWORD: admin
       POSTGRES_PORT: 5432
     volumes:
-      - ../timescale/data:/var/lib/postgresql/data
+      #- ../timescale/data:/var/lib/postgresql/data
+      - timescale_data:/var/lib/postgresql/data
       - ../timescale/init.sql:/docker-entrypoint-initdb.d/init.sql
     ports:
       - "5433:5432"
@@ -53,7 +54,7 @@ services:
       timeout: 5s
       retries: 3
 
-  zak_python:
+  zak-python:
     image: broker/python-base
     restart: "no"
     env_file:
@@ -225,3 +226,6 @@ services:
       - ${DATABOLT_SHARED_DIR}/raw_data:/raw_data
     working_dir: "/home/broker/python"
     entrypoint: [ "python", "-m", "delivery.FRRED" ]
+    
+volumes:
+    timescale_data:

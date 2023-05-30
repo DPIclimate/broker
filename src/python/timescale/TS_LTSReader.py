@@ -81,7 +81,6 @@ def on_message(channel, method, properties, body):
     #
     # Message processing goes here
     #
-    print("The message passed to my boy is: " + str(msg))
     json_lines = ts.parse_json(msg)
     ts.insert_lines(json_lines)
 
