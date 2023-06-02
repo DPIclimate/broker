@@ -8,7 +8,7 @@ Each module must have the following properties defined.
 
 | Property name | Type | Description |
 |:---:|:---:|:---:|
-| TOPIC | <kbd>string</kbd> | The MQTT Topic that the processor will subscribe to. |
+| TOPICS | <kbd>array</kbd><kbd>string</kbd> | An array of strings, each string being an MQTT topic that the processor will subscribe to. |
 | on_message | <kbd>function</kbd> | A function which will be executed whenever a message is received to the subscribed topic. |
 
 ### `on_message` parameters
