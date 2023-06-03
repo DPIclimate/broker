@@ -5,8 +5,8 @@
   "timestamp": "2023-04-21T10:45:00Z",
   "timeseries": [
     {
-      "name": "Valid UAT Test",
-      "value": 1
+      "name": "Test Type",
+      "value": "Valid UAT"
     }
   ]
 }
