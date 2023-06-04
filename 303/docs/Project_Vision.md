@@ -537,28 +537,21 @@ in both deployment and ongoing use.</p></th>
 
 13/05/23:
 
-- Removed/Changed references from FDT to IoTa DB, as requirement is
-  > removed by stakeholder.
+- Removed/Changed references from FDT to IoTa DB, as requirement was removed by stakeholder.
 
-- Clarified in “needs and features” that conversion of old DB messages
-  > is performed via a CLI script.
+- Clarified in “needs and features” that conversion of old DB messages, is performed via a CLI script.
 
-- Added a new requirement regarding mapping of physical and logical IDs
-  > under “Robustness”.
+- Added a new requirement regarding mapping of physical and logical IDs under “Robustness”.
 
-- Modified constraint release to elaboration phase, as they’ve been
-  > dealt with.
+- Modified constraint release to elaboration phase, as they’ve been dealt with.
 
 14/05/23:
 
-- Clarified “Move away from cloud hosting” to “Must not utilise cloud
-  > hosting” in multiple instances, as the current system is also local.
+- Clarified “Move away from cloud hosting” to “Must not utilise cloud hosting” in multiple instances, as the current system is also local.
 
-- Added phases to planned release sections within “needs and features”,
-  > and “other product requirements” sections.
+- Added phases to planned release sections within “needs and features”, and “other product requirements” sections.
 
-- Added additional stakeholder entities, including our team, and
-  > separated DPI dev team from general staff.
+- Added additional stakeholder entities, including our team, and separated DPI dev team from general staff.
 
 - Various modifications to wording and sentence structure.
 
@@ -570,38 +563,30 @@ in both deployment and ongoing use.</p></th>
 
 - Expanded on the TSDB system under User Environment.
 
-- Minor modifications to wording and sentence structure in User
-  > Environment.
+- Minor modifications to wording and sentence structure in User Environment.
 
-- Separated “implemented in python”, and “using DPIs python image” in
-  > constraints.
+- Separated “implemented in python”, and “using DPIs python image” in constraints.
 
 22/05/23:
 
-- Re-added problem of cloud DB, as clarified that Ubidots offers similar
-  > function as one. Changed the context as we are not replacing it at
-  > this time, just adding our own TSDB in addition to the current
-  > system.
+- Re-added problem of cloud DB, as clarified that Ubidots offers similar function as one. Changed the context as we are not replacing it at this time, just adding our own TSDB in addition to the current system.
 
 - Also added reference to this in the existing system.
 
-- Added multiple details/references to the requirement of graphical
-  > representation of data within a web app.
+- Added multiple details/references to the requirement of graphical representation of data within a web app.
 
 24/05/23
 
-- Changed references in Positioning from dealing with multiple message
-  > formats to dealing with existing database tables that will need to
-  > be imported.
+- Changed references in Positioning from dealing with multiple message formats to dealing with existing database tables that will need to be imported.
 
 - Updated some textual clarifications in Positioning.
 
 - Updated structure of document.
 
-> 25/05/23
+25/05/23
 
 - Added addition to introduction including TSDB. (credit to Callum)
 
-> 30/05/23
+30/05/23
 
 - Added TSDB criteria under product overview.
