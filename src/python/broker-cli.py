@@ -127,6 +127,7 @@ user_add_parser=user_sub_parsers.add_parser('add', help="Add a user")
 user_add_parser.add_argument('-u', help="Username of user", dest='uname', required=True)
 user_add_parser.add_argument('-p', help="Password for user", dest='passwd', required=True)
 user_add_parser.add_argument('-d', help="Account is disable upon creation", action='store_true', dest='disabled')
+user_add_parser.add_argument('-a', help="Create an admin account, user is not read-only", action='store_true', dest='admin')
 
 #Remove user
 user_rm_parser=user_sub_parsers.add_parser('rm', help="Remove a user")
@@ -338,6 +339,8 @@ def main() -> None:
     elif args.cmd1=='users':
         if args.cmd2=='add':
             dao.user_add(uname=args.uname, passwd=args.passwd, disabled=args.disabled)
+            if args.admin:
+                dao.user_set_read_only(uname=args.uname, read_only=False)
 
         elif args.cmd2=='rm':
             dao.user_rm(uname=args.uname)
