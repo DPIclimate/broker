@@ -32,6 +32,8 @@ As the substantive project is the deployment of a new time series database solut
 For this reason, during the elaboration and construction phases, the team will individually test and deploy 4 different time series database solutions. The solutions themselves have different feature sets, database functional modalities and compatibilities: the team will aim to find the balance of solutions which will suit the needs of the DPI team for all the mentioned.
 
 ##### 5. Project milestones and objectives
+![](https://github.com/ZakhaevK/itc303-team3-broker/blob/master/303/docs/media/project_plan_1.png?raw=true)
+![](https://github.com/ZakhaevK/itc303-team3-broker/blob/master/303/docs/media/project_plan_2.png?raw=true)
 
 ##### 6. Change Log
 13/05/23
