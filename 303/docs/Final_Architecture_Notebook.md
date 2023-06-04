@@ -221,7 +221,8 @@ added/removed without impacting the other processes
 
 **<u>[Component View: \[17A\]</u>**
 
-![](vertopal_c03ded9e97dd42ae973ddafd45a8491b/media/image1.png)
+![](https://github.com/ZakhaevK/itc303-team3-broker/blob/master/303/docs/media/component_diagram.png?raw=true)
+
 #### Front-End processors \[10\] 
 
 TTN WEBHOOK, REST API POLLERS, RABBITMQ : these receive messages before
@@ -365,37 +366,17 @@ the backup postgres process if it is required.
 
 ## Key abstractions \[15\]
 
--   Time-series databases are databases which take in a continuous
-    > stream of time-stamped data, such as from a sensor. In this
-    > instance, the two time-series databases to be implemented for the
-    > IoTa platform should accept data from a variety of sources and
-    > amalgamate it into one
+-   Time-series databases are databases which take in a continuous stream of time-stamped data, such as from a sensor. In this instance, the two time-series databases to be implemented for the IoTa platform should accept data from a variety of sources and amalgamate it into one
 
--   Exchanges allow multiple processes to subscribe in order to receive
-    > and process messages, this is how intercommunication is achieved
-    > in IoTa (via RabbitMQ)
+-   Exchanges allow multiple processes to subscribe in order to receive and process messages, this is how intercommunication is achieved in IoTa (via RabbitMQ)
 
--   A Process is designed to do a single task, i.e Device/Logical mapper
-    > is to map a physical device to a logical device, IoTa decoder is
-    > to convert IoTa message one that can be received by the TSDB
+-   A Process is designed to do a single task, i.e Device/Logical mapper is to map a physical device to a logical device, IoTa decoder is to convert IoTa message one that can be received by the TSDB
 
--   Docker compose / docker / stack all reference the underlying
-    > containerisation of IoTa. Each process, most of which are .py
-    > files, are running as a separate container inside a single docker
-    > compose stack, these can ultimately be thought of as files in a
-    > fresh directory, not linked to the underlying host environment.
+-   Docker compose / docker / stack all reference the underlying containerisation of IoTa. Each process, most of which are .py files, are running as a separate container inside a single docker compose stack, these can ultimately be thought of as files in a fresh directory, not linked to the underlying host environment.
 
--   TSDB API refers to a CLI ability to request data from the running
-    > TSDB, it will allow a user to type a command in order to request
-    > specific time series data between dates or possibly even for a
-    > device.
+-   TSDB API refers to a CLI ability to request data from the running TSDB, it will allow a user to type a command in order to request specific time series data between dates or possibly even for a device.
 
--   physical is linked to a physical unique device, whereas logical
-    > devices are created to ensure the data supply remains logical. If
-    > there is a physical pool-sensor-1, it might be linked to logical
-    > pool-A-sensor, if the physical sensor is replaced for any number
-    > of reasons, we'd still like pool-A-sensor to remain unchanged so
-    > that the data flow remains the same.
+-   physical is linked to a physical unique device, whereas logical devices are created to ensure the data supply remains logical. If there is a physical pool-sensor-1, it might be linked to logical pool-A-sensor, if the physical sensor is replaced for any number of reasons, we'd still like pool-A-sensor to remain unchanged so that the data flow remains the same.
 
 # 
 
@@ -423,7 +404,7 @@ by ensuring a single task to be performed by each process we implement.
 View of running containers (test environment, nginx is optional, only
 CCRD is implemented)
 
-![](vertopal_c03ded9e97dd42ae973ddafd45a8491b/media/image4.png)
+![](https://github.com/ZakhaevK/itc303-team3-broker/blob/master/303/docs/media/container_view.png?raw=true)
 
 **<u>Publish/Subscribe:</u>**
 
@@ -505,16 +486,16 @@ the time series data.
 
 <u>**Component View:**</u>
 
-[Red indicates new processes, whilst black is for existing.]{.underline}
+<u>Red indicates new processes, whilst black is for existing.</u>
 
-![](vertopal_c03ded9e97dd42ae973ddafd45a8491b/media/image1.png)
+![](https://github.com/ZakhaevK/itc303-team3-broker/blob/master/303/docs/media/component_diagram.png?raw=true)
 
 **<u>Sequence Diagram:</u>** Receive Message
 
-![](vertopal_c03ded9e97dd42ae973ddafd45a8491b/media/image5.png)
-**[TSDB API Flow Chart:]{.underline}**
+![](https://github.com/ZakhaevK/itc303-team3-broker/blob/master/303/docs/media/seq_diagram.png?raw=true)
+**<u>TSDB API Flow Chart:</u>**
 
-![](vertopal_c03ded9e97dd42ae973ddafd45a8491b/media/image3.png)
+![](https://github.com/ZakhaevK/itc303-team3-broker/blob/master/303/docs/media/api_view.png?raw=true)
 #  
 
 ##  Changelog
