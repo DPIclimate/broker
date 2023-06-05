@@ -49,7 +49,7 @@ The following Work Items will be addressed in this iteration:
 |6|Approved Revised Master Test Plan|Documentation is reviewed and approved by whole team|[Complete](https://docs.google.com/document/d/1Ik-gc4K2oy5MVUMjpfXwLZJ_9DNMIxiH/edit?usp=drive_link&ouid=105542707453657000248&rtpof=true&sd=true)|Sara|2|2|0|
 |7|UAT Documentation|Documentation for UATs related to the CCRD is written. All script runs pass on all branches.|[Complete](https://docs.google.com/document/d/1dHWcsnB4cbF50cXL5-Y8rE1BBmUydstv/edit?usp=drive_link&ouid=105542707453657000248&rtpof=true&sd=true)|Zak|3|3|0|
 |8|CCRD Testing Performed|Each branch has Unit and Integration tests, and have run through the UAT scripts with images for proof.|[Complete](https://github.com/ZakhaevK/itc303-team3-broker/tree/master/303/tests)|Rishabh, Cal, Sara, Zak|4|4|0|
-|9|Approved Executable Architecture|Documentation is reviewed and approved by whole team|Incomplete|Rishabh, Cal, Sara, Zak|5|4|1|
+|9|Approved Executable Architecture|Documentation is reviewed and approved by whole team|[Complete](https://interact2.csu.edu.au/courses/1/S-ITC303_202330_B_D/groups/_80587_1//_1429550_1/Executable%20Architecture%20Video.mp4)|Rishabh, Cal, Sara, Zak|6|6|0|
 |10|Approved Elaboration Phase Project Status Assessment|Documentation is reviewed and approved by whole team|[Complete](https://docs.google.com/document/d/1se1a30kLpGDpuD1ftnsQPyrReufzt8FG/edit?usp=drive_link&ouid=105542707453657000248&rtpof=true&sd=true)|Cal|2|2|0|
 #
 # **5.  Issues**
