@@ -118,7 +118,7 @@ For the purposes of analysis, the web application in conjunction with the API wi
 
 **Use Case Diagram**
 
-![](Aspose.Words.9a6200ea-2d52-48fe-87f3-b0ed589f2515.001.png)
+![](https://github.com/ZakhaevK/itc303-team3-broker/blob/master/303/docs/media/ccrd_use_case.png?raw=true)
 
 **Change Log**
 
