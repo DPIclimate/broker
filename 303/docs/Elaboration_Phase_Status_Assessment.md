@@ -3,7 +3,7 @@
 #### 1\.1 **Has ‘end-to-end production level support for the most critical, core (risky, difficult) use case, using the chosen software architecture, in the intended production environment’ been achieved?**
 Yes, we have achieved this objective. This is demonstrated in a short video walkthrough which may be accessed from here: 
 
-*LINK - TO VIDEO*
+[*LINK - TO VIDEO*](https://interact2.csu.edu.au/courses/1/S-ITC303_202330_B_D/groups/_80587_1//_1429550_1/Executable%20Architecture%20Video.mp4)
 
 During the Inception Phase, we identified message parsing/TSDB insertion as the critical core use case. This is because: 
 
