@@ -41,6 +41,8 @@ Actual test results can be accessed from here:
 
 [*LINK - GOOGLE DOCS](https://docs.google.com/spreadsheets/d/1Pmiav81E3mrjCtWAaI6k3QF2Zgjf46zK/edit#gid=257882527) *| [LINK - GIT VERSION*](https://github.com/ZakhaevK/itc303-team3-broker/blob/master/303/docs/Revised%20Risk-List.xlsx)*
 
+![](https://github.com/ZakhaevK/itc303-team3-broker/blob/master/303/docs/media/risk_list_truncated.png?raw=true)
+
 #### <a name="_f1l1dkdjp3sd"></a>1.3 **Have the initial Vision, Requirements (Scope), or Architecture changed?**
 During the Elaboration Phase, our understanding of the projects aims evolved as follows:
 
