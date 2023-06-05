@@ -546,7 +546,7 @@ href="https://github.com/ZakhaevK/itc303-team3-broker/blob/master/303/tests/UAT/
 href="https://github.com/ZakhaevK/itc303-team3-broker/blob/master/303/tests/UAT/INFLUXDB_UAT_1_3D.png"><u>Valid</u></a></p>
 <p><a
 href="https://github.com/ZakhaevK/itc303-team3-broker/blob/master/303/tests/UAT/INFLUXDB_UAT_1_3F.png"><u>Valid</u></a></p></td>
-<td></td>
+<td>Passed</td>
 </tr>
 <tr class="even">
 <td>04/06/23 10:30pm</td>
