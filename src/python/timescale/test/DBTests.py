@@ -8,7 +8,7 @@ import time
 
 # 
 def TestSingleInsertSpeed():
-    message = genmsg.random_msg_single
+    message = json.loads(genmsg.random_msg_single)
     starttime = time.time()
     ts.insert_lines(message)
     endtime = time.time()
@@ -18,7 +18,7 @@ def TestSingleInsertSpeed():
 def TestBulkInsertSpeed():
     messages = []
     for i in range(1000):
-        message = genmsg.random_msg_single()
+        message = json.loads(genmsg.random_msg_single())
         messages.append(message)
 
     starttime = time.time()
@@ -36,7 +36,7 @@ def TestQuerySpeed():
     ts.query_all_data()
     endtime = time.time()
     finaltime = endtime - starttime
-    print(f"Time for single insert: {finaltime}")
+    print(f"Time to query all data: {finaltime}")
 
 
 if __name__ == "__main__":
