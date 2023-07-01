@@ -65,7 +65,7 @@ def generate_test_message():
 #         print(error)
 #     conn.commit()
 
-def insert_lines(parsed_data: list, connection: str = CONNECTION, table: str = table_name):
+def insert_lines(parsed_data: list, connection: str = CONNECTION, table: str = table_name) -> int:
     conn = psycopg2.connect(connection)
     cursor = conn.cursor()
     try:
@@ -76,7 +76,9 @@ def insert_lines(parsed_data: list, connection: str = CONNECTION, table: str = t
                 (broker_id, l_uid, p_uid, timestamp, name, value))
     except (Exception, psycopg2.Error) as error:
         print(error)
+        return 0
     conn.commit()
+    return 1
     
 def query_all_data(connection: str = CONNECTION, table: str = table_name):
     conn = psycopg2.connect(connection)
