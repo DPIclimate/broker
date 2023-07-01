@@ -8,16 +8,22 @@ import time
 
 # 
 def TestSingleInsertSpeed():
+    message = genmsg.random_msg_single
     starttime = time.time()
-    ts.insert_lines(genmsg.random_msg_single)
+    ts.insert_lines(message)
     endtime = time.time()
     finaltime = endtime - starttime
     print(f"Time for single insert: {finaltime}")
 
 def TestBulkInsertSpeed():
-    starttime = time.time()
+    messages = []
     for i in range(1000):
-        insert = ts.insert_lines(genmsg.random_msg_single)
+        message = genmsg.random_msg_single()
+        messages.append(message)
+
+    starttime = time.time()
+    for i in messages:
+        insert = ts.insert_lines(i)
         if insert == 0:
             print(f"Issue with bulk insert test, data insert failed")
             return

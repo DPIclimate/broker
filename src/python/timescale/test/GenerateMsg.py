@@ -60,9 +60,9 @@ def random_msg(newvalue: str = '', newvalue2: str = '') -> str:
 
 def random_msg_single(newvalue: str = '') -> str:
     cor_id = random.randint(100000, 9999999)
-    p_uid = random.randint(1, 200)
-    l_uid = random.randint(1, 400)
-    value = str(random.randint(0, 30))
+    p_uid = random.randint(1, 400)
+    l_uid = random.randint(1, 500)
+    value = str(random.randint(0, 45))
 
     if newvalue != '':
         value = newvalue
