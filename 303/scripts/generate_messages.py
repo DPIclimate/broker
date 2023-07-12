@@ -211,7 +211,7 @@ for uid in range(NUM_OF_UID):
                 message += f'{{"name": "{name}", "value": {RANDOM_FLOATS[float_counter]}'
                 float_counter = (float_counter + 1) % len(RANDOM_FLOATS)
             else:
-                message += f'{{"name": "{name}", "value": {RANDOM_FLOATS[float_counter]}'
+                message += f'{{"name": "{name}", "value": {RANDOM_INTS[float_counter]}'
                 int_counter = (int_counter + 1) % len(RANDOM_INTS)
             if idx < len(random_names) - 1:
                 message += "}, "
