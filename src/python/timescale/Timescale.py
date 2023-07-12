@@ -78,6 +78,7 @@ def insert_lines(parsed_data: list, connection: str = CONNECTION, table: str = t
         print(error)
         return 0
     conn.commit()
+    cursor.close
     return 1
     
 def query_all_data(connection: str = CONNECTION, table: str = table_name):
@@ -215,20 +216,25 @@ def parse_json_file(filename: str) -> list:
     return parsed_data
 
 
-def insert_data_to_db(filename: str, connection: str = CONNECTION, table_name: str = table_name):
+def insert_data_to_db(filename: str, connection: str = CONNECTION, table_name: str = table_name) -> int:
     # Parse the JSON file
     parsed_data = parse_json_file(filename)
     conn = psycopg2.connect(connection)
-    cur = conn.cursor()
+    cursor = conn.cursor()
 
     # Insert parsed data into the database
-    for data in parsed_data:
-        broker_id, l_uid, p_uid, timestamp, name, value = data
-        insert_query = f"INSERT INTO {table_name} (broker_id, l_uid, p_uid, timestamp, name, value) VALUES (%s, %s, %s, %s, %s, %s)"
-        cur.execute(insert_query, (broker_id, l_uid, p_uid, timestamp, name, value))
-
+    try:
+        for data in parsed_data:
+            broker_id, l_uid, p_uid, timestamp, name, value = data
+            insert_query = f"INSERT INTO {table_name} (broker_id, l_uid, p_uid, timestamp, name, value) VALUES (%s, %s, %s, %s, %s, %s)"
+            cursor.execute(insert_query, (broker_id, l_uid, p_uid, timestamp, name, value))
+    except (Exception, psycopg2.Error) as error:
+        print(error)
+        return 0
     conn.commit()
-    conn.close()
+    cursor.close()
+    return 1
+    
 
 test_message = """{
   "broker_correlation_id": "83d04e6f-db16-4280-8337-53f11b2335c6",
