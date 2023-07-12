@@ -205,13 +205,13 @@ for uid in range(NUM_OF_UID):
     for i in range(100):
         ts = START_DATE + timedelta(hours=i)
         ts_str = ts.isoformat(timespec='microseconds') + 'Z'
-        message = f'{{"broker_correlation_id": "83d04e6f-db16-4280-8337-53f11b2335c6", "l_uid": {uid}, "p_uid": {uid}, "timestamp":"{ts_str}", "timeseries": ['
+        message = f'{{"broker_correlation_id": "83d04e6f-db16-4280-8337-53f11b2335c6", "p_uid": {uid}, "l_uid": {uid}, "timestamp":"{ts_str}", "timeseries": ['
         for idx, (name,dt) in enumerate(random_names):
             if dt == float:
                 message += f'{{"name": "{name}", "value": {RANDOM_FLOATS[float_counter]}'
                 float_counter = (float_counter + 1) % len(RANDOM_FLOATS)
             else:
-                message += f'"name": "{name}", "value": {RANDOM_FLOATS[float_counter]}'
+                message += f'{{"name": "{name}", "value": {RANDOM_FLOATS[float_counter]}'
                 int_counter = (int_counter + 1) % len(RANDOM_INTS)
             if idx < len(random_names) - 1:
                 message += "}, "

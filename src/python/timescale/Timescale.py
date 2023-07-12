@@ -206,7 +206,7 @@ def parse_json_file(filename: str) -> list:
                 for tsd in timeseries:
                     name = tsd['name']
                     value = tsd['value']
-                    parsed_data.append((broker_id, l_uid, p_uid, timestamp, name, value))
+                    parsed_data.append((broker_id, p_uid, l_uid, timestamp, name, value))
 
                 json_str = ""
             except json.decoder.JSONDecodeError:

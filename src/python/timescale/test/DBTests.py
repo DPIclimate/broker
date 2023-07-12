@@ -10,22 +10,34 @@ import time
 def TestSingleInsertSpeed():
     message = ts.parse_json(json.loads(genmsg.random_msg_single()))
     starttime = time.time()
-    ts.insert_lines(message)
-    endtime = time.time()
+    if ts.insert_lines(message) == 1:
+        endtime = time.time()
+    else:
+        print(f"Single Insert failed")
     finaltime = endtime - starttime
     print(f"Time for single insert: {finaltime}")
 
+# def TestBulkInsertSpeed():
+#     starttime = time.time()
+#     if ts.insert_data_to_db("timescale/test/msgs") == 1:
+#         print(f"Issue with bulk insert test, data insert failed")
+#         endtime = time.time()
+#         finaltime = endtime - starttime
+#         print(f"Time for bulk insert: {finaltime}")
+#     else:
+#         print(f"Bulk Insert failed")
+
 def TestBulkInsertSpeed():
+    filename = "timescale/test/msgs"
     messages = []
-    for i in range(1000):
-        message = ts.parse_json(json.loads(genmsg.random_msg_single()))
-        messages.append(message)
+    with open(filename, 'r') as f:
+        for line in f:
+            messages.append(ts.parse_json(json.loads(line)))
 
     starttime = time.time()
-    for i in messages:
-        insert = ts.insert_lines(i)
-        if insert == 0:
-            print(f"Issue with bulk insert test, data insert failed")
+    for msg in messages:
+        if ts.insert_lines(msg) == 0:
+            print(f"Bulk Insert failed")
             return
     endtime = time.time()
     finaltime = endtime - starttime
