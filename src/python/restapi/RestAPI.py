@@ -428,6 +428,7 @@ async def get_physical_timeseries(
         request: Request,
         uid: int,
         count: Annotated[int | None, Query(gt=0, le=65536)] = None,
+        last: str = None,
         start: datetime.datetime = None,
         end: datetime.datetime = None,
         only_timestamp: bool = False):
@@ -438,6 +439,7 @@ async def get_physical_timeseries(
         request: The HTTP request object.
         uid: The unique identifier of the physical device.
         count: The maximum number of entries to return.
+        last: Return messages from the last nx interval where n is a number and x is 'h'ours, 'd'ays, 'w'eeks, 'm'onths, 'y'ears.
         start: The start date and time of the time range.
         end: The end date and time of the time range.
         only_timestamp: Whether to only return the timestamp of the entries.
@@ -455,6 +457,32 @@ async def get_physical_timeseries(
                 raise HTTPException(status_code=422, detail={"detail": [{"loc": ["query", "start"], "msg": "ensure start value is less than end"}]})
             if count is not None and start is None:
                 raise HTTPException(status_code=422, detail={"detail": [{"loc": ["query", "count"], "msg": "only count and end is not supported"}]})
+
+        if last is not None:
+            # last over-rides start/end
+            end = datetime.datetime.now(datetime.timezone.utc)
+
+            try:
+                i = int(last[:-1])
+            except:
+                raise HTTPException(status_code=422, detail={"detail": [{"loc": ["query", "last"], "msg": "the first part of last must be an integer"}]})
+
+            unit = last[-1]
+
+            if unit == 'h':
+                diff = datetime.timedelta(hours=i)
+            elif unit == 'd':
+                diff = datetime.timedelta(days=i)
+            elif unit == 'w':
+                diff = datetime.timedelta(weeks=i)
+            elif unit == 'm':
+                diff = datetime.timedelta(weeks=i*4)
+            elif unit == 'y':
+                diff = datetime.timedelta(weeks=i*52)
+            else:
+                raise HTTPException(status_code=422, detail={"detail": [{"loc": ["query", "last"], "msg": "only h/d/w/m/y supported"}]})
+
+            start = end - diff
 
         msgs = dao.get_physical_timeseries_message(uid, start, end, count, only_timestamp)
         if msgs is None:
