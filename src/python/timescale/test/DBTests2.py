@@ -6,16 +6,33 @@ import dateutil
 import pika
 import time
 
-# 
+def send_rabbitmq_msg(payload: str = ""):
+    creds = pika.PlainCredentials('broker', 'CHANGEME')
+    params = pika.ConnectionParameters('mq', credentials=creds)
+    conn = pika.BlockingConnection(params)
+    channel = conn.channel()
+
+    queue_name = 'ltsreader_logical_msg_queue'
+    properties = {'device': 1}
+    if (payload == ""):
+        payload = genmsg.random_msg_single()
+
+    channel.basic_publish(exchange='', routing_key=queue_name, body=payload,
+                        properties=pika.BasicProperties(headers=properties))
+    conn.close()
+
 def TestSingleInsertSpeed():
-    message = ts.parse_json(json.loads(genmsg.random_msg_single()))
+    message = send_rabbitmq_msg()
     starttime = time.time()
-    if ts.insert_lines(message) == 1:
-        endtime = time.time()
-        finaltime = endtime - starttime
-        print(f"Time for single insert: {finaltime}")
+    while ts.query_num_entries() < 1:
+        pass
+
+    endtime = time.time()
+    finaltime = endtime - starttime
+    if ts.query_num_entries() > 1:
+        print("Single insert found multiple entries, invalid result.")
     else:
-        print(f"Single Insert failed")
+        print(f"Time for single insert: {finaltime}")
     
 
 # def TestBulkInsertSpeed():
@@ -36,17 +53,17 @@ def TestBulkInsertSpeed():
         #     messages.append(ts.parse_json(json.loads(line)))
         line_count = 0
         for line in f:
-            messages.append(ts.parse_json(json.loads(line)))
+            messages.append(line)
             line_count += 1
             if line_count >= 10000:
                 break
 
     starttime = time.time()
-    print(len(messages))
     for msg in messages:
-        if ts.insert_lines(msg) == 0:
-            print(f"Bulk Insert failed")
-            return
+        send_rabbitmq_msg(msg)
+    while ts.query_num_entries() < 53301:
+        time.sleep(2) # Potential 2 second error. May entry speed
+        pass
     endtime = time.time()
     finaltime = endtime - starttime
     print(f"Time for bulk insert: {finaltime}")

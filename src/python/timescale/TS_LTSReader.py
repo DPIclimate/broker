@@ -82,7 +82,8 @@ def on_message(channel, method, properties, body):
     # Message processing goes here
     #
     json_lines = ts.parse_json(msg)
-    ts.insert_lines(json_lines)
+    if ts.insert_lines(json_lines) == 1:
+        logging.info("Message successfully stored in database.")
 
     # This tells RabbitMQ the message is handled and can be deleted from the queue.    
     rx_channel._channel.basic_ack(delivery_tag)

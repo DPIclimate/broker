@@ -119,6 +119,19 @@ def query_avg_value(interval_hrs: int = 24, connection: str = CONNECTION, table:
     cursor.close()
     return result
 
+def query_num_entries(connection: str = CONNECTION, table: str = table_name ):
+    query_avg = f"SELECT COUNT(*) FROM {table};"
+    conn = psycopg2.connect(connection)
+    cursor = conn.cursor()
+    try:
+        cursor.execute(query_avg)
+        conn.commit()
+        result = cursor.fetchone()[0]
+    except psycopg2.errors as e:
+        sys.stderr.write(f'error: {e}\n')
+    cursor.close()
+    return result
+
 def remove_data_with_value(value: str = "",connection: str = CONNECTION, table: str = table_name):
     if (value == ""):
         query = f"DELETE FROM {table}"
