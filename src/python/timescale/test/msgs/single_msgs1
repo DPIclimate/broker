@@ -1,0 +1,1 @@
+{"broker_correlation_id": "83d04e6f-db16-4280-8337-53f11b2335c6", "l_uid": 0, "p_uid": 0, "timestamp":"2023-01-01T01:00:00.000000Z", "timeseries": [{"name": "Temp", "value": 23.440406548710893}, {"name": "fault", "value": 2.401968441111003}]}

@@ -1,12 +1,16 @@
 #generate a large number of messages
+#with somewhat realistic values, based off the iota.sql back up file
 
 import random
+import sys
 from datetime import datetime, timedelta
 
 random.seed(999)
 
-START_DATE = datetime(2023,1,1)
+
 NUM_OF_UID = 1000
+NUM_OF_TS_PER_UID = 100
+START_DATE = datetime(2023,1,1)
 TIME_SERIES_NAMES = [
     ("1_Temperature", float),
     ("1_VWC", float),
@@ -199,10 +203,20 @@ RANDOM_INTS = [random.uniform(0,10000) for _ in range(1000)]
 int_counter = 0
 float_counter = 0
 
+#easier set of how many tests:
+#python generate_messages.py 100 100 > msgs
+#would give 100 uids (0-99) and each would have 100 lots of time series data
+if len(sys.argv)==2:
+    NUM_OF_UID=int(sys.argv[1])
+elif len(sys.argv)==3:
+    NUM_OF_UID=int(sys.argv[1])
+    NUM_OF_TS_PER_UID=int(sys.argv[2])
+
+
 for uid in range(NUM_OF_UID):
     random_names = random.choices(TIME_SERIES_NAMES, k=random.randint(1,10))
     START_DATE = START_DATE + timedelta(hours=1)
-    for i in range(100):
+    for i in range(NUM_OF_TS_PER_UID):
         ts = START_DATE + timedelta(hours=i)
         ts_str = ts.isoformat(timespec='microseconds') + 'Z'
         message = f'{{"broker_correlation_id": "83d04e6f-db16-4280-8337-53f11b2335c6", "l_uid": {uid}, "p_uid": {uid}, "timestamp":"{ts_str}", "timeseries": ['
@@ -211,7 +225,7 @@ for uid in range(NUM_OF_UID):
                 message += f'{{"name": "{name}", "value": {RANDOM_FLOATS[float_counter]}'
                 float_counter = (float_counter + 1) % len(RANDOM_FLOATS)
             else:
-                message += f'"name": "{name}", "value": {RANDOM_FLOATS[float_counter]}'
+                message += f'{{"name": "{name}", "value": {RANDOM_INTS[float_counter]}'
                 int_counter = (int_counter + 1) % len(RANDOM_INTS)
             if idx < len(random_names) - 1:
                 message += "}, "

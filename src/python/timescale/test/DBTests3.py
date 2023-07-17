@@ -37,8 +37,7 @@ def send_rabbitmq_bulk(payload: str = ""):
     conn.close()
 
 
-def TestSingleInsertSpeed():
-    filename = "timescale/test/msgs"
+def TestSingleInsertSpeed(filename: str = 'timescale/test/msgs/msgs', target_msgs: int = 53300):
     messages = []
     with open(filename, 'r') as f:
         # for line in f:
@@ -53,43 +52,36 @@ def TestSingleInsertSpeed():
     starttime = time.time()
     for msg in messages:
         send_rabbitmq_msg(msg)
-    while ts.query_num_entries() < 200:
+    while ts.query_num_entries() < target_msgs:
         time.sleep(2) # Potential 2 second error. May entry speed
         pass
     endtime = time.time()
     finaltime = endtime - starttime
     print(f"Time for single insert: {finaltime}")
 
-def TestBulkInsertSpeed():
-    filename = "timescale/test/msgs"
+def TestBulkInsertSpeed(filename: str = 'timescale/test/msgs/msgs', target_msgs: int = 53300):
     msgs = ""  # Initialize as an empty string
-    with open(filename, 'r') as f:
-        line_count = 0
-        for line in f:
-            # Skip empty lines
-            if not line.strip():
-                continue
-            msgs += line.strip()
-            line_count += 1
-            if line_count >= 10000:
-                break
-            msgs += ','  # Add a comma after each line except the last line
+
+    with open(filename, 'r', encoding='utf-8') as f:
+        lines = f.readlines()
+
+    num_lines = len(lines)
+    for idx, line in enumerate(lines):
+        # Skip empty lines
+        if not line.strip():
+            continue
+            
+        # Add a comma after each line except the last line
+        msgs += line.strip()
+        if idx < num_lines - 1:
+            msgs += ","
 
     # Construct the JSON string
     msgs = f'{{"data":[{msgs}]}}'
-
-    print("Constructed JSON:")
-    print(msgs)  # For testing purposes, to check the constructed JSON
-
-    time.sleep(2)
-
-    print("Starting bulk insert...")
     starttime = time.time()
     send_rabbitmq_bulk(msgs)
 
-    print("Bulk insert completed.")
-    while ts.query_num_entries() < 53300:
-        print(f"Current number of entries: {ts.query_num_entries()}")
+    while ts.query_num_entries() < target_msgs:
         time.sleep(2)  # Potential 2-second error for polling.
         pass
     endtime = time.time()
@@ -166,11 +158,32 @@ def TestQuerySpeed():
     finaltime = endtime - starttime
     print(f"Time to query all data: {finaltime}")
 
+def cleardb():
+    ts.remove_data_with_value()
+    time.sleep(0.2)
+
 
 if __name__ == "__main__":
-    # TestSingleInsertSpeed()
-    TestBulkInsertSpeed()
+    cleardb()
+    print("Single insert 1:")
+    TestSingleInsertSpeed('timescale/test/msgs/single_msgs1', 2)
+    cleardb()
+    print("Single insert 2:")
+    TestSingleInsertSpeed('timescale/test/msgs/single_msgs2', 48)
+    cleardb()
+    print("Single insert 3:")
+    TestSingleInsertSpeed('timescale/test/msgs/single_msgs3', 480)
+    cleardb()
+    print("Bulk insert 1:")
+    TestBulkInsertSpeed('timescale/test/msgs/bulk_msgs1', 480)
+    cleardb()
+    print("Bulk insert 2:")
+    TestBulkInsertSpeed('timescale/test/msgs/bulk_msgs2', 5330)
+    cleardb()
+    print("Bulk insert 3:")
+    TestBulkInsertSpeed('timescale/test/msgs/bulk_msgs3', 53300)
     TestQuerySpeed()
+
 
 
 

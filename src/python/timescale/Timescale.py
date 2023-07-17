@@ -110,10 +110,6 @@ def insert_lines_bulk(parsed_data: list, connection: str = CONNECTION, table: st
             # Define the SQL statement for the bulk insert
             sql_statement = f"INSERT INTO {table} (broker_id, l_uid, p_uid, timestamp, name, value) VALUES %s;"
 
-            # Log the SQL statement for debugging
-            print("SQL Statement:", sql_statement)
-            print("Data to Insert:", chunk)
-
             # Execute the bulk insert for the current chunk
             psycopg2.extras.execute_values(cursor, sql_statement, chunk)
 
