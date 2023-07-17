@@ -46,7 +46,13 @@ async def main():
 
     # The routing key is ignored by fanout exchanges so it does not need to be a constant.
     # Change the queue name. This code should change to use a server generated queue name.
-    rx_channel = mq.RxChannel(BrokerConstants.LOGICAL_TIMESERIES_EXCHANGE_NAME, exchange_type=ExchangeType.fanout, queue_name='ltsreader_logical_msg_queue', on_message=on_message, routing_key='logical_timeseries')
+    rx_channel = mq.RxChannel(
+        "TEST_BULK", 
+        exchange_type=ExchangeType.fanout, 
+        queue_name='bulky_ts_queue', 
+        on_message=on_message, 
+        routing_key='bulky_timeseries'
+    )
     mq_client = mq.RabbitMQConnection(channels=[rx_channel])
     asyncio.create_task(mq_client.connect())
 
@@ -75,17 +81,34 @@ def on_message(channel, method, properties, body):
         rx_channel._channel.basic_reject(delivery_tag)
         return
 
-    msg = json.loads(body)
-    lu.cid_logger.info(f'Accepted message {msg}', extra=msg)
+    msgs = json.loads(body)
+    lu.cid_logger.info(f'Accepted message {msgs}', extra=msgs)
     
     #
     # Message processing goes here
     #
-    json_lines = ts.parse_json(msg)
-    if ts.insert_lines(json_lines) == 1:
-        logging.info("Message successfully stored in database.")
-    else:
-        rx_channel._channel.basic_reject(delivery_tag)
+
+
+    parsed_msgs = []
+    try:
+        for line in msgs["data"]:
+            print(f"Processing line: {line}")
+            parsed_msg = ts.parse_json(line)
+            print(f"Parsed message: {parsed_msg}")
+            parsed_msgs.extend(parsed_msg)  # Extend the list instead of appending
+        ts.insert_lines_bulk(parsed_msgs)        
+    except Exception as e:
+        lu.cid_logger.error(f'Unable to process LTS message: {e}')
+        rx_channel.channel.basic_reject(delivery_tag)
+    
+    # try:
+    #     for msg in msgs["data"]:
+    #         parsed_msgs.append(ts.parse_json(msg))
+    #     ts.insert_lines_bulk(parsed_msgs)
+    # except Exception as e:
+    #     lu.cid_logger.error(f'Unable to process LTS message: {e}')
+    #     rx_channel.channel.basic_reject(delivery_tag)
+    #     return
 
     # This tells RabbitMQ the message is handled and can be deleted from the queue.    
     rx_channel._channel.basic_ack(delivery_tag)

@@ -1,4 +1,5 @@
 import psycopg2
+from psycopg2 import extras, sql
 import sys
 import json
 import random
@@ -80,6 +81,57 @@ def insert_lines(parsed_data: list, connection: str = CONNECTION, table: str = t
     conn.commit()
     cursor.close
     return 1
+
+# For efficiency
+def insert_lines_bulk(parsed_data: list, connection: str = CONNECTION, table: str = table_name) -> int:
+    try:
+        # Connect to the database and create a cursor
+        conn = psycopg2.connect(connection)
+        cursor = conn.cursor()
+
+        # Prepare a list of tuples containing the data to be inserted
+        data_to_insert = []
+        for entry in parsed_data:
+            broker_id = entry[0]
+            l_uid = entry[1]
+            p_uid = entry[2]
+            timestamp = entry[3]
+            name = entry[4]
+            value = entry[5]
+            data_to_insert.append((broker_id, l_uid, p_uid, timestamp, name, value))
+
+        # Define the chunk size for bulk insert
+        chunk_size = 500
+
+        # Divide data_to_insert into chunks of chunk_size
+        for i in range(0, len(data_to_insert), chunk_size):
+            chunk = data_to_insert[i:i + chunk_size]
+
+            # Define the SQL statement for the bulk insert
+            sql_statement = f"INSERT INTO {table} (broker_id, l_uid, p_uid, timestamp, name, value) VALUES %s;"
+
+            # Log the SQL statement for debugging
+            print("SQL Statement:", sql_statement)
+            print("Data to Insert:", chunk)
+
+            # Execute the bulk insert for the current chunk
+            psycopg2.extras.execute_values(cursor, sql_statement, chunk)
+
+        conn.commit()  # Commit the transaction if everything is successful
+
+        return 1
+
+    except (Exception, psycopg2.Error) as error:
+        print("Error during bulk insert:")
+        print(error)
+        conn.rollback()  # Rollback the transaction to avoid partial inserts
+
+    finally:
+        cursor.close()
+        conn.close()
+
+    return 0
+
     
 def query_all_data(connection: str = CONNECTION, table: str = table_name):
     conn = psycopg2.connect(connection)
