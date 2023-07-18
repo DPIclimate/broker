@@ -1,0 +1,78 @@
+## prometheus.yml ##
+
+# global settings
+global:
+  scrape_interval:     15s # Set the scrape interval to every 15 seconds. Default is every 1 minute.
+  evaluation_interval: 15s # Evaluate rules every 15 seconds. The default is every 1 minute.
+  # scrape_timeout is set to the global default (10s).
+
+alerting:
+  alertmanagers:
+    - static_configs:
+      - targets: ["alertmanager:9093"]
+
+# Load rules once and periodically evaluate them according to the global 'evaluation_interval'.
+rule_files:
+  - /etc/prometheus/alert_rules.yml
+
+# A scrape configuration containing exactly one endpoint to scrape:
+# Here it's Prometheus itself.
+scrape_configs:
+  # The job name is added as a label `job=<job_name>` to any timeseries scraped from this config.
+  - job_name: 'vad-metrics'
+    metrics_path: '/metrics'
+    scrape_interval: 5s
+    static_configs:
+      - targets: ['docker.for.mac.host.internal:9091']
+
+  # The job name is added as a label `job=<job_name>` to any timeseries scraped from this config.
+  - job_name: 'ttn_webhook'
+    metrics_path: '/metrics'
+    scrape_interval: 5s
+    static_configs:
+      - targets: ['localhost:5688']
+
+  - job_name: 'restapi'
+    metrics_path: '/metrics'
+    scrape_interval: 5s
+    static_configs:
+      - targets: ['localhost:5687']
+
+  - job_name: 'rabbitmq-server'
+    static_configs:
+      - targets:
+          - 'rmq0:15692'
+          - 'rmq1:15692'
+          - 'rmq2:15692'
+          - 'rmq0-dist-tls:15692'
+          - 'rmq1-dist-tls:15692'
+          - 'rmq2-dist-tls:15692'
+          - 'rmq0-qq:15692'
+          - 'rmq1-qq:15692'
+          - 'rmq2-qq:15692'
+          - 'rmq0-dist-metrics:15692'
+          - 'rmq1-dist-metrics:15692'
+          - 'rmq2-dist-metrics:15692'
+  - job_name: 'rabbitmq-perf-test'
+    static_configs:
+      - targets:
+          # docker-compose-overview.yml
+          - 'basic-get:8080'
+          - 'basic-get-auto:8080'
+          - 'greedy-consumer:8080'
+          - 'publisher-confirms:8080'
+          - 'slow-consumer-persistent:8080'
+          - 'nack:8080'
+          - 'unroutable-return:8080'
+          - 'unroutable-drop:8080'
+          # docker-compose-dist-tls.yml
+          - 'stress-dist-tls:8080'
+          # docker-compose-qq.yml
+          - 'qq-moderate-load:8080'
+  - job_name: 'rabbitmq-exporter'
+    scrape_interval: 60s
+    scrape_timeout: 59s
+    static_configs:
+      - targets:
+          # docker-compose-dist-tls.yml
+          - 'rabbitmq-exporter:9090'   
