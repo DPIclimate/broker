@@ -21,6 +21,7 @@ def send_rabbitmq_msg(payload: str = ""):
                         properties=pika.BasicProperties(headers=properties))
     conn.close()
 
+# Requires LTS_Reader_Bulk to be running
 def send_rabbitmq_bulk(payload: str = ""):
     creds = pika.PlainCredentials('broker', 'CHANGEME')
     params = pika.ConnectionParameters('mq', credentials=creds)
@@ -53,7 +54,7 @@ def TestSingleInsertSpeed(filename: str = 'timescale/test/msgs/msgs', target_msg
     for msg in messages:
         send_rabbitmq_msg(msg)
     while ts.query_num_entries() < target_msgs:
-        time.sleep(2) # Potential 2 second error. May entry speed
+        time.sleep(0.01) # Potential 0.01 second error.
         pass
     endtime = time.time()
     finaltime = endtime - starttime
@@ -82,7 +83,7 @@ def TestBulkInsertSpeed(filename: str = 'timescale/test/msgs/msgs', target_msgs:
     send_rabbitmq_bulk(msgs)
 
     while ts.query_num_entries() < target_msgs:
-        time.sleep(2)  # Potential 2-second error for polling.
+        time.sleep(0.01)  # Potential 0.01 second error for polling.
         pass
     endtime = time.time()
     finaltime = endtime - starttime
