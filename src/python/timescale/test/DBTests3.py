@@ -47,8 +47,6 @@ def TestSingleInsertSpeed(filename: str = 'timescale/test/msgs/msgs', target_msg
         for line in f:
             messages.append(line)
             line_count += 1
-            if line_count >= 100:
-                break
 
     starttime = time.time()
     for msg in messages:
@@ -152,12 +150,24 @@ def TestBulkInsertSpeed(filename: str = 'timescale/test/msgs/msgs', target_msgs:
 #     finaltime = endtime - starttime
 #     print(f"Time for bulk insert: {finaltime}")
     
-def TestQuerySpeed():
+def TestQuerySpeed(filename: str = "timescale/test/msgs/queries"):
+    
+    queries = []
+    with open(filename, 'r') as f:
+        # for line in f:
+        #     messages.append(ts.parse_json(json.loads(line)))
+        line_count = 0
+        for line in f:
+            queries.append(line)
+            line_count += 1
+
     starttime = time.time()
-    ts.query_all_data()
+    for query in queries:
+        ts.send_query(query)
     endtime = time.time()
     finaltime = endtime - starttime
-    print(f"Time to query all data: {finaltime}")
+    print(f"Total Time taken for test queries: {finaltime}")
+    print(f"Average time per query: {finaltime / line_count}")
 
 def cleardb():
     ts.remove_data_with_value()

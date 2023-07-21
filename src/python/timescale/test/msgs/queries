@@ -1,0 +1,11 @@
+SELECT COUNT(*) FROM timeseries;
+SELECT * FROM timeseries;
+SELECT * FROM timeseries WHERE name = 'Temp' AND value > 10.0;
+SELECT COUNT(*) FROM timeseries WHERE timestamp > '2023-01-05T05:00:00.000000Z';
+SELECT * FROM timeseries WHERE timestamp > '2023-01-05T05:00:00.000000Z';
+SELECT * FROM timeseries WHERE timestamp BETWEEN '2023-01-04' AND '2023-01-05';
+SELECT COUNT(*) FROM timeseries WHERE timestamp BETWEEN '2023-01-04' AND '2023-01-05';
+SELECT * FROM timeseries WHERE name = 'gnss' AND value > 20.0 AND timestamp BETWEEN '2023-01-04' AND '2023-01-05';
+SELECT COUNT(*) FROM timeseries WHERE name = 'gnss' AND value > 20.0 AND timestamp BETWEEN '2023-01-04' AND '2023-01-05';
+SELECT COUNT(*) FROM timeseries WHERE name = 'gnss' AND value > 20.0 AND value < 25.0 AND timestamp BETWEEN '2023-01-04' AND '2023-01-05';
+SELECT * FROM timeseries WHERE name = 'gnss' AND value > 20.0 AND value < 25.0 AND timestamp BETWEEN '2023-01-04' AND '2023-01-05';

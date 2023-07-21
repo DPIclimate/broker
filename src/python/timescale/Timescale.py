@@ -22,7 +22,7 @@ def create_test_table(connection: str = CONNECTION, table: str = table_name):
                                         p_uid VARCHAR,
                                         timestamp TIMESTAMPTZ NOT NULL,
                                         name VARCHAR,
-                                        value VARCHAR
+                                        value NUMERIC
                                     );
                                     """
     conn = psycopg2.connect(connection)
@@ -89,15 +89,15 @@ def insert_lines_bulk(parsed_data: list, connection: str = CONNECTION, table: st
         conn = psycopg2.connect(connection)
         cursor = conn.cursor()
 
-        # Prepare a list of tuples containing the data to be inserted
+        # Prepare list of tuples containing the data to be inserted
         data_to_insert = []
-        for entry in parsed_data:
-            broker_id = entry[0]
-            l_uid = entry[1]
-            p_uid = entry[2]
-            timestamp = entry[3]
-            name = entry[4]
-            value = entry[5]
+        for data in parsed_data:
+            broker_id = data[0]
+            l_uid = data[1]
+            p_uid = data[2]
+            timestamp = data[3]
+            name = data[4]
+            value = data[5]
             data_to_insert.append((broker_id, l_uid, p_uid, timestamp, name, value))
 
         # Define the chunk size for bulk insert
@@ -128,6 +128,19 @@ def insert_lines_bulk(parsed_data: list, connection: str = CONNECTION, table: st
 
     return 0
 
+def send_query(query: str = "", interval_hrs: int = 24, connection: str = CONNECTION, table: str = table_name ):
+    if query == "":
+        query = f"SELECT * FROM {table};"
+    conn = psycopg2.connect(connection)
+    cursor = conn.cursor()
+    try:
+        cursor.execute(query)
+        conn.commit()
+        result = cursor.fetchone()
+    except psycopg2.errors as e:
+        sys.stderr.write(f'error: {e}\n')
+    cursor.close()
+    return result
     
 def query_all_data(connection: str = CONNECTION, table: str = table_name):
     conn = psycopg2.connect(connection)
@@ -273,7 +286,7 @@ def parse_json_file(filename: str) -> list:
             except json.decoder.JSONDecodeError:
                 logging.error(f"An error occurred: {str(e)}")
                 pass
-
+            
     return parsed_data
 
 
@@ -320,7 +333,7 @@ test_message = """{
 """
 
 if __name__ == "__main__":
-    create_test_table()
+    #create_test_table()
     #lol = parse_json_string(test_message)
     #print(lol)
     #insert_lines(lol)

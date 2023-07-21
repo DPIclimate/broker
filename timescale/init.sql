@@ -4,5 +4,5 @@ CREATE TABLE timeseries (
                          p_uid VARCHAR,
                          timestamp TIMESTAMPTZ NOT NULL,
                          name VARCHAR,
-                         value VARCHAR
+                         value NUMERIC
                          );
