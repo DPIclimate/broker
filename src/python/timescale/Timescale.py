@@ -136,7 +136,7 @@ def send_query(query: str = "", interval_hrs: int = 24, connection: str = CONNEC
     try:
         cursor.execute(query)
         conn.commit()
-        result = cursor.fetchone()
+        result = cursor.fetchall()
     except psycopg2.errors as e:
         sys.stderr.write(f'error: {e}\n')
     cursor.close()
