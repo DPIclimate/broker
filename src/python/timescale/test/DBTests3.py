@@ -176,32 +176,24 @@ def cleardb():
 
 if __name__ == "__main__":
     cleardb()
-    print("Single insert 1:")
+    print("Single insert 1 (1 message):")
     TestSingleInsertSpeed('timescale/test/msgs/single_msgs1', 2)
     cleardb()
-    print("Single insert 2:")
+    print("Single insert 2 (10 messages):")
     TestSingleInsertSpeed('timescale/test/msgs/single_msgs2', 48)
     cleardb()
-    print("Single insert 3:")
+    print("Single insert 3 (100 messages):")
     TestSingleInsertSpeed('timescale/test/msgs/single_msgs3', 480)
     cleardb()
-    print("Bulk insert 1 (100 messages)::")
+    print("Bulk insert 1 (100 messages):")
     TestBulkInsertSpeed('timescale/test/msgs/bulk_msgs1', 480)
     cleardb()
-    print("Bulk insert 2 (1000 messages)::")
+    print("Bulk insert 2 (1000 messages):")
     TestBulkInsertSpeed('timescale/test/msgs/bulk_msgs2', 5330)
     cleardb()
-    print("Bulk insert 3 (10000 messages)::")
+    print("Bulk insert 3 (10000 messages):")
     TestBulkInsertSpeed('timescale/test/msgs/bulk_msgs3', 53300)
     cleardb()
     print("Bulk insert 4 (25000 messages):")
     TestBulkInsertSpeed('timescale/test/msgs/bulk_msgs4', 135450)
     TestQuerySpeed()
-
-
-
-
-
-
-
-
