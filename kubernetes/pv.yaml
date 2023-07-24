@@ -1,0 +1,13 @@
+apiVersion: v1
+kind: PersistentVolume
+metadata:
+  name: my-nfs-pv
+spec:
+  storageClassName: nfs-storage
+  capacity:
+    storage: 1Gi  # Specify the size of the NFS storage
+  accessModes:
+    - ReadWriteMany  # This allows multiple pods to read and write to the NFS share
+  nfs:
+    server: 172.27.240.95  # Replace with your NFS server IP or hostname
+    path: /data  # Replace with the path to your NFS share

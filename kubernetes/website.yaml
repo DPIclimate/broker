@@ -22,15 +22,17 @@ spec:
           volumeMounts:
             - name: website-volume
               mountPath: /app
-#          command:
-#            - sh
-#            - -c
-#            - tail -f /dev/null
+          command:
+            - sh
+            - -c
+            - tail -f /dev/null
       volumes:
         - name: website-volume
-          hostPath:
-            path: /home/broker/src/www
-            type: Directory
+          persistentVolumeClaim:
+            claimName: www-pv
+#          hostPath:
+#            path: /home/broker/src/www
+#            type: Directory
 ---
 apiVersion: v1
 kind: Service

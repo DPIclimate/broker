@@ -13,25 +13,70 @@ spec:
         app: ttn-processor
     spec:
       containers:
-      - name: ttn-processor
-        image: broker/python-base:latest
-        imagePullPolicy: Never
-        envFrom:
-          - configMapRef:
-              name: env-configmap
-        volumeMounts:
-        - name: python-src-volume
-          mountPath: /home/broker/python
-        workingDir: /home/broker/python/ttn
-        command:
-#          - sh
-#          - -c
-          - python
-          - AllMsgsWriter.py
+        - name: ttn-processor
+          image: broker/python-base:latest
+          imagePullPolicy: Never
+          envFrom:
+            - configMapRef:
+                name: env-configmap
+          volumeMounts:
+            - name: broker-config-volume
+              mountPath: /home/broker/python/
+            - name: api-client-config-volume
+              mountPath: /home/broker/python/api/client
+            - name: delivery-config-volume
+              mountPath: /home/broker/python/delivery
+            - name: logical-mapper-config-volume
+              mountPath: /home/broker/python/logical_mapper
+            - name: pdmodels-config-volume
+              mountPath: /home/broker/python/pdmodels
+            - name: pollers-config-volume
+              mountPath: /home/broker/python/pollers
+            - name: restapi-config-volume
+              mountPath: /home/broker/python/restapi
+            - name: ttn-config-volume
+              mountPath: /home/broker/python/ttn
+            - name: util-config-volume
+              mountPath: /home/broker/python/util
+            - name: wombat-config-volume
+              mountPath: /home/broker/python/ydoc
+          workingDir: /home/broker/python/ttn
+          command:
+            #          - sh
+            #          - -c
+            - python
+            - AllMsgsWriter.py
       volumes:
-      - name: python-src-volume
-        hostPath:
-          path: /home/broker/src/python
+        - name: broker-config-volume
+          configMap:
+            name: broker-config
+        - name: api-client-config-volume
+          configMap:
+            name: api-client-config
+        - name: delivery-config-volume
+          configMap:
+            name: delivery-config
+        - name: logical-mapper-config-volume
+          configMap:
+            name: logical-mapper-config
+        - name: pdmodels-config-volume
+          configMap:
+            name: pdmodels-config
+        - name: pollers-config-volume
+          configMap:
+            name: pollers-config
+        - name: restapi-config-volume
+          configMap:
+            name: restapi-config
+        - name: ttn-config-volume
+          configMap:
+            name: ttn-config
+        - name: util-config-volume
+          configMap:
+            name: util-config
+        - name: wombat-config-volume
+          configMap:
+            name: ydoc-config
 ---
 apiVersion: v1
 kind: Service
@@ -41,6 +86,6 @@ spec:
   selector:
     app: ttn-processor
   ports:
-  - name: http
-    port: 80
-    targetPort: 80
+    - name: http
+      port: 80
+      targetPort: 80
