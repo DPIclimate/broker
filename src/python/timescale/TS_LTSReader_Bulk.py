@@ -92,9 +92,8 @@ def on_message(channel, method, properties, body):
     parsed_msgs = []
     try:
         for line in msgs["data"]:
-            print(f"Processing line: {line}")
+            #print(f"Processing line: {line}")
             parsed_msg = ts.parse_json(line)
-            print(f"Parsed message: {parsed_msg}")
             parsed_msgs.extend(parsed_msg)  # Extend the list instead of appending
         ts.insert_lines_bulk(parsed_msgs)        
     except Exception as e:
