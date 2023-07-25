@@ -41,8 +41,13 @@ def check_user_logged_in():
 def index():
 
     try:
+        unlinked = request.args.get('unlinked') == 'true'
         physicalDevices = []
-        data = get_physical_devices(session.get('token'))
+        data = None
+        if unlinked:
+            data = get_physical_unmapped(session.get('token'))
+        else:
+            data = get_physical_devices(session.get('token'))
         if data is None:
             return render_template('error_page.html')
 
@@ -53,7 +58,7 @@ def index():
                 source_name=data[i]['source_name'],
                 last_seen=formatTimeStamp(data[i]['last_seen'])
             ))
-        return render_template('physical_device_table.html', title='Physical Devices', physicalDevices=physicalDevices)
+        return render_template('physical_device_table.html', title='Physical Devices', physicalDevices=physicalDevices, unlinked=unlinked)
 
     except requests.exceptions.HTTPError as e:
         return render_template('error_page.html', reason=e), e.response.status_code

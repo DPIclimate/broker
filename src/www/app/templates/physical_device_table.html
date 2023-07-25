@@ -6,6 +6,13 @@
         <ul id="physicalmappingbuttons">
 			<li><span class="btn" onclick="handleCreateMultipleMappings()">Create Multiple Mappings</span></li>
         </ul>
+        <ul id="unmappedfilterbutton">
+            {% if unmapped %}
+			    <li><span class="btn" onclick="handleCreateMultipleMappings(true)">Show All Devices</span></li>
+            {% else %}
+                <li><span class="btn" onclick="handleCreateMultipleMappings(false)">Show Only Unmapped Devices</span></li>
+            {% endif %}
+        </ul>
     </div>
 </div>
 

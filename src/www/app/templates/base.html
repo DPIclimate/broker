@@ -71,6 +71,14 @@
                 }
             }
 
+            function handleredirectPhysicalDevices(unmapped) {
+                if(unmapped){
+                    location.replace('/?unmapped=false');
+                }else{
+                    location.replace('/?unmapped=true');
+                }
+            }
+
             function handleCreateMapping(uid){
                 if(confirm('Are you sure you want to Create Mapping?')){
                     var url = "{{ url_for('CreateMapping') }}" + '?uid=' + uid;
