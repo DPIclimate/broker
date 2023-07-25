@@ -8,9 +8,9 @@
         </ul>
         <ul id="unmappedfilterbutton">
             {% if unmapped %}
-			    <li><span class="btn" onclick="handleCreateMultipleMappings(true)">Show All Devices</span></li>
+			    <li><span class="btn" onclick="handleRedirectPhysicalDevices(true)">Show All Devices</span></li>
             {% else %}
-                <li><span class="btn" onclick="handleCreateMultipleMappings(false)">Show Only Unmapped Devices</span></li>
+                <li><span class="btn" onclick="handleRedirectPhysicalDevices(false)">Show Only Unmapped Devices</span></li>
             {% endif %}
         </ul>
     </div>
