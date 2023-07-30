@@ -97,7 +97,7 @@ def adjust_pairings(luid: str, puid: str):
 
     query = f"SELECT * FROM id_pairings WHERE l_uid = '{luid}' OR p_uid = '{puid}';"
     results = ts.send_query(query, table="id_pairings")
-    logging.info(f"The results are: {results}" )
+    
     luid_exists = False
     puid_exists = False
     
