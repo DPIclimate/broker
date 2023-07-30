@@ -81,7 +81,10 @@ def on_message(channel, method, properties, body):
     #
     # Message processing goes here
     #
+    
     json_lines = ts.parse_json(msg)
+    adjust_pairings(msg.get('l_uid'), msg.get('p_uid'))
+
     if ts.insert_lines(json_lines) == 1:
         logging.info("Message successfully stored in database.")
     else:
@@ -89,6 +92,51 @@ def on_message(channel, method, properties, body):
 
     # This tells RabbitMQ the message is handled and can be deleted from the queue.    
     rx_channel._channel.basic_ack(delivery_tag)
+
+def adjust_pairings(luid: str, puid: str):
+
+    query = f"SELECT * FROM id_pairings WHERE l_uid = '{luid}' OR p_uid = '{puid}';"
+    results = ts.send_query(query, table="id_pairings")
+    logging.info(f"The results are: {results}" )
+    luid_exists = False
+    puid_exists = False
+    
+    # Analyze the results
+    for row in results:
+        if str(row[1]) == str(luid):
+            luid_exists = True
+        if str(row[2]) == str(puid):
+            puid_exists = True
+        if luid_exists or puid_exists:
+            break
+
+    # Perform the actions
+    if luid_exists and not puid_exists:
+        # Update the row to add the missing puid
+        update_query = f"UPDATE id_pairings SET p_uid = '{puid}' WHERE l_uid = '{luid}';"
+        ts.send_update(update_query, table="id_pairings")
+        logging.info("Updated column to change p_uid")
+        # Delete rows that have the same p_uid but different l_uid
+        delete_query = f"DELETE FROM id_pairings WHERE p_uid = '{puid}' AND l_uid != '{luid}';"
+        ts.send_update(delete_query, table="id_pairings")
+        logging.info("Deleted rows with the same p_uid but different l_uid")
+    elif not luid_exists and puid_exists:
+        # Update the row to add the missing luid
+        update_query = f"UPDATE id_pairings SET l_uid = '{luid}' WHERE p_uid = '{puid}';"
+        ts.send_update(update_query, table="id_pairings")
+        logging.info("Updated column to change l_uid")
+        # Delete rows that have the same l_uid but different p_uid
+        delete_query = f"DELETE FROM id_pairings WHERE l_uid = '{luid}' AND p_uid != '{puid}';"
+        ts.send_update(delete_query, table="id_pairings")
+        logging.info("Deleted rows with the same l_uid but different p_uid")
+    elif not luid_exists and not puid_exists:
+        # Add a new row with the given luid and puid
+        insert_query = f"INSERT INTO id_pairings (l_uid, p_uid) VALUES ('{luid}', '{puid}');"
+        ts.send_update(insert_query, table="id_pairings")
+        logging.info("Added new ID pairing")
+        
+    else:
+        return
 
 
 if __name__ == '__main__':

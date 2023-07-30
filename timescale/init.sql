@@ -6,3 +6,9 @@ CREATE TABLE timeseries (
                          name VARCHAR,
                          value NUMERIC
                          );
+                         
+CREATE TABLE id_pairings (
+                         pairing_id BIGSERIAL PRIMARY KEY,
+                         l_uid VARCHAR,
+                         p_uid VARCHAR
+                         );

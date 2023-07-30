@@ -43,8 +43,9 @@ services:
       POSTGRES_PASSWORD: admin
       POSTGRES_PORT: 5432
     volumes:
-      #- ../timescale/data:/var/lib/postgresql/data
-      - timescale_data:/var/lib/postgresql/data
+      #- ../timescale/data:/var/lib/postgresql/data # Named volume in repo folder, had permission issues
+      #- timescale_data:/var/lib/postgresql/data # Names volume in local root, permissions fine, needed manual deletion.
+      - /var/lib/postgresql/data
       - ../timescale/init.sql:/docker-entrypoint-initdb.d/init.sql
     ports:
       - "5433:5432"
@@ -242,5 +243,5 @@ services:
     working_dir: "/home/broker/python"
     entrypoint: [ "python", "-m", "delivery.FRRED" ]
     
-volumes:
-    timescale_data:
+#volumes:
+#    timescale_data:

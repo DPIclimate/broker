@@ -114,20 +114,19 @@ def insert_lines_bulk(parsed_data: list, connection: str = CONNECTION, table: st
             psycopg2.extras.execute_values(cursor, sql_statement, chunk)
 
         conn.commit()  # Commit the transaction if everything is successful
-
         return 1
 
     except (Exception, psycopg2.Error) as error:
         print("Error during bulk insert:")
         print(error)
         conn.rollback()  # Rollback the transaction to avoid partial inserts
-
     finally:
         cursor.close()
         conn.close()
 
     return 0
 
+# For getting data from the database.
 def send_query(query: str = "", interval_hrs: int = 24, connection: str = CONNECTION, table: str = table_name ):
     if query == "":
         query = f"SELECT * FROM {table};"
@@ -141,6 +140,21 @@ def send_query(query: str = "", interval_hrs: int = 24, connection: str = CONNEC
         sys.stderr.write(f'error: {e}\n')
     cursor.close()
     return result
+
+# Basically same as send_query, but doesn't return anything results, but whether it succeeds
+def send_update(query: str, connection: str = CONNECTION, table: str = "id_pairings"):
+    conn = psycopg2.connect(connection)
+    cursor = conn.cursor()
+    try:
+        cursor.execute(query)
+        conn.commit()
+        cursor.close()
+        return 1
+    except psycopg2.Error as e:
+        sys.stderr.write(f'error: {e}\n')
+        cursor.close()
+        return 0
+
     
 def query_all_data(connection: str = CONNECTION, table: str = table_name):
     conn = psycopg2.connect(connection)
@@ -161,6 +175,25 @@ def query_all_data(connection: str = CONNECTION, table: str = table_name):
             "timestamp": timestamp_str,
             "name": row[4],
             "value": row[5]
+        }
+        json_data.append(json_obj)
+    return json_data
+
+def query_all_pairings(connection: str = CONNECTION, table: str = "id_pairings"):
+    conn = psycopg2.connect(connection)
+    cursor = conn.cursor()
+    query = f"SELECT * FROM {table};"
+    cursor.execute(query)
+    rows = cursor.fetchall()
+    cursor.close()
+
+    json_data = []
+    for row in rows:
+        # Convert datetime object to string before loading as JSON
+        json_obj = {
+            "pairing_id": row[0],
+            "l_uid": row[1],
+            "p_uid": row[2],
         }
         json_data.append(json_obj)
     return json_data
