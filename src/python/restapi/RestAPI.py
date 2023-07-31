@@ -525,8 +525,6 @@ async def check_auth_header(request: Request, call_next):
 
     return await call_next(request)
 
+# Start up the server to expose the metrics.
+start_http_server(8000)
 
-if __name__ == "__main__":
-    # Start up the server to expose the metrics.
-    start_http_server(8000)
-    uvicorn.run(app, host="0.0.0.0", port=8000)
