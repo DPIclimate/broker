@@ -42,6 +42,9 @@ services:
       test: curl --fail -I http://localhost:5687/openapi.json || exit 1
       interval: 1m
       start_period: 20s
+    ports:
+      - "5687:5687"  # Expose the main API port
+      - "8000:8000"  # Expose the metrics port
 
   website:
     image: broker/mgmt-app

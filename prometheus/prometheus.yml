@@ -2,14 +2,14 @@
 
 # global settings
 global:
-  scrape_interval:     15s # Set the scrape interval to every 15 seconds. Default is every 1 minute.
+  scrape_interval: 15s # Set the scrape interval to every 15 seconds. Default is every 1 minute.
   evaluation_interval: 15s # Evaluate rules every 15 seconds. The default is every 1 minute.
   # scrape_timeout is set to the global default (10s).
 
 alerting:
   alertmanagers:
     - static_configs:
-      - targets: ["alertmanager:9093"]
+        - targets: [ "alertmanager:9093" ]
 
 # Load rules once and periodically evaluate them according to the global 'evaluation_interval'.
 rule_files:
@@ -23,20 +23,21 @@ scrape_configs:
     metrics_path: '/metrics'
     scrape_interval: 5s
     static_configs:
-      - targets: ['docker.for.mac.host.internal:9091']
+      - targets: [ 'docker.for.mac.host.internal:9091' ]
 
   # The job name is added as a label `job=<job_name>` to any timeseries scraped from this config.
   - job_name: 'ttn_webhook'
     metrics_path: '/metrics'
     scrape_interval: 5s
     static_configs:
-      - targets: ['localhost:5688']
+      - targets: [ 'localhost:5688' ]
 
   - job_name: 'restapi'
     metrics_path: '/metrics'
     scrape_interval: 5s
     static_configs:
-      - targets: ['localhost:5687']
+      #- targets: ['restapi:5687'] # I believe this is the port the RESTAPI will be accessed from, and we need to use a different port for the Prometheus client
+      - targets: [ 'localhost:8000' ]
 
   - job_name: 'rabbitmq-server'
     static_configs:
