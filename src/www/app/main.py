@@ -53,30 +53,14 @@ def check_user_logged_in():
     """
     if not session.get('token'):
         if request.path != '/login' and request.path != '/static/main.css':
+            # Stores the url user tried to go to in session so when they log in, we take them back to it
+            session['original_url'] = request.url 
             return redirect(url_for('login'), code=302)
 
 
-@app.route('/', methods=['GET', 'POST'])
+@app.route('/', methods=['GET'])
 def index():
-
-    try:
-        physicalDevices = []
-        data = get_physical_devices(session.get('token'))
-        if data is None:
-            return render_template('error_page.html')
-
-        for i in range(len(data)):
-            physicalDevices.append(PhysicalDevice(
-                uid=data[i]['uid'],
-                name=data[i]['name'],
-                source_name=data[i]['source_name'],
-                last_seen=format_time_stamp(data[i]['last_seen'])
-            ))
-        return render_template('physical_device_table.html', title='Physical Devices', physicalDevices=physicalDevices)
-
-    except requests.exceptions.HTTPError as e:
-        return render_template('error_page.html', reason=e), e.response.status_code
-
+    return redirect(url_for('physical_device_table'))
 
 @app.route('/login', methods=["GET", "POST"])
 def login():
@@ -89,9 +73,11 @@ def login():
             user_token = get_user_token(username=username, password=password)
             session['user'] = username
             session['token'] = user_token
-
+            
+            if 'original_url' in session:
+                return redirect(session.pop('original_url'))
+            
             return redirect(url_for('index'))
-
         return render_template("login.html")
 
     except requests.exceptions.HTTPError as e:
@@ -128,6 +114,26 @@ def account():
 
     return render_template('account.html')
 
+
+@app.route('/physical-devices', methods=['GET'])
+def physical_device_table():
+    try:
+        physicalDevices = []
+        data = get_physical_devices(session.get('token'))
+        if data is None:
+            return render_template('error_page.html')
+
+        for i in range(len(data)):
+            physicalDevices.append(PhysicalDevice(
+                uid=data[i]['uid'],
+                name=data[i]['name'],
+                source_name=data[i]['source_name'],
+                last_seen=format_time_stamp(data[i]['last_seen'])
+            ))
+        return render_template('physical_device_table.html', title='Physical Devices', physicalDevices=physicalDevices)
+
+    except requests.exceptions.HTTPError as e:
+        return render_template('error_page.html', reason=e), e.response.status_code
 
 @app.route('/physical-device/<uid>', methods=['GET'])
 def physical_device_form(uid):
