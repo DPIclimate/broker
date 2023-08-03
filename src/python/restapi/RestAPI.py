@@ -25,7 +25,7 @@ import base64
 from prometheus_client import Counter, start_http_server
 from prometheus_fastapi_instrumentator import Instrumentator
 
-REQUESTS = Counter('requests_total', 'Total Requests')
+request_counter = Counter('requests_total', 'Total Requests')
 
 # Scheme for the Authorization header
 token_auth_scheme = HTTPBearer()

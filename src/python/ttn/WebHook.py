@@ -20,6 +20,10 @@ import api.client.RabbitMQ as mq
 _cache_dir = Path(f'{os.getenv("HOME")}/ttn_incoming_msgs')
 _cache_dir.mkdir(exist_ok=True)
 
+# Prometheus metrics
+from prometheus_client import Counter, start_http_server
+request_counter = Counter('ttn_requests_total', 'Total number of incoming requests to TTN webhook')
+
 #
 # This is used to try and guarantee only one operation is happening to the
 # message queue at time.
@@ -117,6 +121,9 @@ async def startup() -> None:
 
 @app.post("/ttn/webhook/up")
 async def webhook_endpoint(msg: JSONObject, background_tasks: BackgroundTasks) -> None:
+    # Increment the request counter
+    request_counter.inc()
+
     """
     Receive webhook calls from TTN.
     """
@@ -165,3 +172,13 @@ def get_cache_filename(msg: JSONObject) -> str:
         received_at = msg['received_at']
 
     return f'{_cache_dir}/{app_id}-{dev_id}-{received_at}.json'
+
+
+if __name__ == '__main__':
+    # Start the Prometheus client HTTP server on port 8001
+    start_http_server(8001)
+
+    # Run the microservice and process requests
+    while True:
+        prom_metrics.process_request()
+        time.sleep(1)

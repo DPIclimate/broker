@@ -68,6 +68,8 @@ services:
       - ../src/python:/home/broker/python
     working_dir: "/home/broker/python/ttn"
     entrypoint: [ "/home/broker/.local/bin/uvicorn", "--proxy-headers", "--host", "0.0.0.0", "--port", "5688", "WebHook:app" ]
+    ports:
+      - "8001:8001" # Expose the metrics port
 
   ttn_processor:
     image: broker/python-base
