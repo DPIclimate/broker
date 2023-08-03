@@ -173,12 +173,5 @@ def get_cache_filename(msg: JSONObject) -> str:
 
     return f'{_cache_dir}/{app_id}-{dev_id}-{received_at}.json'
 
-
-if __name__ == '__main__':
-    # Start the Prometheus client HTTP server on port 8001
-    start_http_server(8001)
-
-    # Run the microservice and process requests
-    while True:
-        prom_metrics.process_request()
-        time.sleep(1)
+# Start up the server to expose the metrics.
+start_http_server(8001)
