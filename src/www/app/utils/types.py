@@ -13,13 +13,14 @@ class LogicalDevice:
         self.last_seen = last_seen
 
 class DeviceMapping:
-    def __init__(self, ld_uid, ld_name, pd_uid, pd_name, start_time, end_time):
+    def __init__(self, ld_uid, ld_name, pd_uid, pd_name, start_time, end_time, is_active):
         self.ld_uid = ld_uid
         self.ld_name = ld_name
         self.pd_uid = pd_uid
         self.pd_name = pd_name
         self.start_time = start_time
         self.end_time = end_time
+        self.is_active = is_active
 
 class DeviceNote:
     def __init__(self, note, ts, uid):

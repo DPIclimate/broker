@@ -117,6 +117,15 @@ group = map_end_parser.add_mutually_exclusive_group(required=True)
 group.add_argument('--puid', type=int, help='Physical device uid', dest='p_uid')
 group.add_argument('--luid', type=int, help='Logical device uid', dest='l_uid')
 
+#Toggle mapping
+map_pause_parser = map_sub_parsers.add_parser('toggle', help='toggle device mapping')
+group = map_pause_parser.add_mutually_exclusive_group(required=True)
+group.add_argument('--luid', type=int, help="Logical deivce uid", dest='l_uid')
+group.add_argument('--puid', type=int, help="Physical deivce uid", dest='p_uid')
+group = map_pause_parser.add_mutually_exclusive_group(required=True)
+group.add_argument('--enable', action='store_true', help="re-enable mapping", dest='enable')
+group.add_argument('--disable', action='store_false', help="temporarily disable mapping", dest='enable')
+
 
 #User commands
 user_parser=main_sub_parsers.add_parser('users', help="manage users")
@@ -335,6 +344,13 @@ def main() -> None:
                 map_list = dao.get_logical_device_mappings(args.l_uid)
                 new_list = [m.dict() for m in map_list]
                 print(pretty_print_json(new_list))
+
+        elif args.cmd2 == 'toggle':
+            current_mapping = dao.get_current_device_mapping(pd=args.p_uid, ld=args.l_uid)
+            if current_mapping == None:
+                raise RuntimeError("No current mapping for the uid given")
+            
+            dao.toggle_device_mapping(args.enable, args.p_uid, args.l_uid)
     
     elif args.cmd1=='users':
         if args.cmd2=='add':

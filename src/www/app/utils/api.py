@@ -187,6 +187,25 @@ def end_physical_mapping(uid: str, token: str):
     if response.status_code != 200 and response.status_code != 404:
         response.raise_for_status()
 
+def toggle_device_mapping(uid:str, dev_type:str, is_active:bool, token:str):
+    """
+        Send request to restAPI to toggle the status of the device mapping
+    """
+
+    headers = {"Authorization": f"Bearer {token}"}
+
+    url = f'{end_point}/broker/api/mappings/toggle-active/'
+    body={
+        'luid':uid if dev_type == 'LD' else None,
+        'puid': uid if dev_type == 'PD' else None,
+        'is_active':is_active
+    }
+
+    response = requests.patch(url, headers=headers, params=body)
+
+    # 404 is returned when there are no device mappings
+    if response.status_code != 200:
+        response.raise_for_status()
 
 def create_logical_device(physical_device: dict, token: str) ->str:
     """

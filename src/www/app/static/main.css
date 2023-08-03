@@ -306,3 +306,13 @@ text-align: center;
 .selected {
     background-color: #a8e9f4;
 }
+
+.pause_icon{
+    width: 30px;
+    height: 30px;
+    margin-left: 20px;
+}
+
+.mapping-header{
+    display: flex;
+}
