@@ -297,7 +297,10 @@ def CreateMapping():
 
         return 'Success', 200
     except requests.exceptions.HTTPError as e:
-        return f"Failed with http error {e.response.status_code}", e.response.status_code
+        if e.response.status_code == 403:
+            return f"You do not have sufficient permissions to make this change", e.response.status_code
+        
+        return f"HTTP request with RestAPI failed with error {e.response.status_code}", e.response.status_code
 
 
 @app.route('/create-note/<noteText>/<uid>', methods=['GET'])
@@ -308,7 +311,10 @@ def CreateNote(noteText, uid):
                     token=session.get('token'))
         return 'Success', 200
     except requests.exceptions.HTTPError as e:
-        return f"Failed with http error {e.response.status_code}", e.response.status_code
+        if e.response.status_code == 403:
+            return f"You do not have sufficient permissions to make this change", e.response.status_code
+        
+        return f"HTTP request with RestAPI failed with error {e.response.status_code}", e.response.status_code
 
 
 @app.route('/delete-note/<noteUID>', methods=['DELETE'])
@@ -317,7 +323,10 @@ def DeleteNote(noteUID):
         delete_note(uid=noteUID, token=session.get('token'))
         return 'Success', 200
     except requests.exceptions.HTTPError as e:
-        return f"Failed with http error {e.response.status_code}", e.response.status_code
+        if e.response.status_code == 403:
+            return f"You do not have sufficient permissions to make this change", e.response.status_code
+        
+        return f"HTTP request with RestAPI failed with error {e.response.status_code}", e.response.status_code
 
 
 @app.route('/edit-note/<noteText>/<uid>', methods=['PATCH'])
@@ -327,14 +336,18 @@ def EditNote(noteText, uid):
 
         return 'Success', 200
     except requests.exceptions.HTTPError as e:
-        return f"Failed with http error {e.response.status_code}", e.response.status_code
+        if e.response.status_code == 403:
+            return f"You do not have sufficient permissions to make this change", e.response.status_code
+        
+        return f"HTTP request with RestAPI failed with error {e.response.status_code}", e.response.status_code
 
 
-@app.route('/update-physical-device', methods=['GET'])
+@app.route('/update-physical-device', methods=['PATCH'])
 def UpdatePhysicalDevice():
+
     try:
-        if request.args['form_location'] != None and request.args['form_location'] != '' and request.args['form_location'] != 'None':
-            location = request.args['form_location'].split(',')
+        if request.form.get("form_location") != 'None':
+            location = request.form.get('form_location').split(',')
             locationJson = {
                 "lat": location[0].replace(' ', ''),
                 "long": location[1].replace(' ', ''),
@@ -342,11 +355,15 @@ def UpdatePhysicalDevice():
         else:
             locationJson = None
 
-        update_physical_device(
-            uid=request.args['form_uid'], name=request.args['form_name'], location=locationJson, token=session.get('token'))
+        update_physical_device(uid=request.form.get("form_uid"), name=request.form.get("form_name"), location=locationJson, token=session.get('token'))
+        
         return 'Success', 200
+    
     except requests.exceptions.HTTPError as e:
-        return f"Failed with http error {e.response.status_code}", e.response.status_code
+        if e.response.status_code == 403:
+            return f"You do not have sufficient permissions to make this change", e.response.status_code
+        
+        return f"HTTP request with RestAPI failed with error {e.response.status_code}", e.response.status_code
 
 
 @app.route('/update-mappings', methods=['GET'])
@@ -356,7 +373,10 @@ def UpdateMappings():
             physicalUid=request.args['physicalDevice_mapping'], logicalUid=request.args['logicalDevice_mapping'], token=session.get('token'))
         return 'Success', 200
     except requests.exceptions.HTTPError as e:
-        return f"Failed with http error {e.response.status_code}", e.response.status_code
+        if e.response.status_code == 403:
+            return f"You do not have sufficient permissions to make this change", e.response.status_code
+        
+        return f"HTTP request with RestAPI failed with error {e.response.status_code}", e.response.status_code
 
 
 @app.route('/end-ld-mapping', methods=['GET'])
@@ -373,11 +393,12 @@ def EndPhysicalDeviceMapping():
     return 'Success', 200
 
 
-@app.route('/update-logical-device', methods=['GET'])
+@app.route('/update-logical-device', methods=['PATCH'])
 def UpdateLogicalDevice():
+
     try:
-        if request.args['form_location'] != None and request.args['form_location'] != '' and request.args['form_location'] != 'None':
-            location = request.args['form_location'].split(',')
+        if request.form.get("form_location") != 'None':
+            location = request.form.get('form_location').split(',')
             locationJson = {
                 "lat": location[0].replace(' ', ''),
                 "long": location[1].replace(' ', ''),
@@ -385,13 +406,15 @@ def UpdateLogicalDevice():
         else:
             locationJson = None
 
-        update_logical_device(uid=request.args['form_uid'], name=request.args['form_name'],
-                              location=locationJson, token=session.get('token'))
-        #return 'Success', 200
-        return logical_device_form(request.args['form_uid'])
+        update_logical_device(uid=request.form.get("form_uid"), name=request.form.get("form_name"), location=locationJson, token=session.get('token'))
+        return 'Success', 200
+        
 
     except requests.exceptions.HTTPError as e:
-        return f"Failed with http error {e.response.status_code}", e.response.status_code
+        if e.response.status_code == 403:
+            return f"You do not have sufficient permissions to make this change", e.response.status_code
+        
+        return f"HTTP request with RestAPI failed with error {e.response.status_code}", e.response.status_code
 
 
 @app.route('/static/<filename>')

@@ -17,7 +17,7 @@
 		<div class="column">
 			<div class="form-section">
 				<h3>Form</h3>
-				<form id="device-form" action="{{ url_for('UpdateLogicalDevice') }}" method="GET" target="hidden-frame">
+				<form id="device-form" action="{{ url_for('UpdateLogicalDevice') }}" target="hidden-frame">
 					<div>
 						<label for="form-uid">UID</label>
 						<input type="text" id="form-uid" name="form_uid" value="{{ ld_data.uid }}" readonly>
