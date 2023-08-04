@@ -872,7 +872,7 @@ def get_physical_device_mappings(pd: Union[PhysicalDevice, int]) -> List[Physica
         with _get_connection() as conn, conn.cursor() as cursor:
             p_uid = pd.uid if isinstance(pd, LogicalDevice) else pd
             cursor.execute('select physical_uid, logical_uid, start_time, end_time from physical_logical_map where physical_uid = %s order by start_time desc', (p_uid, ))
-            print('rowcount', cursor.rowcount)
+            
             for p_uid, l_uid, start_time, end_time in cursor:
                 pd = _get_physical_device(conn, p_uid)
                 ld = _get_logical_device(conn, l_uid)

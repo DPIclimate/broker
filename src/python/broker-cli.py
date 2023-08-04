@@ -270,15 +270,9 @@ def main() -> None:
         elif args.cmd2 == 'rm':
 
             #Delete all physical_logical mappings to avoid foreign key violation
-            pd=dao.get_physical_device(args.p_uid)
-            mappings=dao.get_current_device_mapping(pd=pd, only_current_mapping=False)
-
-            if isinstance(mappings, list):
-                for mapping in mappings:
-                    dao.delete_mapping(mapping=mapping)
-            else:
-                if mappings != None:
-                    dao.delete_mapping(mapping=mappings)
+            mappings=dao.get_physical_device_mappings(pd=args.p_uid)
+            for mapping in mappings:
+                dao.delete_mapping(mapping=mapping)
 
             print(pretty_print_json(dao.delete_physical_device(args.p_uid)))
 
@@ -313,15 +307,9 @@ def main() -> None:
         elif args.cmd2 == 'rm':
             
            #Delete all physical_logical mappings to avoid foreign key violation
-            ld=dao.get_logical_device(args.l_uid)
-            mappings=dao.get_current_device_mapping(ld=ld, only_current_mapping=False)
-
-            if isinstance(mappings, list):
-                for mapping in mappings:
-                    dao.delete_mapping(mapping=mapping)
-            else:
-                if mappings != None:
-                    dao.delete_mapping(mapping=mappings)
+            mappings=dao.get_logical_device_mappings(ld=args.l_uid)
+            for mapping in mappings:
+                dao.delete_mapping(mapping=mapping)
 
             print(pretty_print_json(dao.delete_logical_device(args.l_uid)))
 
