@@ -336,6 +336,19 @@ async def get_latest_mapping_from_physical_uid(uid: int) -> PhysicalToLogicalMap
     except dao.DAOException as err:
         raise HTTPException(status_code=500, detail=err.msg)
 
+@router.get("/mappings/physical/all/{uid}", tags=['device mapping'], response_model=List[PhysicalToLogicalMapping], dependencies=[Depends(token_auth_scheme)])
+async def get_all_mappings_to_physical_uid(uid: int) -> List[PhysicalToLogicalMapping]:
+    """
+    Returns the all mappings for the given physical device
+    """
+    try:
+        mappings = dao.get_physical_device_mappings(pd=uid)
+        if mappings is None:
+            raise HTTPException(status_code=404, detail=f'Device mappings for physical device {uid} not found.')
+
+        return mappings
+    except dao.DAOException as err:
+        raise HTTPException(status_code=500, detail=err.msg)
 
 @router.patch("/mappings/physical/end/{uid}", tags=['device mapping'], status_code=status.HTTP_204_NO_CONTENT, dependencies=[Depends(token_auth_scheme)])
 async def end_mapping_of_physical_uid(uid: int) -> None:

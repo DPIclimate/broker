@@ -140,18 +140,19 @@ def physical_device_form(uid):
         properties_formatted = format_json(pd_data['properties'])
         ttn_link = generate_link(pd_data)
         sources = get_sources(token=session.get('token'))
-        mappings = get_current_mapping_from_physical_device(uid=uid, token=session.get('token'))
+        mappings = get_all_mappings_for_physical_device(uid=uid, token=session.get('token'))
         notes = get_physical_notes(uid=uid, token=session.get('token'))
         currentDeviceMapping = []
         deviceNotes = []
         if mappings is not None:
-            currentDeviceMapping.append(DeviceMapping(
-                pd_uid=mappings['pd']['uid'],
-                pd_name=mappings['pd']['name'],
-                ld_uid=mappings['ld']['uid'],
-                ld_name=mappings['ld']['name'],
-                start_time=format_time_stamp(mappings['start_time']),
-                end_time=format_time_stamp(mappings['end_time'])))
+            for m in mappings:
+                currentDeviceMapping.append(DeviceMapping(
+                    pd_uid=m['pd']['uid'],
+                    pd_name=m['pd']['name'],
+                    ld_uid=m['ld']['uid'],
+                    ld_name=m['ld']['name'],
+                    start_time=format_time_stamp(m['start_time']),
+                    end_time=format_time_stamp(m['end_time'])))
         if notes is not None:
             for i in range(len(notes)):
                 deviceNotes.append(DeviceNote(
