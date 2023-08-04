@@ -266,8 +266,22 @@ def main() -> None:
 
             dev = PhysicalDevice.parse_obj(dev)
             print(pretty_print_json(dao.update_physical_device(dev)))
+        
         elif args.cmd2 == 'rm':
+
+            #Delete all physical_logical mappings to avoid foreign key violation
+            pd=dao.get_physical_device(args.p_uid)
+            mappings=dao.get_current_device_mapping(pd=pd, only_current_mapping=False)
+
+            if isinstance(mappings, list):
+                for mapping in mappings:
+                    dao.delete_mapping(mapping=mapping)
+            else:
+                if mappings != None:
+                    dao.delete_mapping(mapping=mappings)
+
             print(pretty_print_json(dao.delete_physical_device(args.p_uid)))
+
     elif args.cmd1 == 'ld':
         if args.cmd2 == 'ls':
             devs = dao.get_logical_devices()
@@ -297,7 +311,20 @@ def main() -> None:
             dev = LogicalDevice.parse_obj(dev)
             print(pretty_print_json(dao.update_logical_device(dev)))
         elif args.cmd2 == 'rm':
-            print(dao.delete_logical_device(args.l_uid))
+            
+           #Delete all physical_logical mappings to avoid foreign key violation
+            ld=dao.get_logical_device(args.l_uid)
+            mappings=dao.get_current_device_mapping(ld=ld, only_current_mapping=False)
+
+            if isinstance(mappings, list):
+                for mapping in mappings:
+                    dao.delete_mapping(mapping=mapping)
+            else:
+                if mappings != None:
+                    dao.delete_mapping(mapping=mappings)
+
+            print(pretty_print_json(dao.delete_logical_device(args.l_uid)))
+
         elif args.cmd2 == 'cpd':
             pdev = dao.get_physical_device(args.p_uid)
             if pdev is None:
@@ -329,8 +356,10 @@ def main() -> None:
                 dao.end_mapping(ld=args.l_uid)
         elif args.cmd2 == 'ls':
             if args.p_uid is not None:
-                mapping = dao.get_current_device_mapping(pd=args.p_uid)
-                print(pretty_print_json(mapping))
+                mappings:list[PhysicalToLogicalMapping] = dao.get_current_device_mapping(pd=args.p_uid, only_current_mapping=False)
+                new_list = [m.dict() for m in mappings]
+                print(pretty_print_json(new_list))
+
             elif args.l_uid is not None:
                 map_list = dao.get_logical_device_mappings(args.l_uid)
                 new_list = [m.dict() for m in map_list]
