@@ -818,10 +818,10 @@ def _get_current_device_mapping(conn, pd: Optional[Union[PhysicalDevice, int]] =
             for m in mappings:
                 logging.warning(m)
 
-        if only_current_mapping:
+        if len(mappings) > 0:
             return mappings[0]
 
-        return mappings
+        return None
 
 
 @backoff.on_exception(backoff.expo, DAOException, max_time=30)
@@ -859,11 +859,32 @@ def get_logical_device_mappings(ld: Union[LogicalDevice, int]) -> List[PhysicalT
 
         return mappings
     except Exception as err:
-        raise err if isinstance(err, DAOException) else DAOException('get_unmapped_physical_devices failed.', err)
+        raise err if isinstance(err, DAOException) else DAOException('get_logical_device_mappings failed.', err)
     finally:
         if conn is not None:
             free_conn(conn)
 
+@backoff.on_exception(backoff.expo, DAOException, max_time=30)
+def get_physical_device_mappings(pd: Union[PhysicalDevice, int]) -> List[PhysicalToLogicalMapping]:
+    conn = None
+    try:
+        mappings = []
+        with _get_connection() as conn, conn.cursor() as cursor:
+            p_uid = pd.uid if isinstance(pd, LogicalDevice) else pd
+            cursor.execute('select physical_uid, logical_uid, start_time, end_time from physical_logical_map where physical_uid = %s order by start_time desc', (p_uid, ))
+            print('rowcount', cursor.rowcount)
+            for p_uid, l_uid, start_time, end_time in cursor:
+                pd = _get_physical_device(conn, p_uid)
+                ld = _get_logical_device(conn, l_uid)
+                mapping = PhysicalToLogicalMapping(pd=pd, ld=ld, start_time=start_time, end_time=end_time)
+                mappings.append(mapping)
+
+        return mappings
+    except Exception as err:
+        raise err if isinstance(err, DAOException) else DAOException('get_unmapped_physical_devices failed.', err)
+    finally:
+        if conn is not None:
+            free_conn(conn)
 
 @backoff.on_exception(backoff.expo, DAOException, max_time=30)
 def get_all_current_mappings(return_uids: bool = True) -> List[PhysicalToLogicalMapping]:
