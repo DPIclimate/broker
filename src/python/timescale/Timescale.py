@@ -3,19 +3,23 @@ from psycopg2 import extras, sql
 import sys
 import json
 import random
+import os
 import logging
 from datetime import datetime
 from dateutil import parser
 
-username = "postgres"
-password = "admin"
-host = "tsdb"   # Container hostname, for Docker communication.
-port = 5432 
-dbname = "postgres"
-table_name = "timeseries"
-CONNECTION = f"postgres://{username}:{password}@{host}:{port}/{dbname}"
+#these are read from compose/.env file
+#however tsdb sets them from compose/.tsdb_env
+tsdb_user = os.environ.get("TSDB_USER")
+tsdb_pass = os.environ.get("TSDB_PASSWORD")
+tsdb_host = os.environ.get("TSDB_HOST")
+tsdb_port = os.environ.get("TSDB_PORT")
+tsdb_db = os.environ.get("TSDB_DB")
+tsdb_table = os.environ.get("TSDB_TABLE")
 
-def create_test_table(connection: str = CONNECTION, table: str = table_name):
+CONNECTION = f"postgres://{tsdb_user}:{tsdb_pass}@{tsdb_host}:{tsdb_port}/{tsdb_db}"
+
+def create_test_table(connection: str = CONNECTION, table: str = tsdb_table):
     query_create_table = f"""CREATE TABLE {table} (
                                         broker_id VARCHAR,
                                         l_uid VARCHAR,
@@ -66,7 +70,7 @@ def generate_test_message():
 #         print(error)
 #     conn.commit()
 
-def insert_lines(parsed_data: list, connection: str = CONNECTION, table: str = table_name) -> int:
+def insert_lines(parsed_data: list, connection: str = CONNECTION, table: str = tsdb_table) -> int:
     conn = psycopg2.connect(connection)
     cursor = conn.cursor()
     try:
@@ -83,7 +87,7 @@ def insert_lines(parsed_data: list, connection: str = CONNECTION, table: str = t
     return 1
 
 # For efficiency
-def insert_lines_bulk(parsed_data: list, connection: str = CONNECTION, table: str = table_name) -> int:
+def insert_lines_bulk(parsed_data: list, connection: str = CONNECTION, table: str = tsdb_table) -> int:
     try:
         # Connect to the database and create a cursor
         conn = psycopg2.connect(connection)
@@ -127,7 +131,7 @@ def insert_lines_bulk(parsed_data: list, connection: str = CONNECTION, table: st
     return 0
 
 # For getting data from the database.
-def send_query(query: str = "", interval_hrs: int = 24, connection: str = CONNECTION, table: str = table_name ):
+def send_query(query: str = "", interval_hrs: int = 24, connection: str = CONNECTION, table: str = tsdb_table ):
     if query == "":
         query = f"SELECT * FROM {table};"
     conn = psycopg2.connect(connection)
@@ -156,7 +160,7 @@ def send_update(query: str, connection: str = CONNECTION, table: str = "id_pairi
         return 0
 
     
-def query_all_data(connection: str = CONNECTION, table: str = table_name):
+def query_all_data(connection: str = CONNECTION, table: str = tsdb_table):
     conn = psycopg2.connect(connection)
     cursor = conn.cursor()
     query = f"SELECT * FROM {table};"
@@ -198,7 +202,7 @@ def query_all_pairings(connection: str = CONNECTION, table: str = "id_pairings")
         json_data.append(json_obj)
     return json_data
 
-def query_avg_value(interval_hrs: int = 24, connection: str = CONNECTION, table: str = table_name ):
+def query_avg_value(interval_hrs: int = 24, connection: str = CONNECTION, table: str = tsdb_table ):
     query_avg = f"""SELECT AVG(value) FROM {table}
                             WHERE timestamp > NOW() - INTERVAL '{interval_hrs} hours';
                             """
@@ -213,7 +217,7 @@ def query_avg_value(interval_hrs: int = 24, connection: str = CONNECTION, table:
     cursor.close()
     return result
 
-def query_num_entries(connection: str = CONNECTION, table: str = table_name ):
+def query_num_entries(connection: str = CONNECTION, table: str = tsdb_table ):
     query_avg = f"SELECT COUNT(*) FROM {table};"
     conn = psycopg2.connect(connection)
     cursor = conn.cursor()
@@ -226,7 +230,7 @@ def query_num_entries(connection: str = CONNECTION, table: str = table_name ):
     cursor.close()
     return result
 
-def remove_data_with_value(value: str = "",connection: str = CONNECTION, table: str = table_name):
+def remove_data_with_value(value: str = "",connection: str = CONNECTION, table: str = tsdb_table):
     if (value == ""):
         query = f"DELETE FROM {table}"
     else:
@@ -323,7 +327,7 @@ def parse_json_file(filename: str) -> list:
     return parsed_data
 
 
-def insert_data_to_db(filename: str, connection: str = CONNECTION, table_name: str = table_name) -> int:
+def insert_data_to_db(filename: str, connection: str = CONNECTION, table_name: str = tsdb_table) -> int:
     # Parse the JSON file
     parsed_data = parse_json_file(filename)
     conn = psycopg2.connect(connection)
