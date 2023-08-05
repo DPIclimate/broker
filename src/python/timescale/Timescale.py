@@ -16,7 +16,7 @@ tsdb_host = os.environ.get("TSDB_HOST")
 tsdb_port = os.environ.get("TSDB_PORT")
 tsdb_db = os.environ.get("TSDB_DB")
 tsdb_table = os.environ.get("TSDB_TABLE")
-
+CONNECTION = f"postgres://{tsdb_user}:{tsdb_pass}@{tsdb_host}:{tsdb_port}/{tsdb_db}"
 
 def insert_lines(parsed_data: list, connection: str = CONNECTION, table: str = tsdb_table) -> int:
     conn = psycopg2.connect(connection)
