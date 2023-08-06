@@ -233,3 +233,5 @@ swag/*
 
 #303 back up database
 backup-db/
+303/scripts/msgs
+303/scripts/smsgs

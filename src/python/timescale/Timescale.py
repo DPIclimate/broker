@@ -240,7 +240,7 @@ def parse_json_file(filename: str) -> list:
                     parsed_data.append((broker_id, p_uid, l_uid, timestamp, name, value))
 
                 json_str = ""
-            except json.decoder.JSONDecodeError:
+            except json.decoder.JSONDecodeError as e:
                 logging.error(f"An error occurred: {str(e)}")
                 pass
             

@@ -17,7 +17,7 @@ scrape_configs:
     module: [default]
   static_configs:
     - targets:
-      - http://127.0.0.1:8080/sample_messages.json
+      - http://host.docker.internal:8080/sample_messages.json
   relabel_configs:
     - source_labels: [__address__]
       target_label: __param_target
