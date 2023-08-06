@@ -1,0 +1,20 @@
+{
+  "broker_correlation_id": "83d04e6f-db16-4280-8337-53f11b2335c6",
+  "p_uid": 301,
+  "l_uid": 276,
+  "timestamp": "2023-01-30T06:21:56Z",
+  "timeseries": [
+    {
+      "name": "battery (v)",
+      "value": 4.16008997
+    },
+    {
+      "name": "pulse_count",
+      "value": 1
+    },
+    {
+      "name": "1_Temperature",
+      "value": 21.60000038
+    }
+  ]
+}

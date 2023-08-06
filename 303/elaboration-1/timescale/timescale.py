@@ -8,7 +8,7 @@ from dateutil import parser
 username = "postgres"
 password = "admin"
 host = "localhost"
-port = 5432
+port = 5433     # Not 5432 since postgres already exists in stack
 dbname = "postgres"
 CONNECTION = f"postgres://{username}:{password}@{host}:{port}/{dbname}"
 
@@ -39,7 +39,7 @@ def generate_test_message():
     for i in range(2):
         rand_value = random.randint(0, 45)
         rand_id = random.randint(140, 200)
-        json_item = f'{{"l_uid": "{rand_id}", p_uid": "{rand_id + 1}", "name": "temp", "value": "{rand_value}"}}'
+        json_item = f'{{"l_uid": "{rand_id}", "p_uid": "{rand_id + 1}", "name": "temperature", "value": "{rand_value}"}}'
         json_example.append(json_item)
         return json_example
 
@@ -58,7 +58,7 @@ def insert_lines(json_entries: list = generate_test_message(), connection: str =
             cursor.execute("INSERT INTO test_table (l_uid, p_uid, timestamp, name, value) VALUES (%s, %s, CURRENT_TIMESTAMP, %s, %s);",
                            (l_uid, p_uid, name, value))
     except (Exception, psycopg2.Error) as error:
-        print(error.pgerror)
+        print(error)
     conn.commit()
 
 def query_all_data(connection: str = CONNECTION):
@@ -168,7 +168,7 @@ def insert_data_to_db(filename: str, connection: str = CONNECTION, table_name: s
 
 if __name__ == "__main__":
     create_test_table()
-    # insert_lines()
-    # insert_data_to_db("example_message")
-    insert_data_to_db("sample_messages")
+    insert_lines()
+    #insert_data_to_db("JSON_message")
+    # insert_data_to_db("sample_messages")
     print(query_all_data())

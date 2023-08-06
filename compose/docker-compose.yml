@@ -17,6 +17,8 @@ services:
   mq:
     hostname: "mq"
     image: rabbitmq:3.9-management
+    ports:
+      - 15672:15672
     restart: "no"
     env_file:
       - .env
@@ -184,3 +186,55 @@ services:
       - ${DATABOLT_SHARED_DIR}/raw_data:/raw_data
     working_dir: "/home/broker/python"
     entrypoint: [ "python", "-m", "delivery.FRRED" ]
+
+  timescaledb:
+    hostname: "tsdb"
+    image: timescale/timescaledb:latest-pg15
+    restart: "no"    
+    env_file:
+      - .tsdb_env
+    volumes:
+      #- ../timescale/data:/var/lib/postgresql/data # Named volume in repo folder, had permission issues
+      #- timescale_data:/var/lib/postgresql/data # Names volume in local root, permissions fine, needed manual deletion.
+      - /var/lib/postgresql/data
+      - ../timescale/init.sql:/docker-entrypoint-initdb.d/init.sql
+    ports:
+      - "5433:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+
+  iota_tsdb_decoder:
+    image: broker/python-base
+    restart: "no"
+    env_file:
+      - .env
+    depends_on:
+      timescaledb:
+        condition: "service_healthy"
+      mq:
+        condition: "service_healthy"
+    volumes:
+      - ../src/python:/home/broker/python
+    working_dir: "/home/broker/python"
+    entrypoint: [ "python", "-m", "timescale.TS_LTSReader" ]
+ 
+  iota_tsdb_bulk_decoder:
+    image: broker/python-base
+    restart: "no"
+    env_file:
+      - .env
+    depends_on:
+      timescaledb:
+        condition: "service_healthy"
+      mq:
+        condition: "service_healthy"
+    volumes:
+      - ../src/python:/home/broker/python
+    working_dir: "/home/broker/python"
+    entrypoint: [ "python", "-m", "timescale.TS_LTSReader_Bulk" ]
+
+#volumes:
+#    timescale_data:
