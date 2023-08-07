@@ -87,6 +87,8 @@ services:
       - ../src/python:/home/broker/python
     working_dir: "/home/broker/python/ttn"
     entrypoint: [ "python", "AllMsgsWriter.py" ]
+    ports:
+      - "8002:8002" # Expose the metrics port
 
   ttn_decoder:
     image: broker/ttn_decoder
@@ -113,6 +115,8 @@ services:
       - ../src/python:/home/broker/python
     working_dir: "/home/broker/python"
     entrypoint: [ "python", "-m", "ydoc.YDOC" ]
+    ports:
+      - "8003:8003" # Expose the metrics port
 
   wombat:
     image: broker/python-base
@@ -128,6 +132,8 @@ services:
       - ../src/python:/home/broker/python
     working_dir: "/home/broker/python"
     entrypoint: [ "python", "-m", "ydoc.Wombat" ]
+    ports:
+      - "8004:8004" # Expose the metrics port
 
   lm:
     image: broker/python-base
