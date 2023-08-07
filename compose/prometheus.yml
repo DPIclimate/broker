@@ -17,3 +17,8 @@ scrape_configs:
     scrape_interval: 5s
     static_configs:
       - targets: [ 'ttn_processor:8002']
+  - job_name: 'ydoc'
+    metrics_path: '/metrics'
+    scrape_interval: 5s
+    static_configs:
+      - targets: [ 'ydoc:8003' ]
