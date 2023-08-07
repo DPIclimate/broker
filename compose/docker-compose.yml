@@ -149,6 +149,8 @@ services:
       - ../src/python:/home/broker/python
     working_dir: "/home/broker/python"
     entrypoint: [ "python", "-m", "logical_mapper.LogicalMapper" ]
+    ports:
+      - "8005:8005" # Expose the metrics port
 
   delivery:
     image: broker/python-base
@@ -164,6 +166,8 @@ services:
       - ../src/python:/home/broker/python
     working_dir: "/home/broker/python"
     entrypoint: [ "python", "-m", "delivery.UbidotsWriter" ]
+    ports:
+      - "8006:8006" # Expose the metrics port
 
   frred:
     image: broker/python-base
