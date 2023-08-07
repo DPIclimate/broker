@@ -24,8 +24,9 @@ import base64
 # Prometheus metrics
 from prometheus_client import Counter, start_http_server
 from prometheus_fastapi_instrumentator import Instrumentator
-
 request_counter = Counter('requests_total', 'Total Requests')
+# Start up the server to expose the metrics.
+start_http_server(8000)
 
 # Scheme for the Authorization header
 token_auth_scheme = HTTPBearer()
@@ -525,6 +526,5 @@ async def check_auth_header(request: Request, call_next):
 
     return await call_next(request)
 
-# Start up the server to expose the metrics.
-start_http_server(8000)
+
 

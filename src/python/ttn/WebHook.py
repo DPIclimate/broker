@@ -23,6 +23,8 @@ _cache_dir.mkdir(exist_ok=True)
 # Prometheus metrics
 from prometheus_client import Counter, start_http_server
 request_counter = Counter('ttn_requests_total', 'Total number of incoming requests to TTN webhook')
+# Start up the server to expose the metrics.
+start_http_server(8001)
 
 #
 # This is used to try and guarantee only one operation is happening to the
@@ -173,5 +175,4 @@ def get_cache_filename(msg: JSONObject) -> str:
 
     return f'{_cache_dir}/{app_id}-{dev_id}-{received_at}.json'
 
-# Start up the server to expose the metrics.
-start_http_server(8001)
+
