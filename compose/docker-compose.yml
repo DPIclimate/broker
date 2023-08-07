@@ -184,6 +184,8 @@ services:
       - ${DATABOLT_SHARED_DIR}/raw_data:/raw_data
     working_dir: "/home/broker/python"
     entrypoint: [ "python", "-m", "delivery.FRRED" ]
+    ports:
+      - "8007:8007" # Expose the metrics port
 
   prometheus:
     image: prom/prometheus

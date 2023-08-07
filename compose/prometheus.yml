@@ -37,3 +37,8 @@ scrape_configs:
     scrape_interval: 5s
     static_configs:
       - targets: [ 'delivery:8006' ]
+  - job_name: 'frred'
+    metrics_path: '/metrics'
+    scrape_interval: 5s
+    static_configs:
+      - targets: [ 'frred:8007' ]
