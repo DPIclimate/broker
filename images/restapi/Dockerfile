@@ -26,6 +26,6 @@ RUN pip install --user --progress-bar off --requirement /tmp/requirements.txt
 #RUN cp libpq-d97d8807.so.5.9 libpq-d97d8807.so.5.9.org
 #RUN cp /usr/lib/aarch64-linux-gnu/libpq.so.5.13 libpq-d97d8807.so.5.9
 
-WORKDIR /home/broker/python/restapi
+WORKDIR /home/broker/python/tsdbapi
 
 ENTRYPOINT [ "/bin/bash" ]
