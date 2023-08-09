@@ -13,9 +13,9 @@ CONNECTION = f"postgres://{tsdb_user}:{tsdb_pass}@{tsdb_host}:{tsdb_port}/{tsdb_
 
 
 @app.get("/")
-async def query_tsdb():
+async def query_tsdb(query: str = f"SELECT * FROM {tsdb_table};"):
     with psycopg2.connect(CONNECTION) as conn:
-        query = f"SELECT * FROM {tsdb_table};"
+        # query = f"SELECT * FROM {tsdb_table};"
         cursor = conn.cursor()
         try: 
             cursor.execute(query)
