@@ -131,25 +131,6 @@ def query_all_data(connection: str = CONNECTION, table: str = tsdb_table):
         json_data.append(json_obj)
     return json_data
 
-def query_all_pairings(connection: str = CONNECTION, table: str = "id_pairings"):
-    conn = psycopg2.connect(connection)
-    cursor = conn.cursor()
-    query = f"SELECT * FROM {table};"
-    cursor.execute(query)
-    rows = cursor.fetchall()
-    cursor.close()
-
-    json_data = []
-    for row in rows:
-        # Convert datetime object to string before loading as JSON
-        json_obj = {
-            "pairing_id": row[0],
-            "l_uid": row[1],
-            "p_uid": row[2],
-        }
-        json_data.append(json_obj)
-    return json_data
-
 def query_avg_value(interval_hrs: int = 24, connection: str = CONNECTION, table: str = tsdb_table):
     query_avg = f"""SELECT AVG(value) FROM {table}
                             WHERE timestamp > NOW() - INTERVAL '{interval_hrs} hours';
@@ -211,6 +192,7 @@ def parse_json(json_obj: dict) -> list:
     
     return parsed_data
 
+# Alternative to above, includes json.loads prior.
 def parse_json_string(json_string: str) -> list:
     try:
         json_obj = json.loads(json_string)
@@ -246,10 +228,8 @@ def parse_json_file(filename: str) -> list:
             
     return parsed_data
 
-
-
-def insert_data_to_db(filename: str, connection: str = CONNECTION, table_name: str = tsdb_table) -> int:
-
+# Method for full insert to DB from file, not in use currently.
+def insert_file_to_db(filename: str, connection: str = CONNECTION, table_name: str = tsdb_table) -> int:
     # Parse the JSON file
     parsed_data = parse_json_file(filename)
     conn = psycopg2.connect(connection)
