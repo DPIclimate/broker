@@ -211,7 +211,7 @@ services:
   nginx:
     image: nginx:latest
     volumes:
-      - ./nginx.conf:/etc/nginx/nginx.conf
+      - ../config/nginx.conf:/etc/nginx/nginx.conf
     ports:
       - "80:80"
       - "443:443"
