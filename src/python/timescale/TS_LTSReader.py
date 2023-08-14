@@ -64,6 +64,11 @@ async def main():
 def on_message(channel, method, properties, body):
     """
     This function is called when a message arrives from RabbitMQ.
+
+
+    checks pd and ld much like logical mapper, possibly redundant as logical
+    mapper passes the message here, but maybe not always, so checks stay info
+    until someone deletes them
     """
 
     global rx_channel, finish
@@ -76,28 +81,35 @@ def on_message(channel, method, properties, body):
         rx_channel._channel.basic_reject(delivery_tag)
         return
 
-    msg = json.loads(body)
-    lu.cid_logger.info(f'Accepted message {msg}', extra=msg)
-    
-    #
-    # Message processing goes here
-    #
     try:
-        json_lines = ts.parse_json(msg)
-        # Uncomment to add in ID checking for logical device
-        # l_uid = msg[BrokerConstants.LOGICAL_DEVICE_UID_KEY]
-        # ld = dao.get_logical_device(l_uid)
-        # if ld is None:
-        #     lu.cid_logger.error(f'Could not find logical device, dropping message: {body}', extra=msg)
-        #     rx_channel._channel.basic_reject(delivery_tag, requeue=False)
-        #     return
+        msg = json.loads(body)
 
-        if ts.insert_lines(json_lines) == 1:
-            logging.info("Message successfully stored in database.")
+        p_uid = msg[BrokerConstants.PHYSICAL_DEVICE_UID_KEY]
+        pd = dao.get_physical_device(p_uid)
+        mapping = dao.get_current_device_mapping(p_uid)
+
+        #if pd or mapping is None:
+        if pd is None:
+            # Ack the message, even though we cannot process it. We don't want it redelivered.
+            # We can change this to a Nack if that would provide extra context somewhere.
+            if pd is None:
+                lu.cid_logger.error(f'Physical device not found, cannot continue. Dropping message.', extra=msg)
+            #else:
+            #    lu.cid_logger.error(f'No device mapping found for {pd.source_ids}, cannot continue. Dropping message.', extra=msg)
+            rx_channel._channel.basic_ack(delivery_tag)
+            return
+
+        lu.cid_logger.info(f'Accepted message {msg}', extra=msg)
+
+        parsed_msg = ts.parse_json(msg)
+
+        if ts.insert_lines(parsed_msg) == 1:
+            lu.cid_logger.info('Message successfully stored in time series database.')
         else:
+            lu.cid_logger.error('Message not stored in time series database. Rejecting Message.', extra=msg)
             rx_channel._channel.basic_reject(delivery_tag)
 
-        # This tells RabbitMQ the message is handled and can be deleted from the queue.    
+        # This tells RabbitMQ the message is handled and can be deleted from the queue.
         rx_channel._channel.basic_ack(delivery_tag)
 
     except BaseException:
