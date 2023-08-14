@@ -66,6 +66,7 @@ ld_sub_parsers = ld_parser.add_subparsers(dest='cmd2')
 
 ## List logical devices
 ld_ls_parser = ld_sub_parsers.add_parser('ls', help='list logical devices')
+ld_ls_parser.add_argument('--plain', action='store_true', help='Plain output, not JSON', dest='plain')
 
 ## Create logical devices
 ld_mk_parser = ld_sub_parsers.add_parser('create', help='create logical device')
@@ -196,14 +197,14 @@ def dict_from_file_or_string() -> dict:
         raise RuntimeError('error: --json and --file are mutually exclusive.')
 
     json_obj = None
-    if hasattr(args, 'in_filename'):
+    if args.in_filename is not None:
         if args.in_filename == '-':
             json_obj = json.load(sys.stdin)
         else:
             with open(args.in_filename) as jf:
                 json_obj = json.load(jf)
 
-    elif hasattr(args, 'pd'):
+    elif args.pd is not None:
         json_obj = args.pd
 
     if json_obj is None:
@@ -270,8 +271,11 @@ def main() -> None:
         if args.cmd2 == 'ls':
             devs = dao.get_logical_devices()
             tmp_list = list(map(lambda dev: dev.dict(exclude={'properties'}), devs))
-            print(pretty_print_json(tmp_list))
-        elif args.cmd2 == 'create' and args.ld is not None:
+            if not args.plain:
+                print(pretty_print_json(tmp_list))
+            else:
+                plain_pd_list(devs)
+        elif args.cmd2 == 'create':
             dev = LogicalDevice.parse_obj(dict_from_file_or_string())
             print(dao.create_logical_device(dev))
         elif args.cmd2 == 'get':
