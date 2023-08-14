@@ -19,8 +19,6 @@ import util.LoggingUtil as lu
 
 # Prometheus metrics
 from prometheus_client import Counter, start_http_server
-
-# Prometheus metrics
 messages_processed_counter = Counter('ubidots_writer_messages_processed', 'Number of messages received and processed')
 messages_forwarded_counter = Counter('ubidots_writer_messages_forwarded', 'Number of messages forwarded to Ubidots')
 messages_acknowledged_counter = Counter('ubidots_writer_messages_acknowledged', 'Number of messages acknowledged to RabbitMQ')

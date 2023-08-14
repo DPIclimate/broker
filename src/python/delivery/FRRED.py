@@ -30,8 +30,6 @@ import util.LoggingUtil as lu
 
 # Prometheus metrics
 from prometheus_client import Counter, start_http_server
-
-# Prometheus metrics
 rabbitmq_connection_attempts = Counter('rabbitmq_connection_attempts', 'Number of connection attempts to RabbitMQ')
 rabbitmq_successful_connections = Counter('rabbitmq_successful_connections', 'Number of successful connections to RabbitMQ')
 rabbitmq_failed_connections = Counter('rabbitmq_failed_connections', 'Number of failed connection attempts to RabbitMQ')

@@ -27,8 +27,6 @@ import util.LoggingUtil as lu
 
 # Prometheus metrics
 from prometheus_client import Counter, start_http_server
-
-# Prometheus metrics
 messages_received_counter = Counter('logicalmapper_messages_received', 'Number of messages received for processing')
 messages_published_counter = Counter('logicalmapper_messages_published', 'Number of messages published to logical_timeseries queue')
 messages_acknowledged_counter = Counter('logicalmapper_messages_acknowledged', 'Number of messages acknowledged to RabbitMQ')

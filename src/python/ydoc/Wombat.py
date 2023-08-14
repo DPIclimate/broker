@@ -17,8 +17,6 @@ import util.Timestamps as ts
 
 # Prometheus metrics
 from prometheus_client import Counter, start_http_server
-
-# Prometheus metrics
 listener_starts_counter = Counter('wombat_listener_starts', 'Number of times the Wombat listener has started')
 graceful_exit_counter = Counter('wombat_graceful_exits', 'Number of times the application has gracefully exited')
 messages_received_counter = Counter('wombat_messages_received', 'Number of messages received from RabbitMQ')

@@ -17,8 +17,6 @@ import util.Timestamps as ts
 
 # Prometheus metrics
 from prometheus_client import Counter, start_http_server
-
-# Prometheus metrics
 request_counter = Counter('requests_total', 'Total Requests')
 failed_messages_counter = Counter('failed_messages_total', 'Total Failed Messages')
 new_devices_counter = Counter('new_devices_total', 'Total New Devices Detected')
