@@ -104,7 +104,7 @@ def on_message(channel, method, properties, body):
         parsed_msg = ts.parse_json(msg)
 
         if ts.insert_lines(parsed_msg) == 1:
-            lu.cid_logger.info('Message successfully stored in time series database.')
+            logging.info('Message successfully stored in time series database.')
         else:
             lu.cid_logger.error('Message not stored in time series database. Rejecting Message.', extra=msg)
             rx_channel._channel.basic_reject(delivery_tag)

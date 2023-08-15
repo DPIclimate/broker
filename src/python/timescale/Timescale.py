@@ -38,9 +38,9 @@ def get_standardised_name(msg: str) -> str:
     std_name = dao.get_std_name(msg)
     if std_name is None:
         std_name = clean_names(msg)
-        lu.cid_logger.info(f'Creating New Name Mapping: {msg}:{std_name}')
+        logging.info(f'Creating New Name Mapping: {msg}:{std_name}')
     else:
-        lu.cid_logger.info(f'Found Name Mapping: {msg}:{std_name}')
+        logging.info(f'Found Name Mapping: {msg}:{std_name}')
 
     return std_name
 
@@ -59,7 +59,7 @@ def parse_json(json_obj: dict) -> list:
         timeseries = json_obj[BrokerConstants.TIMESERIES_KEY]
 
         for tsd in timeseries:
-            name = tsd['name']
+            name = get_standardised_name(tsd['name'])
             value = tsd['value']
             parsed_data.append((broker_id, l_uid, p_uid, timestamp, name, value))
 
@@ -89,7 +89,8 @@ def insert_lines(parsed_data: list, connection: str = CONNECTION, table: str = t
         for entry in parsed_data:
             broker_id, l_uid, p_uid, timestamp, name, value = entry
             cursor.execute(
-                f"INSERT INTO {table} (broker_id, l_uid, p_uid, timestamp, name, value) VALUES (%s, %s, %s, %s, %s, %s);",
+                ## maybe we should update table to use correlation id key
+                f"INSERT INTO {table} (broker_id,{BrokerConstants.LOGICAL_DEVICE_UID_KEY}, {BrokerConstants.PHYSICAL_DEVICE_UID_KEY}, {BrokerConstants.TIMESTAMP_KEY}, name, value) VALUES (%s, %s, %s, %s, %s, %s);",
                 (broker_id, l_uid, p_uid, timestamp, name, value))
     except (Exception, psycopg2.Error) as error:
         print(error)
