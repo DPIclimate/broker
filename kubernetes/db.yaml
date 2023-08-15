@@ -16,10 +16,7 @@ spec:
           image: postgres:14.2
           envFrom:
             - configMapRef:
-                name: env-configmap
-          volumeMounts:
-            - name: db-config-volume
-              mountPath: /docker-entrypoint-initdb.d
+              name: env-configmap
           livenessProbe:
             exec:
               command:
@@ -33,10 +30,20 @@ spec:
             periodSeconds: 10
             timeoutSeconds: 5
             failureThreshold: 6
+          ports:
+            - containerPort: 5432
+          volumeMounts:
+            - name: db-config
+              mountPath: /docker-entrypoint-initdb.d
+            - name: db-data
+              mountPath: /var/lib/postgresql/data
       volumes:
-        - name: db-config-volume
-          configMap:
-            name: db-config
+        - name: db-config
+          hostPath:
+            path: /opt/broker/db/init.d
+        - name: db-data
+          hostPath:
+            path: /opt/broker_data/db
 ---
 apiVersion: v1
 kind: Service
@@ -48,5 +55,4 @@ spec:
   ports:
     - name: postgresql
       port: 5432
-      protocol: TCP
-      targetPort: 5432
+      #nodePort: 30000

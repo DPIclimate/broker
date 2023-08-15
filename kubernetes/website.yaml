@@ -18,30 +18,30 @@ spec:
           imagePullPolicy: Never
           envFrom:
             - configMapRef:
-                name: env-configmap
-          volumeMounts:
-            - name: website-volume
-              mountPath: /app
+              name: env-configmap
           command:
             - sh
             - -c
             - tail -f /dev/null
+          ports:
+            - containerPort: 5000
+          volumeMounts:
+            - name: shared-data
+              mountPath: /app
       volumes:
-        - name: website-volume
-          persistentVolumeClaim:
-            claimName: www-pv
-#          hostPath:
-#            path: /home/broker/src/www
-#            type: Directory
+        - name: shared-data
+          hostPath:
+            path: /opt/broker/src/www
 ---
 apiVersion: v1
 kind: Service
 metadata:
   name: website
 spec:
+  type: NodePort
   selector:
     app: website
   ports:
     - name: http
-      port: 80
-      targetPort: 80
+      port: 5000
+      #nodePort: 30000

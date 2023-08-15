@@ -18,31 +18,14 @@ spec:
           imagePullPolicy: Never
           envFrom:
             - configMapRef:
-                name: env-configmap
-          volumeMounts:
-            - name: x-volume
-              mountPath: /home/broker
+              name: env-configmap
           workingDir: /home/broker
           command:
-#            - sh
-#            - -c
-#            - tail -f /dev/null
             - ./forever.sh
+          volumeMounts:
+            - name: shared-data
+              mountPath: /home/broker/python
       volumes:
-        - name: x-volume
+        - name: shared-data
           hostPath:
-            path: /home/broker
-      dnsPolicy: ClusterFirst
----
-apiVersion: v1
-kind: Service
-metadata:
-  name: x-service
-spec:
-  selector:
-    app: x
-  ports:
-    - name: http
-      port: 80
-      targetPort: 80
-  type: ClusterIP
+            path: /opt/broker/src/python

@@ -18,18 +18,18 @@ spec:
           imagePullPolicy: Never
           envFrom:
             - configMapRef:
-                name: env-configmap
+              name: env-configmap
+          workingDir: "/usr/src/ttn_decoder"
+          command:
+            - node
+            - src
+          ports:
+            - containerPort: 3001
           volumeMounts:
             - name: ttn-decoder-volume
               mountPath: /usr/src/ttn_decoder/src
             - name: ttn-formatters-volume
               mountPath: /usr/src/ttn_formatters
-          workingDir: "/usr/src/ttn_decoder"
-          command:
-#            - sh
-#            - -c
-            - node
-            - src
       volumes:
         - name: ttn-decoder-volume
           hostPath:
@@ -41,11 +41,11 @@ spec:
 apiVersion: v1
 kind: Service
 metadata:
-  name: ttn-decoder-service
+  name: ttn-decoder
 spec:
   selector:
     app: ttn-decoder
   ports:
     - name: http
-      port: 80
-      targetPort: 80
+      port: 3001
+      #nodePort: 30000

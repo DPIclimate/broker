@@ -18,74 +18,15 @@ spec:
           imagePullPolicy: Never
           envFrom:
             - configMapRef:
-                name: env-configmap
-          volumeMounts:
-            - name: broker-config-volume
-              mountPath: /home/broker/python/
-            - name: api-client-config-volume
-              mountPath: /home/broker/python/api/client
-            - name: delivery-config-volume
-              mountPath: /home/broker/python/delivery
-            - name: logical-mapper-config-volume
-              mountPath: /home/broker/python/logical_mapper
-            - name: pdmodels-config-volume
-              mountPath: /home/broker/python/pdmodels
-            - name: pollers-config-volume
-              mountPath: /home/broker/python/pollers
-            - name: restapi-config-volume
-              mountPath: /home/broker/python/restapi
-            - name: ttn-config-volume
-              mountPath: /home/broker/python/ttn
-            - name: util-config-volume
-              mountPath: /home/broker/python/util
-            - name: wombat-config-volume
-              mountPath: /home/broker/python/ydoc
+              name: env-configmap
           workingDir: /home/broker/python/ttn
           command:
-            #          - sh
-            #          - -c
             - python
             - AllMsgsWriter.py
+          volumeMounts:
+            - name: shared-data
+              mountPath: /home/broker/python
       volumes:
-        - name: broker-config-volume
-          configMap:
-            name: broker-config
-        - name: api-client-config-volume
-          configMap:
-            name: api-client-config
-        - name: delivery-config-volume
-          configMap:
-            name: delivery-config
-        - name: logical-mapper-config-volume
-          configMap:
-            name: logical-mapper-config
-        - name: pdmodels-config-volume
-          configMap:
-            name: pdmodels-config
-        - name: pollers-config-volume
-          configMap:
-            name: pollers-config
-        - name: restapi-config-volume
-          configMap:
-            name: restapi-config
-        - name: ttn-config-volume
-          configMap:
-            name: ttn-config
-        - name: util-config-volume
-          configMap:
-            name: util-config
-        - name: wombat-config-volume
-          configMap:
-            name: ydoc-config
----
-apiVersion: v1
-kind: Service
-metadata:
-  name: ttn-processor
-spec:
-  selector:
-    app: ttn-processor
-  ports:
-    - name: http
-      port: 80
-      targetPort: 80
+        - name: shared-data
+          hostPath:
+            path: /opt/broker/src/python
