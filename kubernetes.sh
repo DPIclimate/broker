@@ -1,28 +1,42 @@
 #!/bin/bash
 
-# Get the parent directory of the current directory
-parent_dir=$(dirname "$(pwd)")
+# Get the mode to run in
+if [ "$1" = "stop" ]; then
+    echo "Stopping Broker System"
 
-# Start minikube
-minikube start
+	# Delete namespace (and all resources in it)
+	kubectl delete namespace/broker
 
-# Set minikube docker environment
-eval $(minikube -p minikube docker-env)
+elif [ "$1" = "restart" ]; then
+    echo "Restarting Broker System"
 
-# Build docker images
-docker build -t broker/python-base -f images/restapi/Dockerfile .
-docker build -t broker/ttn_decoder -f images/ttn_decoder/Dockerfile .
-docker build -t broker/mgmt-app -f src/www/Dockerfile .
+	# Delete namespace (and all resources in it)
+	kubectl delete namespace/broker
+	
+	# Build docker images
+	echo -e "Building Local Docker Images"
+	docker build -q -t broker/python-base -f images/restapi/Dockerfile .
+	docker build -q -t broker/ttn_decoder -f images/ttn_decoder/Dockerfile .
+	docker build -q -t broker/mgmt-app -f src/www/Dockerfile .
 
-# Mount directories
-minikube mount $parent_dir/broker:/home/broker &
-minikube mount $parent_dir/ttn-formatters:/home/ttn-formatters &
-minikube mount $parent_dir/databolt:/home/databolt &
+	# Apply kubernetes configuration
+	# Apply namepsace first so it is available for other resources
+	kubectl apply -f kubernetes/namespace.yaml
+	kubectl apply -f kubernetes/env-configmap.yaml
+	kubectl apply -f kubernetes/services
 
-# Apply kubernetes configuration
-cd kubernetes
-kubectl apply -f .
+else
+	echo "Starting Broker System"
 
-# Open minikube dashboard
-minikube addons enable metrics-server
-minikube dashboard
+	# Build docker images
+	echo -e "Building Local Docker Images"
+	docker build -q -t broker/python-base -f images/restapi/Dockerfile .
+	docker build -q -t broker/ttn_decoder -f images/ttn_decoder/Dockerfile .
+	docker build -q -t broker/mgmt-app -f src/www/Dockerfile .
+
+	# Apply kubernetes configuration
+	kubectl apply -f kubernetes/namespace.yaml
+	kubectl apply -f kubernetes/env-configmap.yaml
+	kubectl apply -f kubernetes/services
+
+fi
