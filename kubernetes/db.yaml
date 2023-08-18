@@ -16,7 +16,7 @@ spec:
           image: postgres:14.2
           envFrom:
             - configMapRef:
-              name: env-configmap
+                name: env-configmap
           livenessProbe:
             exec:
               command:

@@ -17,7 +17,7 @@ spec:
           image: rabbitmq:3.9-management
           envFrom:
             - configMapRef:
-              name: env-configmap
+                name: env-configmap
           #readinessProbe:
           #  exec:
           #    command:

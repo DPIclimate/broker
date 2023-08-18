@@ -18,7 +18,7 @@ spec:
           imagePullPolicy: Never
           envFrom:
             - configMapRef:
-              name: env-configmap
+                name: env-configmap
           workingDir: /home/broker/python/restapi
           command:
             - /home/broker/.local/bin/uvicorn
