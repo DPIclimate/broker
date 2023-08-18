@@ -69,6 +69,11 @@ Run the following commands to do this manually
 `kubectl apply -f kubernetes/env-configmap.yaml` Sets up the configmap that stores our environment variables  
 `kubectl apply -f kubernetes/services` Creates all the microservice deployments
 
+To stop and remove all resource configurations we just need to delete the namespace.  
+`kubectl delete all --all --namespace=broker`
+
+### Script
+
 There is a script created `./kubernetes.sh` which will do this automatically for you.  
 The script can also take an additional parameter to configure which mode it runs in.
 
