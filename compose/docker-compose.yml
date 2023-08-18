@@ -1,6 +1,18 @@
 version: '3.1'
 
 services:
+  fastapi:
+    image: broker/python-base
+    restart: "no"
+    ports:
+      - 9898:9898
+    env_file:
+      - .env
+    volumes:
+      - ../src/python:/home/broker/python
+    working_dir: "/home/broker/python/tsdbapi"
+    entrypoint: [ "/home/broker/.local/bin/uvicorn", "--host", "0.0.0.0", "--port", "9898", "TSDBAPI:app" , "--reload"]
+
   db:
     image: postgres:14.2
     restart: "no"
@@ -49,9 +61,9 @@ services:
     image: broker/mgmt-app
     env_file:
       - .env
-    depends_on:
-      restapi:
-        condition: "service_healthy"
+    # depends_on:
+    #   restapi:
+    #     condition: "service_healthy"
     volumes:
       - ../src/www:/app
 
