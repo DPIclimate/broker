@@ -34,10 +34,10 @@ spec:
       volumes:
         - name: ttn-decoder-volume
           hostPath:
-            path: /home/broker/src/js/ttn_decoder/src
+            path: /opt/broker/src/js/ttn_decoder/src
         - name: ttn-formatters-volume
           hostPath:
-            path: /home/ttn-formatters
+            path: /opt/ttn-formatters
 ---
 apiVersion: v1
 kind: Service
