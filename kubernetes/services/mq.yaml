@@ -42,7 +42,7 @@ spec:
             path: /opt/broker/config/rabbitmq
         - name: rabbitmq-data
           hostPath:
-            path: /opt/broker_data/rabbitmq
+            path: /opt/broker_data/mq
 ---
 apiVersion: v1
 kind: Service
