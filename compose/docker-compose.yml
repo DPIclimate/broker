@@ -28,7 +28,7 @@ services:
       start_period: 30s
 
   restapi:
-    image: broker/python-base:latest
+    image: broker/python-base
     restart: "no"
     env_file:
       - .env
@@ -44,7 +44,7 @@ services:
       start_period: 20s
 
   website:
-    image: broker/mgmt-app:latest
+    image: broker/mgmt-app
     env_file:
       - .env
     depends_on:
@@ -54,7 +54,7 @@ services:
       - ../src/www:/app
 
   ttn_webhook:
-    image: broker/python-base:latest
+    image: broker/python-base
     restart: "no"
     env_file:
       - .env
@@ -67,7 +67,7 @@ services:
     entrypoint: [ "/home/broker/.local/bin/uvicorn", "--proxy-headers", "--host", "0.0.0.0", "--port", "5688", "WebHook:app" ]
 
   ttn_processor:
-    image: broker/python-base:latest
+    image: broker/python-base
     restart: "no"
     env_file:
       - .env
@@ -84,7 +84,7 @@ services:
     entrypoint: [ "python", "AllMsgsWriter.py" ]
 
   ttn_decoder:
-    image: broker/ttn_decoder:latest
+    image: broker/ttn_decoder
     restart: "no"
     env_file:
       - .env
@@ -95,7 +95,7 @@ services:
     entrypoint: [ "node", "src" ]
 
   ydoc:
-    image: broker/python-base:latest
+    image: broker/python-base
     restart: "no"
     env_file:
       - .env
@@ -110,7 +110,7 @@ services:
     entrypoint: [ "python", "-m", "ydoc.YDOC" ]
 
   wombat:
-    image: broker/python-base:latest
+    image: broker/python-base
     restart: "no"
     env_file:
       - .env
@@ -125,7 +125,7 @@ services:
     entrypoint: [ "python", "-m", "ydoc.Wombat" ]
 
   lm:
-    image: broker/python-base:latest
+    image: broker/python-base
     restart: "no"
     env_file:
       - .env
@@ -140,7 +140,7 @@ services:
     entrypoint: [ "python", "-m", "logical_mapper.LogicalMapper" ]
 
   delivery:
-    image: broker/python-base:latest
+    image: broker/python-base
     restart: unless-stopped
     env_file:
       - .env
@@ -166,20 +166,6 @@ services:
           condition: "service_healthy"
       volumes:
         - ../src/python:/home/broker/python
+        - ${DATABOLT_SHARED_DIR}/raw_data:/raw_data
       working_dir: "/home/broker/python"
       entrypoint: [ "python", "-m", "delivery.FRRED" ]
-
-  x:
-    image: broker/python-base
-    restart: "no"
-    env_file:
-      - .env
-    environment:
-      - PYTHONPATH=/home/broker/broker/src/python:/home/broker/broker/test/python
-    depends_on:
-      - "db"
-      - "mq"
-    volumes:
-      - ..:/home/broker/broker
-    working_dir: "/home/broker/broker"
-    entrypoint: [ "./forever.sh" ]
