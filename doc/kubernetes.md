@@ -44,7 +44,7 @@ In future this should use some other [volume](https://kubernetes.io/docs/concept
 ### Data Output
 
 The `frred` delivery service needs to write data to a databolt directory. Currently this is implemented using `HostPath`.  
-Data is assumed to be written to the `/opt/databolt` directory.
+Data is assumed to be written to the `/opt/databolt/raw_data` directory.
 In future this should use some other volume type that databolt will also be able to read from.
 
 ## Networking

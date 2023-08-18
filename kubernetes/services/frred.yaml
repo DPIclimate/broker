@@ -27,7 +27,12 @@ spec:
           volumeMounts:
             - name: shared-data
               mountPath: /home/broker/python
+            - name: databolt-data
+              mountPath: /raw_data
       volumes:
         - name: shared-data
           hostPath:
             path: /opt/broker/src/python
+        - name: databolt-data
+          hostPath:
+            path: /opt/databolt/raw_data
