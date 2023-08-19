@@ -3,6 +3,8 @@ import BrokerConstants
 import api.client.DAO as dao
 import util.LoggingUtil as lu
 from dateutil import parser
+from util import NamingConstants
+
 
 #these are read from compose/.env file
 #however tsdb sets them from compose/.tsdb_env
@@ -15,19 +17,24 @@ tsdb_table = os.environ.get("TSDB_TABLE")
 CONNECTION = f"postgres://{tsdb_user}:{tsdb_pass}@{tsdb_host}:{tsdb_port}/{tsdb_db}"
 
 
-def clean_names(msg: str) -> str:
+def clean_name(msg: str) -> str:
     """
     strip special chars from beginning and end
     make upper case
     replace _ with <space>
     remove special characters
     remove duplicated '_'
+    separete all known words
+    remove duplicate words
+    normalise words
 
-    it does not expand or compress things like voltage
+    Additionally, table name must not start or end with the . character. 
+    Column name must not contain . -
     """
     special_characters = '!"#$%&\'()*+,-./:;<=>?@[\\]^_`{|}~ '
-    ret = msg.lstrip(special_characters).rstrip(special_characters)
-    ret = ret.upper().replace(" ", "_").replace("-","_")
+    ret = NamingConstants.separate_and_normalise_words(msg.upper().replace(" ", "_").replace("-","_"))
+    ret = ret.lstrip(special_characters).rstrip(special_characters)
+    ret = NamingConstants.split_numbers_by_underscore(ret)
     ret = re.sub(r'[^\w\s]', '', ret)
     ret = re.sub(r'_+', '_', ret)
 
@@ -37,7 +44,8 @@ def clean_names(msg: str) -> str:
 def get_standardised_name(msg: str) -> str:
     std_name = dao.get_std_name(msg)
     if std_name is None:
-        std_name = clean_names(msg)
+        std_name = clean_name(msg)
+        dao.add_name_map(msg, std_name)
         logging.info(f'Creating New Name Mapping: {msg}:{std_name}')
     else:
         logging.info(f'Found Name Mapping: {msg}:{std_name}')
