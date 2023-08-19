@@ -1149,7 +1149,7 @@ def _get_std_name(conn, input_name: str) -> str:
     """
     std_name = None
     with conn.cursor() as cursor:
-        sql = 'select std_name from data_name_map where input_name = %s'
+        sql = 'select std_name from data_name_map where input_name ilike %s'
         cursor.execute(sql, (input_name, ))
         row = cursor.fetchone()
         if row is not None:
@@ -1160,6 +1160,9 @@ def _get_std_name(conn, input_name: str) -> str:
 
 @backoff.on_exception(backoff.expo, DAOException, max_time=30)
 def get_std_name(input_name: str) -> str:
+    """
+    CASE INSENSITIVE
+    """
     conn = None
     try:
         with _get_connection() as conn:
@@ -1171,3 +1174,27 @@ def get_std_name(input_name: str) -> str:
             free_conn(conn)
 
 
+@backoff.on_exception(backoff.expo, DAOException, max_time=30)
+def update_name_map(input_name: str, std_name:str) -> None:
+    try:
+        with _get_connection() as conn, conn.cursor() as cursor:
+            cursor.execute("update data_name_map set std_name=%s where input_name=%s", (std_name, input_name))
+            conn.commit()
+    except Exception as err:
+        raise err if isinstance(err, DAOException) else DAOException('update_name_map failed.', err)
+    finally:
+        if conn is not None:
+            free_conn(conn)
+
+
+@backoff.on_exception(backoff.expo, DAOException, max_time=30)
+def add_name_map(input_name: str, std_name:str) -> None:
+    try:
+        with _get_connection() as conn, conn.cursor() as cursor:
+            cursor.execute("insert into data_name_map (input_name, std_name) values (%s, %s)", (input_name, std_name))
+            conn.commit()
+    except Exception as err:
+        raise err if isinstance(err, DAOException) else DAOException('add_name_map failed.', err)
+    finally:
+        if conn is not None:
+            free_conn(conn)
