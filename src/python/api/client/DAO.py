@@ -14,7 +14,7 @@ import hashlib
 import base64
 import os
 
-from pdmodels.Models import DeviceNote, Location, LogicalDevice, PhysicalDevice, PhysicalToLogicalMapping, User
+from pdmodels.Models import DeviceNote, Location, LogicalDevice, PhysicalDevice, PhysicalToLogicalMapping, User, DataNameMap
 
 logging.captureWarnings(True)
 
@@ -1133,4 +1133,41 @@ def token_enable(uname)-> None:
     finally:
         if conn is not None:
             free_conn(conn)
-            
+
+
+"""
+DATA_NAME_MAP : links incoming data names to a standardised version, so that timeseries data can be more coherent
+"""
+def _get_std_name(conn, input_name: str) -> str:
+    """
+    Gets standard name given an input name
+
+    This method allows the query to be more lightweight in those circumstances.
+
+    conn: a database connection
+    name: input_name
+    """
+    std_name = None
+    with conn.cursor() as cursor:
+        sql = 'select std_name from data_name_map where input_name = %s'
+        cursor.execute(sql, (input_name, ))
+        row = cursor.fetchone()
+        if row is not None:
+            std_name = row[0]
+
+    return std_name
+
+
+@backoff.on_exception(backoff.expo, DAOException, max_time=30)
+def get_std_name(input_name: str) -> str:
+    conn = None
+    try:
+        with _get_connection() as conn:
+            return _get_std_name(conn, input_name)
+    except Exception as err:
+        raise err if isinstance(err, DAOException) else DAOException('get_std_name failed.', err)
+    finally:
+        if conn is not None:
+            free_conn(conn)
+
+

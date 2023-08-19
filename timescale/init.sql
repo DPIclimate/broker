@@ -7,8 +7,4 @@ CREATE TABLE timeseries (
                          value NUMERIC
                          );
                          
-CREATE TABLE id_pairings (
-                         pairing_id BIGSERIAL PRIMARY KEY,
-                         l_uid INTEGER NOT NULL,
-                         p_uid INTEGER NOT NULL
-                         );
+SELECT create_hypertable('timeseries', 'timestamp');

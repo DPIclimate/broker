@@ -13,6 +13,7 @@ import api.client.RabbitMQ as mq
 import BrokerConstants
 import util.LoggingUtil as lu
 import timescale.Timescale as ts
+import api.client.DAO as dao
 
 rx_channel = None
 mq_client = None
@@ -63,6 +64,11 @@ async def main():
 def on_message(channel, method, properties, body):
     """
     This function is called when a message arrives from RabbitMQ.
+
+
+    checks pd and ld much like logical mapper, possibly redundant as logical
+    mapper passes the message here, but maybe not always, so checks stay info
+    until someone deletes them
     """
 
     global rx_channel, finish
@@ -75,68 +81,40 @@ def on_message(channel, method, properties, body):
         rx_channel._channel.basic_reject(delivery_tag)
         return
 
-    msg = json.loads(body)
-    lu.cid_logger.info(f'Accepted message {msg}', extra=msg)
-    
-    #
-    # Message processing goes here
-    #
-    
-    json_lines = ts.parse_json(msg)
-    adjust_pairings(msg.get('l_uid'), msg.get('p_uid'))
+    try:
+        msg = json.loads(body)
 
-    if ts.insert_lines(json_lines) == 1:
-        logging.info("Message successfully stored in database.")
-    else:
-        rx_channel._channel.basic_reject(delivery_tag)
+        p_uid = msg[BrokerConstants.PHYSICAL_DEVICE_UID_KEY]
+        pd = dao.get_physical_device(p_uid)
+        mapping = dao.get_current_device_mapping(p_uid)
 
-    # This tells RabbitMQ the message is handled and can be deleted from the queue.    
-    rx_channel._channel.basic_ack(delivery_tag)
+        #if pd or mapping is None:
+        if pd is None:
+            # Ack the message, even though we cannot process it. We don't want it redelivered.
+            # We can change this to a Nack if that would provide extra context somewhere.
+            if pd is None:
+                lu.cid_logger.error(f'Physical device not found, cannot continue. Dropping message.', extra=msg)
+            #else:
+            #    lu.cid_logger.error(f'No device mapping found for {pd.source_ids}, cannot continue. Dropping message.', extra=msg)
+            rx_channel._channel.basic_ack(delivery_tag)
+            return
 
-def adjust_pairings(luid: int, puid: int):
+        lu.cid_logger.info(f'Accepted message {msg}', extra=msg)
 
-    query = f"SELECT * FROM id_pairings WHERE l_uid = {luid} OR p_uid = {puid};"
-    results = ts.send_query(query, table="id_pairings")
-    
-    luid_exists = False
-    puid_exists = False
-    
-    # Analyze the results
-    for row in results:
-        if row[1] == luid:
-            luid_exists = True
-        if row[2] == puid:
-            puid_exists = True
-        if luid_exists or puid_exists:
-            break
+        parsed_msg = ts.parse_json(msg)
 
-    # Perform the actions
-    if luid_exists and not puid_exists:
-        # Update the row to add the missing puid
-        update_query = f"UPDATE id_pairings SET p_uid = {puid} WHERE l_uid = {luid};"
-        ts.send_update(update_query, table="id_pairings")
-        logging.info("Updated column to change p_uid")
-        # Delete rows that have the same p_uid but different l_uid
-        delete_query = f"DELETE FROM id_pairings WHERE p_uid = {puid} AND l_uid != {luid};"
-        ts.send_update(delete_query, table="id_pairings")
-        logging.info("Deleted rows with the same p_uid but different l_uid")
-    elif not luid_exists and puid_exists:
-        # Update the row to add the missing luid
-        update_query = f"UPDATE id_pairings SET l_uid = {luid} WHERE p_uid = {puid};"
-        ts.send_update(update_query, table="id_pairings")
-        logging.info("Updated column to change l_uid")
-        # Delete rows that have the same l_uid but different p_uid
-        delete_query = f"DELETE FROM id_pairings WHERE l_uid = {luid} AND p_uid != {puid};"
-        ts.send_update(delete_query, table="id_pairings")
-        logging.info("Deleted rows with the same l_uid but different p_uid")
-    elif not luid_exists and not puid_exists:
-        # Add a new row with the given luid and puid
-        insert_query = f"INSERT INTO id_pairings (l_uid, p_uid) VALUES ({luid}, {puid});"
-        ts.send_update(insert_query, table="id_pairings")
-        logging.info("Added new ID pairing")
-        
-    else:
-        return
+        if ts.insert_lines(parsed_msg) == 1:
+            logging.info('Message successfully stored in time series database.')
+        else:
+            lu.cid_logger.error('Message not stored in time series database. Rejecting Message.', extra=msg)
+            rx_channel._channel.basic_reject(delivery_tag)
+
+        # This tells RabbitMQ the message is handled and can be deleted from the queue.
+        rx_channel._channel.basic_ack(delivery_tag)
+
+    except BaseException:
+        logging.exception('Error while processing message.')
+        rx_channel._channel.basic_reject(delivery_tag, requeue=False)
 
 
 if __name__ == '__main__':
