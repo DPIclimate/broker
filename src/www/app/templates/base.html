@@ -13,6 +13,10 @@
         <script type="text/javascript" charset="utf8" src="https://cdn.datatables.net/1.10.25/js/dataTables.bootstrap5.js"></script>
         
         <script type="text/javascript" charset="utf8" src="https://cdn.datatables.net/select/1.4.0/js/dataTables.select.min.js"></script>
+        <link rel="stylesheet" type="text/css" href="https://cdn.datatables.net/select/1.7.0/css/select.dataTables.min.css">
+
+        <link href="https://cdn.datatables.net/buttons/1.2.2/css/buttons.dataTables.css" rel="stylesheet" type="text/css" />
+        <script src="https://cdn.datatables.net/buttons/1.2.2/js/dataTables.buttons.js"></script>
         <script type="text/javascript">
 
             $(document).ready(function () {
@@ -32,6 +36,42 @@
                     language: {
                         info:   "Showing _START_ to _END_ of _TOTAL_ entries "
                     }
+                });
+
+                $('.data-table-checkbox').DataTable({
+                    columnDefs: [
+                        {
+                            orderable: false,
+                            className: 'select-checkbox',
+                            targets: 0
+                        },
+                        {
+                            targets: 5,
+                            visible: false
+
+                        }
+                    ],
+                    dom: 'Blfrtip',
+                    buttons: [{
+                        text: 'Show Unmapped',
+                        action: function ( e, dt, node, config ) {
+                        if (dt.column(5).search() === 'no') {
+                            this.text('Show Unmapped');
+                            dt.column(5).search('').draw(true);
+                        } else  {
+                            this.text('Show All');
+                            dt.column(5).search('no').draw(true);
+                        }
+                        }
+                        }],
+                       select: {
+                        style: 'multi',
+                        selector: 'td:first-child'
+                    },
+                    order: [[1, 'asc']],
+                    language: {
+                        info:   "Showing _START_ to _END_ of _TOTAL_ entries "
+                                    }
                 });
 
                 $('.data-table').DataTable();

@@ -41,27 +41,36 @@ def check_user_logged_in():
 def index():
 
     try:
-        unlinked = request.args.get('unlinked') == 'true'
         physicalDevices = []
-        data = None
-        if unlinked:
-            data = get_physical_unmapped(session.get('token'))
-        else:
-            data = get_physical_devices(session.get('token'))
+        mappedColumnData = []
+        data = get_physical_devices(session.get('token'))
+        unmappedData = get_physical_unmapped(session.get('token'))
+        #mappedColumnData.append('yes')
+        isMapped = 'yes'
         if data is None:
             return render_template('error_page.html')
 
         for i in range(len(data)):
+            if(data[i] in unmappedData):
+               isMapped = 'no'
+            else:
+                isMapped = 'yes'
+
+            
+            mappedColumnData.append(isMapped)
             physicalDevices.append(PhysicalDevice(
                 uid=data[i]['uid'],
                 name=data[i]['name'],
                 source_name=data[i]['source_name'],
                 last_seen=formatTimeStamp(data[i]['last_seen'])
             ))
-        return render_template('physical_device_table.html', title='Physical Devices', physicalDevices=physicalDevices, unlinked=unlinked)
+
+
+        return render_template('physical_device_table.html', title='Physical Devices', physicalDevices=physicalDevices, mappedColumnData=mappedColumnData)
 
     except requests.exceptions.HTTPError as e:
         return render_template('error_page.html', reason=e), e.response.status_code
+
 
 
 @app.route('/login', methods=["GET", "POST"])
