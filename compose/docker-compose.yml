@@ -187,6 +187,21 @@ services:
     ports:
       - "8007:8007" # Expose the metrics port
 
+  x:
+    image: broker/python-base
+    restart: "no"
+    env_file:
+      - .env
+    environment:
+      - PYTHONPATH=/home/broker/broker/src/python:/home/broker/broker/test/python
+    depends_on:
+      - "db"
+      - "mq"
+    volumes:
+      - ..:/home/broker/broker
+    working_dir: "/home/broker/broker"
+    entrypoint: [ "./forever.sh" ]
+
   prometheus:
     image: prom/prometheus
     volumes:
