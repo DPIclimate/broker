@@ -9,10 +9,10 @@ const client = require('prom-client');
 // defining the Express app
 const app = express();
 const collectDefaultMetrics = client.collectDefaultMetrics;
-collectDefaultMetrics({ prefix: 'your_app_name:' });
+collectDefaultMetrics({ prefix: 'ttn_decoder:' });
 
 const httpRequestDurationMicroseconds = new client.Histogram({
-  name: 'your_app_name:http_request_duration_seconds',
+  name: 'ttn_decoder:http_request_duration_seconds',
   help: 'Duration of HTTP requests in microseconds',
   labelNames: ['method', 'route', 'code'],
   buckets: [0.10, 5, 15, 50, 100, 200, 300, 400, 500],  // Buckets for response time (in milliseconds)
@@ -85,9 +85,17 @@ app.post('/', (req, res) => {
 });
 
 
-app.get('/metrics', (req, res) => {
-  res.set('Content-Type', client.register.contentType);
-  res.end(client.register.metrics());
+app.get('/metrics', async (req, res) => {
+  try {
+    let metrics = client.register.metrics();
+    if (metrics instanceof Promise) {
+      metrics = await metrics;
+    }
+    res.set('Content-Type', client.register.contentType);
+    res.end(metrics);
+  } catch (err) {
+    res.status(500).send(err.message);
+  }
 });
 
 app.listen(3001, () => {
