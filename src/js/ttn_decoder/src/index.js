@@ -4,9 +4,20 @@ const bodyParser = require('body-parser');
 //const helmet = require('helmet');
 const morgan = require('morgan');
 const fs = require('fs');
+const client = require('prom-client');
 
 // defining the Express app
 const app = express();
+const collectDefaultMetrics = client.collectDefaultMetrics;
+collectDefaultMetrics({ prefix: 'your_app_name:' });
+
+const httpRequestDurationMicroseconds = new client.Histogram({
+  name: 'your_app_name:http_request_duration_seconds',
+  help: 'Duration of HTTP requests in microseconds',
+  labelNames: ['method', 'route', 'code'],
+  buckets: [0.10, 5, 15, 50, 100, 200, 300, 400, 500],  // Buckets for response time (in milliseconds)
+});
+
 
 // adding Helmet to enhance your API's security
 //app.use(helmet());
@@ -19,6 +30,17 @@ app.use(bodyParser.json());
 
 // adding morgan to log HTTP requests
 app.use(morgan('combined'));
+
+app.use((req, res, next) => {
+  const responseTimeInMs = Date.now();
+  res.on('finish', () => {
+    const route = req.route ? req.route.path : 'unknown_route';
+    const responseTime = Date.now() - responseTimeInMs;
+    httpRequestDurationMicroseconds.labels(req.method, route, res.statusCode).observe(responseTime);
+  });
+  next();
+});
+
 
 app.post('/', (req, res) => {
     const data = req.body;
@@ -60,6 +82,12 @@ app.post('/', (req, res) => {
 
     var val = decodeUplink(input);
     res.send(val)
+});
+
+
+app.get('/metrics', (req, res) => {
+  res.set('Content-Type', client.register.contentType);
+  res.end(client.register.metrics());
 });
 
 app.listen(3001, () => {
