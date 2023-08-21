@@ -111,3 +111,12 @@ Each metric is a counter that increments or decrements in various functions with
 
 - `broker/src/js/ttn_decoder/src/index.js`
 - port `3001`
+
+# Grafana and Nginx
+
+The Nginx server directs traffic to Grafana as stated in `broker/config/nginx.conf`.
+
+## Accessing the Services
+
+- Grafana can be accessed at http://localhost:3000. Use the username `admin` and password `password` to log in
+- Nginx can be accessed at http://localhost or https://localhost which will redirect to Grafana.
