@@ -1,7 +1,7 @@
-from fastapi import FastAPI
+from fastapi import APIRouter
 import psycopg2, os, sys
 
-app = FastAPI()
+router = APIRouter(prefix="/query")
 
 tsdb_user = os.environ.get("TSDB_USER")
 tsdb_pass = os.environ.get("TSDB_PASSWORD")
@@ -12,7 +12,7 @@ tsdb_table = os.environ.get("TSDB_TABLE")
 CONNECTION = f"postgres://{tsdb_user}:{tsdb_pass}@{tsdb_host}:{tsdb_port}/{tsdb_db}"
 
 
-@app.get("/")
+@router.get("/")
 async def query_tsdb(query: str = f"SELECT * FROM {tsdb_table};"):
     with psycopg2.connect(CONNECTION) as conn:
         # query = f"SELECT * FROM {tsdb_table};"
@@ -30,7 +30,7 @@ async def query_tsdb(query: str = f"SELECT * FROM {tsdb_table};"):
 
     return {"title": result}
 
-@app.get("/l_uid/{l_uid}")
+@router.get("/l_uid/{l_uid}")
 async def get_luid_records(l_uid, fromdate = "", todate = "", p_uid = ""):
     with psycopg2.connect(CONNECTION) as conn:
         query = f"SELECT * FROM {tsdb_table} WHERE l_uid = '{l_uid}'"
@@ -52,7 +52,7 @@ async def get_luid_records(l_uid, fromdate = "", todate = "", p_uid = ""):
     return result
 
 
-@app.get("/p_uid/{p_uid}")
+@router.get("/p_uid/{p_uid}")
 async def get_puid_records(p_uid: str, fromdate = "", todate = "", l_uid = ""):
     with psycopg2.connect(CONNECTION) as conn:
         query = f"SELECT * FROM {tsdb_table} WHERE p_uid = '{p_uid}'"
@@ -73,7 +73,7 @@ async def get_puid_records(p_uid: str, fromdate = "", todate = "", l_uid = ""):
     
     return result
 
-@app.get("/p_uid/{p_uid}/{func}")
+@router.get("/p_uid/{p_uid}/{func}")
 async def get_puid_records(p_uid: str, func: str, fromdate = "", todate = "", l_uid = ""):
     with psycopg2.connect(CONNECTION) as conn:
         query = f"SELECT {func}({p_uid}) FROM {tsdb_table} WHERE p_uid = '{p_uid}'"
