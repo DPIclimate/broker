@@ -17,6 +17,18 @@ import api.client.Ubidots as ubidots
 import api.client.DAO as dao
 import util.LoggingUtil as lu
 
+# Prometheus metrics
+from prometheus_client import Counter, start_http_server
+messages_processed_counter = Counter('ubidots_writer_messages_processed', 'Number of messages received and processed')
+messages_forwarded_counter = Counter('ubidots_writer_messages_forwarded', 'Number of messages forwarded to Ubidots')
+messages_acknowledged_counter = Counter('ubidots_writer_messages_acknowledged', 'Number of messages acknowledged to RabbitMQ')
+message_processing_errors_counter = Counter('ubidots_writer_message_processing_errors', 'Number of errors during message processing')
+ubidots_writer_starts_counter = Counter('ubidots_writer_starts', 'Number of times the Ubidots Writer program has started')
+ubidots_writer_exits_counter = Counter('ubidots_writer_exits', 'Number of times the Ubidots Writer program has exited')
+
+# Start up the server to expose the metrics.
+start_http_server(8006)
+
 _user = os.environ['RABBITMQ_DEFAULT_USER']
 _passwd = os.environ['RABBITMQ_DEFAULT_PASS']
 _host = os.environ['RABBITMQ_HOST']
@@ -44,6 +56,7 @@ def sigterm_handler(sig_no, stack_frame) -> None:
 
 
 def main():
+    ubidots_writer_starts_counter.inc()
     """
     Initiate the connection to RabbitMQ and then idle until asked to stop.
 
@@ -134,6 +147,7 @@ def on_message(channel, method, properties, body):
 
     try:
         msg = json.loads(body)
+        messages_processed_counter.inc()
         l_uid = msg[BrokerConstants.LOGICAL_DEVICE_UID_KEY]
         lu.cid_logger.info(f'Accepted message from logical device id {l_uid}', extra=msg)
 
@@ -230,6 +244,7 @@ def on_message(channel, method, properties, body):
         #
         ubidots_dev_label = ld.properties['ubidots']['label']
         ubidots.post_device_data(ubidots_dev_label, ubidots_payload)
+        messages_forwarded_counter.inc()
 
         if new_device:
             # Update the Ubidots device with info from the source device and/or the
@@ -274,9 +289,11 @@ def on_message(channel, method, properties, body):
 
         # This tells RabbitMQ the message is handled and can be deleted from the queue.    
         _channel.basic_ack(delivery_tag)
+        messages_acknowledged_counter.inc()
         #lu.cid_logger.info(f'ACK delivery tag {delivery_tag}', extra=msg)
 
     except BaseException:
+        message_processing_errors_counter.inc()
         logging.exception('Error while processing message.')
         _channel.basic_reject(delivery_tag, requeue=False)
 
@@ -289,3 +306,4 @@ if __name__ == '__main__':
     # Does not return until SIGTERM is received.
     main()
     logging.info('Exiting.')
+    ubidots_writer_exits_counter.inc()
