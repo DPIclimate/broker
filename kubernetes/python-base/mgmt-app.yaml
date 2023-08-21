@@ -1,0 +1,20 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: mgmt-app
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app: mgmt-app
+  template:
+    metadata:
+      labels:
+        app: mgmt-app
+    spec:
+      containers:
+      - name: mgmt-app
+        image: broker/mgmt-app
+        imagePullPolicy: Never
+        ports:
+        - containerPort: 80

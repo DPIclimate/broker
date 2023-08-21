@@ -1,0 +1,48 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: lm
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: lm
+  template:
+    metadata:
+      labels:
+        app: lm
+    spec:
+      containers:
+        - name: lm
+          image: broker/python-base:latest
+          imagePullPolicy: Never
+          envFrom:
+            - configMapRef:
+                name: env-configmap
+          volumeMounts:
+            - name: python-src-volume
+              mountPath: /home/broker/python
+          workingDir: /home/broker/python
+          command:
+#          - sh
+#          - -c
+#          - tail -f /dev/null
+          - python
+          - -m
+          - logical_mapper.LogicalMapper
+      volumes:
+        - name: python-src-volume
+          hostPath:
+            path: /home/broker/src/python
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: lm
+spec:
+  selector:
+    app: lm
+  ports:
+    - name: http
+      port: 80
+      targetPort: 80

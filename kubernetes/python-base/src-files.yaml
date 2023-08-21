@@ -1,0 +1,8 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: my-configmap
+data:
+  file1: |-
+    {{ printf "%s" (index .Files "/home/sam/csu-dpi/broker/kubernetes/python-base/test-volume/test-file.txt") }}
+    

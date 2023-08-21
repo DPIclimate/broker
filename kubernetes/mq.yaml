@@ -1,0 +1,52 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: mq
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: mq
+  template:
+    metadata:
+      labels:
+        app: mq
+    spec:
+      containers:
+        - name: mq
+          image: rabbitmq:3.9-management
+          envFrom:
+            - configMapRef:
+                name: env-configmap
+          volumeMounts:
+            - name: rabbitmq-config-volume
+              mountPath: /etc/rabbitmq
+#          readinessProbe:
+#            exec:
+#              command:
+#                - rabbitmq-diagnostics
+#                - check_port_connectivity
+#            initialDelaySeconds: 30
+#            periodSeconds: 30
+          ports:
+            - containerPort: 5672
+            - containerPort: 15672
+      volumes:
+        - name: rabbitmq-config-volume
+          hostPath:
+            path: /home/broker/config/rabbitmq
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: mq
+spec:
+  selector:
+    app: mq
+  ports:
+    - name: amqp
+      port: 5672
+      targetPort: 5672
+    - name: management
+      port: 15672
+      targetPort: 15672

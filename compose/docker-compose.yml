@@ -28,7 +28,7 @@ services:
       start_period: 30s
 
   restapi:
-    image: broker/python-base
+    image: broker/python-base:latest
     restart: "no"
     env_file:
       - .env
@@ -47,7 +47,7 @@ services:
       - "8000:8000"  # Expose the metrics port
 
   website:
-    image: broker/mgmt-app
+    image: broker/mgmt-app:latest
     env_file:
       - .env
     depends_on:
@@ -57,7 +57,7 @@ services:
       - ../src/www:/app
 
   ttn_webhook:
-    image: broker/python-base
+    image: broker/python-base:latest
     restart: "no"
     env_file:
       - .env
@@ -72,7 +72,7 @@ services:
       - "8001:8001" # Expose the metrics port
 
   ttn_processor:
-    image: broker/python-base
+    image: broker/python-base:latest
     restart: "no"
     env_file:
       - .env
@@ -91,7 +91,7 @@ services:
       - "8002:8002" # Expose the metrics port
 
   ttn_decoder:
-    image: broker/ttn_decoder
+    image: broker/ttn_decoder:latest
     restart: "no"
     env_file:
       - .env
@@ -102,7 +102,7 @@ services:
     entrypoint: [ "node", "src" ]
 
   ydoc:
-    image: broker/python-base
+    image: broker/python-base:latest
     restart: "no"
     env_file:
       - .env
@@ -119,7 +119,7 @@ services:
       - "8003:8003" # Expose the metrics port
 
   wombat:
-    image: broker/python-base
+    image: broker/python-base:latest
     restart: "no"
     env_file:
       - .env
@@ -136,7 +136,7 @@ services:
       - "8004:8004" # Expose the metrics port
 
   lm:
-    image: broker/python-base
+    image: broker/python-base:latest
     restart: "no"
     env_file:
       - .env
@@ -153,7 +153,7 @@ services:
       - "8005:8005" # Expose the metrics port
 
   delivery:
-    image: broker/python-base
+    image: broker/python-base:latest
     restart: unless-stopped
     env_file:
       - .env
@@ -174,11 +174,11 @@ services:
     restart: unless-stopped
     env_file:
       - .env
+    environment:
+      - PYTHONPATH=/home/broker/broker/src/python:/home/broker/broker/test/python
     depends_on:
-      db:
-        condition: "service_healthy"
-      mq:
-        condition: "service_healthy"
+      - "db"
+      - "mq"
     volumes:
       - ../src/python:/home/broker/python
       - ${DATABOLT_SHARED_DIR}/raw_data:/raw_data

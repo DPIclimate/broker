@@ -1,0 +1,66 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: restapi
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: restapi
+  template:
+    metadata:
+      labels:
+        app: restapi
+    spec:
+      containers:
+      - name: restapi
+        image: broker/python-base:latest
+        imagePullPolicy: Never
+        envFrom:
+          - configMapRef:
+              name: env-configmap
+        volumeMounts:
+        - name: python-src-volume
+          mountPath: /home/broker/python
+        workingDir: /home/broker/python/restapi
+        command:
+        - /home/broker/.local/bin/uvicorn
+        args:
+        - --proxy-headers
+        - --host
+        - 0.0.0.0
+        - --port
+        - "5687"
+        - RestAPI:app
+        ports:
+        - containerPort: 5687
+        livenessProbe:
+          httpGet:
+            path: /openapi.json
+            port: 5687
+          initialDelaySeconds: 20
+          periodSeconds: 10
+          failureThreshold: 3
+        readinessProbe:
+          httpGet:
+            path: /openapi.json
+            port: 5687
+          initialDelaySeconds: 20
+          periodSeconds: 10
+          failureThreshold: 3
+      volumes:
+      - name: python-src-volume
+        hostPath:
+          path: /home/broker/src/python
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: restapi
+spec:
+  selector:
+    app: restapi
+  ports:
+  - name: http
+    port: 80
+    targetPort: 5687
