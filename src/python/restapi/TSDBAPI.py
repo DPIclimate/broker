@@ -123,7 +123,7 @@ async def get_luid_for_last_x(l_uid: str, years = 0, months = 0, days = 0, hours
         if target_month == 2 and target_day > 28:
             target_month = 3
             target_day -= 28
-        target_date = f"{target_year}-{target_month}-{target_day}"  
+        target_date = f"{target_year}-{target_month}-{target_day} {target_hour}:{target_minute}:{target_second}"  
         query = f"SELECT * FROM {tsdb_table} WHERE l_uid = '{l_uid}'"
         query += f" AND timestamp <= '{current_date}'"
         query += f" AND timestamp >= '{target_date}'"
