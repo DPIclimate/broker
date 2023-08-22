@@ -98,11 +98,22 @@ async def get_puid_records(p_uid: str, func: str, fromdate = "", todate = "", l_
 async def get_luid_for_last_x(l_uid: str, years = 0, months = 0, days = 0, hours = 0, minutes = 0, seconds = 0):
     with psycopg2.connect(CONNECTION) as conn:
         date = datetime.datetime.now()
-        current_date = f"{date.year}-{date.month}-{date.day}" 
+        current_date = f"{date.year}-{date.month}-{date.day} {date.hour}:{date.minute}:{date.second}" 
         target_year = date.year - int(years)
         target_month = date.month - int(months)
         target_day = date.day - int(days)
-        
+        target_hour = date.hour - int(hours)
+        target_minute = date.minute - int(minutes)
+        target_second = date.second - float(seconds)
+        while target_second < 0:
+            target_second += 60
+            target_minute -= 1
+        while target_minute < 0:
+            target_minute += 60
+            target_hour -= 1
+        while target_hour < 0:
+            target_hour += 24
+            target_day -= 1
         while target_day <= 0:
             target_day += 30
             target_month -= 1
@@ -131,11 +142,22 @@ async def get_luid_for_last_x(l_uid: str, years = 0, months = 0, days = 0, hours
 async def get_puid_for_last_x(p_uid: str, years = 0, months = 0, days = 0, hours = 0, minutes = 0, seconds = 0):
     with psycopg2.connect(CONNECTION) as conn:
         date = datetime.datetime.now()
-        current_date = f"{date.year}-{date.month}-{date.day}" 
+        current_date = f"{date.year}-{date.month}-{date.day} {date.hour}:{date.minute}:{date.second}" 
         target_year = date.year - int(years)
         target_month = date.month - int(months)
         target_day = date.day - int(days)
-          
+        target_hour = date.hour - int(hours)
+        target_minute = date.minute - int(minutes)
+        target_second = date.second - float(seconds)
+        while target_second < 0:
+            target_second += 60
+            target_minute -= 1
+        while target_minute < 0:
+            target_minute += 60
+            target_hour -= 1
+        while target_hour < 0:
+            target_hour += 24
+            target_day -= 1       
         while target_day <= 0:
             target_day += 30
             target_month -= 1
@@ -145,7 +167,7 @@ async def get_puid_for_last_x(p_uid: str, years = 0, months = 0, days = 0, hours
         if target_month == 2 and target_day > 28:
             target_month = 3
             target_day -= 28
-        target_date = f"{target_year}-{target_month}-{target_day}"  
+        target_date = f"{target_year}-{target_month}-{target_day} {target_hour}:{target_minute}:{target_second}"  
         query = f"SELECT * FROM {tsdb_table} WHERE p_uid = '{p_uid}'"
         query += f" AND timestamp <= '{current_date}'"
         query += f" AND timestamp >= '{target_date}'"
