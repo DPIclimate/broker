@@ -245,14 +245,7 @@ services:
         condition: "service_healthy"
     volumes:
       - ../src/python:/home/broker/python
-      - backup_volume:/home/des/Documents
     working_dir: "/home/broker/python"
     entrypoint: [ "python", "-m", "timescale.TS_LTSReader_Bulk" ]
 
-volumes:
-    backup_volume:
-        driver: local
-        driver_opts:
-            type: none
-            o: bind
-            device: /home/des/Documents
+
