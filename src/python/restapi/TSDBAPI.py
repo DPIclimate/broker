@@ -1,5 +1,5 @@
 from fastapi import APIRouter
-import psycopg2, os, sys
+import psycopg2, os, sys, datetime
 
 router = APIRouter(prefix="/query")
 
@@ -35,9 +35,9 @@ async def get_luid_records(l_uid, fromdate = "", todate = "", p_uid = ""):
     with psycopg2.connect(CONNECTION) as conn:
         query = f"SELECT * FROM {tsdb_table} WHERE l_uid = '{l_uid}'"
         if fromdate != "":
-            query += f"AND timestamp > '{fromdate}'"
+            query += f"AND timestamp >= '{fromdate}'"
         if todate != "":
-            query += f"AND timestamp < '{todate}'"
+            query += f"AND timestamp <= '{todate}'"
         if p_uid != "":
             query += f"AND p_uid = '{p_uid}'"
         cursor = conn.cursor()
@@ -57,9 +57,9 @@ async def get_puid_records(p_uid: str, fromdate = "", todate = "", l_uid = ""):
     with psycopg2.connect(CONNECTION) as conn:
         query = f"SELECT * FROM {tsdb_table} WHERE p_uid = '{p_uid}'"
         if fromdate != "":
-            query += f"AND timestamp > '{fromdate}'"
+            query += f"AND timestamp >= '{fromdate}'"
         if todate != "":
-            query += f"AND timestamp < '{todate}'"
+            query += f"AND timestamp <= '{todate}'"
         if l_uid != "":
             query += f"AND l_uid = '{l_uid}'"
         cursor = conn.cursor()
@@ -76,13 +76,100 @@ async def get_puid_records(p_uid: str, fromdate = "", todate = "", l_uid = ""):
 @router.get("/p_uid/{p_uid}/{func}")
 async def get_puid_records(p_uid: str, func: str, fromdate = "", todate = "", l_uid = ""):
     with psycopg2.connect(CONNECTION) as conn:
-        query = f"SELECT {func}({p_uid}) FROM {tsdb_table} WHERE p_uid = '{p_uid}'"
+        query = f"SELECT {func}(value) FROM {tsdb_table} WHERE p_uid = '{p_uid}'"
         if fromdate != "":
-            query += f"AND timestamp > '{fromdate}'"
+            query += f"AND timestamp >= '{fromdate}'"
         if todate != "":
-            query += f"AND timestamp < '{todate}'"
+            query += f"AND timestamp <= '{todate}'"
         if l_uid != "":
             query += f"AND l_uid = '{l_uid}'"
+        cursor = conn.cursor()
+        try: 
+            cursor.execute(query)
+            conn.commit()
+            result = cursor.fetchall()
+        except psycopg2.errors as e:
+            sys.stderr.write(f'error: {e}\n')
+        cursor.close()    
+    
+    return result
+
+@router.get("/l_uid/{l_uid}/last")
+async def get_luid_for_last_x(l_uid: str, years = 0, months = 0, days = 0, hours = 0, minutes = 0, seconds = 0):
+    with psycopg2.connect(CONNECTION) as conn:
+        date = datetime.datetime.now()
+        current_date = f"{date.year}-{date.month}-{date.day}" 
+        target_year = date.year - int(years)
+        target_month = date.month - int(months)
+        target_day = date.day - int(days)
+        
+        while target_day <= 0:
+            target_day += 30
+            target_month -= 1
+        while target_month <= 0:
+            target_month += 12
+            target_year -= 1
+        if target_month == 2 and target_day > 28:
+            target_month = 3
+            target_day -= 28
+        target_date = f"{target_year}-{target_month}-{target_day}"  
+        query = f"SELECT * FROM {tsdb_table} WHERE l_uid = '{l_uid}'"
+        query += f" AND timestamp <= '{current_date}'"
+        query += f" AND timestamp >= '{target_date}'"
+        cursor = conn.cursor()
+        try: 
+            cursor.execute(query)
+            conn.commit()
+            result = cursor.fetchall()
+        except psycopg2.errors as e:
+            sys.stderr.write(f'error: {e}\n')
+        cursor.close()
+    
+    return result
+
+@router.get("/p_uid/{p_uid}/last")
+async def get_puid_for_last_x(p_uid: str, years = 0, months = 0, days = 0, hours = 0, minutes = 0, seconds = 0):
+    with psycopg2.connect(CONNECTION) as conn:
+        date = datetime.datetime.now()
+        current_date = f"{date.year}-{date.month}-{date.day}" 
+        target_year = date.year - int(years)
+        target_month = date.month - int(months)
+        target_day = date.day - int(days)
+          
+        while target_day <= 0:
+            target_day += 30
+            target_month -= 1
+        while target_month <= 0:
+            target_month += 12
+            target_year -= 1
+        if target_month == 2 and target_day > 28:
+            target_month = 3
+            target_day -= 28
+        target_date = f"{target_year}-{target_month}-{target_day}"  
+        query = f"SELECT * FROM {tsdb_table} WHERE p_uid = '{p_uid}'"
+        query += f" AND timestamp <= '{current_date}'"
+        query += f" AND timestamp >= '{target_date}'"
+        cursor = conn.cursor()
+        try: 
+            cursor.execute(query)
+            conn.commit()
+            result = cursor.fetchall()
+        except psycopg2.errors as e:
+            sys.stderr.write(f'error: {e}\n')
+        cursor.close()
+    
+    return result
+
+@router.get("/l_uid/{l_uid}/{func}")
+async def get_puid_records(l_uid: str, func: str, fromdate = "", todate = "", p_uid = ""):
+    with psycopg2.connect(CONNECTION) as conn:
+        query = f"SELECT {func}(value) FROM {tsdb_table} WHERE l_uid = '{l_uid}'"
+        if fromdate != "":
+            query += f"AND timestamp >= '{fromdate}'"
+        if todate != "":
+            query += f"AND timestamp <= '{todate}'"
+        if p_uid != "":
+            query += f"AND p_uid = '{p_uid}'"
         cursor = conn.cursor()
         try: 
             cursor.execute(query)
