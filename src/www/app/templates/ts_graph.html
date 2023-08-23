@@ -1,0 +1,24 @@
+<!-- timeseries data graph template -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js@^3"></script>
+<script src="https://cdn.jsdelivr.net/npm/luxon@^2"></script>
+<script src="https://cdn.jsdelivr.net/npm/chartjs-adapter-luxon@^1"></script>
+<script src="{{ url_for('static', filename='ts_graph.js') }}"></script>
+
+<div class="ts-section">
+  <h3 id="ts-heading">Time Series Data</h3>
+  <div class="ts-graph">
+  <div>
+    <label for="ts-time-range">Time Range:</label>
+    <select id="ts-time-range" name="ts-time-range" onchange="filter_chart(this)">
+      <option value="30">30 Days</option>
+      <option value="7">7 Days</option>
+      <option value="1">1 Days</option>
+    </select>
+  </div>
+    <canvas id="chart"></canvas>
+    <script>
+      var data = {{ ts_data | tojson}};
+      create_chart(data);
+    </script>
+  </div>
+</div>
