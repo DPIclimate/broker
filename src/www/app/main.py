@@ -151,6 +151,10 @@ def physical_device_form(uid):
                 last_seen=formatTimeStamp(ld_data[i]['last_seen'])
             ))
 
+        #TS data
+        ts_data = get_puid_ts(uid)
+        parsed_ts = parse_ts_data(ts_data)
+
         title = 'Physical Device ' + str(uid) + ' - ' + str(pd_data['name'])
         return render_template('physical_device_form.html',
                                title=title,
@@ -160,7 +164,8 @@ def physical_device_form(uid):
                                properties=properties_formatted,
                                ttn_link=ttn_link,
                                currentMappings=currentDeviceMapping,
-                               deviceNotes=deviceNotes)
+                               deviceNotes=deviceNotes,
+                               ts_data=parsed_ts)
 
     except requests.exceptions.HTTPError as e:
         return render_template('error_page.html', reason=e), e.response.status_code
@@ -216,6 +221,11 @@ def logical_device_form(uid):
                 last_seen=formatTimeStamp(data[i]['last_seen'])
             ))
 
+        #TS data
+        ts_data = get_luid_ts(uid)
+        print(ts_data)
+        parsed_ts = parse_ts_data(ts_data)
+
         return render_template('logical_device_form.html',
                                title=title,
                                ld_data=ld_data,
@@ -224,7 +234,8 @@ def logical_device_form(uid):
                                deviceLastSeen=deviceLastSeen,
                                ubidots_link=ubidots_link,
                                properties=properties_formatted,
-                               deviceMappings=deviceMappings)
+                               deviceMappings=deviceMappings,
+                               ts_data=parsed_ts)
     except requests.exceptions.HTTPError as e:
         return render_template('error_page.html', reason=e), e.response.status_code
 
@@ -400,6 +411,20 @@ def generate_link(data):
         link = 'https://industrial.ubidots.com.au/app/devices/'
         link+= data['properties']['ubidots']['id']
     return link
+
+
+def parse_ts_data(ts_data):
+    parsed_ts = {}
+    for entry in ts_data['title']:
+        label = entry[1]
+        timestamp = entry[0]
+        value = entry[2]
+
+        if label not in parsed_ts:
+            parsed_ts[label] = []
+
+        parsed_ts[label].append((timestamp, value))
+    return parsed_ts
 
 
 if __name__ == '__main__':
