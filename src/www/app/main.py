@@ -223,7 +223,6 @@ def logical_device_form(uid):
 
         #TS data
         ts_data = get_luid_ts(uid)
-        print(ts_data)
         parsed_ts = parse_ts_data(ts_data)
 
         return render_template('logical_device_form.html',

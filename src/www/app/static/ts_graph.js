@@ -30,9 +30,6 @@ function generate_datasets(parsed_data) {
       fill: false
     });
   }
-
-  console.log('dataset:', datasets);
-
   return datasets;
 }
 
@@ -60,7 +57,6 @@ function create_chart(parsed_data) {
 
 
 function filter_chart(days) {
-  console.log(luxon.DateTime.now().plus({ days: -days.value }).toISODate());
   chart.options.scales.x.min = luxon.DateTime.now().plus({ days: -days.value }).toISODate();
   chart.options.scales.x.max = new Date();
   chart.update();
