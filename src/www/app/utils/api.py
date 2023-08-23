@@ -59,11 +59,11 @@ def get_physical_notes(uid: str, token: str) -> List[dict]:
     return response.json()
 
 
-def get_logical_devices(token: str):
+def get_logical_devices(token: str, include_properties: bool = False):
     headers = {"Authorization": f"Bearer {token}"}
 
     response = requests.get(
-        f'{end_point}/broker/api/logical/devices/?include_properties=false', headers=headers)
+        f'{end_point}/broker/api/logical/devices/?include_properties={include_properties}', headers=headers)
     response.raise_for_status()
     return response.json()
 
@@ -117,7 +117,7 @@ def get_logical_device(uid: str, token: str) -> dict:
     return response.json()
 
 
-def get_device_mappings(uid: str, token: str):
+def get_all_mappings_for_logical_device(uid: str, token: str):
     headers = {"Authorization": f"Bearer {token}"}
 
     response = requests.get(f'{end_point}/broker/api/mappings/logical/all/{uid}',
@@ -126,7 +126,7 @@ def get_device_mappings(uid: str, token: str):
     return response.json()
 
 
-def get_current_mappings(uid: str, token: str):
+def get_current_mapping_from_physical_device(uid: str, token: str):
     headers = {"Authorization": f"Bearer {token}"}
 
     response = requests.get(f'{end_point}/broker/api/mappings/physical/current/{uid}', headers=headers)
@@ -141,7 +141,7 @@ def get_current_mappings(uid: str, token: str):
 def update_physical_device(uid: str, name: str, location: str, token: str):
     headers = {"Authorization": f"Bearer {token}"}
 
-    device = get_physical_device(uid)
+    device = get_physical_device(uid, token)
     device['name'] = name
     device['location'] = location
     response = requests.patch(f'{end_point}/broker/api/physical/devices/',
@@ -153,7 +153,7 @@ def update_physical_device(uid: str, name: str, location: str, token: str):
 def update_logical_device(uid: str, name: str, location: str, token: str):
     headers = {"Authorization": f"Bearer {token}"}
 
-    device = get_logical_device(uid)
+    device = get_logical_device(uid, token)
     device['name'] = name
     device['location'] = location
     response = requests.patch(
@@ -303,7 +303,7 @@ def edit_note(noteText: str, uid: str, token: str):
     return response.json()
 
 
-def format_json(data):
+def format_json(data) -> str:
     return (json.dumps(data, indent=4, sort_keys=True))
 
 
