@@ -222,21 +222,6 @@ services:
       - ../src/python:/home/broker/python
     working_dir: "/home/broker/python"
     entrypoint: [ "python", "-m", "timescale.TS_LTSReader" ]
- 
-  iota_tsdb_bulk_decoder:
-    image: broker/python-base
-    restart: "no"
-    env_file:
-      - .env
-    depends_on:
-      timescaledb:
-        condition: "service_healthy"
-      mq:
-        condition: "service_healthy"
-    volumes:
-      - ../src/python:/home/broker/python
-    working_dir: "/home/broker/python"
-    entrypoint: [ "python", "-m", "timescale.TS_LTSReader_Bulk" ]
 
 #volumes:
 #    timescale_data:
