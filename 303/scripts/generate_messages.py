@@ -10,7 +10,7 @@ random.seed(999)
 
 NUM_OF_UID = 1000
 NUM_OF_TS_PER_UID = 100
-START_DATE = datetime(2023,1,1)
+START_DATE = datetime(2023,8,15)
 TIME_SERIES_NAMES = [
     ("1_Temperature", float),
     ("1_VWC", float),
