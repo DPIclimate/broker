@@ -16,7 +16,7 @@ spec:
       containers:
         - name: frred
           image: broker/python-base:latest
-          imagePullPolicy: Never
+          imagePullPolicy: IfNotPresent
           envFrom:
             - configMapRef:
                 name: env-configmap

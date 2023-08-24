@@ -16,7 +16,7 @@ spec:
       containers:
         - name: lm
           image: broker/python-base:latest
-          imagePullPolicy: Never
+          imagePullPolicy: IfNotPresent
           envFrom:
             - configMapRef:
                 name: env-configmap

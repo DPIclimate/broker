@@ -16,7 +16,7 @@ spec:
       containers:
         - name: website
           image: broker/mgmt-app
-          imagePullPolicy: Never
+          imagePullPolicy: IfNotPresent
           envFrom:
             - configMapRef:
                 name: env-configmap
