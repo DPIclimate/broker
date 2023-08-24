@@ -8,10 +8,22 @@ The current implementation simply runs all microservices with a single replica s
 ## Requirements
 
 - Docker (to build local images)
+- docker-cri
 - Kubernetes (Running as a single node cluster)
   - Kubeadm
   - Kubectl
   - Kubelet
+
+## Local Container Images
+
+Currently there are three local container images built for the broker system:
+
+- `broker/python-base`
+- `broker/mgmt-app`
+- `broker/ttn_decoder`
+
+So long as your kubernetes cluster is using the [docker-cri](https://kubernetes.io/docs/setup/production-environment/container-runtimes/#docker) driver it should be able to read these locally built images.  
+In future the broker should use hosted images, either using an online repository such as docker hub or an internally hosted repository. As each node (Server) in the cluster will need to access the same images, these should not be locally built as that can introduce varience.
 
 ## Volume Storage
 
