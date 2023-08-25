@@ -31,11 +31,10 @@ def on_message(message, properties):
     serial_no = source_ids['serial_no']
     lu.cid_logger.info(f'Accepted message from {serial_no}', extra=msg_with_cid)
 
-    pds = dao.get_pyhsical_devices_using_source_ids(BrokerConstants.WOMBAT, source_ids)
+    # Find the device using only the serial_no.
+    find_source_id = {'serial_no': serial_no}
+    pds = dao.get_pyhsical_devices_using_source_ids(BrokerConstants.WOMBAT, find_source_id)
     if len(pds) < 1:
-        lu.cid_logger.info(f'Message from a new device.', extra=msg_with_cid)
-        lu.cid_logger.info(message, extra=msg_with_cid)
-
         lu.cid_logger.info('Device not found, creating physical device.', extra=msg_with_cid)
 
         props = {
@@ -47,6 +46,10 @@ def on_message(message, properties):
         pd = PhysicalDevice(source_name=BrokerConstants.WOMBAT, name=device_name, location=None, last_seen=msg_ts, source_ids=source_ids, properties=props)
         pd = dao.create_physical_device(pd)
     else:
+        # Update the source_ids because the Wombat firmware was updated to include the SDI-12 sensor
+        # IDs in the source_ids object after physical devices with only the serial_no had been created.
+        # Additionally, something like an AWS might get replaced so there will be a new SDI-12 ID for that.
+        pd.source_ids = source_ids
         pd = pds[0]
         pd.last_seen = msg_ts
         pd.properties[BrokerConstants.LAST_MSG] = msg
@@ -55,6 +58,8 @@ def on_message(message, properties):
     if pd is None:
         lu.cid_logger.error(f'Physical device not found, message processing ends now. {correlation_id}', extra=msg_with_cid)
         raise Exception(f'Physical device not found')
+
+    lu.cid_logger.info(f'Using device id {pd.uid}', extra=msg_with_cid)
 
     msg[BrokerConstants.CORRELATION_ID_KEY] = correlation_id
     msg[BrokerConstants.PHYSICAL_DEVICE_UID_KEY] = pd.uid

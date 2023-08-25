@@ -132,7 +132,6 @@ def on_message(channel, method, properties, body):
         msg = json.loads(body)
         p_uid = msg[BrokerConstants.PHYSICAL_DEVICE_UID_KEY]
         l_uid = msg[BrokerConstants.LOGICAL_DEVICE_UID_KEY]
-        lu.cid_logger.info(f'Accepted message from physical/logical device id {p_uid}/{l_uid}', extra=msg)
 
         # TODO: Look into routing keys for deciding which messages to pass on to Intersect.
 
@@ -161,10 +160,12 @@ def on_message(channel, method, properties, body):
 
         msg_uuid = msg[BrokerConstants.CORRELATION_ID_KEY]
 
+        old_umask = os.umask(0)
         try:
+            lu.cid_logger.info(json.dumps(msg), extra=msg)
             os.mkdir(f'{_raw_data_name}/{msg_uuid}')
             with open(f'{_raw_data_name}/{msg_uuid}/{msg_uuid}.json', 'w') as f:
-                # The body argument is bytes, not a string. Uisng json.dump is a
+                # The body argument is bytes, not a string. Using json.dump is a
                 # simple way to get a string written to the file.
                 json.dump(msg, f)
 
@@ -173,6 +174,7 @@ def on_message(channel, method, properties, body):
             _channel.basic_ack(delivery_tag)
             sys.exit(1)
 
+        os.umask(old_umask)
 
         # This tells RabbitMQ the message is handled and can be deleted from the queue.    
         _channel.basic_ack(delivery_tag)

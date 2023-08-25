@@ -28,7 +28,7 @@ class TestDAO(unittest.TestCase):
 
     def test_get_all_physical_sources(self):
         sources = dao.get_all_physical_sources()
-        self.assertEqual(sources, ['greenbrain', 'ttn', 'wombat', 'ydoc'])
+        self.assertEqual(sources, ['greenbrain', 'ict_eagleio', 'ttn', 'wombat', 'ydoc'])
 
     def now(self):
         return datetime.datetime.now(tz=datetime.timezone.utc)
@@ -589,7 +589,6 @@ class TestDAO(unittest.TestCase):
             ],
             "broker_correlation_id":"3d7762f6-bcc6-44d4-82ba-49b07e61e601"
         }
-
         last_seen = dateutil.parser.isoparse(msg['timestamp'])
 
         dao.insert_physical_timeseries_message(msg['p_uid'], last_seen, msg)
