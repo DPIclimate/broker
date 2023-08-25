@@ -106,7 +106,7 @@ services:
     env_file:
       - .env
     profiles:
-      - mqtt-processors
+      - mqttprocessors
     depends_on:
       db:
         condition: "service_healthy"
