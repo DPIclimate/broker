@@ -15,7 +15,7 @@ spec:
     spec:
       containers:
         - name: ttn-decoder
-          image: broker/ttn_decoder:latest
+          image: broker/ttn_decoder
           imagePullPolicy: IfNotPresent
           envFrom:
             - configMapRef:

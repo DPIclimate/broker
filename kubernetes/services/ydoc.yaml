@@ -15,7 +15,7 @@ spec:
     spec:
       containers:
         - name: ydoc
-          image: broker/python-base:latest
+          image: broker/python-base
           imagePullPolicy: IfNotPresent
           envFrom:
             - configMapRef:
