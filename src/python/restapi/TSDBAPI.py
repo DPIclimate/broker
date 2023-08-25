@@ -11,6 +11,18 @@ tsdb_db = os.environ.get("TSDB_DB")
 tsdb_table = os.environ.get("TSDB_TABLE")
 CONNECTION = f"postgres://{tsdb_user}:{tsdb_pass}@{tsdb_host}:{tsdb_port}/{tsdb_db}"
 
+days_in_month = [31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31]
+
+def is_leap(year: int) -> bool:
+    if year % 400 == 0:
+        return True
+    elif year % 100 == 0:
+        return False
+    elif year % 4 == 0:
+        return True
+    else:
+        return False
+
 
 @router.get("/")
 async def query_tsdb(query: str = f"SELECT * FROM {tsdb_table};"):
@@ -115,7 +127,8 @@ async def get_luid_for_last_x(l_uid: str, years = 0, months = 0, days = 0, hours
             target_hour += 24
             target_day -= 1
         while target_day <= 0:
-            target_day += 30
+            target_day += days_in_month[target_month % 12] 
+            target_day += 1 if target_month % 12 == 2 and is_leap(target_year) else 0
             target_month -= 1
         while target_month <= 0:
             target_month += 12
@@ -159,7 +172,8 @@ async def get_puid_for_last_x(p_uid: str, years = 0, months = 0, days = 0, hours
             target_hour += 24
             target_day -= 1       
         while target_day <= 0:
-            target_day += 30
+            target_day += days_in_month[target_month % 12] 
+            target_day += 1 if target_month % 12 == 2 and is_leap(target_year) else 0
             target_month -= 1
         while target_month <= 0:
             target_month += 12
