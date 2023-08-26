@@ -174,11 +174,11 @@ services:
     restart: unless-stopped
     env_file:
       - .env
-    environment:
-      - PYTHONPATH=/home/broker/broker/src/python:/home/broker/broker/test/python
     depends_on:
-      - "db"
-      - "mq"
+      db:
+        condition: "service_healthy"
+      mq:
+        condition: "service_healthy"
     volumes:
       - ../src/python:/home/broker/python
       - ${DATABOLT_SHARED_DIR}/raw_data:/raw_data
@@ -195,8 +195,10 @@ services:
     environment:
       - PYTHONPATH=/home/broker/broker/src/python:/home/broker/broker/test/python
     depends_on:
-      - "db"
-      - "mq"
+      db:
+        condition: "service_healthy"
+      mq:
+        condition: "service_healthy"
     volumes:
       - ..:/home/broker/broker
     working_dir: "/home/broker/broker"
