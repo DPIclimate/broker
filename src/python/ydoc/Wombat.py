@@ -27,7 +27,7 @@ devices_updated_counter = Counter('wombat_devices_updated', 'Number of physical 
 exceptions_caught_counter = Counter('wombat_exceptions_caught', 'Number of exceptions caught during processing')
 message_processing_errors_counter = Counter('wombat_message_processing_errors', 'Number of errors while processing messages')
 # Start up the server to expose the metrics.
-start_http_server(8004)
+start_http_server(8000)
 
 std_logger = logging.getLogger(__name__)
 

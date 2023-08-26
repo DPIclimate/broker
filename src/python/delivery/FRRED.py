@@ -39,7 +39,7 @@ invalid_json_messages = Counter('invalid_json_messages', 'Number of invalid JSON
 messages_rejected_finish_flag = Counter('messages_rejected_finish_flag', 'Number of messages rejected due to the _finish flag being set')
 
 # Start up the server to expose the metrics.
-start_http_server(8007)
+start_http_server(8000)
 
 _user = os.environ['RABBITMQ_DEFAULT_USER']
 _passwd = os.environ['RABBITMQ_DEFAULT_PASS']

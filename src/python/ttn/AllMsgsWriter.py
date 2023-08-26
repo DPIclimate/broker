@@ -25,7 +25,7 @@ import util.LoggingUtil as lu
 from prometheus_client import Counter, start_http_server
 request_counter = Counter('ttn_processor_total', 'Total number of incoming requests to TTN processor')
 # Start up the server to expose the metrics.
-start_http_server(8002)
+start_http_server(8000)
 
 rx_channel: mq.RxChannel = None
 tx_channel: mq.TxChannel = None

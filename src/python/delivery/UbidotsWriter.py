@@ -27,7 +27,7 @@ ubidots_writer_starts_counter = Counter('ubidots_writer_starts', 'Number of time
 ubidots_writer_exits_counter = Counter('ubidots_writer_exits', 'Number of times the Ubidots Writer program has exited')
 
 # Start up the server to expose the metrics.
-start_http_server(8006)
+start_http_server(8000)
 
 _user = os.environ['RABBITMQ_DEFAULT_USER']
 _passwd = os.environ['RABBITMQ_DEFAULT_PASS']

@@ -28,7 +28,7 @@ errors_counter = Counter('errors_total', 'Total Errors Encountered')
 active_connections_gauge = Counter('active_connections', 'Number of Active RabbitMQ Connections')
 
 # Start up the server to expose the metrics.
-start_http_server(8003)
+start_http_server(8000)
 
 std_logger = logging.getLogger(__name__)
 

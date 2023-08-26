@@ -11,37 +11,37 @@ scrape_configs:
     metrics_path: '/metrics'
     scrape_interval: 5s
     static_configs:
-      - targets: [ 'ttn_webhook:8001']
+      - targets: [ 'ttn_webhook:8000']
   - job_name: 'ttn_processor'
     metrics_path: '/metrics'
     scrape_interval: 5s
     static_configs:
-      - targets: [ 'ttn_processor:8002']
+      - targets: [ 'ttn_processor:8000']
   - job_name: 'ydoc'
     metrics_path: '/metrics'
     scrape_interval: 5s
     static_configs:
-      - targets: [ 'ydoc:8003' ]
+      - targets: [ 'ydoc:8000' ]
   - job_name: 'wombat'
     metrics_path: '/metrics'
     scrape_interval: 5s
     static_configs:
-      - targets: [ 'wombat:8004' ]
+      - targets: [ 'wombat:8000' ]
   - job_name: 'lm'
     metrics_path: '/metrics'
     scrape_interval: 5s
     static_configs:
-      - targets: [ 'lm:8005' ]
+      - targets: [ 'lm:8000' ]
   - job_name: 'delivery'
     metrics_path: '/metrics'
     scrape_interval: 5s
     static_configs:
-      - targets: [ 'delivery:8006' ]
+      - targets: [ 'delivery:8000' ]
   - job_name: 'frred'
     metrics_path: '/metrics'
     scrape_interval: 5s
     static_configs:
-      - targets: [ 'frred:8007' ]
+      - targets: [ 'frred:8000' ]
   - job_name: 'ttn_decoder'
     metrics_path: '/metrics'
     scrape_interval: 5s

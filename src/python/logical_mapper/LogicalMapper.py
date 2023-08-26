@@ -38,7 +38,7 @@ logical_mapper_starts_counter = Counter('logicalmapper_starts', 'Number of times
 logical_mapper_exits_counter = Counter('logicalmapper_exits', 'Number of times the logical mapper script has exited')
 
 # Start up the server to expose the metrics.
-start_http_server(8005)
+start_http_server(8000)
 
 rx_channel = None
 tx_channel = None
