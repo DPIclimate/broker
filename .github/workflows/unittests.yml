@@ -13,7 +13,5 @@ jobs:
         run: docker build -q -t broker/mgmt-app -f src/www/Dockerfile .
       - name: Build the stack
         run: docker compose -p test -f compose/docker-compose.yml -f compose/test/test.yml up -d
-      - name: Test DAO
-        run: docker exec test-x-1 python -m TestDAO
-      - name: Test REST API
-        run: docker exec test-x-1 python -m TestRESTAPI
+      - name: Unit tests
+        run: docker exec test-x-1 pytest
