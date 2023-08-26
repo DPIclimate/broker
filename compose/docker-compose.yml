@@ -42,8 +42,6 @@ services:
       test: curl --fail -I http://localhost:5687/openapi.json || exit 1
       interval: 1m
       start_period: 20s
-    ports:
-      - "8000:8000"  # Expose the metrics port
 
   website:
     image: broker/mgmt-app
@@ -67,8 +65,6 @@ services:
       - ../src/python:/home/broker/python
     working_dir: "/home/broker/python/ttn"
     entrypoint: [ "/home/broker/.local/bin/uvicorn", "--proxy-headers", "--host", "0.0.0.0", "--port", "5688", "WebHook:app" ]
-    ports:
-      - "8001:8001" # Expose the metrics port
 
   ttn_processor:
     image: broker/python-base
@@ -86,8 +82,6 @@ services:
       - ../src/python:/home/broker/python
     working_dir: "/home/broker/python/ttn"
     entrypoint: [ "python", "AllMsgsWriter.py" ]
-    ports:
-      - "8002:8002" # Expose the metrics port
 
   ttn_decoder:
     image: broker/ttn_decoder
@@ -114,8 +108,6 @@ services:
       - ../src/python:/home/broker/python
     working_dir: "/home/broker/python"
     entrypoint: [ "python", "-m", "ydoc.YDOC" ]
-    ports:
-      - "8003:8003" # Expose the metrics port
 
   wombat:
     image: broker/python-base
@@ -131,8 +123,6 @@ services:
       - ../src/python:/home/broker/python
     working_dir: "/home/broker/python"
     entrypoint: [ "python", "-m", "ydoc.Wombat" ]
-    ports:
-      - "8004:8004" # Expose the metrics port
 
   lm:
     image: broker/python-base
@@ -148,8 +138,6 @@ services:
       - ../src/python:/home/broker/python
     working_dir: "/home/broker/python"
     entrypoint: [ "python", "-m", "logical_mapper.LogicalMapper" ]
-    ports:
-      - "8005:8005" # Expose the metrics port
 
   delivery:
     image: broker/python-base:latest
@@ -165,8 +153,6 @@ services:
       - ../src/python:/home/broker/python
     working_dir: "/home/broker/python"
     entrypoint: [ "python", "-m", "delivery.UbidotsWriter" ]
-    ports:
-      - "8006:8006" # Expose the metrics port
 
   frred:
     image: broker/python-base
@@ -183,8 +169,6 @@ services:
       - ${DATABOLT_SHARED_DIR}/raw_data:/raw_data
     working_dir: "/home/broker/python"
     entrypoint: [ "python", "-m", "delivery.FRRED" ]
-    ports:
-      - "8007:8007" # Expose the metrics port
 
   x:
     image: broker/python-base
