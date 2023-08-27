@@ -70,7 +70,7 @@ ld_ls_parser = ld_sub_parsers.add_parser('ls', help='list logical devices')
 ## Create logical devices
 ld_mk_parser = ld_sub_parsers.add_parser('create', help='create logical device')
 group = ld_mk_parser.add_mutually_exclusive_group(required=True)
-group.add_argument('--json', type=str_to_dict, help='Physical device JSON', dest='pd')
+group.add_argument('--json', type=str_to_dict, help='Logical device JSON', dest='ld')
 group.add_argument('--file', help='Read json from file, - for stdin', dest='in_filename')
 
 ## Get logical device
@@ -82,7 +82,7 @@ ld_get_parser.add_argument('--properties', action='store_true', help='Include th
 ld_up_parser = ld_sub_parsers.add_parser('up', help='update logical device')
 ld_up_parser.add_argument('--luid', type=int, help='logical device uid', dest='l_uid', required=True)
 group = ld_up_parser.add_mutually_exclusive_group(required=True)
-group.add_argument('--json', type=str_to_dict, help='Physical device JSON', dest='pd')
+group.add_argument('--json', type=str_to_dict, help='Logical device JSON', dest='ld')
 group.add_argument('--file', help='Read json from file, - for stdin', dest='in_filename')
 
 ## Delete logical devices
@@ -126,6 +126,7 @@ user_add_parser=user_sub_parsers.add_parser('add', help="Add a user")
 user_add_parser.add_argument('-u', help="Username of user", dest='uname', required=True)
 user_add_parser.add_argument('-p', help="Password for user", dest='passwd', required=True)
 user_add_parser.add_argument('-d', help="Account is disable upon creation", action='store_true', dest='disabled')
+user_add_parser.add_argument('-a', help="Create an admin account, user is not read-only", action='store_true', dest='admin')
 
 #Remove user
 user_rm_parser=user_sub_parsers.add_parser('rm', help="Remove a user")
@@ -171,7 +172,7 @@ def pretty_print_json(object: List | Dict | BaseModel) -> str:
 
 
 def get_last_seen(d: PhysicalDevice | LogicalDevice) -> str:
-#                    2022-04-14T13:52+10:00    
+    # Example: 2022-04-14T13:52+10:00
     log_last_seen = 'Never                 '
     if d.last_seen is not None:
         log_last_seen = d.last_seen.isoformat(timespec="minutes")
@@ -192,11 +193,11 @@ def plain_pd_list(devs: List[PhysicalDevice]):
 
 
 def dict_from_file_or_string() -> dict:
-    if args.pd is not None and args.in_filename is not None:
+    if (hasattr(args, 'pd') or hasattr(args, 'ld')) and (hasattr(args, 'in_filename') and args.in_filename is not None):
         raise RuntimeError('error: --json and --file are mutually exclusive.')
 
     json_obj = None
-    if hasattr(args, 'in_filename'):
+    if hasattr(args, 'in_filename') and args.in_filename is not None:
         if args.in_filename == '-':
             json_obj = json.load(sys.stdin)
         else:
@@ -206,10 +207,14 @@ def dict_from_file_or_string() -> dict:
     elif hasattr(args, 'pd'):
         json_obj = args.pd
 
+    elif hasattr(args, 'ld'):
+        json_obj = args.ld
+
     if json_obj is None:
-        raise RuntimeError('No physical device object given via either --json or --file.')
+        raise RuntimeError('No device object given via either --json or --file.')
 
     return json_obj
+
 
 def main() -> None:
     if args.cmd1 == 'pd':
@@ -271,25 +276,26 @@ def main() -> None:
             devs = dao.get_logical_devices()
             tmp_list = list(map(lambda dev: dev.dict(exclude={'properties'}), devs))
             print(pretty_print_json(tmp_list))
-        elif args.cmd2 == 'create' and args.ld is not None:
+        elif args.cmd2 == 'create':
             dev = LogicalDevice.parse_obj(dict_from_file_or_string())
             print(dao.create_logical_device(dev))
         elif args.cmd2 == 'get':
             dev = dao.get_logical_device(args.l_uid)
             print(pretty_print_json(dev))
-        elif args.cmd2 == 'up' and args.ld is not None:
+        elif args.cmd2 == 'up':
             json_obj = dict_from_file_or_string()
             dev = dao.get_logical_device(args.l_uid)
             if dev is None:
                 raise RuntimeError('Logical device not found.')
 
+            dev_dict = dev.dict()
             for k, v in json_obj.items():
                 if k == "uid":
                     continue
-                if dev[k] != v:
-                    dev[k] = v
+                if dev_dict[k] != v:
+                    dev_dict[k] = v
 
-            dev = LogicalDevice.parse_obj(dev)
+            dev = LogicalDevice.parse_obj(dev_dict)
             print(pretty_print_json(dao.update_logical_device(dev)))
         elif args.cmd2 == 'rm':
             print(dao.delete_logical_device(args.l_uid))
@@ -334,6 +340,8 @@ def main() -> None:
     elif args.cmd1=='users':
         if args.cmd2=='add':
             dao.user_add(uname=args.uname, passwd=args.passwd, disabled=args.disabled)
+            if args.admin:
+                dao.user_set_read_only(uname=args.uname, read_only=False)
 
         elif args.cmd2=='rm':
             dao.user_rm(uname=args.uname)

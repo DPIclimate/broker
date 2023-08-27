@@ -12,6 +12,7 @@ TTN = 'ttn'
 GREENBRAIN = 'greenbrain'
 WOMBAT = 'wombat'
 YDOC = 'ydoc'
+ICT_EAGLEIO = 'ict_eagleio'
 
 CREATION_CORRELATION_ID_KEY = 'creation_correlation_id'
 SENSOR_GROUP_ID_KEY = 'sensor_group_id'

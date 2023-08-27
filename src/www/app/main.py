@@ -1,7 +1,7 @@
 from flask import Flask, render_template, request, make_response, redirect, url_for, session, send_from_directory
 import folium
 import os
-from datetime import timedelta
+from datetime import timedelta, datetime, timezone
 import re
 
 from utils.types import *
@@ -18,6 +18,25 @@ app.wsgi_app = DispatcherMiddleware(
     Response('Not Found', status=404),
     {'/iota': app.wsgi_app}
 )
+
+
+def time_since(date):
+    now = datetime.now(timezone.utc)
+    date_utc = date.astimezone(timezone.utc)
+    delta = now - date_utc
+    days = delta.days
+    hours = int(delta.seconds / 3600)
+    minutes = int((delta.seconds % 3600) / 60)
+    seconds = int(delta.seconds % 60)
+    if days > 0:
+        return f'{days} days ago'
+    elif hours > 0:
+        return f'{hours} hours ago'
+    elif minutes > 0:
+        return f'{minutes} minutes ago'
+    else:
+        return f'{seconds} seconds ago'
+
 
 """
 Session cookie config
@@ -51,7 +70,7 @@ def index():
                 uid=data[i]['uid'],
                 name=data[i]['name'],
                 source_name=data[i]['source_name'],
-                last_seen=formatTimeStamp(data[i]['last_seen'])
+                last_seen=format_time_stamp(data[i]['last_seen'])
             ))
         return render_template('physical_device_table.html', title='Physical Devices', physicalDevices=physicalDevices)
 
@@ -116,12 +135,12 @@ def physical_device_form(uid):
     try:
         pd_data = get_physical_device(uid=uid, token=session.get('token'))
 
-        pd_data['location'] = formatLocationString(pd_data['location'])
-        pd_data['last_seen'] = formatTimeStamp(pd_data['last_seen'])
+        pd_data['location'] = format_location_string(pd_data['location'])
+        pd_data['last_seen'] = format_time_stamp(pd_data['last_seen'])
         properties_formatted = format_json(pd_data['properties'])
         ttn_link = generate_link(pd_data)
         sources = get_sources(token=session.get('token'))
-        mappings = get_current_mappings(uid=uid, token=session.get('token'))
+        mappings = get_current_mapping_from_physical_device(uid=uid, token=session.get('token'))
         notes = get_physical_notes(uid=uid, token=session.get('token'))
         currentDeviceMapping = []
         deviceNotes = []
@@ -131,24 +150,24 @@ def physical_device_form(uid):
                 pd_name=mappings['pd']['name'],
                 ld_uid=mappings['ld']['uid'],
                 ld_name=mappings['ld']['name'],
-                start_time=formatTimeStamp(mappings['start_time']),
-                end_time=formatTimeStamp(mappings['end_time'])))
+                start_time=format_time_stamp(mappings['start_time']),
+                end_time=format_time_stamp(mappings['end_time'])))
         if notes is not None:
             for i in range(len(notes)):
                 deviceNotes.append(DeviceNote(
                     note=notes[i]['note'],
                     uid=notes[i]['uid'],
-                    ts=formatTimeStamp(notes[i]['ts'])
+                    ts=format_time_stamp(notes[i]['ts'])
                 ))
 
-        logicalDevices = []
+        logical_devices = []
         ld_data = get_logical_devices(token=session.get('token'))
         for i in range(len(ld_data)):
-            logicalDevices.append(LogicalDevice(
+            logical_devices.append(LogicalDevice(
                 uid=ld_data[i]['uid'],
                 name=ld_data[i]['name'],
-                location=formatLocationString(ld_data[i]['location']),
-                last_seen=formatTimeStamp(ld_data[i]['last_seen'])
+                location=format_location_string(ld_data[i]['location']),
+                last_seen=format_time_stamp(ld_data[i]['last_seen'])
             ))
 
         title = 'Physical Device ' + str(uid) + ' - ' + str(pd_data['name'])
@@ -169,17 +188,16 @@ def physical_device_form(uid):
 @app.route('/logical-devices', methods=['GET'])
 def logical_device_table():
     try:
-
-        logicalDevices = []
+        logical_devices = []
         ld_data = get_logical_devices(token=session.get('token'))
-        for i in range(len(ld_data)):
-            logicalDevices.append(LogicalDevice(
-                uid=ld_data[i]['uid'],
-                name=ld_data[i]['name'],
-                location=formatLocationString(ld_data[i]['location']),
-                last_seen=formatTimeStamp(ld_data[i]['last_seen'])
+        for dev in ld_data:
+            logical_devices.append(LogicalDevice(
+                uid=dev['uid'],
+                name=dev['name'],
+                location=format_location_string(dev['location']),
+                last_seen=format_time_stamp(dev['last_seen'])
             ))
-        return render_template('logical_device_table.html', title='Logical Devices', logicalDevices=logicalDevices)
+        return render_template('logical_device_table.html', title='Logical Devices', logicalDevices=logical_devices)
     except requests.exceptions.HTTPError as e:
         return render_template('error_page.html', reason=e), e.response.status_code
 
@@ -189,42 +207,42 @@ def logical_device_form(uid):
     try:
         ld_data = get_logical_device(uid=uid, token=session.get('token'))
         properties_formatted = format_json(ld_data['properties'])
-        deviceName = ld_data['name']
-        deviceLocation = formatLocationString(ld_data['location'])
-        deviceLastSeen = formatTimeStamp(ld_data['last_seen'])
+        device_name = ld_data['name']
+        device_location = format_location_string(ld_data['location'])
+        device_last_seen = format_time_stamp(ld_data['last_seen'])
         ubidots_link = generate_link(ld_data)
-        title = 'Logical Device ' + str(uid) + ' - ' + str(deviceName)
-        mappings = get_device_mappings(uid=uid, token=session.get('token'))
-        deviceMappings = []
+        title = f'Logical Device {uid} - {device_name}'
+        mappings = get_all_mappings_for_logical_device(uid=uid, token=session.get('token'))
+        device_mappings = []
         if mappings is not None:
-            for i in range(len(mappings)):
-                deviceMappings.append(DeviceMapping(
-                    pd_uid=mappings[i]['pd']['uid'],
-                    pd_name=mappings[i]['pd']['name'],
-                    ld_uid=mappings[i]['ld']['uid'],
-                    ld_name=mappings[i]['ld']['name'],
-                    start_time=formatTimeStamp(mappings[i]['start_time']),
-                    end_time=formatTimeStamp(mappings[i]['end_time'])))
+            for m in mappings:
+                device_mappings.append(DeviceMapping(
+                    pd_uid=m['pd']['uid'],
+                    pd_name=m['pd']['name'],
+                    ld_uid=m['ld']['uid'],
+                    ld_name=m['ld']['name'],
+                    start_time=format_time_stamp(m['start_time']),
+                    end_time=format_time_stamp(m['end_time'])))
 
-        physicalDevices = []
-        data = get_physical_devices(token=session.get('token'))
-        for i in range(len(data)):
-            physicalDevices.append(PhysicalDevice(
-                uid=data[i]['uid'],
-                name=data[i]['name'],
-                source_name=data[i]['source_name'],
-                last_seen=formatTimeStamp(data[i]['last_seen'])
+        # The physical_devices list is used in the dialog shown when mapping a logical device.
+        physical_devices = []
+        for pd in get_physical_devices(token=session.get('token')):
+            physical_devices.append(PhysicalDevice(
+                uid=pd['uid'],
+                name=pd['name'],
+                source_name=pd['source_name'],
+                last_seen=format_time_stamp(pd['last_seen'])
             ))
 
         return render_template('logical_device_form.html',
                                title=title,
                                ld_data=ld_data,
-                               pd_data=physicalDevices,
-                               deviceLocation=deviceLocation,
-                               deviceLastSeen=deviceLastSeen,
+                               pd_data=physical_devices,
+                               deviceLocation=device_location,
+                               deviceLastSeen=device_last_seen,
                                ubidots_link=ubidots_link,
                                properties=properties_formatted,
-                               deviceMappings=deviceMappings)
+                               deviceMappings=device_mappings)
     except requests.exceptions.HTTPError as e:
         return render_template('error_page.html', reason=e), e.response.status_code
 
@@ -236,20 +254,28 @@ def map():
         center_map = folium.Map(
             location=[-32.2400951991083, 148.6324743348766], title='PhysicalDeviceMap', zoom_start=10)
         # folium.Marker([-31.956194913619864, 115.85911692112582], popup="<i>Mt. Hood Meadows</i>", tooltip='click me').add_to(center_map)
-        data = get_physical_devices(token=session.get('token'))
-        for i in range(len(data)):
-            if (data[i]['location'] is not None):
-                if (data[i]['source_name'] == "greenbrain"):
-                    color = 'green'
-                elif (data[i]['source_name'] == "ttn"):
-                    color = 'red'
-                else:
-                    color = 'blue'
-                folium.Marker([data[i]['location']['lat'], data[i]['location']['long']],
-                              popup=data[i]['uid'],
-                              icon=folium.Icon(color=color, icon='cloud'),
-                              tooltip=data[i]['name']).add_to(center_map)
+        data = get_logical_devices(token=session.get('token'), include_properties=True)
+        for dev in data:
+            if dev['location'] is not None:
+                color = 'blue'
 
+                last_seen = dev['last_seen']
+                last_seen_obj = datetime.fromisoformat(last_seen)
+
+                popup_str = f'<span style="white-space: nowrap;">Device: {dev["uid"]} / {dev["name"]}<br>Last seen: {time_since(last_seen_obj)}'
+                # Avoid undesirable linebreaks in the popup by replacing spaces and hypens.
+                popup_str = popup_str.replace(' ', '&nbsp;')
+                popup_str = popup_str.replace('-', '&#8209;')
+                ubidots_link = generate_link(dev)
+                if ubidots_link != '':
+                    popup_str = f'{popup_str}<br><a target="_blank" href="{ubidots_link}">Ubidots</a>'
+
+                popup_str = popup_str + '</span>'
+
+                folium.Marker([dev['location']['lat'], dev['location']['long']],
+                              popup=popup_str,
+                              icon=folium.Icon(color=color, icon='cloud'),
+                              tooltip=dev['name']).add_to(center_map)
         return center_map._repr_html_()
         # center_map
         # return render_template('map.html')
@@ -361,7 +387,8 @@ def UpdateLogicalDevice():
 
         update_logical_device(uid=request.args['form_uid'], name=request.args['form_name'],
                               location=locationJson, token=session.get('token'))
-        return 'Success', 200
+        #return 'Success', 200
+        return logical_device_form(request.args['form_uid'])
 
     except requests.exceptions.HTTPError as e:
         return f"Failed with http error {e.response.status_code}", e.response.status_code
@@ -372,21 +399,19 @@ def get_file(filename):
     return send_from_directory('static', filename)
 
 
-def formatTimeStamp(unformattedTime):
+def format_time_stamp(unformattedTime):
     if unformattedTime:
         formattedLastSeen = unformattedTime[0:19]
         formattedLastSeen = formattedLastSeen.replace('T', ' ')
         return formattedLastSeen
 
 
-def formatLocationString(locationJson):
-    if locationJson is not None:
-        formattedLocation = str(locationJson['lat'])
-        formattedLocation += ', '
-        formattedLocation += str(locationJson['long'])
-    else:
-        formattedLocation = None
-    return formattedLocation
+def format_location_string(location_json) -> str:
+    formatted_location = None
+    if location_json is not None:
+        formatted_location = f'{str(location_json["lat"])}, {str(location_json["long"])}'
+
+    return formatted_location
 
 
 def generate_link(data):

@@ -31,9 +31,9 @@ class TestRESTAPI(unittest.TestCase):
     }
 
     _ADMIN_HEADERS = {
-    "Content-Type": "application/json",
-    "Accept": "application/json",
-    "Authorization": ""
+        "Content-Type": "application/json",
+        "Accept": "application/json",
+        "Authorization": ""
     }
 
     def setUp(self):
@@ -65,18 +65,20 @@ class TestRESTAPI(unittest.TestCase):
     def now(self):
         return datetime.datetime.now(tz=datetime.timezone.utc)
 
-    def _create_physical_device(self, expected_code = 201, req_header = _HEADERS, dev=None) -> Tuple[PhysicalDevice, PhysicalDevice]:
+    def _create_physical_device(self, expected_code=201, req_header=_HEADERS, dev=None) -> Tuple[
+        PhysicalDevice, PhysicalDevice]:
         if dev is None:
             last_seen = self.now()
-            dev = PhysicalDevice(source_name='ttn', name='Test Device', location=Location(lat=3, long=-31), last_seen=last_seen,
-                source_ids={'appId': 'x', 'devId': 'y'},
-                properties={'appId': 'x', 'devId': 'y', 'other': 'z'})
+            dev = PhysicalDevice(source_name='ttn', name='Test Device', location=Location(lat=3, long=-31),
+                                 last_seen=last_seen,
+                                 source_ids={'appId': 'x', 'devId': 'y'},
+                                 properties={'appId': 'x', 'devId': 'y', 'other': 'z'})
 
-        url=f'{_BASE}/physical/devices/'
+        url = f'{_BASE}/physical/devices/'
         payload = dev.json()
         r = requests.post(url, headers=req_header, data=payload)
         self.assertEqual(r.status_code, expected_code)
-        
+
         new_dev = None
 
         if expected_code == 201:
@@ -85,16 +87,16 @@ class TestRESTAPI(unittest.TestCase):
         return (dev, new_dev)
 
     def _create_test_user(self) -> str:
-        test_uname=os.urandom(4).hex()
+        test_uname = os.urandom(4).hex()
         dao.user_add(uname=test_uname, passwd='password', disabled=False)
         return test_uname
 
     def test_get_all_physical_sources(self):
-        url=f'{_BASE}/physical/sources/'
+        url = f'{_BASE}/physical/sources/'
         r = requests.get(url, headers=self._HEADERS)
         self.assertEqual(r.status_code, 200)
         sources = r.json()
-        self.assertEqual(sources, ['greenbrain', 'ttn', 'wombat', 'ydoc'])
+        self.assertEqual(sources, ['greenbrain', 'ict_eagleio', 'ttn', 'wombat', 'ydoc'])
 
         self._HEADERS['Authorization'] = ""
         r = requests.get(url, headers=self._HEADERS)
@@ -105,22 +107,22 @@ class TestRESTAPI(unittest.TestCase):
         self.assertEqual(r.status_code, 401)
 
     def test_create_physical_device(self):
-        dev, new_dev = self._create_physical_device(expected_code = 403, req_header = self._HEADERS)
+        dev, new_dev = self._create_physical_device(expected_code=403, req_header=self._HEADERS)
 
-        dev, new_dev = self._create_physical_device(req_header = self._ADMIN_HEADERS)
+        dev, new_dev = self._create_physical_device(req_header=self._ADMIN_HEADERS)
 
         # Don't fail the equality assertion due to the uid being None in dev.
         dev.uid = new_dev.uid
         self.assertEqual(dev, new_dev)
 
     def test_get_physical_device(self):
-        url=f'{_BASE}/physical/devices/1'
+        url = f'{_BASE}/physical/devices/1'
         r = requests.get(url, headers=self._HEADERS)
-        self.assertEqual(r.status_code, 404) # 404 device not found, shouldn't exist.
+        self.assertEqual(r.status_code, 404)  # 404 device not found, shouldn't exist.
 
-        dev, new_dev = self._create_physical_device(req_header = self._ADMIN_HEADERS)
+        dev, new_dev = self._create_physical_device(req_header=self._ADMIN_HEADERS)
 
-        url=f'{_BASE}/physical/devices/{new_dev.uid}'
+        url = f'{_BASE}/physical/devices/{new_dev.uid}'
         r = requests.get(url, headers=self._HEADERS)
         self.assertEqual(r.status_code, 200)
         got_dev = PhysicalDevice.parse_obj(r.json())
@@ -129,7 +131,7 @@ class TestRESTAPI(unittest.TestCase):
     def test_get_physical_devices_using_source_names(self):
         dev, new_dev = self._create_physical_device(req_header=self._ADMIN_HEADERS)
 
-        url=f'{_BASE}/physical/devices/'
+        url = f'{_BASE}/physical/devices/'
         params = {'source_name': 'ttn'}
         r = requests.get(url, headers=self._HEADERS, params=params)
         self.assertEqual(r.status_code, 200)
@@ -154,7 +156,7 @@ class TestRESTAPI(unittest.TestCase):
         dev, new_dev = self._create_physical_device(req_header=self._ADMIN_HEADERS)
 
         # Confirm no update works.
-        url=f"{_BASE}/physical/devices/"
+        url = f"{_BASE}/physical/devices/"
         payload = new_dev.json()
         r = requests.patch(url, headers=self._ADMIN_HEADERS, data=payload)
         self.assertEqual(r.status_code, 200)
@@ -183,9 +185,9 @@ class TestRESTAPI(unittest.TestCase):
 
     def test_delete_physical_device(self):
         # Create test device, no need to check authorization as we're just testing deletion.
-        dev, new_dev = self._create_physical_device(expected_code = 201, req_header = self._ADMIN_HEADERS)
+        dev, new_dev = self._create_physical_device(expected_code=201, req_header=self._ADMIN_HEADERS)
 
-        url=f'{_BASE}/physical/devices/{new_dev.uid}'
+        url = f'{_BASE}/physical/devices/{new_dev.uid}'
         # Delete using admin headers, should return 204 no content.
         r = requests.delete(url, headers=self._ADMIN_HEADERS)
         self.assertEqual(r.status_code, 204)
@@ -200,10 +202,10 @@ class TestRESTAPI(unittest.TestCase):
 
     def test_create_device_note(self):
         # Create test device using admin headers, no need to check auth in dev note test.
-        dev, new_dev = self._create_physical_device(req_header = self._ADMIN_HEADERS)
+        dev, new_dev = self._create_physical_device(req_header=self._ADMIN_HEADERS)
 
         note1 = DeviceNote(note="Note1")
-        url=f'{_BASE}/physical/devices/notes/{new_dev.uid}'
+        url = f'{_BASE}/physical/devices/notes/{new_dev.uid}'
         # Test non admin user note post. Expect forbidden 403.
         r = requests.post(url, headers=self._HEADERS, data=note1.json())
         self.assertEqual(r.status_code, 403)
@@ -213,19 +215,19 @@ class TestRESTAPI(unittest.TestCase):
         self.assertEqual(r.status_code, 201)
 
         # Test note post to non-existent device. Expect 404 Not Found.
-        url=f'{_BASE}/physical/devices/notes/{-1}'
+        url = f'{_BASE}/physical/devices/notes/{-1}'
         r = requests.post(url, headers=self._ADMIN_HEADERS, data=note1.json())
         self.assertEqual(r.status_code, 404)
 
     def test_get_device_notes(self):
         # Create test physical device, no need to test auth.
-        dev, new_dev = self._create_physical_device(req_header = self._ADMIN_HEADERS)
+        dev, new_dev = self._create_physical_device(req_header=self._ADMIN_HEADERS)
 
         note1 = DeviceNote(note="Note1")
         note2 = DeviceNote(note="Note2")
         note3 = DeviceNote(note="Note3")
 
-        url=f'{_BASE}/physical/devices/notes/{new_dev.uid}'
+        url = f'{_BASE}/physical/devices/notes/{new_dev.uid}'
 
         # Test non-admin user post fails
         r = requests.post(url, headers=self._HEADERS, data=note1.json())
@@ -253,7 +255,7 @@ class TestRESTAPI(unittest.TestCase):
         self.assertLess(notes[1].ts, notes[2].ts)
 
         # Confirm an empty array is returned for an invalid device id.
-        url=f'{_BASE}/physical/devices/notes/{-1}'
+        url = f'{_BASE}/physical/devices/notes/{-1}'
         r = requests.get(url, headers=self._HEADERS)
         self.assertEqual(r.status_code, 200)
         self.assertEqual(len(r.json()), 0)
@@ -262,13 +264,14 @@ class TestRESTAPI(unittest.TestCase):
     LOGICAL DEVICES
     --------------------------------------------------------------------------"""
 
-    def _create_default_logical_device(self, expected_code = 201, req_header = _HEADERS, dev=None) -> Tuple[LogicalDevice, LogicalDevice]:
+    def _create_default_logical_device(self, expected_code=201, req_header=_HEADERS, dev=None) -> Tuple[
+        LogicalDevice, LogicalDevice]:
         if dev is None:
             last_seen = self.now()
             dev = LogicalDevice(name='Test Device', location=Location(lat=3, long=-31), last_seen=last_seen,
-                properties={'appId': 'x', 'devId': 'y', 'other': 'z'})
+                                properties={'appId': 'x', 'devId': 'y', 'other': 'z'})
 
-        url=f'{_BASE}/logical/devices/'
+        url = f'{_BASE}/logical/devices/'
         payload = dev.json()
         r = requests.post(url, headers=req_header, data=payload)
         self.assertEqual(r.status_code, expected_code)
@@ -279,24 +282,24 @@ class TestRESTAPI(unittest.TestCase):
         return (dev, new_dev)
 
     def test_create_logical_device(self):
-        dev, new_dev = self._create_default_logical_device(expected_code = 403, req_header = self._HEADERS)
+        dev, new_dev = self._create_default_logical_device(expected_code=403, req_header=self._HEADERS)
 
-        dev, new_dev = self._create_default_logical_device(expected_code = 201, req_header = self._ADMIN_HEADERS)
+        dev, new_dev = self._create_default_logical_device(expected_code=201, req_header=self._ADMIN_HEADERS)
 
         # Don't fail the equality assertion due to the uid being None in dev.
         dev.uid = new_dev.uid
         self.assertEqual(dev, new_dev)
 
     def test_get_logical_device(self):
-        url=f'{_BASE}/logical/devices/1'
+        url = f'{_BASE}/logical/devices/1'
         # Get logical device that doesn't exist. Expect 404 Not Found.
         r = requests.get(url, headers=self._HEADERS)
         self.assertEqual(r.status_code, 404)
 
         # Create test device.
-        dev, new_dev = self._create_default_logical_device(expected_code = 201, req_header = self._ADMIN_HEADERS)
+        dev, new_dev = self._create_default_logical_device(expected_code=201, req_header=self._ADMIN_HEADERS)
 
-        url=f'{_BASE}/logical/devices/{new_dev.uid}'
+        url = f'{_BASE}/logical/devices/{new_dev.uid}'
         r = requests.get(url, headers=self._HEADERS)
         self.assertEqual(r.status_code, 200)
         got_dev = LogicalDevice.parse_obj(r.json())
@@ -306,7 +309,7 @@ class TestRESTAPI(unittest.TestCase):
         dev, new_dev = self._create_default_logical_device(req_header=self._ADMIN_HEADERS)
 
         # Confirm no update works.
-        url=f"{_BASE}/logical/devices/"
+        url = f"{_BASE}/logical/devices/"
         payload = new_dev.json()
         r = requests.patch(url, headers=self._ADMIN_HEADERS, data=payload)
         self.assertEqual(r.status_code, 200)
@@ -335,9 +338,9 @@ class TestRESTAPI(unittest.TestCase):
 
     def test_delete_logical_device(self):
         # Create default logical device for testing logical device deletion.
-        dev, new_dev = self._create_default_logical_device(expected_code = 201, req_header = self._ADMIN_HEADERS)
+        dev, new_dev = self._create_default_logical_device(expected_code=201, req_header=self._ADMIN_HEADERS)
 
-        url=f'{_BASE}/logical/devices/{new_dev.uid}'
+        url = f'{_BASE}/logical/devices/{new_dev.uid}'
 
         # Test deletion with non-admin user.
         r = requests.delete(url, headers=self._HEADERS)
@@ -360,7 +363,7 @@ class TestRESTAPI(unittest.TestCase):
         mapping = PhysicalToLogicalMapping(pd=new_pdev, ld=new_ldev, start_time=self.now())
 
         # This should work.
-        url=f'{_BASE}/mappings/'
+        url = f'{_BASE}/mappings/'
         payload = mapping.json()
         r = requests.post(url, headers=self._ADMIN_HEADERS, data=payload)
         self.assertEqual(r.status_code, 201)
@@ -371,7 +374,7 @@ class TestRESTAPI(unittest.TestCase):
 
         # This should fail because the physical device has a current mapping.
         time.sleep(0.001)
-        mapping.start_time=self.now()
+        mapping.start_time = self.now()
         payload = mapping.json()
         r = requests.post(url, headers=self._ADMIN_HEADERS, data=payload)
         self.assertEqual(r.status_code, 400)
@@ -379,7 +382,7 @@ class TestRESTAPI(unittest.TestCase):
         # End the current mapping and create a new one. This should work and
         # simulates 'pausing' a physical device while working on it.
         requests.patch(f'{url}physical/end/{mapping.pd.uid}', headers=self._ADMIN_HEADERS)
-        mapping.start_time=self.now()
+        mapping.start_time = self.now()
         payload = mapping.json()
         r = requests.post(url, headers=self._ADMIN_HEADERS, data=payload)
         self.assertEqual(r.status_code, 201)
@@ -410,7 +413,7 @@ class TestRESTAPI(unittest.TestCase):
         ldev, new_ldev = self._create_default_logical_device(req_header=self._ADMIN_HEADERS)
         mapping = PhysicalToLogicalMapping(pd=new_pdev, ld=new_ldev, start_time=self.now())
 
-        url=f'{_BASE}/mappings/'
+        url = f'{_BASE}/mappings/'
         payload = mapping.json()
         r = requests.post(url, headers=self._ADMIN_HEADERS, data=payload)
         self.assertEqual(r.status_code, 201)
@@ -432,7 +435,7 @@ class TestRESTAPI(unittest.TestCase):
         # Confirm the latest mapping is returned.
         time.sleep(0.001)
         mapping2 = copy.deepcopy(mapping)
-        mapping2.start_time=self.now()
+        mapping2.start_time = self.now()
         self.assertNotEqual(mapping, mapping2)
         payload = mapping2.json()
         r = requests.post(url, headers=self._ADMIN_HEADERS, data=payload)
@@ -448,7 +451,7 @@ class TestRESTAPI(unittest.TestCase):
         ldev, new_ldev = self._create_default_logical_device(req_header=self._ADMIN_HEADERS)
         mapping = PhysicalToLogicalMapping(pd=new_pdev, ld=new_ldev, start_time=self.now())
 
-        url=f'{_BASE}/mappings/'
+        url = f'{_BASE}/mappings/'
         payload = mapping.json()
         r = requests.post(url, headers=self._ADMIN_HEADERS, data=payload)
         self.assertEqual(r.status_code, 201)
@@ -470,7 +473,7 @@ class TestRESTAPI(unittest.TestCase):
         # Confirm the latest mapping is returned.
         time.sleep(0.001)
         mapping2 = copy.deepcopy(mapping)
-        mapping2.start_time=self.now()
+        mapping2.start_time = self.now()
         self.assertNotEqual(mapping, mapping2)
         payload = mapping2.json()
         r = requests.post(url, headers=self._ADMIN_HEADERS, data=payload)
@@ -489,7 +492,7 @@ class TestRESTAPI(unittest.TestCase):
         ldev, new_ldev = self._create_default_logical_device(req_header=self._ADMIN_HEADERS)
         mapping = PhysicalToLogicalMapping(pd=new_pdev, ld=new_ldev, start_time=self.now())
 
-        url=f'{_BASE}/mappings/'
+        url = f'{_BASE}/mappings/'
 
         # No mappings yet, these should both 404.
         r = requests.get(f'{url}physical/current/{new_pdev.uid}', headers=self._HEADERS)
@@ -533,7 +536,7 @@ class TestRESTAPI(unittest.TestCase):
         ldev, new_ldev = self._create_default_logical_device(req_header=self._ADMIN_HEADERS)
         mapping = PhysicalToLogicalMapping(pd=new_pdev, ld=new_ldev, start_time=self.now())
 
-        url=f'{_BASE}/mappings/'
+        url = f'{_BASE}/mappings/'
 
         # No mappings yet, these should both 404.
         r = requests.get(f'{url}logical/current/{new_ldev.uid}', headers=self._HEADERS)
@@ -574,8 +577,8 @@ class TestRESTAPI(unittest.TestCase):
 
     def test_get_all_logical_device_mappings(self):
         # Create physical and logical devices for test.
-        pdev, new_pdev = self._create_physical_device(req_header = self._ADMIN_HEADERS)
-        ldev, new_ldev = self._create_default_logical_device(req_header = self._ADMIN_HEADERS)
+        pdev, new_pdev = self._create_physical_device(req_header=self._ADMIN_HEADERS)
+        ldev, new_ldev = self._create_default_logical_device(req_header=self._ADMIN_HEADERS)
 
         # Using the DAO to create the test data, the REST API methods to do this are
         # tested elsewhere.
@@ -603,7 +606,7 @@ class TestRESTAPI(unittest.TestCase):
         mapping3 = PhysicalToLogicalMapping(pd=new_pdev3, ld=new_ldev, start_time=self.now())
         dao.insert_mapping(mapping3)
 
-        url=f'{_BASE}/mappings/logical/all/{new_ldev.uid}'
+        url = f'{_BASE}/mappings/logical/all/{new_ldev.uid}'
         r = requests.get(f'{url}', headers=self._HEADERS)
         self.assertEqual(r.status_code, 200)
 
@@ -622,35 +625,34 @@ class TestRESTAPI(unittest.TestCase):
         self.assertEqual(mappings[2], mapping1)
 
     def test_get_auth_token(self):
-        test_uname=os.urandom(4).hex()
+        test_uname = os.urandom(4).hex()
         dao.user_add(uname=test_uname, passwd='password', disabled=False)
 
-        headers=self._HEADERS
-        headers['Authorization']=f'Basic {base64.b64encode(f"{test_uname}:password".encode()).decode()}'
-        url=f"{_BASE}/token"
-        r=requests.get(url, headers=headers)
+        headers = self._HEADERS
+        headers['Authorization'] = f'Basic {base64.b64encode(f"{test_uname}:password".encode()).decode()}'
+        url = f"{_BASE}/token"
+        r = requests.get(url, headers=headers)
         self.assertEqual(r.status_code, 200)
 
     def test_user_login(self):
-        #Create user for testing
-        test_uname=os.urandom(4).hex()
+        # Create user for testing
+        test_uname = os.urandom(4).hex()
         dao.user_add(uname=test_uname, passwd='password', disabled=False)
 
-        #Get auth token
-        headers=self._HEADERS
-        headers['Authorization']=f'Basic {base64.b64encode(f"{test_uname}:password".encode()).decode()}'
-        url=f"{_BASE}/token"
-        r=requests.get(url, headers=headers)
-        token=r.text.strip('"')
+        # Get auth token
+        headers = self._HEADERS
+        headers['Authorization'] = f'Basic {base64.b64encode(f"{test_uname}:password".encode()).decode()}'
+        url = f"{_BASE}/token"
+        r = requests.get(url, headers=headers)
+        token = r.text.strip('"')
 
-        #Test token on /physical/sources
-        url=f"{_BASE}/physical/sources"
-        headers=self._HEADERS
-        headers['Authorization']=f'Bearer {token}'
-        r=requests.get(url, headers=self._HEADERS)
+        # Test token on /physical/sources
+        url = f"{_BASE}/physical/sources"
+        headers = self._HEADERS
+        headers['Authorization'] = f'Bearer {token}'
+        r = requests.get(url, headers=self._HEADERS)
 
         self.assertEqual(r.status_code, 200)
-
 
 
 if __name__ == '__main__':
