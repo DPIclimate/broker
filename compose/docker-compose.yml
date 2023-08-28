@@ -1,18 +1,6 @@
 version: '3.1'
 
 services:
-  fastapi:
-    image: broker/python-base
-    restart: "no"
-    ports:
-      - 9898:9898
-    env_file:
-      - .env
-    volumes:
-      - ../src/python:/home/broker/python
-    working_dir: "/home/broker/python/tsdbapi"
-    entrypoint: [ "/home/broker/.local/bin/uvicorn", "--host", "0.0.0.0", "--port", "9898", "TSDBAPI:app" , "--reload"]
-
   db:
     image: postgres:14.2
     restart: "no"
@@ -44,6 +32,8 @@ services:
   restapi:
     image: broker/python-base
     restart: "no"
+    ports:
+      - 5687:5687
     env_file:
       - .env
     depends_on:
@@ -51,7 +41,7 @@ services:
     volumes:
       - ../src/python:/home/broker/python
     working_dir: "/home/broker/python/restapi"
-    entrypoint: [ "/home/broker/.local/bin/uvicorn", "--proxy-headers", "--host", "0.0.0.0", "--port", "5687", "RestAPI:app" ]
+    entrypoint: [ "/home/broker/.local/bin/uvicorn", "--host", "0.0.0.0", "--port", "5687", "RestAPI:app", "--reload" ]
     healthcheck:
       test: curl --fail -I http://localhost:5687/openapi.json || exit 1
       interval: 1m
@@ -61,9 +51,9 @@ services:
     image: broker/mgmt-app
     env_file:
       - .env
-    # depends_on:
-    #   restapi:
-    #     condition: "service_healthy"
+    depends_on:
+      restapi:
+        condition: "service_healthy"
     volumes:
       - ../src/www:/app
 

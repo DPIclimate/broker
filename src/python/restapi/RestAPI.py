@@ -16,10 +16,21 @@ from fastapi.security import HTTPBearer, HTTPBasic
 #from fastapi.responses import JSONResponse
 from typing import Dict, List
 
+import psycopg2, os, sys, TSDBAPI
+
 from pdmodels.Models import DeviceNote, PhysicalDevice, LogicalDevice, PhysicalToLogicalMapping
 import api.client.DAO as dao
 
 import base64
+
+# TSDB details
+tsdb_user = os.environ.get("TSDB_USER")
+tsdb_pass = os.environ.get("TSDB_PASSWORD")
+tsdb_host = os.environ.get("TSDB_HOST")
+tsdb_port = os.environ.get("TSDB_PORT")
+tsdb_db = os.environ.get("TSDB_DB")
+tsdb_table = os.environ.get("TSDB_TABLE")
+CONNECTION = f"postgres://{tsdb_user}:{tsdb_pass}@{tsdb_host}:{tsdb_port}/{tsdb_db}"
 
 # Scheme for the Authorization header
 token_auth_scheme = HTTPBearer()
@@ -450,32 +461,117 @@ async def change_password(password:str, request:Request) -> str:
 
     except dao.DAOException as err:
         raise HTTPException(status_code=500, detail=err.msg)
+    
+tsdb_router = APIRouter(prefix='/query')
+
+@tsdb_router.get("/")
+async def query_tsdb(query: str = f"SELECT * FROM {tsdb_table};"):
+    with psycopg2.connect(CONNECTION) as conn:
+        # query = f"SELECT * FROM {tsdb_table};"
+        cursor = conn.cursor()
+        try: 
+            cursor.execute(query)
+            conn.commit()
+            result = cursor.fetchall()
+        except psycopg2.errors as e:
+            sys.stderr.write(f'error: {e}\n')
+        cursor.close()
+    
+    with open("test.txt", "w") as f:
+        f.write(str(result))
+
+    return {"title": result}
+
+@tsdb_router.get("/l_uid/{l_uid}")
+async def get_luid_records(l_uid, fromdate = "", todate = "", p_uid = ""):
+    with psycopg2.connect(CONNECTION) as conn:
+        query = f"SELECT * FROM {tsdb_table} WHERE l_uid = '{l_uid}'"
+        if fromdate != "":
+            query += f"AND timestamp > '{fromdate}'"
+        if todate != "":
+            query += f"AND timestamp < '{todate}'"
+        if p_uid != "":
+            query += f"AND p_uid = '{p_uid}'"
+        cursor = conn.cursor()
+        try: 
+            cursor.execute(query)
+            conn.commit()
+            result = cursor.fetchall()
+        except psycopg2.errors as e:
+            sys.stderr.write(f'error: {e}\n')
+        cursor.close()    
+    
+    return result
+
+
+@tsdb_router.get("/p_uid/{p_uid}")
+async def get_puid_records(p_uid: str, fromdate = "", todate = "", l_uid = ""):
+    with psycopg2.connect(CONNECTION) as conn:
+        query = f"SELECT * FROM {tsdb_table} WHERE p_uid = '{p_uid}'"
+        if fromdate != "":
+            query += f"AND timestamp > '{fromdate}'"
+        if todate != "":
+            query += f"AND timestamp < '{todate}'"
+        if l_uid != "":
+            query += f"AND l_uid = '{l_uid}'"
+        cursor = conn.cursor()
+        try: 
+            cursor.execute(query)
+            conn.commit()
+            result = cursor.fetchall()
+        except psycopg2.errors as e:
+            sys.stderr.write(f'error: {e}\n')
+        cursor.close()    
+    
+    return result
+
+@tsdb_router.get("/p_uid/{p_uid}/{func}")
+async def get_puid_records(p_uid: str, func: str, fromdate = "", todate = "", l_uid = ""):
+    with psycopg2.connect(CONNECTION) as conn:
+        query = f"SELECT {func}({p_uid}) FROM {tsdb_table} WHERE p_uid = '{p_uid}'"
+        if fromdate != "":
+            query += f"AND timestamp > '{fromdate}'"
+        if todate != "":
+            query += f"AND timestamp < '{todate}'"
+        if l_uid != "":
+            query += f"AND l_uid = '{l_uid}'"
+        cursor = conn.cursor()
+        try: 
+            cursor.execute(query)
+            conn.commit()
+            result = cursor.fetchall()
+        except psycopg2.errors as e:
+            sys.stderr.write(f'error: {e}\n')
+        cursor.close()    
+    
+    return result
 
 
 app = FastAPI(title='IoT Device Broker', version='1.0.0')
 app.include_router(router)
+app.include_router(TSDBAPI.router)
 
 
-@app.middleware("http")
-async def check_auth_header(request: Request, call_next):
+# @app.middleware("http")
+# async def check_auth_header(request: Request, call_next):
     
-    try:
-        if not request.url.path in ['/docs', '/openapi.json', '/broker/api/token']:
-            if not 'Authorization' in request.headers:
-                return Response(content="", status_code=401)
+#     try:
+#         if not request.url.path in ['/docs', '/openapi.json', '/broker/api/token']:
+#             if not 'Authorization' in request.headers:
+#                 return Response(content="", status_code=401)
 
-            token = request.headers['Authorization'].split(' ')[1]
-            is_valid=dao.token_is_valid(token)
+#             token = request.headers['Authorization'].split(' ')[1]
+#             is_valid=dao.token_is_valid(token)
 
-            if not is_valid:
-                print(f'Authentication failed for url: {request.url}')
-                return Response(content="", status_code=401)
+#             if not is_valid:
+#                 print(f'Authentication failed for url: {request.url}')
+#                 return Response(content="", status_code=401)
 
-            if request.method != 'GET':
-                user=dao.get_user(auth_token=token)
-                if user is None or user.read_only is True:
-                    return Response(content="", status_code=403)
-    except:
-        return Response(content="", status_code=401)
+#             if request.method != 'GET':
+#                 user=dao.get_user(auth_token=token)
+#                 if user is None or user.read_only is True:
+#                     return Response(content="", status_code=403)
+#     except:
+#         return Response(content="", status_code=401)
 
-    return await call_next(request)
+#     return await call_next(request)
