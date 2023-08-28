@@ -79,6 +79,14 @@ To connect to the RabbitMQ monitor web page, use `https://hostname/rabbitmq`
         set $upstream_proto http;
         proxy_pass $upstream_proto://$upstream_app:$upstream_port;
     }
+    
+    # For the Grafana metrics dashboard
+    location /grafana {
+        proxy_pass http://grafana:3000;
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+    }
 ```
 
 To reverse proxy a public MQTT port to RabbitMQ, create a file
