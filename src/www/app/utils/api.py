@@ -137,6 +137,16 @@ def get_current_mapping_from_physical_device(uid: str, token: str):
     response.raise_for_status()
     return response.json()
 
+def get_all_mappings_for_physical_device(uid:str, token:str):
+    headers = {"Authorization": f"Bearer {token}"}
+
+    response = requests.get(f'{end_point}/broker/api/mappings/physical/all/{uid}', headers=headers)
+
+    if response.status_code == 404:
+        return
+
+    response.raise_for_status()
+    return response.json()
 
 def update_physical_device(uid: str, name: str, location: str, token: str):
     headers = {"Authorization": f"Bearer {token}"}
