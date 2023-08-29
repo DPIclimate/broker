@@ -144,6 +144,7 @@ def physical_device_form(uid):
         notes = get_physical_notes(uid=uid, token=session.get('token'))
         currentDeviceMapping = []
         deviceNotes = []
+        
         if mappings is not None:
             for m in mappings:
                 currentDeviceMapping.append(DeviceMapping(
@@ -152,7 +153,9 @@ def physical_device_form(uid):
                     ld_uid=m['ld']['uid'],
                     ld_name=m['ld']['name'],
                     start_time=format_time_stamp(m['start_time']),
-                    end_time=format_time_stamp(m['end_time'])))
+                    end_time=format_time_stamp(m['end_time']),
+                    is_active=mappings['is_active']
+                ))
         if notes is not None:
             for i in range(len(notes)):
                 deviceNotes.append(DeviceNote(
@@ -223,7 +226,8 @@ def logical_device_form(uid):
                     ld_uid=m['ld']['uid'],
                     ld_name=m['ld']['name'],
                     start_time=format_time_stamp(m['start_time']),
-                    end_time=format_time_stamp(m['end_time'])))
+                    end_time=format_time_stamp(m['end_time']),
+                    is_active=m['is_active']))
 
         # The physical_devices list is used in the dialog shown when mapping a logical device.
         physical_devices = []
@@ -373,6 +377,18 @@ def EndPhysicalDeviceMapping():
     end_physical_mapping(uid, session.get('token'))
     return 'Success', 200
 
+@app.route('/toggle-mapping', methods=['PATCH'])
+def ToggleDeviceMapping():
+    """
+        Toggle the mapping of a device to temporarily stop messages from being passed at the logical mapper
+    """
+    dev_type = request.args['dev_type']
+    uid = request.args['uid']
+    is_active = request.args['is_active']
+
+    toggle_device_mapping(uid=uid, dev_type=dev_type, is_active=is_active, token=session.get('token'))
+    
+    return 'Success', 200
 
 @app.route('/update-logical-device', methods=['GET'])
 def UpdateLogicalDevice():

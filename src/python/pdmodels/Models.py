@@ -43,6 +43,7 @@ class PhysicalToLogicalMapping(BaseModel):
     ld: LogicalDevice | int
     start_time: datetime
     end_time: Optional[datetime]
+    is_active: bool = True
 
 
 class DeviceNote(BaseModel):

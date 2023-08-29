@@ -96,6 +96,16 @@
                     console.log("Did not End Mapping");
                 }
             }
+            
+            function handleToggleMapping(uid, is_active, dev_type){
+                let isActiveBool = JSON.parse(is_active.toLowerCase());
+
+                console.log(isActiveBool, !isActiveBool)
+                let url = ''        
+                url=`{{ url_for('ToggleDeviceMapping') }}?uid=${uid}&dev_type=${dev_type}&is_active=${!isActiveBool}`;
+                httpPatch(url)
+                location.reload();
+            }
 
             function handleCreateNote(){
                 var text = document.getElementById('note-input').value;

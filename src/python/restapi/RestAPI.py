@@ -303,6 +303,27 @@ async def get_current_mappings(return_uids: bool = True) -> PhysicalToLogicalMap
     except dao.DAOException as err:
         raise HTTPException(status_code=500, detail=err.msg)
 
+@router.patch("/mappings/toggle-active/", tags=['device mapping'], status_code=status.HTTP_204_NO_CONTENT, dependencies=[Depends(token_auth_scheme)])
+async def toggle_device_mapping(is_active:bool, puid: int = None, luid:int = None) -> None:
+    """
+        Pause the mapping between a logical and physical device
+    """
+    if puid != None and luid != None:
+        raise HTTPException(status_code=400, detail="Both physical and logical uid were provided. Only give one")
+    
+    if puid == None and luid == None:
+        raise HTTPException(status_code=400, detail="A uid must be provided")
+    
+    current_mapping = dao.get_current_device_mapping(pd=puid, ld=luid)
+    if current_mapping == None:
+        raise HTTPException(status_code=404, detail="Device with uid provided could not be found")
+
+    try:
+        dao.toggle_device_mapping(is_active=is_active, pd=puid, ld=luid);
+    
+    except dao.DAOException as err:
+        raise HTTPException(status_code=500, detail=err.msg)
+
 
 @router.get("/mappings/physical/current/{uid}", tags=['device mapping'], response_model=PhysicalToLogicalMapping, dependencies=[Depends(token_auth_scheme)])
 async def get_current_mapping_from_physical_uid(uid: int) -> PhysicalToLogicalMapping:
@@ -523,7 +544,7 @@ async def get_user_token(request: Request) -> str:
     if user_auth_token != None:
         return user_auth_token
     else:
-        raise HTTPException(status_code=403, detail="Incorrect username or password")
+        raise HTTPException(status_code=401, detail="Incorrect username or password")
 
 
 # Change users password
