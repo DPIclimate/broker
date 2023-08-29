@@ -53,30 +53,14 @@ def check_user_logged_in():
     """
     if not session.get('token'):
         if request.path != '/login' and request.path != '/static/main.css':
+            # Stores the url user tried to go to in session so when they log in, we take them back to it
+            session['original_url'] = request.url 
             return redirect(url_for('login'), code=302)
 
 
-@app.route('/', methods=['GET', 'POST'])
+@app.route('/', methods=['GET'])
 def index():
-
-    try:
-        physicalDevices = []
-        data = get_physical_devices(session.get('token'))
-        if data is None:
-            return render_template('error_page.html')
-
-        for i in range(len(data)):
-            physicalDevices.append(PhysicalDevice(
-                uid=data[i]['uid'],
-                name=data[i]['name'],
-                source_name=data[i]['source_name'],
-                last_seen=format_time_stamp(data[i]['last_seen'])
-            ))
-        return render_template('physical_device_table.html', title='Physical Devices', physicalDevices=physicalDevices)
-
-    except requests.exceptions.HTTPError as e:
-        return render_template('error_page.html', reason=e), e.response.status_code
-
+    return redirect(url_for('physical_device_table'))
 
 @app.route('/login', methods=["GET", "POST"])
 def login():
@@ -89,9 +73,11 @@ def login():
             user_token = get_user_token(username=username, password=password)
             session['user'] = username
             session['token'] = user_token
-
+            
+            if 'original_url' in session:
+                return redirect(session.pop('original_url'))
+            
             return redirect(url_for('index'))
-
         return render_template("login.html")
 
     except requests.exceptions.HTTPError as e:
@@ -129,6 +115,56 @@ def account():
     return render_template('account.html')
 
 
+@app.route('/physical-devices', methods=['GET'])
+def physical_device_table():
+    try:
+
+        # This is a HACK to get around web app types not having all the information, all types in this app probably should be re-written to include all data returned from the restapi
+        
+        physical_devices:List[PhysicalDevice] = [PhysicalDevice(
+            uid=i['uid'],
+            name=i['name'],
+            source_name=i['source_name'],
+            last_seen=format_time_stamp(i['last_seen'])
+        ) for i in get_physical_devices(session.get('token'))]
+
+        #Retrieve all logical devices at once to speed up page load
+        logical_devices:List[LogicalDevice] = [LogicalDevice(
+            uid=i['uid'],
+            name=i['name'],
+            location=format_location_string(i['location']),
+            last_seen=format_time_stamp(i['last_seen'])
+        ) for i in get_logical_devices(session.get('token'))]
+
+        if physical_devices is None:
+            return render_template('error_page.html')
+
+        mappings = get_current_mappings(token=session.get('token'))
+
+        mapping_obj:List[DeviceMapping]=[]
+        for dev in physical_devices:
+            for mapping in mappings:
+                if dev.uid != mapping['pd']:
+                    continue
+                
+                logical_dev=next((i for i in logical_devices if i.uid == mapping['ld']), None)
+                
+                mapping_obj.append(DeviceMapping(
+                    ld_uid=logical_dev.uid,
+                    ld_name=logical_dev.name,
+                    pd_uid=dev.uid,
+                    pd_name=dev.name,
+                    start_time=mapping['start_time'],
+                    end_time=mapping['end_time'],
+                    is_active=mapping['is_active']
+                ))
+                break
+
+        return render_template('physical_device_table.html', title='Physical Devices', physicalDevices=physical_devices, dev_mappings=mapping_obj)
+
+    except requests.exceptions.HTTPError as e:
+        return render_template('error_page.html', reason=e), e.response.status_code
+
 @app.route('/physical-device/<uid>', methods=['GET'])
 def physical_device_form(uid):
 
@@ -154,7 +190,7 @@ def physical_device_form(uid):
                     ld_name=m['ld']['name'],
                     start_time=format_time_stamp(m['start_time']),
                     end_time=format_time_stamp(m['end_time']),
-                    is_active=mappings['is_active']
+                    is_active=m['is_active']
                 ))
         if notes is not None:
             for i in range(len(notes)):
@@ -192,16 +228,48 @@ def physical_device_form(uid):
 @app.route('/logical-devices', methods=['GET'])
 def logical_device_table():
     try:
-        logical_devices = []
-        ld_data = get_logical_devices(token=session.get('token'))
-        for dev in ld_data:
-            logical_devices.append(LogicalDevice(
-                uid=dev['uid'],
-                name=dev['name'],
-                location=format_location_string(dev['location']),
-                last_seen=format_time_stamp(dev['last_seen'])
-            ))
-        return render_template('logical_device_table.html', title='Logical Devices', logicalDevices=logical_devices)
+        # This is a HACK to get around web app types not having all the information, all types in this app probably should be re-written to include all data returned from the restapi
+        
+        logical_devices:List[LogicalDevice] = [LogicalDevice(
+            uid=i['uid'],
+            name=i['name'],
+            location=format_location_string(i['location']),
+            last_seen=format_time_stamp(i['last_seen'])
+        ) for i in get_logical_devices(session.get('token'))]
+
+        #Retrieve all logical devices at once to speed up page load
+        physical_devices:List[PhysicalDevice] = [PhysicalDevice(
+            uid=i['uid'],
+            name=i['name'],
+            source_name=i['source_name'],
+            last_seen=format_time_stamp(i['last_seen'])
+        ) for i in get_physical_devices(session.get('token'))]
+
+        if logical_devices is None:
+            return render_template('error_page.html')
+
+        mappings = get_current_mappings(token=session.get('token'))
+
+        mapping_obj:List[DeviceMapping]=[]
+        for dev in logical_devices:
+            for mapping in mappings:
+                if dev.uid != mapping['ld']:
+                    continue
+                
+                physical_dev=next((i for i in physical_devices if i.uid == mapping['pd']), None)
+                
+                mapping_obj.append(DeviceMapping(
+                    pd_uid=physical_dev.uid,
+                    pd_name=physical_dev.name,
+                    ld_uid=dev.uid,
+                    ld_name=dev.name,
+                    start_time=mapping['start_time'],
+                    end_time=mapping['end_time'],
+                    is_active=mapping['is_active']
+                ))
+                break
+
+        return render_template('logical_device_table.html', title='Logical Devices', logicalDevices=logical_devices, dev_mappings=mapping_obj)
     except requests.exceptions.HTTPError as e:
         return render_template('error_page.html', reason=e), e.response.status_code
 
@@ -302,7 +370,10 @@ def CreateMapping():
 
         return 'Success', 200
     except requests.exceptions.HTTPError as e:
-        return f"Failed with http error {e.response.status_code}", e.response.status_code
+        if e.response.status_code == 403:
+            return f"You do not have sufficient permissions to make this change", e.response.status_code
+        
+        return f"HTTP request with RestAPI failed with error {e.response.status_code}", e.response.status_code
 
 
 @app.route('/create-note/<noteText>/<uid>', methods=['GET'])
@@ -313,7 +384,10 @@ def CreateNote(noteText, uid):
                     token=session.get('token'))
         return 'Success', 200
     except requests.exceptions.HTTPError as e:
-        return f"Failed with http error {e.response.status_code}", e.response.status_code
+        if e.response.status_code == 403:
+            return f"You do not have sufficient permissions to make this change", e.response.status_code
+        
+        return f"HTTP request with RestAPI failed with error {e.response.status_code}", e.response.status_code
 
 
 @app.route('/delete-note/<noteUID>', methods=['DELETE'])
@@ -322,7 +396,10 @@ def DeleteNote(noteUID):
         delete_note(uid=noteUID, token=session.get('token'))
         return 'Success', 200
     except requests.exceptions.HTTPError as e:
-        return f"Failed with http error {e.response.status_code}", e.response.status_code
+        if e.response.status_code == 403:
+            return f"You do not have sufficient permissions to make this change", e.response.status_code
+        
+        return f"HTTP request with RestAPI failed with error {e.response.status_code}", e.response.status_code
 
 
 @app.route('/edit-note/<noteText>/<uid>', methods=['PATCH'])
@@ -332,14 +409,18 @@ def EditNote(noteText, uid):
 
         return 'Success', 200
     except requests.exceptions.HTTPError as e:
-        return f"Failed with http error {e.response.status_code}", e.response.status_code
+        if e.response.status_code == 403:
+            return f"You do not have sufficient permissions to make this change", e.response.status_code
+        
+        return f"HTTP request with RestAPI failed with error {e.response.status_code}", e.response.status_code
 
 
-@app.route('/update-physical-device', methods=['GET'])
+@app.route('/update-physical-device', methods=['PATCH'])
 def UpdatePhysicalDevice():
+
     try:
-        if request.args['form_location'] != None and request.args['form_location'] != '' and request.args['form_location'] != 'None':
-            location = request.args['form_location'].split(',')
+        if request.form.get("form_location") != 'None':
+            location = request.form.get('form_location').split(',')
             locationJson = {
                 "lat": location[0].replace(' ', ''),
                 "long": location[1].replace(' ', ''),
@@ -347,11 +428,15 @@ def UpdatePhysicalDevice():
         else:
             locationJson = None
 
-        update_physical_device(
-            uid=request.args['form_uid'], name=request.args['form_name'], location=locationJson, token=session.get('token'))
+        update_physical_device(uid=request.form.get("form_uid"), name=request.form.get("form_name"), location=locationJson, token=session.get('token'))
+        
         return 'Success', 200
+    
     except requests.exceptions.HTTPError as e:
-        return f"Failed with http error {e.response.status_code}", e.response.status_code
+        if e.response.status_code == 403:
+            return f"You do not have sufficient permissions to make this change", e.response.status_code
+        
+        return f"HTTP request with RestAPI failed with error {e.response.status_code}", e.response.status_code
 
 
 @app.route('/update-mappings', methods=['GET'])
@@ -361,7 +446,10 @@ def UpdateMappings():
             physicalUid=request.args['physicalDevice_mapping'], logicalUid=request.args['logicalDevice_mapping'], token=session.get('token'))
         return 'Success', 200
     except requests.exceptions.HTTPError as e:
-        return f"Failed with http error {e.response.status_code}", e.response.status_code
+        if e.response.status_code == 403:
+            return f"You do not have sufficient permissions to make this change", e.response.status_code
+        
+        return f"HTTP request with RestAPI failed with error {e.response.status_code}", e.response.status_code
 
 
 @app.route('/end-ld-mapping', methods=['GET'])
@@ -390,11 +478,12 @@ def ToggleDeviceMapping():
     
     return 'Success', 200
 
-@app.route('/update-logical-device', methods=['GET'])
+@app.route('/update-logical-device', methods=['PATCH'])
 def UpdateLogicalDevice():
+
     try:
-        if request.args['form_location'] != None and request.args['form_location'] != '' and request.args['form_location'] != 'None':
-            location = request.args['form_location'].split(',')
+        if request.form.get("form_location") != 'None':
+            location = request.form.get('form_location').split(',')
             locationJson = {
                 "lat": location[0].replace(' ', ''),
                 "long": location[1].replace(' ', ''),
@@ -402,13 +491,15 @@ def UpdateLogicalDevice():
         else:
             locationJson = None
 
-        update_logical_device(uid=request.args['form_uid'], name=request.args['form_name'],
-                              location=locationJson, token=session.get('token'))
-        #return 'Success', 200
-        return logical_device_form(request.args['form_uid'])
+        update_logical_device(uid=request.form.get("form_uid"), name=request.form.get("form_name"), location=locationJson, token=session.get('token'))
+        return 'Success', 200
+        
 
     except requests.exceptions.HTTPError as e:
-        return f"Failed with http error {e.response.status_code}", e.response.status_code
+        if e.response.status_code == 403:
+            return f"You do not have sufficient permissions to make this change", e.response.status_code
+        
+        return f"HTTP request with RestAPI failed with error {e.response.status_code}", e.response.status_code
 
 
 @app.route('/static/<filename>')

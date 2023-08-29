@@ -952,10 +952,10 @@ def get_physical_device_mappings(pd: Union[PhysicalDevice, int]) -> List[Physica
     try:
         mappings = []
         with _get_connection() as conn, conn.cursor() as cursor:
-            p_uid = pd.uid if isinstance(pd, LogicalDevice) else pd
-            cursor.execute('select physical_uid, logical_uid, start_time, end_time from physical_logical_map where physical_uid = %s order by start_time desc', (p_uid, ))
+            p_uid = pd.uid if isinstance(pd, PhysicalDevice) else pd
+            cursor.execute('select physical_uid, logical_uid, start_time, end_time, is_active from physical_logical_map where physical_uid = %s order by start_time desc', (p_uid, ))
             
-            for p_uid, l_uid, start_time, end_time in cursor:
+            for p_uid, l_uid, start_time, end_time, is_active in cursor:
                 pd = _get_physical_device(conn, p_uid)
                 ld = _get_logical_device(conn, l_uid)
                 mapping = PhysicalToLogicalMapping(pd=pd, ld=ld, start_time=start_time, end_time=end_time, is_active=is_active)
@@ -963,7 +963,7 @@ def get_physical_device_mappings(pd: Union[PhysicalDevice, int]) -> List[Physica
 
         return mappings
     except Exception as err:
-        raise err if isinstance(err, DAOException) else DAOException('get_logical_device_mappings failed.', err)
+        raise err if isinstance(err, DAOException) else DAOException('get_physical_logical_mappings failed.', err)
     finally:
         if conn is not None:
             free_conn(conn)

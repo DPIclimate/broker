@@ -19,6 +19,7 @@
                     <th>NAME</th>
                     <th>SOURCE</th>
                     <th>LAST SEEN</th>
+                    <th>CURRENT MAPPING</th>
                 </tr>
             </thead>
             <tbody id="device-table-body">
@@ -28,11 +29,17 @@
                     <td><a href="{{ url_for('physical_device_form', uid=physicalDevice.uid) }}">{{ physicalDevice.name }}</a></td>
                     <td>{{ physicalDevice.source_name }}</td>
                     <td>{{ physicalDevice.last_seen }}</td>
+                    <td>
+                        {% for mapping in dev_mappings %}
+                            {% if mapping.pd_uid == physicalDevice.uid %}
+                                <a href="{{ url_for('logical_device_form', uid=mapping.ld_uid) }}">{{ mapping.ld_name }}</a>
+                            {% endif %}
+                        {% endfor %}
+                    </td>
                 </tr>
                 {% endfor %}
             </tbody>
         </table>
     </div>
 </section>
-
 {% endblock %}

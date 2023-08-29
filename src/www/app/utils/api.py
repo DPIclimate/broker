@@ -116,6 +116,16 @@ def get_logical_device(uid: str, token: str) -> dict:
     response.raise_for_status()
     return response.json()
 
+def get_current_mappings(token:str):
+    """
+        Returns the current mapping for all physical devices. A current mapping is one with no end time set, meaning messages from the physical device will be forwarded to the logical device.
+    """
+    headers={"Authorization":f"Bearer {token}"}
+
+    response = requests.get(f"{end_point}/broker/api/mappings/current/", headers=headers)
+    response.raise_for_status()
+
+    return response.json()
 
 def get_all_mappings_for_logical_device(uid: str, token: str):
     headers = {"Authorization": f"Bearer {token}"}
