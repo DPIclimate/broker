@@ -64,11 +64,6 @@ def index():
     return redirect(url_for('physical_device_table'))
 
 
-@app.route('/wombats', methods=['GET'])
-def wombats():
-    return index()
-
-
 @app.route('/login', methods=["GET", "POST"])
 def login():
 
@@ -120,6 +115,49 @@ def account():
             return render_template('account.html', failed=True, reason=f"Exception occured {e.response.status_code}")
 
     return render_template('account.html')
+
+
+@app.route('/wombats', methods=['GET'])
+def wombats():
+    try:
+        physical_devices = get_physical_devices(session.get('token'), source_name='wombat', include_properties=True)
+
+        if physical_devices is None:
+            return render_template('error_page.html')
+
+        logical_devices = []
+        if len(physical_devices) > 0:
+            logical_devices = get_logical_devices(session.get('token'))
+
+        mappings = get_current_mappings(session.get('token'))
+
+        mapping_obj: List[PhysicalToLogicalMapping] = []
+
+        for dev in physical_devices:
+            ccid = dev.source_ids.get('ccid', None)
+            fw_version = dev.source_ids.get('firmware', None)
+
+            if ccid is not None:
+                setattr(dev, 'ccid', ccid)
+
+            if fw_version is not None:
+                setattr(dev, 'fw', fw_version)
+
+            for mapping in mappings:
+                if dev.uid != mapping.pd:
+                    continue
+
+                # Replace the logical device id in the mapping with the logical device object.
+                mapping.ld = next(filter(lambda ld: ld.uid == mapping.ld, logical_devices), None)
+                setattr(dev, 'mapping', mapping)
+
+                #mapping_obj.append(mapping)
+                break
+
+        return render_template('wombats.html', title='Wombats', physicalDevices=physical_devices, dev_mappings=mapping_obj)
+
+    except requests.exceptions.HTTPError as e:
+        return render_template('error_page.html', reason=e), e.response.status_code
 
 
 @app.route('/physical-devices', methods=['GET'])
