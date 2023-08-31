@@ -44,9 +44,7 @@ services:
       start_period: 20s
 
   website:
-    build:
-      context: ../src/www
-      dockerfile: Dockerfile
+    image: broker/mgmt-app
     env_file:
       - .env
     depends_on:
