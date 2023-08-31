@@ -100,8 +100,8 @@
 					<tbody>
 					{% for mapping in currentMappings %}
 						<tr>
-							<td>{{ mapping.ld_uid }}</td>
-							<td><a href="{{ url_for('logical_device_form', uid=mapping.ld_uid) }}">{{ mapping.ld_name }}</a></td>
+							<td>{{ mapping.ld.uid }}</td>
+							<td><a href="{{ url_for('logical_device_form', uid=mapping.ld.uid) }}">{{ mapping.ld.name }}</a></td>
 							<td>{{ mapping.start_time }}</td>
 							<td>{{ mapping.end_time }}</td>
 							<td>{{ mapping.is_active }}</td>
@@ -131,7 +131,7 @@
 					{% for note in deviceNotes %}
 					<tr >
 						<td onclick="handleClickNote(this)"> <input type="checkbox" name ='note-uid' value="{{ note.uid }}">
-						<label for="note-uid"></label></td>
+						<label for="note-uid">{{ note.uid }}</label></td>
 						<td name ='note'>{{ note.note }}</td>
 						<td>{{ note.ts }}</td>
 						<td><input id="edit-note-btn" class="form-btn" type="button" onclick="handleEditNote(this)" value="Edit"></td>
