@@ -45,10 +45,8 @@ metadata:
   name: ttn-webhook
   namespace: broker
 spec:
-  type: NodePort
   selector:
     app: ttn-webhook
   ports:
     - name: http
       port: 5688
-      #nodePort: 30000

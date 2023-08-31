@@ -57,4 +57,3 @@ spec:
   ports:
     - name: postgresql
       port: 5432
-      #nodePort: 30000

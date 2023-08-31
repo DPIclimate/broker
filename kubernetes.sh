@@ -30,6 +30,7 @@ elif [ "$1" = "restart" ]; then
 	kubectl apply -f kubernetes/namespace.yaml
 	kubectl apply -f kubernetes/env-configmap.yaml
 	kubectl apply -f kubernetes/services
+	kubectl apply -f kubernetes/nodeports.yaml
 
 else
 	echo "Starting Broker System"
@@ -44,5 +45,6 @@ else
 	kubectl apply -f kubernetes/namespace.yaml
 	kubectl apply -f kubernetes/env-configmap.yaml
 	kubectl apply -f kubernetes/services
+	kubectl apply -f kubernetes/nodeports.yaml
 
 fi
