@@ -35,6 +35,14 @@ body {
     background-size: contain;
 }
 
+.wombat-white-icon {
+    display: inline-block;
+    width: 32px;
+    height: 32px;
+    background: url(white-wombat.png) no-repeat;
+    background-size: contain;
+}
+
 .physical-device-black-icon {
     display: inline-block;
     width: 24px;
@@ -51,6 +59,14 @@ body {
     background-size: contain;
 }
 
+.wombat-black-icon {
+    display: inline-block;
+    width: 24px;
+    height: 24px;
+    background: url(black-wombat.png) no-repeat;
+    background-size: contain;
+}
+
 .physical-device-orange-icon {
     display: inline-block;
     width: 64px;
@@ -64,6 +80,14 @@ body {
     width: 64px;
     height: 64px;
     background: url(orange-algorithm.png) no-repeat;
+    background-size: contain;
+}
+
+.wombat-orange-icon {
+    display: inline-block;
+    width: 64px;
+    height: 64px;
+    background: url(orange-wombat.png) no-repeat;
     background-size: contain;
 }
 
@@ -140,6 +164,14 @@ header a:hover .physical-device-white-icon {
     width: 32px;
     height: 32px;
     background: url(orange-physical-device.png) no-repeat;
+    background-size: contain;
+}
+
+header a:hover .wombat-white-icon {
+    display: inline-block;
+    width: 32px;
+    height: 32px;
+    background: url(orange-wombat.png) no-repeat;
     background-size: contain;
 }
 

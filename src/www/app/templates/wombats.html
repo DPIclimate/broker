@@ -1,0 +1,45 @@
+{% extends "base.html" %}
+{% block content%}
+
+<section id="wombats-table">
+    <div class="container">
+        <h2 class="form-heading"><span class='wombat-orange-icon'></span>Wombats</h2>
+        <table class="table table-striped data-table-multi">
+            <thead>
+                <tr>
+                    <th>UID</th>
+                    <th>NAME</th>
+                    <th>LAST SEEN</th>
+                    <th>CCID</th>
+                    <th>FIRMWARE</th>
+                    <th>CURRENT MAPPING</th>
+                </tr>
+            </thead>
+            <tbody id="device-table-body">
+                {% for physicalDevice in physicalDevices %}
+                <tr id="{{ physicalDevice.uid }}">
+                    <td>{{ physicalDevice.uid }}</td>
+                    <td><a href="{{ url_for('physical_device_form', uid=physicalDevice.uid) }}">{{ physicalDevice.name }}</a></td>
+                    <td>{{ physicalDevice.last_seen }}</td>
+                    <td>
+                        {% if physicalDevice.ccid is defined %}
+                            {{ physicalDevice.ccid }}
+                        {% endif %}
+                    </td>
+                    <td>
+                        {% if physicalDevice.fw is defined %}
+                            {{ physicalDevice.fw }}
+                        {% endif %}
+                    </td>
+                    <td>
+                        {% if physicalDevice.mapping is defined %}
+                            <a href="{{ url_for('logical_device_form', uid=physicalDevice.mapping.ld.uid) }}">{{ physicalDevice.mapping.ld.name }}</a>
+                        {% endif %}
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</section>
+{% endblock %}

@@ -27,7 +27,7 @@ def get_sources(token: str) -> List[str]:
     return response.json()
 
 
-def get_physical_devices(token: str) -> List[dict]:
+def get_physical_devices(token: str, **kwargs) -> List[PhysicalDevice]:
     """
         Get all physical devices
 
@@ -39,7 +39,14 @@ def get_physical_devices(token: str) -> List[dict]:
     """
     headers = {"Authorization": f"Bearer {token}"}
 
-    response = requests.get(f"{end_point}/broker/api/physical/devices/?include_properties=false", headers=headers)
+    query_params = {'include_properties': False}
+    for k, v in kwargs.items():
+        if k == 'source_name':
+            query_params[k] = v
+        elif k == 'include_properties':
+            query_params[k] = v
+
+    response = requests.get(f"{end_point}/broker/api/physical/devices/", params=query_params, headers=headers)
     response.raise_for_status()
 
     return list(map(lambda ld: PhysicalDevice.parse_obj(ld), response.json()))

@@ -1,7 +1,7 @@
-from datetime import datetime, timezone
-from optparse import Option
-from pydantic import BaseModel
+from datetime import datetime
+from pydantic import BaseModel, Extra
 from typing import Optional, Dict
+
 
 class Location(BaseModel):
     lat: float
@@ -20,7 +20,9 @@ class Location(BaseModel):
         return dev_loc
 
 
-class PhysicalDevice(BaseModel):
+# Allowing extra attributes in this class to make life easier for the webapp - it can pass extra info
+# to the templates in the device object rather than passing in lists of mappings etc.
+class PhysicalDevice(BaseModel, extra=Extra.allow):
     uid: Optional[int]
     source_name: str
     name: str
@@ -30,7 +32,9 @@ class PhysicalDevice(BaseModel):
     properties: Dict = {}
 
 
-class LogicalDevice(BaseModel):
+# Allowing extra attributes in this class to make life easier for the webapp - it can pass extra info
+# to the templates in the device object rather than passing in lists of mappings etc.
+class LogicalDevice(BaseModel, extra=Extra.allow):
     uid: Optional[int]
     name: str
     location: Optional[Location]
