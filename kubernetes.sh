@@ -1,7 +1,13 @@
 #!/bin/bash
 
 # Get the mode to run in
-if [ "$1" = "stop" ]; then
+if [ "$1" = "status" ]; then
+    echo "Getting all Broker System Resources"
+
+	# Get namespace resources
+	kubectl get all --namespace=broker
+
+elif [ "$1" = "stop" ]; then
     echo "Stopping Broker System"
 
 	# Delete namespace (and all resources in it)
