@@ -28,3 +28,4 @@ data:
   TZ: "Australia/Sydney"
   PYTHON_SRC_PATH: "/home/broker/src/python"
   TTN_DECODER_SRC_PATH: "/home/broker/src/js/ttn_decoder/src"
+  EAGLEIO_API_TOKEN: "abc1"
