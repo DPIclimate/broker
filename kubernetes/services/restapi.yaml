@@ -46,6 +46,7 @@ spec:
             failureThreshold: 3
           ports:
             - containerPort: 5687
+            - containerPort: 8000
           volumeMounts:
             - name: shared-data
               mountPath: /home/broker/python
@@ -65,3 +66,5 @@ spec:
   ports:
     - name: http
       port: 5687
+    - name: prometheus
+      port: 8000
