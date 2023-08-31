@@ -4,15 +4,16 @@ import os
 from datetime import timedelta, datetime, timezone
 import re
 
-from utils.types import *
 from utils.api import *
 
 from werkzeug.middleware.dispatcher import DispatcherMiddleware
 from werkzeug.wrappers import Response
 
+from pdmodels.Models import PhysicalDevice, LogicalDevice, PhysicalToLogicalMapping
+
 app = Flask(__name__, static_url_path='/static')
 
-debug_enabled = False
+debug_enabled = True
 
 app.wsgi_app = DispatcherMiddleware(
     Response('Not Found', status=404),
@@ -20,7 +21,7 @@ app.wsgi_app = DispatcherMiddleware(
 )
 
 
-def time_since(date):
+def time_since(date: datetime) -> str:
     now = datetime.now(timezone.utc)
     date_utc = date.astimezone(timezone.utc)
     delta = now - date_utc
@@ -34,8 +35,8 @@ def time_since(date):
         return f'{hours} hours ago'
     elif minutes > 0:
         return f'{minutes} minutes ago'
-    else:
-        return f'{seconds} seconds ago'
+
+    return f'{seconds} seconds ago'
 
 
 """
@@ -62,6 +63,12 @@ def check_user_logged_in():
 def index():
     return redirect(url_for('physical_device_table'))
 
+
+@app.route('/wombats', methods=['GET'])
+def wombats():
+    return index()
+
+
 @app.route('/login', methods=["GET", "POST"])
 def login():
 
@@ -81,7 +88,7 @@ def login():
         return render_template("login.html")
 
     except requests.exceptions.HTTPError as e:
-        # Probs not best way to detecting incorect password
+        # Probs not best way to detecting incorrect password
         return render_template('login.html', failed=True)
 
 
@@ -118,46 +125,26 @@ def account():
 @app.route('/physical-devices', methods=['GET'])
 def physical_device_table():
     try:
-
-        # This is a HACK to get around web app types not having all the information, all types in this app probably should be re-written to include all data returned from the restapi
-        
-        physical_devices:List[PhysicalDevice] = [PhysicalDevice(
-            uid=i['uid'],
-            name=i['name'],
-            source_name=i['source_name'],
-            last_seen=format_time_stamp(i['last_seen'])
-        ) for i in get_physical_devices(session.get('token'))]
-
-        #Retrieve all logical devices at once to speed up page load
-        logical_devices:List[LogicalDevice] = [LogicalDevice(
-            uid=i['uid'],
-            name=i['name'],
-            location=format_location_string(i['location']),
-            last_seen=format_time_stamp(i['last_seen'])
-        ) for i in get_logical_devices(session.get('token'))]
-
+        physical_devices = get_physical_devices(session.get('token'))
         if physical_devices is None:
             return render_template('error_page.html')
 
-        mappings = get_current_mappings(token=session.get('token'))
+        logical_devices = []
+        if len(physical_devices) > 0:
+            logical_devices = get_logical_devices(session.get('token'))
 
-        mapping_obj:List[DeviceMapping]=[]
+        mappings = get_current_mappings(session.get('token'))
+
+        mapping_obj: List[PhysicalToLogicalMapping] = []
+
         for dev in physical_devices:
             for mapping in mappings:
-                if dev.uid != mapping['pd']:
+                if dev.uid != mapping.pd:
                     continue
-                
-                logical_dev=next((i for i in logical_devices if i.uid == mapping['ld']), None)
-                
-                mapping_obj.append(DeviceMapping(
-                    ld_uid=logical_dev.uid,
-                    ld_name=logical_dev.name,
-                    pd_uid=dev.uid,
-                    pd_name=dev.name,
-                    start_time=mapping['start_time'],
-                    end_time=mapping['end_time'],
-                    is_active=mapping['is_active']
-                ))
+
+                # Replace the logical device id in the mapping with the logical device object.
+                mapping.ld = next(filter(lambda ld: ld.uid == mapping.ld, logical_devices), None)
+                mapping_obj.append(mapping)
                 break
 
         return render_template('physical_device_table.html', title='Physical Devices', physicalDevices=physical_devices, dev_mappings=mapping_obj)
@@ -165,61 +152,40 @@ def physical_device_table():
     except requests.exceptions.HTTPError as e:
         return render_template('error_page.html', reason=e), e.response.status_code
 
+
 @app.route('/physical-device/<uid>', methods=['GET'])
 def physical_device_form(uid):
 
     try:
-        pd_data = get_physical_device(uid=uid, token=session.get('token'))
+        pd_data = get_physical_device(uid, session.get('token'))
 
         pd_data['location'] = format_location_string(pd_data['location'])
         pd_data['last_seen'] = format_time_stamp(pd_data['last_seen'])
         properties_formatted = format_json(pd_data['properties'])
         ttn_link = generate_link(pd_data)
-        sources = get_sources(token=session.get('token'))
-        mappings = get_all_mappings_for_physical_device(uid=uid, token=session.get('token'))
-        notes = get_physical_notes(uid=uid, token=session.get('token'))
+        sources = get_sources(session.get('token'))
+        mappings = get_all_mappings_for_physical_device(uid, session.get('token'))
+
+        logical_devices = get_logical_devices(session.get('token'))
+
+        notes = get_physical_notes(uid, session.get('token'))
+
         currentDeviceMapping = []
-        deviceNotes = []
-        
+
         if mappings is not None:
             for m in mappings:
-                currentDeviceMapping.append(DeviceMapping(
-                    pd_uid=m['pd']['uid'],
-                    pd_name=m['pd']['name'],
-                    ld_uid=m['ld']['uid'],
-                    ld_name=m['ld']['name'],
-                    start_time=format_time_stamp(m['start_time']),
-                    end_time=format_time_stamp(m['end_time']),
-                    is_active=m['is_active']
-                ))
-        if notes is not None:
-            for i in range(len(notes)):
-                deviceNotes.append(DeviceNote(
-                    note=notes[i]['note'],
-                    uid=notes[i]['uid'],
-                    ts=format_time_stamp(notes[i]['ts'])
-                ))
-
-        logical_devices = []
-        ld_data = get_logical_devices(token=session.get('token'))
-        for i in range(len(ld_data)):
-            logical_devices.append(LogicalDevice(
-                uid=ld_data[i]['uid'],
-                name=ld_data[i]['name'],
-                location=format_location_string(ld_data[i]['location']),
-                last_seen=format_time_stamp(ld_data[i]['last_seen'])
-            ))
+                currentDeviceMapping.append(m)
 
         title = 'Physical Device ' + str(uid) + ' - ' + str(pd_data['name'])
         return render_template('physical_device_form.html',
                                title=title,
                                pd_data=pd_data,
-                               ld_data=ld_data,
+                               ld_data=logical_devices,
                                sources=sources,
                                properties=properties_formatted,
                                ttn_link=ttn_link,
                                currentMappings=currentDeviceMapping,
-                               deviceNotes=deviceNotes)
+                               deviceNotes=notes)
 
     except requests.exceptions.HTTPError as e:
         return render_template('error_page.html', reason=e), e.response.status_code
@@ -228,45 +194,27 @@ def physical_device_form(uid):
 @app.route('/logical-devices', methods=['GET'])
 def logical_device_table():
     try:
-        # This is a HACK to get around web app types not having all the information, all types in this app probably should be re-written to include all data returned from the restapi
-        
-        logical_devices:List[LogicalDevice] = [LogicalDevice(
-            uid=i['uid'],
-            name=i['name'],
-            location=format_location_string(i['location']),
-            last_seen=format_time_stamp(i['last_seen'])
-        ) for i in get_logical_devices(session.get('token'))]
-
-        #Retrieve all logical devices at once to speed up page load
-        physical_devices:List[PhysicalDevice] = [PhysicalDevice(
-            uid=i['uid'],
-            name=i['name'],
-            source_name=i['source_name'],
-            last_seen=format_time_stamp(i['last_seen'])
-        ) for i in get_physical_devices(session.get('token'))]
-
+        logical_devices = get_logical_devices(session.get('token'))
         if logical_devices is None:
             return render_template('error_page.html')
 
-        mappings = get_current_mappings(token=session.get('token'))
+        physical_devices = []
+        if len(logical_devices) > 0:
+            physical_devices = get_physical_devices(session.get('token'))
 
-        mapping_obj:List[DeviceMapping]=[]
+        mappings = get_current_mappings(session.get('token'))
+
+        mapping_obj: List[PhysicalToLogicalMapping] = []
+
         for dev in logical_devices:
             for mapping in mappings:
-                if dev.uid != mapping['ld']:
+                if dev.uid != mapping.ld:
                     continue
-                
-                physical_dev=next((i for i in physical_devices if i.uid == mapping['pd']), None)
-                
-                mapping_obj.append(DeviceMapping(
-                    pd_uid=physical_dev.uid,
-                    pd_name=physical_dev.name,
-                    ld_uid=dev.uid,
-                    ld_name=dev.name,
-                    start_time=mapping['start_time'],
-                    end_time=mapping['end_time'],
-                    is_active=mapping['is_active']
-                ))
+
+                # Replace the physical device id in the mapping with the physical device object.
+                mapping.pd = next(filter(lambda pd: pd.uid == mapping.pd, physical_devices), None)
+
+                mapping_obj.append(mapping)
                 break
 
         return render_template('logical_device_table.html', title='Logical Devices', logicalDevices=logical_devices, dev_mappings=mapping_obj)
@@ -285,27 +233,9 @@ def logical_device_form(uid):
         ubidots_link = generate_link(ld_data)
         title = f'Logical Device {uid} - {device_name}'
         mappings = get_all_mappings_for_logical_device(uid=uid, token=session.get('token'))
-        device_mappings = []
-        if mappings is not None:
-            for m in mappings:
-                device_mappings.append(DeviceMapping(
-                    pd_uid=m['pd']['uid'],
-                    pd_name=m['pd']['name'],
-                    ld_uid=m['ld']['uid'],
-                    ld_name=m['ld']['name'],
-                    start_time=format_time_stamp(m['start_time']),
-                    end_time=format_time_stamp(m['end_time']),
-                    is_active=m['is_active']))
 
         # The physical_devices list is used in the dialog shown when mapping a logical device.
-        physical_devices = []
-        for pd in get_physical_devices(token=session.get('token')):
-            physical_devices.append(PhysicalDevice(
-                uid=pd['uid'],
-                name=pd['name'],
-                source_name=pd['source_name'],
-                last_seen=format_time_stamp(pd['last_seen'])
-            ))
+        physical_devices = get_physical_devices(session.get('token'))
 
         return render_template('logical_device_form.html',
                                title=title,
@@ -315,19 +245,18 @@ def logical_device_form(uid):
                                deviceLastSeen=device_last_seen,
                                ubidots_link=ubidots_link,
                                properties=properties_formatted,
-                               deviceMappings=device_mappings)
+                               deviceMappings=mappings)
     except requests.exceptions.HTTPError as e:
         return render_template('error_page.html', reason=e), e.response.status_code
 
 
 @app.route('/map', methods=['GET'])
-def map():
+def show_map():
     try:
-
         center_map = folium.Map(
             location=[-32.2400951991083, 148.6324743348766], title='PhysicalDeviceMap', zoom_start=10)
         # folium.Marker([-31.956194913619864, 115.85911692112582], popup="<i>Mt. Hood Meadows</i>", tooltip='click me').add_to(center_map)
-        data = get_logical_devices(token=session.get('token'), include_properties=True)
+        data = get_logical_devices(session.get('token'), include_properties=True)
         for dev in data:
             if dev['location'] is not None:
                 color = 'blue'
@@ -349,6 +278,7 @@ def map():
                               popup=popup_str,
                               icon=folium.Icon(color=color, icon='cloud'),
                               tooltip=dev['name']).add_to(center_map)
+
         return center_map._repr_html_()
         # center_map
         # return render_template('map.html')
@@ -359,14 +289,10 @@ def map():
 @app.route('/create-mapping', methods=['GET'])
 def CreateMapping():
     try:
-
         uid = request.args['uid']
-        physical_devie = get_physical_device(
-            uid=uid, token=session.get('token'))
-        new_ld_uid = create_logical_device(
-            physical_device=physical_devie, token=session.get('token'))
-        insert_device_mapping(
-            physicalUid=uid, logicalUid=new_ld_uid, token=session.get('token'))
+        physical_device = get_physical_device(uid=uid, token=session.get('token'))
+        new_ld_uid = create_logical_device(physical_device=physical_device, token=session.get('token'))
+        insert_device_mapping(physicalUid=uid, logicalUid=new_ld_uid, token=session.get('token'))
 
         return 'Success', 200
     except requests.exceptions.HTTPError as e:

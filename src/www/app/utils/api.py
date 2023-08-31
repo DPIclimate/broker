@@ -4,6 +4,8 @@ import requests
 from datetime import datetime
 import base64
 
+from pdmodels.Models import PhysicalDevice, LogicalDevice, PhysicalToLogicalMapping, DeviceNote
+
 end_point = 'http://restapi:5687'
 
 def get_sources(token: str) -> List[str]:
@@ -40,7 +42,7 @@ def get_physical_devices(token: str) -> List[dict]:
     response = requests.get(f"{end_point}/broker/api/physical/devices/?include_properties=false", headers=headers)
     response.raise_for_status()
 
-    return response.json()
+    return list(map(lambda ld: PhysicalDevice.parse_obj(ld), response.json()))
 
 
 def get_physical_notes(uid: str, token: str) -> List[dict]:
@@ -53,10 +55,10 @@ def get_physical_notes(uid: str, token: str) -> List[dict]:
     """
     headers = {"Authorization": f"Bearer {token}"}
 
-    response = requests.get(f"{end_point}/broker/api/physical/devices/notes/{uid}",headers=headers)
+    response = requests.get(f"{end_point}/broker/api/physical/devices/notes/{uid}", headers=headers)
 
     response.raise_for_status()
-    return response.json()
+    return list(map(lambda note: DeviceNote.parse_obj(note), response.json()))
 
 
 def get_logical_devices(token: str, include_properties: bool = False):
@@ -65,7 +67,8 @@ def get_logical_devices(token: str, include_properties: bool = False):
     response = requests.get(
         f'{end_point}/broker/api/logical/devices/?include_properties={include_properties}', headers=headers)
     response.raise_for_status()
-    return response.json()
+
+    return list(map(lambda ld: LogicalDevice.parse_obj(ld), response.json()))
 
 
 def get_physical_unmapped(token: str):
@@ -116,24 +119,25 @@ def get_logical_device(uid: str, token: str) -> dict:
     response.raise_for_status()
     return response.json()
 
-def get_current_mappings(token:str):
+
+def get_current_mappings(token: str):
     """
         Returns the current mapping for all physical devices. A current mapping is one with no end time set, meaning messages from the physical device will be forwarded to the logical device.
     """
-    headers={"Authorization":f"Bearer {token}"}
+    headers = {"Authorization": f"Bearer {token}"}
 
     response = requests.get(f"{end_point}/broker/api/mappings/current/", headers=headers)
     response.raise_for_status()
 
-    return response.json()
+    return list(map(lambda mapping_obj: PhysicalToLogicalMapping.parse_obj(mapping_obj), response.json()))
+
 
 def get_all_mappings_for_logical_device(uid: str, token: str):
     headers = {"Authorization": f"Bearer {token}"}
 
-    response = requests.get(f'{end_point}/broker/api/mappings/logical/all/{uid}',
-                            headers=headers)
+    response = requests.get(f'{end_point}/broker/api/mappings/logical/all/{uid}', headers=headers)
     response.raise_for_status()
-    return response.json()
+    return list(map(lambda ld: PhysicalToLogicalMapping.parse_obj(ld), response.json()))
 
 
 def get_current_mapping_from_physical_device(uid: str, token: str):
@@ -145,7 +149,8 @@ def get_current_mapping_from_physical_device(uid: str, token: str):
         return
 
     response.raise_for_status()
-    return response.json()
+    return list(map(lambda mapping_obj: PhysicalToLogicalMapping.parse_obj(mapping_obj), response.json()))
+
 
 def get_all_mappings_for_physical_device(uid:str, token:str):
     headers = {"Authorization": f"Bearer {token}"}
@@ -156,7 +161,8 @@ def get_all_mappings_for_physical_device(uid:str, token:str):
         return
 
     response.raise_for_status()
-    return response.json()
+    return list(map(lambda mapping_obj: PhysicalToLogicalMapping.parse_obj(mapping_obj), response.json()))
+
 
 def update_physical_device(uid: str, name: str, location: str, token: str):
     headers = {"Authorization": f"Bearer {token}"}
@@ -164,8 +170,7 @@ def update_physical_device(uid: str, name: str, location: str, token: str):
     device = get_physical_device(uid, token)
     device['name'] = name
     device['location'] = location
-    response = requests.patch(f'{end_point}/broker/api/physical/devices/',
-                              headers=headers, json=device)
+    response = requests.patch(f'{end_point}/broker/api/physical/devices/', headers=headers, json=device)
     response.raise_for_status()
     return response.json()
 

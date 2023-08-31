@@ -98,8 +98,8 @@
 						{% for mapping in deviceMappings %}
 						<tbody>
 							<tr>
-								<td>{{ mapping.pd_uid }}</td>
-								<td><a href="{{ url_for('physical_device_form', uid=mapping.pd_uid) }}">{{ mapping.pd_name }}</a></td>
+								<td>{{ mapping.pd.uid }}</td>
+								<td><a href="{{ url_for('physical_device_form', uid=mapping.pd.uid) }}">{{ mapping.pd.name }}</a></td>
 								<td>{{ mapping.start_time }}</td>
 								<td>{{ mapping.end_time }}</td>
 								<td>{{ mapping.is_active }}</td>

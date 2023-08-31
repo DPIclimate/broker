@@ -34,8 +34,8 @@
 						<td>{{ logicalDevice.last_seen }}</td>
 						<td>
 							{% for mapping in dev_mappings %}
-								{% if mapping.ld_uid == logicalDevice.uid %}
-									<a href="{{ url_for('logical_device_form', uid=mapping.ld_uid) }}">{{ mapping.pd_name }}</a>
+								{% if mapping.ld == logicalDevice.uid %}
+									<a href="{{ url_for('physical_device_form', uid=mapping.pd.uid) }}">{{ mapping.pd.name }}</a>
 								{% endif %}
 							{% endfor %}
 						</td>
