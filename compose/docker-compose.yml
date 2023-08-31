@@ -8,6 +8,7 @@ services:
       - .env
     volumes:
       - ../db/init.d:/docker-entrypoint-initdb.d
+      - ../db/upgrade:/upgrade
     healthcheck:
       test: [ "CMD", "pg_isready", "-q", "-d", "${PGDATABASE}", "-U", "${PGUSER}" ]
       timeout: 45s
