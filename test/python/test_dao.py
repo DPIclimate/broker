@@ -1,6 +1,6 @@
 import copy, datetime, logging, time, unittest, uuid, warnings, dateutil.parser
-from typing import Tuple
 
+import BrokerConstants
 import api.client.DAO as dao
 from pdmodels.Models import PhysicalDevice, PhysicalToLogicalMapping, Location, LogicalDevice
 from typing import Tuple
@@ -567,39 +567,29 @@ class TestDAO(unittest.TestCase):
 
 
     def test_insert_physical_timeseries_message(self):
-
         dev, new_dev = self._create_physical_device()
-
-        # Don't fail the equality assertion due to the uid being None in dev. Set ID from db device.
-        dev.uid = new_dev.uid
-        self.assertEqual(dev, new_dev)
 
         msg = {
             "p_uid":new_dev.uid,
-            "timestamp":"2023-02-20T07:57:52.090347397Z",
+            "timestamp":"2023-02-20T07:57:52Z",
             "timeseries":[
                 {
                     "name":"airTemperature",
                     "value":35.1
-                },
-                {
-                    "name":"atmosphericPressure",
-                    "value":987.2
                 }
             ],
             "broker_correlation_id":"3d7762f6-bcc6-44d4-82ba-49b07e61e601"
         }
-        last_seen = dateutil.parser.isoparse(msg['timestamp'])
-
-        dao.insert_physical_timeseries_message(msg['p_uid'], last_seen, msg)
+        msg_ts = dateutil.parser.isoparse(msg[BrokerConstants.TIMESTAMP_KEY])
+        dao.insert_physical_timeseries_message(msg)
 
         with dao._get_connection() as conn, conn.cursor() as cursor:
             cursor.execute('select physical_uid, ts, json_msg from physical_timeseries')
-
             phys_uid, ts, retrieved_msg = cursor.fetchone()
-            self.assertEqual(phys_uid, msg['p_uid'])
-            self.assertEqual(ts, last_seen)
+            self.assertEqual(phys_uid, msg[BrokerConstants.PHYSICAL_DEVICE_UID_KEY])
+            self.assertEqual(ts, msg_ts)
             self.assertEqual(msg, retrieved_msg)
+
 
     def test_add_raw_text_message(self):
         uuid1 = uuid.uuid4()

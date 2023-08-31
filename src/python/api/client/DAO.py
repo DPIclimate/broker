@@ -16,6 +16,7 @@ import hashlib
 import base64
 import os
 
+import BrokerConstants
 from pdmodels.Models import DeviceNote, Location, LogicalDevice, PhysicalDevice, PhysicalToLogicalMapping, User
 
 logging.captureWarnings(True)
@@ -888,12 +889,17 @@ def add_raw_json_message(source_name: str, ts: datetime, correlation_uuid: str, 
         if conn is not None:
             free_conn(conn)
 
+
 @backoff.on_exception(backoff.expo, DAOException, max_time=30)
-def insert_physical_timeseries_message(p_uid: int, ts: datetime, msg: Dict[str, Any]) -> None:
+def insert_physical_timeseries_message(msg: Dict[str, Any]) -> None:
     conn = None
+    p_uid = msg[BrokerConstants.PHYSICAL_DEVICE_UID_KEY]
+    l_uid = msg[BrokerConstants.LOGICAL_DEVICE_UID_KEY] if BrokerConstants.LOGICAL_DEVICE_UID_KEY in msg else None
+    ts = msg[BrokerConstants.TIMESTAMP_KEY]
+
     try:
         with _get_connection() as conn, conn.cursor() as cursor:
-            cursor.execute('insert into physical_timeseries (physical_uid, ts, json_msg) values (%s, %s, %s)', (p_uid, ts, Json(msg)))
+            cursor.execute('insert into physical_timeseries (physical_uid, ts, logical_uid, json_msg) values (%s, %s, %s, %s)', (p_uid, ts, l_uid, Json(msg)))
     except Exception as err:
         raise DAOException('insert_physical_timeseries_message failed.', err)
     finally:
