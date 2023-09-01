@@ -9,14 +9,18 @@ from pydantic import BaseModel
 import os
 import hashlib
 
+
 def str_to_physical_device(val) -> PhysicalDevice:
     return PhysicalDevice.parse_obj(json.loads(val))
+
 
 def str_to_logical_device(val) -> LogicalDevice:
     return LogicalDevice.parse_obj(json.loads(val))
 
+
 def str_to_dict(val) -> Dict:
     return json.loads(val)
+
 
 main_parser = argparse.ArgumentParser()
 main_sub_parsers = main_parser.add_subparsers(dest='cmd1')
@@ -116,7 +120,7 @@ group = map_end_parser.add_mutually_exclusive_group(required=True)
 group.add_argument('--puid', type=int, help='Physical device uid', dest='p_uid')
 group.add_argument('--luid', type=int, help='Logical device uid', dest='l_uid')
 
-#Toggle mapping
+# Toggle mapping
 map_pause_parser = map_sub_parsers.add_parser('toggle', help='toggle device mapping')
 group = map_pause_parser.add_mutually_exclusive_group(required=True)
 group.add_argument('--luid', type=int, help="Logical deivce uid", dest='l_uid')
@@ -126,23 +130,23 @@ group.add_argument('--enable', action='store_true', help="re-enable mapping", de
 group.add_argument('--disable', action='store_false', help="temporarily disable mapping", dest='enable')
 
 
-#User commands
-user_parser=main_sub_parsers.add_parser('users', help="manage users")
-user_sub_parsers=user_parser.add_subparsers(dest='cmd2')
+# User commands
+user_parser = main_sub_parsers.add_parser('users', help="manage users")
+user_sub_parsers = user_parser.add_subparsers(dest='cmd2')
 
-#Add user
-user_add_parser=user_sub_parsers.add_parser('add', help="Add a user")
+# Add user
+user_add_parser = user_sub_parsers.add_parser('add', help="Add a user")
 user_add_parser.add_argument('-u', help="Username of user", dest='uname', required=True)
 user_add_parser.add_argument('-p', help="Password for user", dest='passwd', required=True)
 user_add_parser.add_argument('-d', help="Account is disable upon creation", action='store_true', dest='disabled')
 user_add_parser.add_argument('-a', help="Create an admin account, user is not read-only", action='store_true', dest='admin')
 
-#Remove user
-user_rm_parser=user_sub_parsers.add_parser('rm', help="Remove a user")
+# Remove user
+user_rm_parser = user_sub_parsers.add_parser('rm', help="Remove a user")
 user_rm_parser.add_argument('-u', help="Username of user to be removed", dest='uname', required=True)
 
-#Manage users token
-user_token_parser=user_sub_parsers.add_parser('token', help="Manage a user's token")
+# Manage users token
+user_token_parser = user_sub_parsers.add_parser('token', help="Manage a user's token")
 user_token_parser.add_argument('-u', help="Username", dest='uname', required=True)
 user_token_parser.add_argument('--refresh', help="Refresh a users token", action='store_true')
 
@@ -150,12 +154,12 @@ group=user_token_parser.add_mutually_exclusive_group()
 group.add_argument('--disable', help="Disable a users token", action="store_true")
 group.add_argument('--enable', help="Enable a users token", action='store_true')
 
-#Change users password
-user_pw_change_passer=user_sub_parsers.add_parser('chng', help="Change a user's password")
+# Change users password
+user_pw_change_passer = user_sub_parsers.add_parser('chng', help="Change a user's password")
 user_pw_change_passer.add_argument('-u', help="Username", dest='uname', required=True)
 user_pw_change_passer.add_argument('-p', help="New password for user", dest='passwd')
 
-#List users
+# List users
 user_sub_parsers.add_parser('ls', help="List all users")
 
 args = main_parser.parse_args()
@@ -280,11 +284,10 @@ def main() -> None:
             print(pretty_print_json(dao.update_physical_device(dev)))
         
         elif args.cmd2 == 'rm':
-
-            #Delete all physical_logical mappings to avoid foreign key violation
-            mappings=dao.get_physical_device_mappings(pd=args.p_uid)
+            # Delete all physical_logical mappings to avoid foreign key violation
+            mappings = dao.get_physical_device_mappings(pd=args.p_uid)
             for mapping in mappings:
-                dao.delete_mapping(mapping=mapping)
+                dao.delete_mapping(mapping)
 
             print(pretty_print_json(dao.delete_physical_device(args.p_uid)))
 
@@ -315,11 +318,10 @@ def main() -> None:
             dev = LogicalDevice.parse_obj(dev_dict)
             print(pretty_print_json(dao.update_logical_device(dev)))
         elif args.cmd2 == 'rm':
-            
-           #Delete all physical_logical mappings to avoid foreign key violation
-            mappings=dao.get_logical_device_mappings(ld=args.l_uid)
+            # Delete all physical_logical mappings to avoid foreign key violation
+            mappings = dao.get_logical_device_mappings(ld=args.l_uid)
             for mapping in mappings:
-                dao.delete_mapping(mapping=mapping)
+                dao.delete_mapping(mapping)
 
             print(pretty_print_json(dao.delete_logical_device(args.l_uid)))
 
@@ -354,7 +356,7 @@ def main() -> None:
                 dao.end_mapping(ld=args.l_uid)
         elif args.cmd2 == 'ls':
             if args.p_uid is not None:
-                mappings:list[PhysicalToLogicalMapping] = dao.get_current_device_mapping(pd=args.p_uid, only_current_mapping=False)
+                mappings: PhysicalToLogicalMapping = dao.get_current_device_mapping(pd=args.p_uid, only_current_mapping=False)
                 new_list = [m.dict() for m in mappings]
                 print(pretty_print_json(new_list))
 
@@ -365,35 +367,36 @@ def main() -> None:
 
         elif args.cmd2 == 'toggle':
             current_mapping = dao.get_current_device_mapping(pd=args.p_uid, ld=args.l_uid)
-            if current_mapping == None:
+            if current_mapping is None:
                 raise RuntimeError("No current mapping for the uid given")
             
             dao.toggle_device_mapping(args.enable, args.p_uid, args.l_uid)
     
-    elif args.cmd1=='users':
-        if args.cmd2=='add':
+    elif args.cmd1 == 'users':
+        if args.cmd2 == 'add':
             dao.user_add(uname=args.uname, passwd=args.passwd, disabled=args.disabled)
             if args.admin:
                 dao.user_set_read_only(uname=args.uname, read_only=False)
 
-        elif args.cmd2=='rm':
+        elif args.cmd2 == 'rm':
             dao.user_rm(uname=args.uname)
 
-        elif args.cmd2=='token':
-            if args.disable==True:
+        elif args.cmd2 == 'token':
+            if args.disable == True:
                 dao.token_disable(uname=args.uname)
 
-            elif args.enable==True:
+            elif args.enable == True:
                 dao.token_enable(uname=args.uname)
             
-            if args.refresh==True:
+            if args.refresh == True:
                 dao.token_refresh(uname=args.uname)
 
-        elif args.cmd2=='chng':
+        elif args.cmd2 == 'chng':
             dao.user_change_password(args.uname, args.passwd)
         
-        elif args.cmd2=='ls':
+        elif args.cmd2 == 'ls':
             print(dao.user_ls())
+
 
 if __name__ == '__main__':
     main()

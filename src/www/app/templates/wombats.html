@@ -7,12 +7,13 @@
         <table class="table table-striped data-table-multi">
             <thead>
                 <tr>
-                    <th>UID</th>
-                    <th>NAME</th>
-                    <th>LAST SEEN</th>
+                    <th>Id</th>
+                    <th>Name</th>
+                    <th>Last seen</th>
                     <th>CCID</th>
-                    <th>FIRMWARE</th>
-                    <th>CURRENT MAPPING</th>
+                    <th>Firmware</th>
+                    <th>Current mapping</th>
+                    <th>Ubidots</th>
                 </tr>
             </thead>
             <tbody id="device-table-body">
@@ -34,6 +35,11 @@
                     <td>
                         {% if physicalDevice.mapping is defined %}
                             <a href="{{ url_for('logical_device_form', uid=physicalDevice.mapping.ld.uid) }}">{{ physicalDevice.mapping.ld.name }}</a>
+                        {% endif %}
+                    </td>
+                    <td>
+                        {% if physicalDevice.ubidots_link is defined %}
+                            <a href="{{ physicalDevice.ubidots_link }}" target="_blank"><b>&#x2934;</b></a>
                         {% endif %}
                     </td>
                 </tr>

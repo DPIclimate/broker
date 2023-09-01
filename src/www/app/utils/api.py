@@ -4,7 +4,7 @@ import requests
 from datetime import datetime
 import base64
 
-from pdmodels.Models import PhysicalDevice, LogicalDevice, PhysicalToLogicalMapping, DeviceNote
+from pdmodels.Models import PhysicalDevice, LogicalDevice, PhysicalToLogicalMapping, DeviceNote, Location
 
 end_point = 'http://restapi:5687'
 
@@ -87,7 +87,7 @@ def get_physical_unmapped(token: str):
     return response.json()
 
 
-def get_physical_device(uid: str, token: str) -> dict:
+def get_physical_device(uid: str, token: str) -> PhysicalDevice:
     """
         Get a physical device object from a uid
 
@@ -100,14 +100,12 @@ def get_physical_device(uid: str, token: str) -> dict:
     """
 
     headers = {"Authorization": f"Bearer {token}"}
-
-    response = requests.get(f'{end_point}/broker/api/physical/devices/{uid}',headers=headers)
+    response = requests.get(f'{end_point}/broker/api/physical/devices/{uid}', headers=headers)
     response.raise_for_status()
+    return PhysicalDevice.parse_obj(response.json())
 
-    return response.json()
 
-
-def get_logical_device(uid: str, token: str) -> dict:
+def get_logical_device(uid: str, token: str) -> LogicalDevice:
     """
         Get a logical device object from a uid
 
@@ -120,22 +118,19 @@ def get_logical_device(uid: str, token: str) -> dict:
     """
 
     headers = {"Authorization": f"Bearer {token}"}
-
-    response = requests.get(f'{end_point}/broker/api/logical/devices/{uid}',
-                            headers=headers)
+    response = requests.get(f'{end_point}/broker/api/logical/devices/{uid}', headers=headers)
     response.raise_for_status()
-    return response.json()
+    return LogicalDevice.parse_obj(response.json())
 
 
 def get_current_mappings(token: str):
     """
         Returns the current mapping for all physical devices. A current mapping is one with no end time set, meaning messages from the physical device will be forwarded to the logical device.
     """
-    headers = {"Authorization": f"Bearer {token}"}
 
+    headers = {"Authorization": f"Bearer {token}"}
     response = requests.get(f"{end_point}/broker/api/mappings/current/", headers=headers)
     response.raise_for_status()
-
     return list(map(lambda mapping_obj: PhysicalToLogicalMapping.parse_obj(mapping_obj), response.json()))
 
 
@@ -171,27 +166,25 @@ def get_all_mappings_for_physical_device(uid:str, token:str):
     return list(map(lambda mapping_obj: PhysicalToLogicalMapping.parse_obj(mapping_obj), response.json()))
 
 
-def update_physical_device(uid: str, name: str, location: str, token: str):
+def update_physical_device(uid: int, name: str, location: Location | None, token: str):
     headers = {"Authorization": f"Bearer {token}"}
 
-    device = get_physical_device(uid, token)
-    device['name'] = name
-    device['location'] = location
-    response = requests.patch(f'{end_point}/broker/api/physical/devices/', headers=headers, json=device)
+    device: PhysicalDevice = get_physical_device(uid, token)
+    device.name = name
+    device.location = location
+    response = requests.patch(f'{end_point}/broker/api/physical/devices/', headers=headers, data=device.json())
     response.raise_for_status()
-    return response.json()
+    return PhysicalDevice.parse_obj(response.json())
 
 
-def update_logical_device(uid: str, name: str, location: str, token: str):
+def update_logical_device(uid: int, name: str, location: Location | None, token: str):
     headers = {"Authorization": f"Bearer {token}"}
 
     device = get_logical_device(uid, token)
-    device['name'] = name
-    device['location'] = location
-    response = requests.patch(
-        f'{end_point}/broker/api/logical/devices/', headers=headers, json=device)
+    device.name = name
+    device.location = location
+    response = requests.patch(f'{end_point}/broker/api/logical/devices/', headers=headers, data=device.json())
     response.raise_for_status()
-
     return response.json()
 
 

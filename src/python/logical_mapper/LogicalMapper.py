@@ -105,18 +105,15 @@ def on_message(channel, method, properties, body):
         lu.cid_logger.info(f'Accepted message from {pd.name}', extra=msg)
 
         mapping = dao.get_current_device_mapping(p_uid)
-        if mapping is None:
-            # Add the message even though it has not logical device id in it.
+        if mapping is None or mapping.is_active is not True:
+            # Add the message even though it has no logical device id in it.
             dao.insert_physical_timeseries_message(msg)
 
-            lu.cid_logger.warning(f'No device mapping found for {pd.source_ids}, cannot continue. Dropping message.', extra=msg)
-            # Ack the message, even though we cannot process it. We don't want it redelivered.
-            # We can change this to a Nack if that would provide extra context somewhere.
-            rx_channel._channel.basic_ack(delivery_tag)
-            return
-        
-        elif not mapping.is_active:
-            lu.cid_logger.warning(f'Mapping for {pd.source_ids} is currently paused, cannot continue. Dropping message.', extra=msg)
+            if mapping is None:
+                lu.cid_logger.warning(f'No device mapping found for {pd.source_ids}, cannot continue. Dropping message.', extra=msg)
+            else:
+                lu.cid_logger.warning(f'Mapping for {pd.source_ids} is paused, cannot continue. Dropping message.', extra=msg)
+
             # Ack the message, even though we cannot process it. We don't want it redelivered.
             # We can change this to a Nack if that would provide extra context somewhere.
             rx_channel._channel.basic_ack(delivery_tag)

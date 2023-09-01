@@ -751,10 +751,11 @@ def _end_mapping(conn, pd: Optional[Union[PhysicalDevice, int]] = None, ld: Opti
         if cursor.rowcount != 1:
             logging.warning(f'No mapping was updated during end_mapping for {pd.uid} {pd.name} -> {ld.uid} {ld.name}')
 
+
 @backoff.on_exception(backoff.expo, DAOException, max_time=30)
-def delete_mapping(mapping:PhysicalToLogicalMapping) -> None:
+def delete_mapping(mapping: PhysicalToLogicalMapping) -> None:
     """
-        Remove a physical or logical mapping from the physical_logical_map table. Advised to use end_mapping instead. This method should only be used when permentalty detelting a physical or logical device from the database
+        Remove an entry from the physical_logical_map table. Advised to use end_mapping instead. This method should only be used when permanently deleting a physical or logical device from the database.
     """
     conn = None
     try:
@@ -768,9 +769,8 @@ def delete_mapping(mapping:PhysicalToLogicalMapping) -> None:
             free_conn(conn)       
 
 
-
 @backoff.on_exception(backoff.expo, DAOException, max_time=30)
-def toggle_device_mapping(is_active:bool, pd:Optional[Union[PhysicalDevice, int]] = None, ld: Optional[Union[LogicalDevice, int]] = None) -> None:
+def toggle_device_mapping(is_active: bool, pd: Optional[Union[PhysicalDevice, int]] = None, ld: Optional[Union[LogicalDevice, int]] = None) -> None:
     """
         Change the is_active column in the database
     """
@@ -785,6 +785,7 @@ def toggle_device_mapping(is_active:bool, pd:Optional[Union[PhysicalDevice, int]
     finally:
         if conn is not None:
             free_conn(conn)
+
 
 def _toggle_device_mapping(conn, is_active, pd: Optional[Union[PhysicalDevice, int]] = None, ld: Optional[Union[LogicalDevice, int]] = None):
 
@@ -809,45 +810,6 @@ def _toggle_device_mapping(conn, is_active, pd: Optional[Union[PhysicalDevice, i
 
         return None
 
-@backoff.on_exception(backoff.expo, DAOException, max_time=30)
-def toggle_device_mapping(is_active:bool, pd:Optional[Union[PhysicalDevice, int]] = None, ld: Optional[Union[LogicalDevice, int]] = None) -> None:
-    """
-        Change the is_active column in the database
-    """
-    
-    conn = None
-    try:
-        with _get_connection() as conn:
-            _toggle_device_mapping(conn, is_active, pd, ld)
-        return
-    except Exception as err:
-        raise err if isinstance(err, DAOException) else DAOException('pause_current_device_mapping failed.', err)
-    finally:
-        if conn is not None:
-            free_conn(conn)
-
-def _toggle_device_mapping(conn, is_active, pd: Optional[Union[PhysicalDevice, int]] = None, ld: Optional[Union[LogicalDevice, int]] = None):
-
-    if pd is None and ld is None:
-        raise DAOException('A PhysicalDevice or a LogicalDevice (or an uid for one of them) must be supplied to find a mapping.')
-
-    if pd is not None and ld is not None:
-        raise DAOException('Both pd and ld were provided, only give one.')
-    
-    p_uid = None
-    if pd is not None:
-        p_uid = pd.uid if isinstance(pd, PhysicalDevice) else pd
-
-    l_uid = None
-    if ld is not None:
-        l_uid = ld.uid if isinstance(ld, LogicalDevice) else ld
-
-    with conn.cursor() as cursor:
-        column_name = 'physical_uid' if p_uid is not None else 'logical_uid'
-        sql = f'update physical_logical_map set is_active = %s where {column_name} = %s'
-        cursor.execute(sql, (is_active, p_uid if p_uid is not None else l_uid, ))
-
-        return None
 
 @backoff.on_exception(backoff.expo, DAOException, max_time=30)
 def get_current_device_mapping(pd: Optional[Union[PhysicalDevice, int]] = None, ld: Optional[Union[LogicalDevice, int]] = None, only_current_mapping: bool = True) -> Optional[PhysicalToLogicalMapping]:
