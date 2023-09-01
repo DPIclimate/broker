@@ -8,7 +8,7 @@
 			<li><span class="btn" onclick="handleMapping('logical device')">Update Mapping</span></li>
 			<li><span class="btn" onclick="handleEndMapping('{{ ld_data.uid }}', 'LD')">End Mapping</span></li>
 			{% if deviceMappings | length > 0 %}
-                <li><span class="btn" onclick="handleToggleMapping('{{ deviceMappings[0].pd_uid }}','{{ deviceMappings[0].is_active }}', 'PD')">{{ "Pause Mapping" if deviceMappings[0].is_active == True else "Resume Mapping" }}</span></li>
+                <li><span class="btn" onclick="handleToggleMapping('{{ deviceMappings[0].pd.uid }}','{{ deviceMappings[0].is_active }}', 'PD')">{{ "Pause Mapping" if deviceMappings[0].is_active == True else "Resume Mapping" }}</span></li>
             {% endif %}
 		</ul>
 	</div>

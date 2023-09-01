@@ -1,3 +1,4 @@
+import logging
 from typing import Tuple
 
 from flask import Flask, render_template, request, make_response, redirect, url_for, session, send_from_directory
@@ -240,6 +241,12 @@ def physical_device_form(uid):
 
         if mappings is not None:
             for m in mappings:
+                if m.start_time is not None:
+                    m.start_time = m.start_time.isoformat(' ', 'seconds')
+
+                if m.end_time is not None:
+                    m.end_time = m.end_time.isoformat(' ', 'seconds')
+
                 currentDeviceMapping.append(m)
 
         title = 'Physical Device ' + str(uid) + ' - ' + str(device.name)
@@ -299,6 +306,13 @@ def logical_device_form(uid):
         ubidots_link = generate_link(device)
         title = f'Logical Device {device.uid} - {device.name}'
         mappings = get_all_mappings_for_logical_device(uid, session.get('token'))
+
+        for m in mappings:
+            if m.start_time is not None:
+                m.start_time = m.start_time.isoformat(' ', 'seconds')
+
+            if m.end_time is not None:
+                m.end_time = m.end_time.isoformat(' ', 'seconds')
 
         # The physical_devices list is used in the dialog shown when mapping a logical device.
         physical_devices = get_physical_devices(session.get('token'))
@@ -468,7 +482,7 @@ def ToggleDeviceMapping():
         Toggle the mapping of a device to temporarily stop messages from being passed at the logical mapper
     """
     dev_type = request.args['dev_type']
-    uid = request.args['uid']
+    uid = int(request.args['uid'])
     is_active = request.args['is_active']
 
     toggle_device_mapping(uid=uid, dev_type=dev_type, is_active=is_active, token=session.get('token'))

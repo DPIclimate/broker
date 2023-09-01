@@ -207,7 +207,7 @@ def end_physical_mapping(uid: str, token: str):
         response.raise_for_status()
 
 
-def toggle_device_mapping(uid:str, dev_type:str, is_active:bool, token:str):
+def toggle_device_mapping(uid: int, dev_type: str, is_active: bool, token: str):
     """
         Send request to restAPI to toggle the status of the device mapping
     """
@@ -215,11 +215,16 @@ def toggle_device_mapping(uid:str, dev_type:str, is_active:bool, token:str):
     headers = {"Authorization": f"Bearer {token}"}
 
     url = f'{end_point}/broker/api/mappings/toggle-active/'
-    body={
-        'luid':uid if dev_type == 'LD' else None,
-        'puid': uid if dev_type == 'PD' else None,
-        'is_active':is_active
+    body = {
+        'is_active': is_active
     }
+
+    if dev_type == 'LD':
+        body['luid'] = uid
+    elif dev_type == 'PD':
+        body['puid'] = uid
+    else:
+        raise RuntimeError(f'Invalid dev_type: {dev_type}')
 
     response = requests.patch(url, headers=headers, params=body)
 
