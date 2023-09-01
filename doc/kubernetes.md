@@ -14,6 +14,150 @@ The current implementation simply runs all microservices with a single replica s
   - Kubectl
   - Kubelet
 
+### Quick Installation Overview
+
+Below is a brief overview of how to set up a single node Kubernetes cluster using docker-cri on Ubuntu.  
+You will need to modify the below steps for your own enviroment.
+
+1. Install Prerequisites
+
+    ```bash
+    sudo apt-get update
+    sudo apt-get install -y apt-transport-https ca-certificates curl vim git curl wget gnupg
+    ```
+
+2. Install Docker
+
+    ```bash
+    sudo install -m 0755 -d /etc/apt/keyrings
+    curl -fsSL https://download.docker.com/linux/ubuntu/gpg | sudo gpg --dearmor -o /etc/apt/keyrings/docker.gpg
+    sudo chmod a+r /etc/apt/keyrings/docker.gpg
+
+    echo \
+    "deb [arch="$(dpkg --print-architecture)" signed-by=/etc/apt/keyrings/docker.gpg] https://download.docker.com/linux/ubuntu \
+    "$(. /etc/os-release && echo "$VERSION_CODENAME")" stable" | \
+    sudo tee /etc/apt/sources.list.d/docker.list > /dev/null
+
+    sudo apt-get update
+
+    sudo apt-get install docker-ce docker-ce-cli containerd.io docker-buildx-plugin docker-compose-plugin
+    ```
+
+3. Install docker-cri
+
+    ```bash
+    wget https://github.com/Mirantis/cri-dockerd/releases/download/v0.3.4/cri-dockerd-0.3.4.amd64.tgz
+    tar -xvf cri-dockerd-0.3.4.amd64.tgz
+    cd cri-dockerd/
+    mkdir -p /usr/local/bin
+    install -o root -g root -m 0755 ./cri-dockerd /usr/local/bin/cri-dockerd
+
+    sudo tee /etc/systemd/system/cri-docker.service << EOF
+    [Unit]
+    Description=CRI Interface for Docker Application Container Engine
+    Documentation=https://docs.mirantis.com
+    After=network-online.target firewalld.service docker.service
+    Wants=network-online.target
+    Requires=cri-docker.socket
+    [Service]
+    Type=notify
+    ExecStart=/usr/local/bin/cri-dockerd --container-runtime-endpoint fd:// --network-plugin=
+    ExecReload=/bin/kill -s HUP $MAINPID
+    TimeoutSec=0
+    RestartSec=2
+    Restart=always
+    StartLimitBurst=3
+    StartLimitInterval=60s
+    LimitNOFILE=infinity
+    LimitNPROC=infinity
+    LimitCORE=infinity
+    TasksMax=infinity
+    Delegate=yes
+    KillMode=process
+    [Install]
+    WantedBy=multi-user.target
+    EOF
+
+    sudo tee /etc/systemd/system/cri-docker.socket << EOF
+    [Unit]
+    Description=CRI Docker Socket for the API
+    PartOf=cri-docker.service
+    [Socket]
+    ListenStream=%t/cri-dockerd.sock
+    SocketMode=0660
+    SocketUser=root
+    SocketGroup=docker
+    [Install]
+    WantedBy=sockets.target
+    EOF
+
+    systemctl daemon-reload
+    systemctl enable cri-docker.service
+    systemctl enable --now cri-docker.socket
+    ```
+
+4. Install Kubernetes
+
+    ```bash
+    # Add Kubernetes GPG key
+    curl -fsSL https://packages.cloud.google.com/apt/doc/apt-key.gpg | sudo gpg --dearmor -o /etc/apt/keyrings/kubernetes-archive-keyring.gpg
+
+    # Add Kubernetes apt repository
+    echo "deb [signed-by=/etc/apt/keyrings/kubernetes-archive-keyring.gpg] https://apt.kubernetes.io/ kubernetes-xenial main" | sudo tee /etc/apt/sources.list.d/kubernetes.list
+
+    # Fetch package list
+    sudo apt-get update
+
+    sudo apt-get install -y kubelet kubeadm kubectl
+
+    # Prevent them from being updated automatically
+    sudo apt-mark hold kubelet kubeadm kubectl
+    ```
+
+5. Disable Swap
+
+   ```bash
+   sudo sed -i '/ swap / s/^\(.*\)$/#\1/g' /etc/fstab
+   sudo swapoff -a
+   ```
+
+6. Forward IP Traffic
+
+    ```bash
+    sudo modprobe overlay
+    sudo modprobe br_netfilter
+
+    sudo tee /etc/sysctl.d/kubernetes.conf<<EOF
+    net.bridge.bridge-nf-call-ip6tables = 1
+    net.bridge.bridge-nf-call-iptables = 1
+    net.ipv4.ip_forward = 1
+    EOF
+
+    sysctl --system
+    ```
+
+7. Create the Cluster
+
+    ```bash
+    sudo kubeadm init --pod-network-cidr=10.244.0.0/16 --cri-socket unix:///var/run/cri-dockerd.sock
+    ```
+
+8. Configure Kubectl
+
+    ```bash
+    mkdir -p $HOME/.kube
+    sudo cp -i /etc/kubernetes/admin.conf $HOME/.kube/config
+    sudo chown $(id -u):$(id -g) $HOME/.kube/config
+    ```
+
+9. Install CNI
+
+    ```bash
+    kubectl apply -f https://raw.githubusercontent.com/coreos/flannel/master/Documentation/kube-flannel.yml
+    ```
+
+Kubernetes should now be fully functional as a standalone single node cluster and you can run commands against it using kubectl.
+
 ## Local Container Images
 
 Currently there are three local container images built for the broker system:
