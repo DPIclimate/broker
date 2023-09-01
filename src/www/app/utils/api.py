@@ -19,11 +19,8 @@ def get_sources(token: str) -> List[str]:
             sources: List[str] - A list of sources
     """
     headers = {"Authorization": f"Bearer {token}"}
-
     response = requests.get(f'{end_point}/broker/api/physical/sources/', headers=headers)
-
     response.raise_for_status()
-
     return response.json()
 
 
@@ -81,8 +78,7 @@ def get_logical_devices(token: str, include_properties: bool = False):
 def get_physical_unmapped(token: str):
     headers = {"Authorization": f"Bearer {token}"}
 
-    response = requests.get(f'{end_point}/broker/api/physical/devices/unmapped/',
-                            headers=headers)
+    response = requests.get(f'{end_point}/broker/api/physical/devices/unmapped/', headers=headers)
     response.raise_for_status()
     return response.json()
 
@@ -98,7 +94,6 @@ def get_physical_device(uid: str, token: str) -> PhysicalDevice:
         returns:
             physical_device: dict - Phyical device object
     """
-
     headers = {"Authorization": f"Bearer {token}"}
     response = requests.get(f'{end_point}/broker/api/physical/devices/{uid}', headers=headers)
     response.raise_for_status()
@@ -127,7 +122,6 @@ def get_current_mappings(token: str):
     """
         Returns the current mapping for all physical devices. A current mapping is one with no end time set, meaning messages from the physical device will be forwarded to the logical device.
     """
-
     headers = {"Authorization": f"Bearer {token}"}
     response = requests.get(f"{end_point}/broker/api/mappings/current/", headers=headers)
     response.raise_for_status()
@@ -212,6 +206,7 @@ def end_physical_mapping(uid: str, token: str):
     if response.status_code != 200 and response.status_code != 404:
         response.raise_for_status()
 
+
 def toggle_device_mapping(uid:str, dev_type:str, is_active:bool, token:str):
     """
         Send request to restAPI to toggle the status of the device mapping
@@ -231,6 +226,7 @@ def toggle_device_mapping(uid:str, dev_type:str, is_active:bool, token:str):
     # 404 is returned when there are no device mappings
     if response.status_code != 200:
         response.raise_for_status()
+
 
 def create_logical_device(physical_device: dict, token: str) ->str:
     """

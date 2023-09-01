@@ -41,12 +41,10 @@ def parse_location(loc_str: str) -> Tuple[bool, Location | None]:
         return False, None
 
     groups = m.groups()
-    logging.warning(groups)
     if len(groups) != 2:
         return False, None
 
     location: Location = Location(lat=float(groups[0]), long=float(groups[1]))
-    logging.warning(location)
     return True, location
 
 
@@ -276,7 +274,6 @@ def logical_device_table():
 
         for dev in logical_devices:
             dev.location = format_location_string(dev.location)
-
             for mapping in mappings:
                 if dev.uid != mapping.ld:
                     continue
@@ -335,6 +332,7 @@ def show_map():
                     last_seen_desc = time_since(dev.last_seen)
 
                 popup_str = f'<span style="white-space: nowrap;">Device: {dev.uid} / {dev.name}<br>Last seen: {last_seen_desc}'
+
                 # Avoid undesirable linebreaks in the popup by replacing spaces and hypens.
                 popup_str = popup_str.replace(' ', '&nbsp;')
                 popup_str = popup_str.replace('-', '&#8209;')
@@ -426,8 +424,8 @@ def UpdatePhysicalDevice():
         if new_name is None or len(new_name.strip()) < 1:
             new_name = device.name
 
-        update_logical_device(uid, new_name, location, token)
-        
+        update_physical_device(uid, new_name, location, token)
+
         return 'Success', 200
     
     except requests.exceptions.HTTPError as e:
