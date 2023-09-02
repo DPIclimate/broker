@@ -5,7 +5,6 @@ source compose/.env
 
 # Configuration
 COMPOSE_PROJECT_DIR="compose/"  # Update this path if needed
-DB_CONTAINER_NAME="test-timescaledb-1"  # Update with your DB container name if needed
 DB_NAME="${TSDB_DB}"
 DB_USER="${TSDB_USER}"
 DB_PASSWORD="${TSDB_PASSWORD}"
@@ -31,16 +30,24 @@ if [ ! -f "$BACKUP_DIR/$BACKUP_FILENAME" ]; then
     exit 1
 fi
 
+# Find the container name containing "timescaledb-1"
+DB_CONTAINER_NAME=$(docker ps --format '{{.Names}}' | grep "timescaledb-1")
+
+if [ -z "$DB_CONTAINER_NAME" ]; then
+    echo "Error: Container containing 'timescaledb-1' not found."
+    exit 1
+fi
+
 # Copy the backup from the host to the container
-docker cp $BACKUP_DIR/$BACKUP_FILENAME $DB_CONTAINER_NAME:/tmp/$BACKUP_FILENAME
+docker cp "$BACKUP_DIR/$BACKUP_FILENAME" "$DB_CONTAINER_NAME:/tmp/$BACKUP_FILENAME"
 
 # Restore
-docker exec -t $DB_CONTAINER_NAME dropdb -U $DB_USER $DB_NAME
-docker exec -t $DB_CONTAINER_NAME createdb -U $DB_USER $DB_NAME
-docker exec -t $DB_CONTAINER_NAME pg_restore -U $DB_USER -d $DB_NAME -v -1 /tmp/$BACKUP_FILENAME
+docker exec -t "$DB_CONTAINER_NAME" dropdb -U "$DB_USER" "$DB_NAME"
+docker exec -t "$DB_CONTAINER_NAME" createdb -U "$DB_USER" "$DB_NAME"
+docker exec -t "$DB_CONTAINER_NAME" pg_restore -U "$DB_USER" -d "$DB_NAME" -v -1 "/tmp/$BACKUP_FILENAME"
 
 # Remove the backup file from the container
-docker exec -t $DB_CONTAINER_NAME rm /tmp/$BACKUP_FILENAME
+docker exec -t "$DB_CONTAINER_NAME" rm "/tmp/$BACKUP_FILENAME"
 
 echo "Restore completed from: $BACKUP_DIR/$BACKUP_FILENAME"
 
