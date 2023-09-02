@@ -12,32 +12,29 @@ port `9090`.
 
 ## Microservices
 
-Listed below is each microservice that runs a Prometheus client, what metrics it serves, and the port it serves them on.
+Listed below is each microservice that runs a Prometheus client and what metrics it serves.
+The Python microservices are served on port `8000` and the `ttn_decoder is served on port `3001`.
 Each metric is a counter that increments or decrements in various functions within the microservice.
 
 ### restapi
 
 - `/broker/src/python/restapi/RestAPI.py`
-- port `8000`
 - `request_counter` = counts total number of messages made to the system.
 - `errors_counter` = counts total number of errors encountered while processing messages
 
 ### ttn_webhook
 
 - `broker/src/python/ttn/WebHook.py`
-- port `8001`
 - `request_counter` = counts total number of messages made to the system
 
 ### ttn_processor
 
 - `broker/src/python/ttn/AllMsgsWriter.py`
-- port `8002`
 - `request_counter` = counts total number of messages made to the system
 
 ### ydoc
 
 - `broker/src/python/ydoc/YDOC.py`
-- port `8003`
 - `request_counter` = counts total number of messages made to the system
 - `failed_messages_counter` = counts total number of messages that failed during processing
 - `new_devices_counter` = counts total number of new devices detected by the system
@@ -51,7 +48,6 @@ Each metric is a counter that increments or decrements in various functions with
 ### wombat
 
 - `broker/src/python/ydoc/Wombat.py`
-- port `8004`
 - `listener_starts_counter` = counts the number of times the Wombat listener has started.
 - `graceful_exit_counter` = tracks the number of times the application has gracefully exited.
 - `messages_received_counter` = records the number of messages received from RabbitMQ.
@@ -66,7 +62,6 @@ Each metric is a counter that increments or decrements in various functions with
 ### lm
 
 - `broker/src/python/logical_mapper/LogicalMapper.py`
-- port `8005`
 - `messages_received_counter` = counts the number of messages that the Logical Mapper has received for processing from
   the physical_timeseries queue.
 - `messages_published_counter` = tracks the number of messages that the Logical Mapper has successfully published to the
@@ -86,7 +81,6 @@ Each metric is a counter that increments or decrements in various functions with
 ### delivery
 
 - `broker/src/python/delivery/UbidotsWriter.py`
-- port `8006`
 - `messages_processed_counter` = incremented every time a message is successfully parsed and accepted for processing.
 - `messages_forwarded_counter` = incremented every time a message is successfully forwarded to Ubidots
 - `messages_acknowledged_counter` = incremented every time a message is acknowledged to RabbitMQ, indicating successful
@@ -98,7 +92,6 @@ Each metric is a counter that increments or decrements in various functions with
 ### frred
 
 - `broker/src/python/delivery/FRRED.py`
-- port `8007`
 - `rabbitmq_connection_attempts` = counts the number of connection attempts to RabbitMQ.
 - `rabbitmq_successful_connections` = counts the number of successful connections to RabbitMQ.
 - `rabbitmq_failed_connections` = counts the number of failed connection attempts to RabbitMQ.
@@ -110,7 +103,6 @@ Each metric is a counter that increments or decrements in various functions with
 ### ttn_decoder
 
 - `broker/src/js/ttn_decoder/src/index.js`
-- port `3001`
 
 # Grafana and Nginx
 
