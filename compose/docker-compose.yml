@@ -170,23 +170,6 @@ services:
     working_dir: "/home/broker/python"
     entrypoint: [ "python", "-m", "delivery.FRRED" ]
 
-  x:
-    image: broker/python-base
-    restart: "no"
-    env_file:
-      - .env
-    environment:
-      - PYTHONPATH=/home/broker/broker/src/python:/home/broker/broker/test/python
-    depends_on:
-      db:
-        condition: "service_healthy"
-      mq:
-        condition: "service_healthy"
-    volumes:
-      - ..:/home/broker/broker
-    working_dir: "/home/broker/broker"
-    entrypoint: [ "./forever.sh" ]
-
   prometheus:
     image: prom/prometheus
     volumes:
