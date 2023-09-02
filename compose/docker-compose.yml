@@ -238,5 +238,4 @@ services:
     working_dir: "/home/broker/python"
     entrypoint: [ "python", "-m", "timescale.TS_LTSReader_Bulk" ]
 
-#volumes:
-#    timescale_data:
+
