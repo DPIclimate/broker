@@ -1,12 +1,9 @@
 import pytest,sys,os
 
-# Get the current working directory
 current_dir = os.path.dirname(os.path.abspath(__file__))
-# Append the path to your module to the system path
 module_path = os.path.abspath(os.path.join(current_dir, '../../src/python'))
 sys.path.append(module_path)
 
-# Now you can import your module
 from util.NamingConstants import *
 
 @pytest.mark.parametrize("input_name, expected_output", [
