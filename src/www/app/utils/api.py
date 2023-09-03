@@ -336,11 +336,32 @@ def change_user_password(password: str, token: str) -> str:
             password: str - User's new password
             token: str - User's authentication token
         
-        reutrn:
-            token: str - User's new authentication token
+        return: |
+            token: str - User's new authentication token |
     """
     headers = {"Authorization": f"Bearer {token}"}
     response = requests.post(f"{end_point}/broker/api/change-password", headers=headers, params={"password":password})
     response.raise_for_status()
 
     return response.json()
+
+
+def get_puid_ts(puid: str):
+    #response = requests.get(f"{end_point}/query/p_uid/{puid}")
+    response = requests.get(f"{end_point}/query/?query=select timestamp,name,value from timeseries where p_uid={puid} and timestamp >= current_date - interval '30 days' order by timestamp asc")
+    response.raise_for_status()
+    return response.json()
+
+
+def get_luid_ts(luid: str):
+    #response = requests.get(f"{end_point}/query/l_uid/{luid}")
+    response = requests.get(f"{end_point}/query/?query=select timestamp,name,value from timeseries where l_uid={luid} and timestamp >= current_date - interval '30 days' order by timestamp asc")
+    response.raise_for_status()
+    return response.json()
+
+
+
+#def get_ts_names(uid: str):
+#    response = requests.get(f'{end_point}/query/?query=select distinct name from timeseries where p_uid={uid}')
+#    response.raise_for_status()
+#    return response.json()
