@@ -17,34 +17,10 @@ tsdb_table = os.environ.get("TSDB_TABLE")
 CONNECTION = f"postgres://{tsdb_user}:{tsdb_pass}@{tsdb_host}:{tsdb_port}/{tsdb_db}"
 
 
-def clean_name(msg: str) -> str:
-    """
-    strip special chars from beginning and end
-    make upper case
-    replace _ with <space>
-    remove special characters
-    remove duplicated '_'
-    separete all known words
-    remove duplicate words
-    normalise words
-
-    Additionally, table name must not start or end with the . character. 
-    Column name must not contain . -
-    """
-    special_characters = '!"#$%&\'()*+,-./:;<=>?@[\\]^_`{|}~ '
-    ret = NamingConstants.separate_and_normalise_words(msg.upper().replace(" ", "_").replace("-","_"))
-    ret = ret.lstrip(special_characters).rstrip(special_characters)
-    ret = NamingConstants.split_numbers_by_underscore(ret)
-    ret = re.sub(r'[^\w\s]', '', ret)
-    ret = re.sub(r'_+', '_', ret)
-
-    return ret
-
-
 def get_standardised_name(msg: str) -> str:
     std_name = dao.get_std_name(msg)
     if std_name is None:
-        std_name = clean_name(msg)
+        std_name = NamingConstants.clean_name(msg)
         dao.add_name_map(msg, std_name)
         logging.info(f'Creating New Name Mapping: {msg}:{std_name}')
     else:
