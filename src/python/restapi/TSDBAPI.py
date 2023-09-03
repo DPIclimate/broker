@@ -85,27 +85,6 @@ async def get_puid_records(p_uid: str, fromdate = "", todate = "", l_uid = ""):
     
     return result
 
-@router.get("/p_uid/{p_uid}/{func}")
-async def get_puid_records(p_uid: str, func: str, fromdate = "", todate = "", l_uid = ""):
-    with psycopg2.connect(CONNECTION) as conn:
-        query = f"SELECT {func}(value) FROM {tsdb_table} WHERE p_uid = '{p_uid}'"
-        if fromdate != "":
-            query += f"AND timestamp >= '{fromdate}'"
-        if todate != "":
-            query += f"AND timestamp <= '{todate}'"
-        if l_uid != "":
-            query += f"AND l_uid = '{l_uid}'"
-        cursor = conn.cursor()
-        try: 
-            cursor.execute(query)
-            conn.commit()
-            result = cursor.fetchall()
-        except psycopg2.errors as e:
-            sys.stderr.write(f'error: {e}\n')
-        cursor.close()    
-    
-    return result
-
 @router.get("/l_uid/{l_uid}/last")
 async def get_luid_for_last_x(l_uid: str, years = 0, months = 0, days = 0, hours = 0, minutes = 0, seconds = 0):
     with psycopg2.connect(CONNECTION) as conn:
@@ -197,7 +176,7 @@ async def get_puid_for_last_x(p_uid: str, years = 0, months = 0, days = 0, hours
     return result
 
 @router.get("/l_uid/{l_uid}/{func}")
-async def get_puid_records(l_uid: str, func: str, fromdate = "", todate = "", p_uid = ""):
+async def get_luid_records_by_function(l_uid: str, func: str, fromdate = "", todate = "", p_uid = ""):
     with psycopg2.connect(CONNECTION) as conn:
         query = f"SELECT {func}(value) FROM {tsdb_table} WHERE l_uid = '{l_uid}'"
         if fromdate != "":
@@ -206,6 +185,27 @@ async def get_puid_records(l_uid: str, func: str, fromdate = "", todate = "", p_
             query += f"AND timestamp <= '{todate}'"
         if p_uid != "":
             query += f"AND p_uid = '{p_uid}'"
+        cursor = conn.cursor()
+        try: 
+            cursor.execute(query)
+            conn.commit()
+            result = cursor.fetchall()
+        except psycopg2.errors as e:
+            sys.stderr.write(f'error: {e}\n')
+        cursor.close()    
+    
+    return result
+
+@router.get("/p_uid/{p_uid}/{func}")
+async def get_puid_records_by_function(p_uid: str, func: str, fromdate = "", todate = "", l_uid = ""):
+    with psycopg2.connect(CONNECTION) as conn:
+        query = f"SELECT {func}(value) FROM {tsdb_table} WHERE p_uid = '{p_uid}'"
+        if fromdate != "":
+            query += f"AND timestamp >= '{fromdate}'"
+        if todate != "":
+            query += f"AND timestamp <= '{todate}'"
+        if l_uid != "":
+            query += f"AND l_uid = '{l_uid}'"
         cursor = conn.cursor()
         try: 
             cursor.execute(query)
