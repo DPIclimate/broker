@@ -1,7 +1,7 @@
 from fastapi import APIRouter
 import psycopg2, os, sys, datetime
 
-router = APIRouter(prefix="/query")
+router = APIRouter(prefix="/query", tags=['querying db'])
 
 tsdb_user = os.environ.get("TSDB_USER")
 tsdb_pass = os.environ.get("TSDB_PASSWORD")
