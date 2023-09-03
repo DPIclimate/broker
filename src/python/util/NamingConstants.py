@@ -121,6 +121,31 @@ WORD_LIST = [
     "WIND"
 ]
 
+
+def clean_name(msg: str) -> str:
+    """
+    strip special chars from beginning and end
+    make upper case
+    replace _ with <space>
+    remove special characters
+    remove duplicated '_'
+    separete all known words
+    remove duplicate words
+    normalise words
+
+    Additionally, table name must not start or end with the . character. 
+    Column name must not contain . -
+    """
+    special_characters = '!"#$%&\'()*+,-./:;<=>?@[\\]^_`{|}~ '
+    cleaned_name = separate_and_normalise_words(msg.upper().replace(" ", "_").replace("-","_"))
+    cleaned_name = cleaned_name.lstrip(special_characters).rstrip(special_characters)
+    cleaned_name = split_numbers_by_underscore(cleaned_name)
+    cleaned_name = re.sub(r'[^\w\s]', '', cleaned_name)
+    cleaned_name = re.sub(r'_+', '_', cleaned_name)
+
+    return cleaned_name
+
+
 def normalise_word(word: str) -> str:
     """
     USES THE TYPE MAPS TO ALTER THE WORD TO A STANDARD FORMAT
