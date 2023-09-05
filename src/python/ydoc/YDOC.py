@@ -15,12 +15,28 @@ import api.client.DAO as dao
 import util.LoggingUtil as lu
 import util.Timestamps as ts
 
+# Prometheus metrics
+from prometheus_client import Counter, start_http_server
+request_counter = Counter('requests_total', 'Total Requests')
+failed_messages_counter = Counter('failed_messages_total', 'Total Failed Messages')
+new_devices_counter = Counter('new_devices_total', 'Total New Devices Detected')
+existing_devices_messages_counter = Counter('existing_devices_messages_total', 'Total Messages from Existing Devices')
+dropped_messages_counter = Counter('dropped_messages_total', 'Total Dropped Messages')
+published_messages_counter = Counter('published_messages_total', 'Total Published Messages')
+failed_published_messages_counter = Counter('failed_published_messages_total', 'Total Failed Published Messages')
+errors_counter = Counter('errors_total', 'Total Errors Encountered')
+active_connections_gauge = Counter('active_connections', 'Number of Active RabbitMQ Connections')
+
+# Start up the server to expose the metrics.
+start_http_server(8000)
+
 std_logger = logging.getLogger(__name__)
 
 rx_channel: mq.RxChannel = None
 tx_channel: mq.TxChannel = None
 mq_client: mq.RabbitMQConnection = None
 finish = False
+
 
 def sigterm_handler(sig_no, stack_frame) -> None:
     """
@@ -52,12 +68,15 @@ async def main():
 
     # The default MQTT topic of YDOC devices is YDOC/<serial#> which RabbitMQ converts into a routing key of YDOC.<serial#>.
     # It seems we can use the MQTT topic wildcard of # to get all YDOC messages.
-    rx_channel = mq.RxChannel('amq.topic', exchange_type=ExchangeType.topic, queue_name='ydoc_listener', on_message=on_message, routing_key='YDOC.#')
-    tx_channel = mq.TxChannel(exchange_name=BrokerConstants.PHYSICAL_TIMESERIES_EXCHANGE_NAME, exchange_type=ExchangeType.fanout)
+    rx_channel = mq.RxChannel('amq.topic', exchange_type=ExchangeType.topic, queue_name='ydoc_listener',
+                              on_message=on_message, routing_key='YDOC.#')
+    tx_channel = mq.TxChannel(exchange_name=BrokerConstants.PHYSICAL_TIMESERIES_EXCHANGE_NAME,
+                              exchange_type=ExchangeType.fanout)
     mq_client = mq.RabbitMQConnection(channels=[rx_channel, tx_channel])
     asyncio.create_task(mq_client.connect())
+    active_connections_gauge.inc()
 
-    #while not (rx_channel.is_open and tx_channel.is_open):
+    # while not (rx_channel.is_open and tx_channel.is_open):
     while not (rx_channel.is_open):
         await asyncio.sleep(0)
 
@@ -67,6 +86,7 @@ async def main():
     while not mq_client.stopped:
         await asyncio.sleep(1)
 
+    active_connections_gauge.dec()
 
 def parse_ydoc_ts(ydoc_ts) -> Optional[datetime.datetime]:
     """
@@ -85,8 +105,9 @@ def parse_ydoc_ts(ydoc_ts) -> Optional[datetime.datetime]:
         return ts
     except Exception as err:
         logging.exception('parse_ydoc_ts error.')
-    
+
     return None
+
 
 # This re is used to get the sensor # and reading name prefix from the YDOC json.
 # The YDOC may send upper or lower case so the code lower-cases the string before
@@ -98,6 +119,7 @@ def parse_ydoc_ts(ydoc_ts) -> Optional[datetime.datetime]:
 _sensor_code_re = re.compile(r'^([a-z]\d+)([a-z]\d+)')
 
 _non_alpha_numeric = re.compile(r'\W')
+
 
 def process_message(msg_with_cid: Dict) -> Dict[str, Dict]:
     # Create a map of the channel objects keyed by channel code to make it simple
@@ -152,7 +174,8 @@ def process_message(msg_with_cid: Dict) -> Dict[str, Dict]:
                 # If the channel id does not match our convention of s<n>... then assume it is a node
                 # level value such as voltage or processor temperature.
                 channel = channels[k]
-                lu.cid_logger.debug(f'YDOC node level data : ({k}) {channel["name"]} = {v} {channel["unit"]}', extra=msg_with_cid)
+                lu.cid_logger.debug(f'YDOC node level data : ({k}) {channel["name"]} = {v} {channel["unit"]}',
+                                    extra=msg_with_cid)
                 dev_id = f'ydoc-{serial_no}'
                 logical_dev_name = f'{dev_name.strip()} ({dev_id})'
                 # Set a prefix that cannot be matched down where the var_name is set so that the node
@@ -174,15 +197,17 @@ def process_message(msg_with_cid: Dict) -> Dict[str, Dict]:
             device = devices[dev_id]
 
             channel_name: str = channels[k]['name']
-            var_name = channel_name[2:] if channel_name.startswith(s_prefix) else _non_alpha_numeric.sub('_', channel_name)
+            var_name = channel_name[2:] if channel_name.startswith(s_prefix) else _non_alpha_numeric.sub('_',
+                                                                                                         channel_name)
 
             try:
-                dot = { BrokerConstants.TIMESTAMP_KEY: ts, 'name': var_name, 'value': float(v) }
+                dot = {BrokerConstants.TIMESTAMP_KEY: ts, 'name': var_name, 'value': float(v)}
                 device['dots'].append(dot)
             except:
                 lu.cid_logger.info(f'YDOC variable {var_name} nan, got {v} instead.', extra=msg_with_cid)
 
     return devices
+
 
 def on_message(channel, method, properties, body):
     """
@@ -191,6 +216,7 @@ def on_message(channel, method, properties, body):
     global rx_channel, tx_channel, finish
 
     delivery_tag = method.delivery_tag
+    request_counter.inc()
 
     # If the finish flag is set, reject the message so RabbitMQ will re-queue it
     # and return early.
@@ -200,6 +226,7 @@ def on_message(channel, method, properties, body):
 
     if body[0] != 123 or body[1] != 34:
         std_logger.info(f'Ignoring non-JSON message: {body}')
+        dropped_messages_counter.inc()
         rx_channel._channel.basic_ack(delivery_tag)
         return
 
@@ -258,6 +285,7 @@ def on_message(channel, method, properties, body):
             msg = json.loads(body)
         except Exception as e:
             std_logger.info(f'JSON parsing failed, ignoring message')
+            failed_messages_counter.inc()
             rx_channel._channel.basic_ack(delivery_tag)
             return
 
@@ -296,6 +324,7 @@ def on_message(channel, method, properties, body):
 
             pds = dao.get_pyhsical_devices_using_source_ids(BrokerConstants.YDOC, source_ids)
             if len(pds) < 1:
+                new_devices_counter.inc()
                 if not printed_msg:
                     printed_msg = True
                     lu.cid_logger.info(f'Message from a new device.', extra=msg_with_cid)
@@ -309,9 +338,11 @@ def on_message(channel, method, properties, body):
                     BrokerConstants.LAST_MSG: msg
                 }
 
-                pd = PhysicalDevice(source_name=BrokerConstants.YDOC, name=device['name'], location=None, last_seen=last_seen, source_ids=source_ids, properties=props)
+                pd = PhysicalDevice(source_name=BrokerConstants.YDOC, name=device['name'], location=None,
+                                    last_seen=last_seen, source_ids=source_ids, properties=props)
                 pd = dao.create_physical_device(pd)
             else:
+                existing_devices_messages_counter.inc()
                 pd = pds[0]
                 if last_seen is not None:
                     pd.last_seen = last_seen
@@ -319,7 +350,8 @@ def on_message(channel, method, properties, body):
                     pd = dao.update_physical_device(pd)
 
             if pd is None:
-                lu.cid_logger.error(f'Physical device not found, message processing ends now. {correlation_id}', extra=msg_with_cid)
+                lu.cid_logger.error(f'Physical device not found, message processing ends now. {correlation_id}',
+                                    extra=msg_with_cid)
                 rx_channel._channel.basic_ack(delivery_tag)
                 return
 
@@ -334,13 +366,20 @@ def on_message(channel, method, properties, body):
             }
 
             lu.cid_logger.debug(f'Publishing message: {p_ts_msg}', extra=msg_with_cid)
-            tx_channel.publish_message('physical_timeseries', p_ts_msg)
+            try:
+                tx_channel.publish_message('physical_timeseries', p_ts_msg)
+                published_messages_counter.inc()
+            except:
+                failed_published_messages_counter.inc()
+                lu.cid_logger.error('Failed to publish message to RabbitMQ.', extra=msg_with_cid)
 
         # This tells RabbitMQ the message is handled and can be deleted from the queue.    
         rx_channel._channel.basic_ack(delivery_tag)
+        published_messages_counter.inc()
         lu.cid_logger.debug('Acking message from ttn_raw.', extra=msg_with_cid)
     except Exception as e:
         std_logger.exception('Error while processing message.')
+        errors_counter.inc()
         rx_channel._channel.basic_ack(delivery_tag)
 
 
@@ -354,7 +393,8 @@ if __name__ == '__main__':
             with open(filename, mode='r') as file:
                 correlation_id = str(uuid.uuid4())
                 msg = json.load(file)
-                msg_with_cid = {BrokerConstants.CORRELATION_ID_KEY: correlation_id, BrokerConstants.RAW_MESSAGE_KEY: msg}
+                msg_with_cid = {BrokerConstants.CORRELATION_ID_KEY: correlation_id,
+                                BrokerConstants.RAW_MESSAGE_KEY: msg}
                 devices = process_message(msg_with_cid)
                 print(json.dumps(devices, indent=2))
                 print('')

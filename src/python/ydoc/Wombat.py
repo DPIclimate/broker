@@ -15,6 +15,20 @@ import api.client.DAO as dao
 import util.LoggingUtil as lu
 import util.Timestamps as ts
 
+# Prometheus metrics
+from prometheus_client import Counter, start_http_server
+listener_starts_counter = Counter('wombat_listener_starts', 'Number of times the Wombat listener has started')
+graceful_exit_counter = Counter('wombat_graceful_exits', 'Number of times the application has gracefully exited')
+messages_received_counter = Counter('wombat_messages_received', 'Number of messages received from RabbitMQ')
+messages_acknowledged_counter = Counter('wombat_messages_acknowledged', 'Number of messages acknowledged to RabbitMQ')
+messages_published_counter = Counter('wombat_messages_published', 'Number of messages published to RabbitMQ')
+devices_created_counter = Counter('wombat_devices_created', 'Number of physical devices created in the database')
+devices_updated_counter = Counter('wombat_devices_updated', 'Number of physical devices updated in the database')
+exceptions_caught_counter = Counter('wombat_exceptions_caught', 'Number of exceptions caught during processing')
+message_processing_errors_counter = Counter('wombat_message_processing_errors', 'Number of errors while processing messages')
+# Start up the server to expose the metrics.
+start_http_server(8000)
+
 std_logger = logging.getLogger(__name__)
 
 rx_channel: mq.RxChannel = None
@@ -45,7 +59,7 @@ async def main():
     It would be good to find a better way to do nothing than the current loop.
     """
     global mq_client, rx_channel, tx_channel, finish
-
+    listener_starts_counter.inc()
     logging.info('===============================================================')
     logging.info('               STARTING Wombat LISTENER')
     logging.info('===============================================================')
@@ -69,6 +83,7 @@ async def main():
 
 
 def on_message(channel, method, properties, body):
+    messages_received_counter.inc()
     """
     This function is called when a message arrives from RabbitMQ.
     """
@@ -123,6 +138,7 @@ def on_message(channel, method, properties, body):
             device_name = f'Wombat-{serial_no}'
             pd = PhysicalDevice(source_name=BrokerConstants.WOMBAT, name=device_name, location=None, last_seen=msg_ts, source_ids=source_ids, properties=props)
             pd = dao.create_physical_device(pd)
+            devices_created_counter.inc()
         else:
             pd = pds[0]
             # Update the source_ids because the Wombat firmware was updated to include the SDI-12 sensor
@@ -132,8 +148,10 @@ def on_message(channel, method, properties, body):
             pd.last_seen = msg_ts
             pd.properties[BrokerConstants.LAST_MSG] = msg
             pd = dao.update_physical_device(pd)
+            devices_updated_counter.inc()
 
         if pd is None:
+            message_processing_errors_counter.inc()
             lu.cid_logger.error(f'Physical device not found, message processing ends now. {correlation_id}', extra=msg_with_cid)
             rx_channel._channel.basic_ack(delivery_tag)
             return
@@ -144,10 +162,15 @@ def on_message(channel, method, properties, body):
         msg[BrokerConstants.PHYSICAL_DEVICE_UID_KEY] = pd.uid
 
         tx_channel.publish_message('physical_timeseries', msg)
+        messages_published_counter.inc()
 
         # This tells RabbitMQ the message is handled and can be deleted from the queue.
         rx_channel._channel.basic_ack(delivery_tag)
+        messages_acknowledged_counter.inc()
+        lu.cid_logger.debug('Acking message from ttn_raw.', extra=msg_with_cid)
+
     except Exception as e:
+        exceptions_caught_counter.inc()
         std_logger.exception('Error while processing message.')
         rx_channel._channel.basic_ack(delivery_tag)
 
@@ -160,3 +183,4 @@ if __name__ == '__main__':
     # Does not return until SIGTERM is received.
     asyncio.run(main())
     logging.info('Exiting.')
+    graceful_exit_counter.inc()
