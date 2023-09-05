@@ -18,6 +18,10 @@ CONNECTION = f"postgres://{tsdb_user}:{tsdb_pass}@{tsdb_host}:{tsdb_port}/{tsdb_
 
 
 def get_standardised_name(msg: str) -> str:
+    """
+    check if a name is already mapped and use that format instead,
+    otherwise lets create a new mapping and use it
+    """
     std_name = dao.get_std_name(msg)
     if std_name is None:
         std_name = NamingConstants.clean_name(msg)
@@ -31,7 +35,7 @@ def get_standardised_name(msg: str) -> str:
 
 def parse_json(json_obj: dict) -> list:
     """
-    Main parser used at this time, takes a json.loads object.
+    Main parser used at this time, takes a json object and parses into format ready for insertion into tsdb
     """
     parsed_data = []
 
@@ -67,6 +71,12 @@ def parse_json_string(json_string: str) -> list:
 
 
 def insert_lines(parsed_data: list, connection: str = CONNECTION, table: str = tsdb_table) -> int:
+    """
+    Insert our parsed data into tsdb
+
+    returns 1 if an error occurred
+    returns 0 if sucessful
+    """
     conn = psycopg2.connect(connection)
     cursor = conn.cursor()
     try:

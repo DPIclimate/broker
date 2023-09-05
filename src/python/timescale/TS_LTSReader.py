@@ -88,21 +88,26 @@ def on_message(channel, method, properties, body):
         pd = dao.get_physical_device(p_uid)
         mapping = dao.get_current_device_mapping(p_uid)
 
+        #TODO: implement extra checks for mapping if required or remove commented checks
+        # pretty much all use cases currently will cover these checks bein done already by
+        # the logical_mapper
         #if pd or mapping is None:
         if pd is None:
             # Ack the message, even though we cannot process it. We don't want it redelivered.
             # We can change this to a Nack if that would provide extra context somewhere.
-            if pd is None:
-                lu.cid_logger.error(f'Physical device not found, cannot continue. Dropping message.', extra=msg)
+            lu.cid_logger.error(f'Physical device not found, cannot continue. Dropping message.', extra=msg)
             #else:
             #    lu.cid_logger.error(f'No device mapping found for {pd.source_ids}, cannot continue. Dropping message.', extra=msg)
             rx_channel._channel.basic_ack(delivery_tag)
             return
 
+        #accept message for processing
         lu.cid_logger.info(f'Accepted message {msg}', extra=msg)
 
+        #parse message into useable format for timeseries db
         parsed_msg = ts.parse_json(msg)
 
+        #insert into timeseries and confirm
         if ts.insert_lines(parsed_msg) == 1:
             logging.info('Message successfully stored in time series database.')
         else:
