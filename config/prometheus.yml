@@ -1,0 +1,49 @@
+global:
+  scrape_interval: 15s
+
+scrape_configs:
+  - job_name: 'restapi'
+    metrics_path: '/metrics'
+    scrape_interval: 5s
+    static_configs:
+      - targets: [ 'restapi:8000' ]
+  - job_name: 'ttn_webhook'
+    metrics_path: '/metrics'
+    scrape_interval: 5s
+    static_configs:
+      - targets: [ 'ttn_webhook:8000']
+  - job_name: 'ttn_processor'
+    metrics_path: '/metrics'
+    scrape_interval: 5s
+    static_configs:
+      - targets: [ 'ttn_processor:8000']
+  - job_name: 'ydoc'
+    metrics_path: '/metrics'
+    scrape_interval: 5s
+    static_configs:
+      - targets: [ 'ydoc:8000' ]
+  - job_name: 'wombat'
+    metrics_path: '/metrics'
+    scrape_interval: 5s
+    static_configs:
+      - targets: [ 'wombat:8000' ]
+  - job_name: 'lm'
+    metrics_path: '/metrics'
+    scrape_interval: 5s
+    static_configs:
+      - targets: [ 'lm:8000' ]
+  - job_name: 'delivery'
+    metrics_path: '/metrics'
+    scrape_interval: 5s
+    static_configs:
+      - targets: [ 'delivery:8000' ]
+  - job_name: 'frred'
+    metrics_path: '/metrics'
+    scrape_interval: 5s
+    static_configs:
+      - targets: [ 'frred:8000' ]
+  - job_name: 'ttn_decoder'
+    metrics_path: '/metrics'
+    scrape_interval: 5s
+    static_configs:
+      - targets: ['ttn_decoder:3001']
