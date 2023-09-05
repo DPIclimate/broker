@@ -1,0 +1,34 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: delivery
+  namespace: broker
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: delivery
+  template:
+    metadata:
+      labels:
+        app: delivery
+    spec:
+      containers:
+        - name: delivery
+          image: broker/python-base
+          imagePullPolicy: IfNotPresent
+          envFrom:
+            - configMapRef:
+                name: env-configmap
+          workingDir: /home/broker/python
+          command:
+            - python
+            - -m
+            - delivery.UbidotsWriter
+          volumeMounts:
+            - name: shared-data
+              mountPath: /home/broker/python
+      volumes:
+        - name: shared-data
+          hostPath:
+            path: /opt/broker/src/python

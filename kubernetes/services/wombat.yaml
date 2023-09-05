@@ -1,0 +1,34 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: wombat
+  namespace: broker
+spec:
+  selector:
+    matchLabels:
+      app: wombat
+  replicas: 1
+  template:
+    metadata:
+      labels:
+        app: wombat
+    spec:
+      containers:
+        - name: wombat
+          image: broker/python-base
+          imagePullPolicy: IfNotPresent
+          envFrom:
+            - configMapRef:
+                name: env-configmap
+          workingDir: /home/broker/python
+          command:
+            - python
+            - -m
+            - Wombat
+          volumeMounts:
+            - name: shared-data
+              mountPath: /home/broker/python
+      volumes:
+        - name: shared-data
+          hostPath:
+            path: /opt/broker/src/python

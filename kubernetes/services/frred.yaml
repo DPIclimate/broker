@@ -1,0 +1,38 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: frred
+  namespace: broker
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: frred
+  template:
+    metadata:
+      labels:
+        app: frred
+    spec:
+      containers:
+        - name: frred
+          image: broker/python-base
+          imagePullPolicy: IfNotPresent
+          envFrom:
+            - configMapRef:
+                name: env-configmap
+          command:
+            - python
+            - -m
+            - delivery.FRRED
+          volumeMounts:
+            - name: shared-data
+              mountPath: /home/broker/python
+            - name: databolt-data
+              mountPath: /raw_data
+      volumes:
+        - name: shared-data
+          hostPath:
+            path: /opt/broker/src/python
+        - name: databolt-data
+          hostPath:
+            path: /opt/databolt/raw_data

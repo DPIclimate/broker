@@ -1,0 +1,35 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: x
+  namespace: broker
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: x
+  template:
+    metadata:
+      labels:
+        app: x
+    spec:
+      containers:
+        - name: x
+          image: broker/python-base
+          imagePullPolicy: IfNotPresent
+          envFrom:
+            - configMapRef:
+                name: env-configmap
+          env:
+            - name: PYTHON_PATH
+              value: /home/broker/broker/src/python:/home/broker/broker/test/python
+          workingDir: /home/broker/broker
+          command:
+            - "./forever.sh"
+          volumeMounts:
+            - name: broker-data
+              mountPath: /home/broker/broker
+      volumes:
+        - name: broker-data
+          hostPath:
+            path: /opt/broker
