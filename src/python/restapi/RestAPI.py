@@ -12,7 +12,7 @@ import logging
 from fastapi import APIRouter, Depends, FastAPI, HTTPException, Request, Response, status, Query
 from fastapi.security import HTTPBearer, HTTPBasic
 
-#from fastapi.responses import JSONResponse
+from fastapi.responses import JSONResponse
 from typing import Annotated, List, Dict
 
 from pdmodels.Models import DeviceNote, PhysicalDevice, LogicalDevice, PhysicalToLogicalMapping

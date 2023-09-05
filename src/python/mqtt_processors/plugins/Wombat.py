@@ -4,16 +4,23 @@ from pdmodels.Models import PhysicalDevice
 import util.LoggingUtil as lu
 import api.client.DAO as dao
 
+from prometheus_client import Counter
+wombat_messages_received = Counter('wombat_messages_received_total', 'Total number of Wombat messages received')
+wombat_messages_error = Counter('wombat_messages_error_total', 'Total number of Wombat messages with errors')
+wombat_devices_created = Counter('wombat_devices_created_total', 'Total number of new Wombat devices created')
+
 TOPICS = ['wombat']
 
 def on_message(message, properties):
     correlation_id = str(uuid.uuid4())
     lu.cid_logger.info(f'Message as received: {message}', extra={BrokerConstants.CORRELATION_ID_KEY: correlation_id})
+    wombat_messages_received.inc()
 
     msg = {}
     try:
         msg = json.loads(message)
     except Exception as e:
+        wombat_messages_received.inc()
         raise Exception(f'JSON parsing failed')
 
     # This code could put the cid into msg (and does so later) and pass msg into the lu_cid
@@ -36,6 +43,7 @@ def on_message(message, properties):
     pds = dao.get_pyhsical_devices_using_source_ids(BrokerConstants.WOMBAT, find_source_id)
     if len(pds) < 1:
         lu.cid_logger.info('Device not found, creating physical device.', extra=msg_with_cid)
+        wombat_devices_created.inc()
 
         props = {
             BrokerConstants.CREATION_CORRELATION_ID_KEY: correlation_id,
