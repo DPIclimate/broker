@@ -58,6 +58,8 @@ services:
     restart: "no"
     env_file:
       - .env
+    profiles:
+      - ttn
     depends_on:
       mq:
         condition: "service_healthy"
@@ -71,6 +73,8 @@ services:
     restart: "no"
     env_file:
       - .env
+    profiles:
+      - ttn
     depends_on:
       db:
         condition: "service_healthy"
@@ -88,6 +92,8 @@ services:
     restart: "no"
     env_file:
       - .env
+    profiles:
+      - ttn
     volumes:
       - ../src/js/ttn_decoder/src:/usr/src/ttn_decoder/src
       - ../../ttn-formatters/:/usr/src/ttn_formatters
@@ -99,6 +105,8 @@ services:
     restart: "no"
     env_file:
       - .env
+    profiles:
+      - ydoc
     depends_on:
       db:
         condition: "service_healthy"
@@ -114,6 +122,8 @@ services:
     restart: "no"
     env_file:
       - .env
+    profiles:
+      - wombat
     depends_on:
       db:
         condition: "service_healthy"
@@ -144,6 +154,8 @@ services:
     restart: unless-stopped
     env_file:
       - .env
+    profiles:
+      - ubidots
     depends_on:
       db:
         condition: "service_healthy"
@@ -154,11 +166,30 @@ services:
     working_dir: "/home/broker/python"
     entrypoint: [ "python", "-m", "delivery.UbidotsWriter" ]
 
+  pollers:
+    image: broker/python-base
+    restart: unless-stopped
+    env_file:
+      - .env
+    profiles:
+      - pollers
+    depends_on:
+      db:
+        condition: "service_healthy"
+      mq:
+        condition: "service_healthy"
+    volumes:
+      - ../src/python:/home/broker/python
+    working_dir: "/home/broker/python"
+    entrypoint: [ "python", "-m", "pollers.ICT_EagleIO" ]
+
   frred:
     image: broker/python-base
     restart: unless-stopped
     env_file:
       - .env
+    profiles:
+      - frred
     depends_on:
       db:
         condition: "service_healthy"
