@@ -7,6 +7,10 @@ import util.Timestamps as ts
 from pdmodels.Models import PhysicalDevice
 from typing import Dict, Optional
 
+from prometheus_client import Counter
+ydoc_messages_processed = Counter('ydoc_messages_processed_total', 'Total number of YDOC messages processed')
+ydoc_messages_error = Counter('ydoc_messages_error_total', 'Total number of YDOC messages with errors')
+
 # The default MQTT topic of YDOC devices is YDOC/<serial#> which RabbitMQ converts into a routing key of YDOC.<serial#>.
 # It seems we can use the MQTT topic wildcard of # to get all YDOC messages. 'YDOC.#'
 TOPICS = ['YDOC.#']
@@ -27,6 +31,7 @@ def parse_ydoc_ts(ydoc_ts) -> Optional[datetime.datetime]:
             tzinfo=datetime.timezone(datetime.timedelta(hours=10)))
         return ts
     except Exception as err:
+        ydoc_messages_error.inc()
         logging.exception('parse_ydoc_ts error.')
     
     return None
@@ -43,6 +48,7 @@ _sensor_code_re = re.compile(r'^([a-z]\d+)([a-z]\d+)')
 _non_alpha_numeric = re.compile(r'\W')
 
 def process_message(msg_with_cid: Dict) -> Dict[str, Dict]:
+    ydoc_messages_processed.inc()
     # Create a map of the channel objects keyed by channel code to make it simple
     # to find the variable name, uom, etc while processing values.
     channels = {}
