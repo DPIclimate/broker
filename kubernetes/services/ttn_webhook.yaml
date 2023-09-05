@@ -31,6 +31,7 @@ spec:
             - WebHook:app
           ports:
             - containerPort: 5688
+            - containerPort: 8000
           volumeMounts:
             - name: shared-data
               mountPath: /home/broker/python
@@ -50,3 +51,5 @@ spec:
   ports:
     - name: http
       port: 5688
+    - name: prometheus
+      port: 8000

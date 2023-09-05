@@ -25,6 +25,8 @@ spec:
             - python
             - -m
             - delivery.UbidotsWriter
+          ports:
+            - containerPort: 8000
           volumeMounts:
             - name: shared-data
               mountPath: /home/broker/python
@@ -32,3 +34,15 @@ spec:
         - name: shared-data
           hostPath:
             path: /opt/broker/src/python
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: delivery
+  namespace: broker
+spec:
+  selector:
+    app: delivery
+  ports:
+    - name: prometheus
+      port: 8000
