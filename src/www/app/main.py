@@ -161,13 +161,16 @@ def wombats():
 
         for dev in physical_devices:
             ccid = dev.source_ids.get('ccid', None)
-            fw_version = dev.source_ids.get('firmware', None)
+            fw_version: str = dev.source_ids.get('firmware', None)
 
             if ccid is not None:
                 setattr(dev, 'ccid', ccid)
 
             if fw_version is not None:
                 setattr(dev, 'fw', fw_version)
+
+            setattr(dev, 'ts_sort', dev.last_seen.timestamp())
+            dev.last_seen = time_since(dev.last_seen)
 
             for mapping in mappings:
                 if dev.uid != mapping.pd:
