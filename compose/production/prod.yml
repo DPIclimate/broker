@@ -12,7 +12,7 @@ services:
       # 127.0.0.1:1884, which docker will forward to port 1883
       # within the container.
       - "127.0.0.1:1884:1883"
-      - "15672:15672"
+      - "127.0.0.1:15672:15672"
       - "127.0.0.1:15692:15692"
     volumes:
       - mq_data:/var/lib/rabbitmq/mnesia/rabbit@mq
@@ -27,19 +27,7 @@ services:
   
   website:
     ports:
-      - "0.0.0.0:5000:5000"
-# pollers:
-#   image: broker/python-base
-#   restart: "no"
-#   env_file:
-#     - .env
-#   depends_on:
-#     - "db"
-#     - "mq"
-#   volumes:
-#     - ../src/python:/home/broker/python
-#   working_dir: "/home/broker/python"
-#   entrypoint: [ "python", "-m", "pollers.GreenBrain" ]
+      - "127.0.0.1:5000:5000"
 
 volumes:
   broker_db:
