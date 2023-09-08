@@ -1,6 +1,6 @@
 #!/bin/bash
 
-source compose/.env
+source compose/.env 2>/dev/null
 
 # Configuration
 COMPOSE_PROJECT_DIR="compose/"

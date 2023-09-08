@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # Load environment variables from .env file
-source compose/.env
+source compose/.env 2>/dev/null
 
 # Configuration
 COMPOSE_PROJECT_DIR="compose/"  # Update this path if needed
