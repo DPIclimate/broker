@@ -1,9 +1,11 @@
-from datetime import datetime
+from contextlib import contextmanager
+from datetime import datetime, timezone
 from email.utils import parseaddr
 import logging, re, warnings
 from turtle import back
 from unittest import result
 import backoff
+import dateutil.parser
 import psycopg2
 from psycopg2 import pool
 import psycopg2.errors
@@ -69,6 +71,17 @@ def stop() -> None:
         conn_pool.closeall()
 
 
+@contextmanager
+def get_connection():
+    logging.info('getting connection context')
+    conn = _get_connection()
+    try:
+        yield conn
+    finally:
+        logging.info('freeing connection context')
+        free_conn(conn)
+
+
 def _get_connection():
     global conn_pool
 
@@ -99,7 +112,7 @@ def free_conn(conn) -> None:
         return
 
     logging.debug(f'Returning conn {conn}')
-    if conn.closed == 0:
+    if conn.closed == 0 and conn.autocommit:
         conn.autocommit = False
 
     conn_pool.putconn(conn)
@@ -876,13 +889,49 @@ def add_raw_json_message(source_name: str, ts: datetime, correlation_uuid: str, 
             free_conn(conn)
 
 @backoff.on_exception(backoff.expo, DAOException, max_time=30)
-def insert_physical_timeseries_message(p_uid: int, ts: datetime, msg):
+def insert_physical_timeseries_message(p_uid: int, ts: datetime, msg: Dict[str, Any]) -> None:
     conn = None
     try:
         with _get_connection() as conn, conn.cursor() as cursor:
             cursor.execute('insert into physical_timeseries (physical_uid, ts, json_msg) values (%s, %s, %s)', (p_uid, ts, Json(msg)))
     except Exception as err:
         raise DAOException('insert_physical_timeseries_message failed.', err)
+    finally:
+        if conn is not None:
+            free_conn(conn)
+
+
+@backoff.on_exception(backoff.expo, DAOException, max_time=30)
+def get_physical_timeseries_message(p_uid: int, start: datetime, end: datetime, count: int, only_timestamp: bool) -> List[Dict]:
+    conn = None
+
+    if start is None:
+        start = dateutil.parser.isoparse('1970-01-01T00:00:00Z')
+    if end is None:
+        end = datetime.now(timezone.utc)
+    if count is None or count > 65536:
+        count = 65536
+    if count < 1:
+        count = 1
+
+    column_name = 'ts' if only_timestamp else 'json_msg'
+
+    try:
+        with _get_connection() as conn, conn.cursor() as cursor:
+            qry = f"""
+                select {column_name} from physical_timeseries
+                 where physical_uid = %s
+                 and ts > %s
+                 and ts <= %s
+                 order by ts asc
+                 limit %s
+                """
+
+            args = (p_uid, start, end, count)
+            cursor.execute(qry, args)
+            return [row[0] for row in cursor.fetchall()]
+    except Exception as err:
+        raise DAOException('get_physical_timeseries_message failed.', err)
     finally:
         if conn is not None:
             free_conn(conn)
@@ -931,7 +980,7 @@ def user_add(uname: str, passwd: str, disabled: bool) -> None:
 
 
 @backoff.on_exception(backoff.expo, DAOException, max_time=30)
-def user_rm(uname) -> None:
+def user_rm(uname: str) -> None:
     conn = None
     try:
         with _get_connection() as conn, conn.cursor() as cursor:
