@@ -2,17 +2,19 @@
 ---
 
 #### Purpose
-&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;This document will highlight the requirements set forth in the project vision document and show the relevent test scripts, how to run them. It is possible that some of the requirements cannot clearly be shown through testing, however we can show through documentation or code that this requirement has been met.
+- This document will highlight the requirements set forth in the project vision document and show the relevent test scripts, how to run them. It is possible that some of the requirements cannot clearly be shown through testing, however we can show through documentation or code that this requirement has been met.
 
 #### Test Scripts
 - Most scripts will require IoTa to be up and running. 
 - Ideally only run the tests in a test environment as <b><u>data may be added or removed from the tsdb</u></b>
 - Test scripts may need to be updated if hostnames, or other similar settings change.
 - Test scripts are added into [test/python](https://github.com/ZakhaevK/itc303-team3-broker/tree/merge_dpi/test/python)
+- all tests assume you're starting from the base directory ie: `/home/cal/303/itc303-team3-broker`
 
-Test|Requires Running Instance|run commands
-|--|--|--|
-[Webapp time series graph](https://github.com/ZakhaevK/itc303-team3-broker/blob/merge_dpi/test/python/test_web_app.sh)|Yes|`./load_data.sh` - creates devices <br> `./test/python/test_web_app.sh` - loads test time series data <br> `check webapp physical or logical device #1`
+Test|Requires Running Instance|run commands|notes
+|--|--|--|--|
+[Integration Tests](https://github.com/ZakhaevK/itc303-team3-broker/blob/merge_dpi/test/python/TestIntegrationTSDB.py)|Yes|`cd test/python`<br>`python -m pytest -v TestIntegrationTSDB.py`|It will add some stuff to database.
+[Webapp time series graph](https://github.com/ZakhaevK/itc303-team3-broker/blob/merge_dpi/test/python/test_web_app.sh)|Yes|`./load_data.sh` <br> `cd test/python`<br>`./test_web_app.sh`|requires devices to exist with id 1, after running script head to the iota web app and check the physical or logical pages for time series data.<br>- hard coded dates, so ~5/10/23 will not show data as it is >30 days
 
 ---
 #### Requirements Breakdown
@@ -20,21 +22,22 @@ Test|Requires Running Instance|run commands
 ##### Main Requirements:
 Requirement|Test Script|Supported Document
 |--|--|--|
-Storage of time series data|tbc|tbc
-Retrieval of time series data|tbc|tbc
+Storage of time series data|[link](https://github.com/ZakhaevK/itc303-team3-broker/blob/merge_dpi/test/python/TestIntegrationTSDB.py)|[link](#storage-of-time-series-data)
+Retrieval of time series data|[link](https://github.com/ZakhaevK/itc303-team3-broker/blob/merge_dpi/test/python/TestIntegrationTSDB.py)|[link](#retrieval-of-time-series-data)
 Runs parallel with existing databases|No|[link](#runs-parallel)
 No cloud hosting|No|[link](#cloud-hosting)
 Backup and restore scripts|tbc|tbc
 Webapp additional web graph to visualise time series |[link](https://github.com/ZakhaevK/itc303-team3-broker/blob/merge_dpi/test/python/test_web_app.sh)|[link](#webapp-time-series-graph)
 Compatibilty with existing IoTa implementation|No|[link](#iota-compatibility)
+API to query database|No|tbc
 
 ##### Other Requirements:
 Requirement|Test Script|Supported Document
 |--|--|--|
-Access restricted to authorised users|No|tbc
-Robust implementation|No|tbc
-Accurately store and retrieve data|tbc|tbc
-System is at least as easy as existing implementation|No|tbc
+Access restricted to authorised users|No|[link](#security-practices)
+Robust implementation|No|[link](#robust-implementation)
+Accurately store and retrieve data|[link](https://github.com/ZakhaevK/itc303-team3-broker/blob/merge_dpi/test/python/TestIntegrationTSDB.py)|[link](#accurate-data)
+System is at least as easy as existing implementation|No|[link](#easy-to-use)
 
 ---
 #### IoTa Compatibility
@@ -76,6 +79,17 @@ File|Changes|Reasons
 - The TestIntegrationTSDB.py file tests this functionality, and passes as seen in the image below:
 
 ![LINKED IMAGE](./media/store_msgs.png)
+
+---
+#### Retrieval of time series data
+- The main method of retrieving the time series data is via API (covered in API section)
+- Secondary way would be to query the database directly.
+- The `../../compose/.tsdb_env` sets the database credentials
+- The `../../compose/.env` also has the credentials, however these are for pulling the them rather than setting them to help maintain consistency.
+- With the container running, see querying:
+- `docker exec -it test-timescaledb-1 psql -U postgres -d postgres`
+
+![image](./media/db-direct-query.png)
 
 ---
 #### Retrieval of time series data
@@ -121,3 +135,20 @@ File|Changes|Reasons
 - Below screenshot shows all running containers when IoTa is running, all the existing containers are running plus a few extra ones for the time series features.
 
 ![picture](./media/docker-ps.png)
+
+---
+#### Easy To Use
+- As we have followed existing designs, using the new features should feel the same as using existing features.
+- Running and configuring the environment has not changed, and there are no extra steps to follow.
+- The time series stuff should work automatically - and Timescale has a solid documentation making understanding and extending features less of a hassle.
+
+---
+#### Accurate Data
+- Throughout the implementation, we have been testing with a variety of automatically generated data which was derived from existing `iota.sql` real data.
+- We have not been able to identify any instances of the database changing values.
+- The database has a high degree of accuracy i.e: `28.521567509813398` where lopping sensor values should not cause issue.
+
+---
+#### Security Practices
+- The time series database uses the same authentication as existing postgres database, this is because at it's core it is also a postgres database.
+- All python scripts that require access to the database get access by reading the environment variables set in `../compose/.env` file.
