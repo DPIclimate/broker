@@ -71,7 +71,7 @@ ld_ls_parser.add_argument('--plain', action='store_true', help='Plain output, no
 ## Create logical devices
 ld_mk_parser = ld_sub_parsers.add_parser('create', help='create logical device')
 group = ld_mk_parser.add_mutually_exclusive_group(required=True)
-group.add_argument('--json', type=str_to_dict, help='Logical device JSON', dest='ld')
+group.add_argument('--json', type=str_to_dict, help='Logical device JSON', dest='pd') #pd is not a typo, it uses same function
 group.add_argument('--file', help='Read json from file, - for stdin', dest='in_filename')
 
 ## Get logical device
