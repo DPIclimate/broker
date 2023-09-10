@@ -67,7 +67,6 @@ File|Changes|Reasons
 - Adds a time series graph at the bottom of each logical or physical device page.
 - Allows 30 days, 7 days and 1 days selection and ability to enable or disable certain time series
 
-[LINKED IMAGE](#qwdqw)
 
 ---
 #### Cloud hosting
@@ -81,3 +80,11 @@ File|Changes|Reasons
       - /var/lib/postgresql/data
       - ../timescale/init.sql:/docker-entrypoint-initdb.d/init.sql
 ```
+
+---
+#### Robust implementation
+- Through the message handling process, generally things are wrapped in try catch blocks so that if a segment fails, then it will not block any new incoming messages
+- We have standardised the naming of the time series data to ensure that data is consistant
+
+![LINKED IMAGE](./media/std_name_tests.png)
+
