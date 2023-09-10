@@ -78,6 +78,11 @@ File|Changes|Reasons
 ![LINKED IMAGE](./media/store_msgs.png)
 
 ---
+#### Retrieval of time series data
+- The TSDBAPI.py file provides the /query/ route for retrieval from TimescaleDB.
+- The TestRetrievalTSDB.py file runs an automated test to confirm functionality is working as expected.
+
+---
 #### Webapp Time Series Graph
 - The time series graph uses chart.js
 - Adds a time series graph at the bottom of each logical or physical device page.
