@@ -19,15 +19,26 @@
 						<th>NAME</th>
 						<th>LOCATION</th>
 						<th>LAST SEEN</th>
+						<th>CURRENT MAPPING</th>
+					</tr>
 					</tr>
 				</thead>
 				<tbody>
 					{% for logicalDevice in logicalDevices %}
-					<tr>
+					<tr id="{{ logicalDevice.uid }}">
 						<td>{{ logicalDevice.uid }}</td>
-						<td><a href="{{ url_for('logical_device_form', uid=logicalDevice.uid) }}">{{ logicalDevice.name }}</a></td>
+						<td>
+							<a href="{{ url_for('logical_device_form', uid=logicalDevice.uid) }}">{{ logicalDevice.name }}</a>
+						</td>
 						<td>{{ logicalDevice.location }}</td>
 						<td>{{ logicalDevice.last_seen }}</td>
+						<td>
+							{% for mapping in dev_mappings %}
+								{% if mapping.ld == logicalDevice.uid %}
+									<a href="{{ url_for('physical_device_form', uid=mapping.pd.uid) }}">{{ mapping.pd.name }}</a>
+								{% endif %}
+							{% endfor %}
+						</td>
 					</tr>
 					{% endfor %}
 				</tbody>

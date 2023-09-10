@@ -25,7 +25,11 @@ create table if not exists physical_devices (
 create table if not exists physical_timeseries ( 
     uid integer generated always as identity primary key,
     physical_uid integer not null references physical_devices(uid),
+    -- The logical_uid will be null for messages from unmapped devices. This is ok.
+    logical_uid integer,
+    received_at timestamptz not null default now(),
     ts timestamptz not null,
+    ts_delta interval,
     -- The message is stored in the brokers format as a JSONB object.
     json_msg jsonb not null
 );
@@ -80,6 +84,7 @@ create table if not exists physical_logical_map (
     logical_uid integer not null references logical_devices(uid),
     start_time timestamptz not null default now(),
     end_time timestamptz,
+    is_active boolean NOT NULL DEFAULT true,
     constraint end_gt_start check (end_time > start_time),
     unique (logical_uid, start_time),
     primary key(physical_uid, logical_uid, start_time)

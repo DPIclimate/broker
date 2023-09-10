@@ -16,6 +16,7 @@ import hashlib
 import base64
 import os
 
+import BrokerConstants
 from pdmodels.Models import DeviceNote, Location, LogicalDevice, PhysicalDevice, PhysicalToLogicalMapping, User
 
 logging.captureWarnings(True)
@@ -752,6 +753,65 @@ def _end_mapping(conn, pd: Optional[Union[PhysicalDevice, int]] = None, ld: Opti
 
 
 @backoff.on_exception(backoff.expo, DAOException, max_time=30)
+def delete_mapping(mapping: PhysicalToLogicalMapping) -> None:
+    """
+        Remove an entry from the physical_logical_map table. Advised to use end_mapping instead. This method should only be used when permanently deleting a physical or logical device from the database.
+    """
+    conn = None
+    try:
+        with _get_connection() as conn, conn.cursor() as cursor:
+             cursor.execute('delete from physical_logical_map where physical_uid = %s and logical_uid = %s', (mapping.pd.uid, mapping.ld.uid))
+
+    except Exception as err:
+        raise err if isinstance(err, DAOException) else DAOException('delete_mapping failed.', err)
+    finally:
+        if conn is not None:
+            free_conn(conn)       
+
+
+@backoff.on_exception(backoff.expo, DAOException, max_time=30)
+def toggle_device_mapping(is_active: bool, pd: Optional[Union[PhysicalDevice, int]] = None, ld: Optional[Union[LogicalDevice, int]] = None) -> None:
+    """
+        Change the is_active column in the database
+    """
+    
+    conn = None
+    try:
+        with _get_connection() as conn:
+            _toggle_device_mapping(conn, is_active, pd, ld)
+        return
+    except Exception as err:
+        raise err if isinstance(err, DAOException) else DAOException('pause_current_device_mapping failed.', err)
+    finally:
+        if conn is not None:
+            free_conn(conn)
+
+
+def _toggle_device_mapping(conn, is_active, pd: Optional[Union[PhysicalDevice, int]] = None, ld: Optional[Union[LogicalDevice, int]] = None):
+
+    if pd is None and ld is None:
+        raise DAOException('A PhysicalDevice or a LogicalDevice (or an uid for one of them) must be supplied to find a mapping.')
+
+    if pd is not None and ld is not None:
+        raise DAOException('Both pd and ld were provided, only give one.')
+    
+    p_uid = None
+    if pd is not None:
+        p_uid = pd.uid if isinstance(pd, PhysicalDevice) else pd
+
+    l_uid = None
+    if ld is not None:
+        l_uid = ld.uid if isinstance(ld, LogicalDevice) else ld
+
+    with conn.cursor() as cursor:
+        column_name = 'physical_uid' if p_uid is not None else 'logical_uid'
+        sql = f'update physical_logical_map set is_active = %s where {column_name} = %s'
+        cursor.execute(sql, (is_active, p_uid if p_uid is not None else l_uid, ))
+
+        return None
+
+
+@backoff.on_exception(backoff.expo, DAOException, max_time=30)
 def get_current_device_mapping(pd: Optional[Union[PhysicalDevice, int]] = None, ld: Optional[Union[LogicalDevice, int]] = None, only_current_mapping: bool = True) -> Optional[PhysicalToLogicalMapping]:
     conn = None
     try:
@@ -788,14 +848,14 @@ def _get_current_device_mapping(conn, pd: Optional[Union[PhysicalDevice, int]] =
 
     with conn.cursor() as cursor:
         column_name = 'physical_uid' if p_uid is not None else 'logical_uid'
-        sql = f'select physical_uid, logical_uid, start_time, end_time from physical_logical_map where {column_name} = %s {end_time_clause} order by start_time desc'
+        sql = f'select physical_uid, logical_uid, start_time, end_time, is_active from physical_logical_map where {column_name} = %s {end_time_clause} order by start_time desc'
         cursor.execute(sql, (p_uid if p_uid is not None else l_uid, ))
 
         mappings = []
-        for p_uid, l_uid, start_time, end_time in cursor:
+        for p_uid, l_uid, start_time, end_time, is_active in cursor:
             pd = _get_physical_device(conn, p_uid)
             ld = _get_logical_device(conn, l_uid)
-            mappings.append(PhysicalToLogicalMapping(pd=pd, ld=ld, start_time=start_time, end_time=end_time))
+            mappings.append(PhysicalToLogicalMapping(pd=pd, ld=ld, start_time=start_time, end_time=end_time, is_active=is_active))
 
         if only_current_mapping and len(mappings) > 1:
             warnings.warn(f'Found multiple ({cursor.rowcount}) current mappings for {pd.uid} {pd.name} -> {ld.uid} {ld.name}')
@@ -834,20 +894,42 @@ def get_logical_device_mappings(ld: Union[LogicalDevice, int]) -> List[PhysicalT
         mappings = []
         with _get_connection() as conn, conn.cursor() as cursor:
             l_uid = ld.uid if isinstance(ld, LogicalDevice) else ld
-            cursor.execute('select physical_uid, logical_uid, start_time, end_time from physical_logical_map where logical_uid = %s order by start_time desc', (l_uid, ))
-            for p_uid, l_uid, start_time, end_time in cursor:
+            cursor.execute('select physical_uid, logical_uid, start_time, end_time, is_active from physical_logical_map where logical_uid = %s order by start_time desc', (l_uid, ))
+            for p_uid, l_uid, start_time, end_time, is_active in cursor:
                 pd = _get_physical_device(conn, p_uid)
                 ld = _get_logical_device(conn, l_uid)
-                mapping = PhysicalToLogicalMapping(pd=pd, ld=ld, start_time=start_time, end_time=end_time)
+                mapping = PhysicalToLogicalMapping(pd=pd, ld=ld, start_time=start_time, end_time=end_time, is_active=is_active)
                 mappings.append(mapping)
 
         return mappings
     except Exception as err:
-        raise err if isinstance(err, DAOException) else DAOException('get_unmapped_physical_devices failed.', err)
+        raise err if isinstance(err, DAOException) else DAOException('get_logical_device_mappings failed.', err)
     finally:
         if conn is not None:
             free_conn(conn)
 
+
+@backoff.on_exception(backoff.expo, DAOException, max_time=30)
+def get_physical_device_mappings(pd: Union[PhysicalDevice, int]) -> List[PhysicalToLogicalMapping]:
+    conn = None
+    try:
+        mappings = []
+        with _get_connection() as conn, conn.cursor() as cursor:
+            p_uid = pd.uid if isinstance(pd, PhysicalDevice) else pd
+            cursor.execute('select physical_uid, logical_uid, start_time, end_time, is_active from physical_logical_map where physical_uid = %s order by start_time desc', (p_uid, ))
+            
+            for p_uid, l_uid, start_time, end_time, is_active in cursor:
+                pd = _get_physical_device(conn, p_uid)
+                ld = _get_logical_device(conn, l_uid)
+                mapping = PhysicalToLogicalMapping(pd=pd, ld=ld, start_time=start_time, end_time=end_time, is_active=is_active)
+                mappings.append(mapping)
+
+        return mappings
+    except Exception as err:
+        raise err if isinstance(err, DAOException) else DAOException('get_physical_logical_mappings failed.', err)
+    finally:
+        if conn is not None:
+            free_conn(conn)
 
 @backoff.on_exception(backoff.expo, DAOException, max_time=30)
 def get_all_current_mappings(return_uids: bool = True) -> List[PhysicalToLogicalMapping]:
@@ -855,15 +937,15 @@ def get_all_current_mappings(return_uids: bool = True) -> List[PhysicalToLogical
     try:
         mappings = []
         with _get_connection() as conn, conn.cursor() as cursor:
-            cursor.execute('select physical_uid, logical_uid, start_time, end_time from physical_logical_map where end_time is null order by logical_uid asc')
-            for p_uid, l_uid, start_time, end_time in cursor:
+            cursor.execute('select physical_uid, logical_uid, start_time, end_time, is_active from physical_logical_map where end_time is null order by logical_uid asc')
+            for p_uid, l_uid, start_time, end_time, is_active in cursor:
                 if return_uids:
                     pd = p_uid
                     ld = l_uid
                 else:
                     pd = _get_physical_device(conn, p_uid)
                     ld = _get_logical_device(conn, l_uid)
-                mapping = PhysicalToLogicalMapping(pd=pd, ld=ld, start_time=start_time, end_time=end_time)
+                mapping = PhysicalToLogicalMapping(pd=pd, ld=ld, start_time=start_time, end_time=end_time, is_active=is_active)
                 mappings.append(mapping)
 
         return mappings
@@ -888,12 +970,17 @@ def add_raw_json_message(source_name: str, ts: datetime, correlation_uuid: str, 
         if conn is not None:
             free_conn(conn)
 
+
 @backoff.on_exception(backoff.expo, DAOException, max_time=30)
-def insert_physical_timeseries_message(p_uid: int, ts: datetime, msg: Dict[str, Any]) -> None:
+def insert_physical_timeseries_message(msg: Dict[str, Any]) -> None:
     conn = None
+    p_uid = msg[BrokerConstants.PHYSICAL_DEVICE_UID_KEY]
+    l_uid = msg[BrokerConstants.LOGICAL_DEVICE_UID_KEY] if BrokerConstants.LOGICAL_DEVICE_UID_KEY in msg else None
+    ts = msg[BrokerConstants.TIMESTAMP_KEY]
+
     try:
         with _get_connection() as conn, conn.cursor() as cursor:
-            cursor.execute('insert into physical_timeseries (physical_uid, ts, json_msg) values (%s, %s, %s)', (p_uid, ts, Json(msg)))
+            cursor.execute('insert into physical_timeseries (physical_uid, ts, logical_uid, json_msg) values (%s, %s, %s, %s)', (p_uid, ts, l_uid, Json(msg)))
     except Exception as err:
         raise DAOException('insert_physical_timeseries_message failed.', err)
     finally:

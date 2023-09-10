@@ -152,6 +152,34 @@ class TestRESTAPI(unittest.TestCase):
         self.assertIsNotNone(j)
         self.assertEqual(len(j), 0)
 
+    def test_get_physical_device_without_properties(self):
+        dev, new_dev = self._create_physical_device(req_header=self._ADMIN_HEADERS)
+
+        url = f'{_BASE}/physical/devices/'
+        params = {'include_properties': True}
+        r = requests.get(url, headers=self._HEADERS, params=params)
+        self.assertEqual(r.status_code, 200)
+        j = r.json()
+        self.assertIsNotNone(j)
+        self.assertEqual(len(j), 1)
+
+        # Note the devs must be parsed by the PhysicalDevice class to convert
+        # the ISO-8601 strings into datetime objects or the comparsion will not
+        # work.
+        parsed_devs = [PhysicalDevice.parse_obj(d) for d in j]
+        self.assertEqual(new_dev, parsed_devs[0])
+
+        url = f'{_BASE}/physical/devices/'
+        params = {'include_properties': False}
+        r = requests.get(url, headers=self._HEADERS, params=params)
+        self.assertEqual(r.status_code, 200)
+        j = r.json()
+        self.assertIsNotNone(j)
+        self.assertEqual(len(j), 1)
+
+        parsed_devs = [PhysicalDevice.parse_obj(d) for d in j]
+        self.assertEqual(parsed_devs[0].properties, {})
+
     def test_update_physical_device(self):
         dev, new_dev = self._create_physical_device(req_header=self._ADMIN_HEADERS)
 
@@ -304,6 +332,34 @@ class TestRESTAPI(unittest.TestCase):
         self.assertEqual(r.status_code, 200)
         got_dev = LogicalDevice.parse_obj(r.json())
         self.assertEqual(new_dev, got_dev)
+
+    def test_get_logical_device_without_properties(self):
+        dev, new_dev = self._create_default_logical_device(req_header=self._ADMIN_HEADERS)
+
+        url = f'{_BASE}/logical/devices/'
+        params = {'include_properties': True}
+        r = requests.get(url, headers=self._HEADERS, params=params)
+        self.assertEqual(r.status_code, 200)
+        j = r.json()
+        self.assertIsNotNone(j)
+        self.assertEqual(len(j), 1)
+
+        # Note the devs must be parsed by the PhysicalDevice class to convert
+        # the ISO-8601 strings into datetime objects or the comparsion will not
+        # work.
+        parsed_devs = [LogicalDevice.parse_obj(d) for d in j]
+        self.assertEqual(new_dev, parsed_devs[0])
+
+        url = f'{_BASE}/logical/devices/'
+        params = {'include_properties': False}
+        r = requests.get(url, headers=self._HEADERS, params=params)
+        self.assertEqual(r.status_code, 200)
+        j = r.json()
+        self.assertIsNotNone(j)
+        self.assertEqual(len(j), 1)
+
+        parsed_devs = [LogicalDevice.parse_obj(d) for d in j]
+        self.assertEqual(parsed_devs[0].properties, {})
 
     def test_update_logical_device(self):
         dev, new_dev = self._create_default_logical_device(req_header=self._ADMIN_HEADERS)
