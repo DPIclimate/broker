@@ -1,6 +1,10 @@
 #!/usr/bin/env bash
 
-#assuming everything is up and running
+#MAKE SURE IOTA IS UP AND RUNNING
+#REQUIRES RUNNING ../../load-data.sh OR AT LEAST HAVING SOME DEVICES WITH PUID AND LUID 1 IN THE SYSTEM
+#
+#RUN BY USING `./test_web_app.sh`
+#CHECK RESULTS BY GOING TO IOTA WEB APP AND SELECTING ON EITHER PHYSICAL OR LOGICAL DEVICE #1 AND CHECK BOTTOM OF PAGE
 
 iota_msgs=(
 	'{"broker_correlation_id": "83d04e6f-db16-4280-8337-53f11b2335c6", "l_uid": 1, "p_uid": 1, "timestamp":"2023-09-05T05:00:00.000000Z", "timeseries": [{"name": "5_Temperature", "value": 5.17719879313449},{"name": "battery voltage", "value": 12.17719879313449}]}'

@@ -20,7 +20,7 @@ Retrieval of time series data|tbc|tbc
 Runs parallel with existing databases|No|tbc
 No cloud hosting|No|tba
 Backup and restore scripts|tbc|tbc
-Webapp additional web graph to visualise time series |No|[link](#webapp-time-series-graph)
+Webapp additional web graph to visualise time series |[link](https://github.com/ZakhaevK/itc303-team3-broker/blob/merge_dpi/test/python/test_web_app.sh)|[link](#webapp-time-series-graph)
 Compatibilty with existing IoTa implementation|No|[link](#iota-compatibility)
 
 ##### Other Requirements:
@@ -66,7 +66,14 @@ File|Changes|Reasons
 - The time series graph uses chart.js
 - Adds a time series graph at the bottom of each logical or physical device page.
 - Allows 30 days, 7 days and 1 days selection and ability to enable or disable certain time series
+- To run asscociated test script to check that this works as intended, head to `../../test/python/test_web_app.sh`
+- and run `./test_web_app.sh` - it requires having a physical and logical device of #1 id in the system (you can easily do this by using `./load_data.sh` script)
+- At this point you can go to webapp and click on puid or luid 1 and check bottom of page.
 
+![images](../../doc/tsdb/media/physical_empty.png)
+![images](../../doc/tsdb/media/logical_30_days.png)
+![images](../../doc/tsdb/media/logical_7_days.png)
+![images](../../doc/tsdb/media/logical_7_days_2.png)
 
 ---
 #### Cloud hosting
