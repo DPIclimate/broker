@@ -9,6 +9,11 @@
 - Ideally only run the tests in a test environment as <b><u>data may be added or removed from the tsdb</u></b>
 - Test scripts may need to be updated if hostnames, or other similar settings change.
 - Test scripts are added into [test/python](https://github.com/ZakhaevK/itc303-team3-broker/tree/merge_dpi/test/python)
+
+Test|Requires Running Instance|run commands
+|--|--|--|
+[Webapp time series graph](https://github.com/ZakhaevK/itc303-team3-broker/blob/merge_dpi/test/python/test_web_app.sh)|Yes|`./load_data.sh` - creates devices <br> `./test/python/test_web_app.sh` - loads test time series data <br> `check webapp physical or logical device #1`
+
 ---
 #### Requirements Breakdown
 
@@ -17,8 +22,8 @@ Requirement|Test Script|Supported Document
 |--|--|--|
 Storage of time series data|tbc|tbc
 Retrieval of time series data|tbc|tbc
-Runs parallel with existing databases|No|tbc
-No cloud hosting|No|tba
+Runs parallel with existing databases|No|[link](#runs-parallel)
+No cloud hosting|No|[link](#cloud-hosting)
 Backup and restore scripts|tbc|tbc
 Webapp additional web graph to visualise time series |[link](https://github.com/ZakhaevK/itc303-team3-broker/blob/merge_dpi/test/python/test_web_app.sh)|[link](#webapp-time-series-graph)
 Compatibilty with existing IoTa implementation|No|[link](#iota-compatibility)
@@ -106,3 +111,8 @@ File|Changes|Reasons
 
 ![LINKED IMAGE](./media/std_name_tests.png)
 
+---
+#### Runs Parallel
+- Below screenshot shows all running containers when IoTa is running, all the existing containers are running plus a few extra ones for the time series features.
+
+![picture](./media/docker-ps.png)
