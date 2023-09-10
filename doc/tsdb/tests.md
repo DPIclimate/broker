@@ -61,6 +61,17 @@ File|Changes|Reasons
 [src/www/app/templates/logical_device_form.html](https://github.com/ZakhaevK/itc303-team3-broker/blob/merge_dpi/src/www/app/templates/logical_device_form.html)|- added reference to ts_graph.js|- adds time series graph to page
 [/load-data.sh](https://github.com/ZakhaevK/itc303-team3-broker/blob/merge_dpi/load-data.sh)|- added file|- useful script for adding and mapping some devices to test 
 
+
+---
+#### Storage of time series data
+- Listener (TS_LTSReader.py) performs message handling in conjunction with Timescale.py for insertion.
+- Messages that are not of IoTa message format, or contain invalid data will be dropped.
+- Messages containing an ID pairing that does not exist within Device Mapper will be dropped.
+- Time series data names are standardised prior to storage in the Timescale database as per [link](#robust-implementation).
+- The TestIntegrationTSDB.py file tests this functionality, and passes as seen in the image below:
+
+![LINKED IMAGE](./media/store_msgs.png)
+
 ---
 #### Webapp Time Series Graph
 - The time series graph uses chart.js
