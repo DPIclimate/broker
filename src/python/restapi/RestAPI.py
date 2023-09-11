@@ -541,7 +541,6 @@ app = FastAPI(title='IoT Device Broker', version='1.0.0')
 app.include_router(router)
 app.include_router(TSDBAPI.router)
 
-
 # @app.middleware("http")
 # async def check_auth_header(request: Request, call_next):
     

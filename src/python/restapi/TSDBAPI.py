@@ -133,7 +133,7 @@ async def get_luid_for_last_x(l_uid: str, years = 0, months = 0, days = 0, hours
 @router.get("/p_uid/{p_uid}/last")
 async def get_puid_for_last_x(p_uid: str, years = 0, months = 0, days = 0, hours = 0, minutes = 0, seconds = 0):
     with psycopg2.connect(CONNECTION) as conn:
-        date = datetime.datetime.now()
+        date = datetime.datetime.utcnow()
         current_date = f"{date.year}-{date.month}-{date.day} {date.hour}:{date.minute}:{date.second}" 
         target_year = date.year - int(years)
         target_month = date.month - int(months)
