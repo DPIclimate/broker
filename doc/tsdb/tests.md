@@ -101,6 +101,7 @@ File|Changes|Reasons
 - typically `0.0.0.0:5687/docs` to get full view of implementented features.
 - main options are query database, get record by luid, puid, get by function and get by time.
 
+![image](./media/api_test.png)
 ![image](./media/api-docs.png)
 
 ---
