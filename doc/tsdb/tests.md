@@ -94,15 +94,12 @@ File|Changes|Reasons
 ![image](./media/db-direct-query.png)
 
 ---
-#### Retrieval of time series data
-- The TSDBAPI.py file provides the /query/ route for retrieval from TimescaleDB.
-- The TestRetrievalTSDB.py file runs an automated test to confirm functionality is working as expected.
-
----
 #### API
 - the RestAPI uses same end points as existing api
+- The TSDBAPI.py file provides the /query/ route for retrieval from TimescaleDB.
+- The TestRetrievalTSDB.py file runs an automated test to confirm API functionality is working as expected.
 - typically `0.0.0.0:5687/docs` to get full view of implementented features.
-- main bits are query database, get record by luid, puid, get by function and get by time.
+- main options are query database, get record by luid, puid, get by function and get by time.
 
 ![image](./media/api-docs.png)
 
