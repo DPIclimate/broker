@@ -24,13 +24,13 @@ Test|Requires Running Instance|run commands|notes
 Requirement|Test Script|Supported Document
 |--|--|--|
 Storage of time series data|[link](https://github.com/ZakhaevK/itc303-team3-broker/blob/merge_dpi/test/python/TestIntegrationTSDB.py)|[link](#storage-of-time-series-data)
-Retrieval of time series data|[link](https://github.com/ZakhaevK/itc303-team3-broker/blob/merge_dpi/test/python/TestRetrievalTSDB.py)|[link](#retrieval-of-time-series-data)
+Retrieval of time series data|[link](https://github.com/ZakhaevK/itc303-team3-broker/blob/merge_dpi/test/python/TestTSDBAPI.py)|[link](#retrieval-of-time-series-data)
 Runs parallel with existing databases|No|[link](#runs-parallel)
 No cloud hosting|No|[link](#cloud-hosting)
 Backup and restore scripts|No|[link](#backup-and-restore)
 Webapp additional web graph to visualise time series |[link](https://github.com/ZakhaevK/itc303-team3-broker/blob/merge_dpi/test/python/test_web_app.sh)|[link](#webapp-time-series-graph)
 Compatibilty with existing IoTa implementation|No|[link](#iota-compatibility)
-API to query database|No|[link](#api)
+API to query database|[link](https://github.com/ZakhaevK/itc303-team3-broker/blob/merge_dpi/test/python/TestTSDBAPI.py)|[link](#api)
 
 ##### Other Requirements:
 Requirement|Test Script|Supported Document
