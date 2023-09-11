@@ -120,10 +120,11 @@ File|Changes|Reasons
 
 ---
 #### Backup and Restore
+- Currently only full backup is implmented.
 - There are two scripts to handle this `../../ts_backup.sh` and `../../ts_restore.sh`
 - They are pretty straight forward and quite verbose to ensure that user knows that scripts have run correctly without error.
-
-#todo: add some photos showing scripts
+- Backup data is in the form of chunks due to the hypertables of TimescaleDB used for optimisation.
+- Further information on functionality is within the [user manual](https://docs.google.com/document/d/1Y9wej463ze6CFD0ZhA6pwCcQbC8DD6kX/edit?usp=drive_link&ouid=105542707453657000248&rtpof=true&sd=true).
 
 ---
 #### Cloud hosting
