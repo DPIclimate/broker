@@ -14,7 +14,7 @@
 Test|Requires Running Instance|run commands|notes
 |--|--|--|--|
 [Integration Tests](https://github.com/ZakhaevK/itc303-team3-broker/blob/merge_dpi/test/python/TestIntegrationTSDB.py)|Yes|`cd test/python`<br>`python -m pytest -v TestIntegrationTSDB.py`|It will add some stuff to database.
-[Retrieval Tests](https://github.com/ZakhaevK/itc303-team3-broker/blob/merge_dpi/test/python/TestRetrievalTSDB.py)|Yes|`./load_data.sh`<br>`cd test/python`<br>`python -m pytest -v TestRetrievalTSDB.py`|needs at least one device with puid and luid #1<br>inserts into database.
+[Retrieval/API Tests](https://github.com/ZakhaevK/itc303-team3-broker/blob/merge_dpi/test/python/TestTSDBAPI.py)|Yes|`./load_data.sh`<br>`cd test/python`<br>`python -m pytest -v TestTSDBAPI.py`|needs at least one device with puid and luid #1<br>inserts into database.
 [Webapp time series graph](https://github.com/ZakhaevK/itc303-team3-broker/blob/merge_dpi/test/python/test_web_app.sh)|Yes|`./load_data.sh` <br> `cd test/python`<br>`./test_web_app.sh`|requires devices to exist with id 1, after running script head to the iota web app and check the physical or logical pages for time series data.<br>- hard coded dates, so ~9/10/23 will not show data as it is >30 days
 [Standardised Naming](https://github.com/ZakhaevK/itc303-team3-broker/blob/merge_dpi/test/python/TestStdNaming.py)|No|`cd test/python`<br>`python -m pytest -v TestStdNaming.py`|you need to have to have python 3.10, and ideally most requirements so installing them from `../../src/python/restapi/requirements.txt` is easiest
 ---
