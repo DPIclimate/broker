@@ -26,4 +26,6 @@ create table if not exists version (
     version integer not null
 );
 
+alter table physical_logical_map add column is_active boolean not null default true;
+
 insert into version values (1);
