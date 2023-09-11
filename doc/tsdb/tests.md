@@ -97,7 +97,7 @@ File|Changes|Reasons
 #### API
 - the RestAPI uses same end points as existing api
 - The TSDBAPI.py file provides the /query/ route for retrieval from TimescaleDB.
-- The TestRetrievalTSDB.py file runs an automated test to confirm API functionality is working as expected.
+- The TestTSDBAPI.py file runs an automated test to confirm API functionality is working as expected.
 - typically `0.0.0.0:5687/docs` to get full view of implementented features.
 - main options are query database, get record by luid, puid, get by function and get by time.
 
