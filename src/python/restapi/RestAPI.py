@@ -22,15 +22,6 @@ import api.client.DAO as dao
 
 import base64
 
-# TSDB details
-tsdb_user = os.environ.get("TSDB_USER")
-tsdb_pass = os.environ.get("TSDB_PASSWORD")
-tsdb_host = os.environ.get("TSDB_HOST")
-tsdb_port = os.environ.get("TSDB_PORT")
-tsdb_db = os.environ.get("TSDB_DB")
-tsdb_table = os.environ.get("TSDB_TABLE")
-CONNECTION = f"postgres://{tsdb_user}:{tsdb_pass}@{tsdb_host}:{tsdb_port}/{tsdb_db}"
-
 # Scheme for the Authorization header
 token_auth_scheme = HTTPBearer()
 http_basic_auth = HTTPBasic()
