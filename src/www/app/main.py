@@ -14,10 +14,6 @@ app = Flask(__name__, static_url_path='/static')
 
 debug_enabled = False
 
-app.wsgi_app = DispatcherMiddleware(
-    Response('Not Found', status=404),
-    {'/iota': app.wsgi_app}
-)
 
 
 def time_since(date):
