@@ -129,14 +129,21 @@ File|Changes|Reasons
 ---
 #### Cloud hosting
 - All data is self hosted within docker compose stack via Timescale and existing Postgres database.
+- It has been done in the same method as the existing postgresql db.
 
-[docker-compose.yml](https://github.com/ZakhaevK/itc303-team3-broker/blob/master/compose/docker-compose.yml)
 ```
+services:
+  ...
+
+  timescaledb:
     volumes:
-      #- ../timescale/data:/var/lib/postgresql/data # Named volume in repo folder, had permission issues
-      #- timescale_data:/var/lib/postgresql/data # Names volume in local root, permissions fine, needed manual deletion.
-      - /var/lib/postgresql/data
-      - ../timescale/init.sql:/docker-entrypoint-initdb.d/init.sql
+      - tsdb_db:/var/lib/postgresql/ts_data
+
+volumes:
+  ...
+
+  tsdb_db:
+    external: true
 ```
 
 ---
