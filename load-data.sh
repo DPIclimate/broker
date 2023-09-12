@@ -3,9 +3,15 @@
 user="user"
 pass="pass"
 num_devices=10
+container_name="test-lm-1"
+
+# Check if prod container running
+if docker ps -a --format "{{.Names}}" | grep -q "^prod-lm-1$"; then
+	container_name="prod-lm-1"
+fi
 
 #get users
-users=$(docker exec test-lm-1 python -m broker-cli users ls | tr -d "[]'")
+users=$(docker exec "$container_name" python -m broker-cli users ls | tr -d "[]'")
 IFS=',' read -r -a array <<<"${users}"
 
 #check if user exists then create it if it doesnt
@@ -13,8 +19,8 @@ if echo "${array[@]}" | grep -q -w "$user"; then
 	echo "user already"
 else
 	echo 'adding user'
-	docker exec test-lm-1 python -m broker-cli users add -u "${user}" -p "${pass}"
-	users=$(docker exec test-lm-1 python -m broker-cli users ls)
+	docker exec "$container_name" python -m broker-cli users add -u "${user}" -p "${pass}"
+	users=$(docker exec "$container_name" python -m broker-cli users ls)
 	echo "listed users: ${users}"
 	echo "login with ${user} && ${pass}"
 fi
@@ -47,9 +53,9 @@ while [ $counter -le $num_devices ]; do
     }
   }'
 	#echo "$device_template"
-	puid=$(docker exec test-lm-1 python -m broker-cli pd create --json "$device_template" | grep "uid" | sed 's/[^0-9]*//g')
-	luid=$(docker exec test-lm-1 python -m broker-cli ld create --json "$device_template" | grep -oP 'uid=\K\d+')
-	docker exec test-lm-1 python -m broker-cli map start --puid "$puid" --luid "$luid" >/dev/null
+	puid=$(docker exec "$container_name" python -m broker-cli pd create --json "$device_template" | grep "uid" | sed 's/[^0-9]*//g')
+	luid=$(docker exec "$container_name" python -m broker-cli ld create --json "$device_template" | grep -oP 'uid=\K\d+')
+	docker exec "$container_name" python -m broker-cli map start --puid "$puid" --luid "$luid" >/dev/null
 	puids+=("$puid")
 	((counter++))
 	echo -ne "."
@@ -58,13 +64,13 @@ echo
 
 # print devices
 echo 'PHYSICAL DEVICES:'
-devices=$(docker exec test-lm-1 python -m broker-cli pd ls --plain)
+devices=$(docker exec "$container_name" python -m broker-cli pd ls --plain)
 echo -e "listed devices:\n${devices}"
 echo 'LOGICAL DEVICES:'
-devices=$(docker exec test-lm-1 python -m broker-cli ld ls --plain)
+devices=$(docker exec "$container_name" python -m broker-cli ld ls --plain)
 echo -e "listed devices:\n${devices}"
 echo 'MAPPINGS:'
 for puid in "${puids[@]}"; do
-	output=$(docker exec test-lm-1 python -m broker-cli map ls --puid "$puid")
+	output=$(docker exec "$container_name" python -m broker-cli map ls --puid "$puid")
 	echo "$output" | jq -r '"pd uid:\(.pd.uid) -> ld uid:\(.ld.uid)"'
 done

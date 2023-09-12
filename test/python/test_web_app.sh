@@ -6,6 +6,13 @@
 #RUN BY USING `./test_web_app.sh`
 #CHECK RESULTS BY GOING TO IOTA WEB APP AND SELECTING ON EITHER PHYSICAL OR LOGICAL DEVICE #1 AND CHECK BOTTOM OF PAGE
 
+container_name="test-mq-1"
+
+# Check if prod container running
+if docker ps -a --format "{{.Names}}" | grep -q "^prod-mq-1$"; then
+	container_name="prod-mq-1"
+fi
+
 iota_msgs=(
 	'{"broker_correlation_id": "83d04e6f-db16-4280-8337-53f11b2335c6", "l_uid": 1, "p_uid": 1, "timestamp":"2023-09-05T05:00:00.000000Z", "timeseries": [{"name": "5_Temperature", "value": 5.17719879313449},{"name": "battery voltage", "value": 12.17719879313449}]}'
 	'{"broker_correlation_id": "83d04e6f-db16-4280-8337-53f11b2335c6", "l_uid": 1, "p_uid": 1, "timestamp":"2023-09-05T06:00:00.000000Z", "timeseries": [{"name": "5_Temperature", "value": 18.59712346078412},{"name": "battery voltage", "value": 12.6313449}]}'
@@ -36,7 +43,7 @@ send_msg() {
 	local mq_user="broker"
 	local mq_pass="CHANGEME"
 
-	docker exec test-mq-1 rabbitmqadmin publish -u "$mq_user" -p "$mq_pass" \
+	docker exec "$container_name" rabbitmqadmin publish -u "$mq_user" -p "$mq_pass" \
 		"exchange=$exchange" "routing_key=$queue" "payload=$msg" properties={}
 }
 
