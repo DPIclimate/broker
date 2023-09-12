@@ -1,5 +1,5 @@
 #requires test environment running
-#python -m pytest TestIntegrationTSDB.py
+#python -m pytest TestTSDBAPI.py
 
 import pytest,sys,os,json,dateutil,pika,time,subprocess,requests,psycopg2
 
@@ -55,6 +55,7 @@ def generate_and_send_message(correlation_id, p_uid, l_uid, timestamp, name, val
     }
     send_msg(json.dumps(msg))
 
+# Test a single message retrieval
 def test_send_and_query_message():
     current_time = get_current_time()
     generate_and_send_message("test1", 1, 1, current_time, "battery (v)", 6.66)
@@ -80,6 +81,7 @@ def test_send_and_query_message():
     assert len(matching_rows) > 0
     assert matching_rows[0][3] == current_time
 
+
 def test_query_by_time_range():
     current_time1 = get_current_time()
     generate_and_send_message("test1", 1, 1, current_time1, "battery (v)", 6.66)
@@ -100,15 +102,18 @@ def test_query_by_time_range():
     assert current_time1 in timestamps
     assert current_time2 in timestamps
 
+import time
+
+# Tests both luid, and last filtering
 def test_get_last_records_for_luid():
     current_time1 = get_current_time()
     generate_and_send_message("test1", 1, 1, current_time1, "battery (v)", 6.66)
-    time.sleep(3)
+    time.sleep(2)  
     current_time2 = get_current_time()
     generate_and_send_message("test2", 1, 1, current_time2, "battery (v)", 9.99)
-    time.sleep(3)
+    time.sleep(2)  
     
-    response = requests.get(f"{end_point}/query/l_uid/1/last", params={"seconds": 10})
+    response = requests.get(f"{end_point}/query/l_uid/1/last", params={"seconds": 5})
     response.raise_for_status()
     data = response.json()
     
@@ -119,3 +124,26 @@ def test_get_last_records_for_luid():
     assert current_time2 in timestamps
 
 
+# Test the func endpoint for getting an average.
+def test_get_average_for_luid():
+
+    current_time1 = get_current_time()
+    generate_and_send_message("test1", "1", "1", current_time1, "battery (v)", 1)
+    time.sleep(1)
+
+    current_time2 = get_current_time()
+    generate_and_send_message("test2", "1", "1", current_time2, "battery (v)", 2)
+    time.sleep(1)
+
+    current_time3 = get_current_time()
+    generate_and_send_message("test3", "1", "1", current_time3, "battery (v)", 3)
+    time.sleep(1)
+
+    # Make a request to get the average value for l_uid=1 between the times.
+    response = requests.get(f"{end_point}/query/l_uid/1/avg", params={"fromdate": current_time1, "todate": current_time3})
+    response.raise_for_status()
+    data = response.json()
+
+    # Check if the average value is 2
+    assert len(data) == 1
+    assert data[0][0] == 2

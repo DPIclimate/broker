@@ -14,7 +14,7 @@
 Test|Requires Running Instance|run commands|notes
 |--|--|--|--|
 [Integration Tests](https://github.com/ZakhaevK/itc303-team3-broker/blob/merge_dpi/test/python/TestIntegrationTSDB.py)|Yes|`cd test/python`<br>`python -m pytest -v TestIntegrationTSDB.py`|It will add some stuff to database.
-[Retrieval Tests](https://github.com/ZakhaevK/itc303-team3-broker/blob/merge_dpi/test/python/TestRetrievalTSDB.py)|Yes|`./load_data.sh`<br>`cd test/python`<br>`python -m pytest -v TestRetrievalTSDB.py`|needs at least one device with puid and luid #1<br>inserts into database.
+[Retrieval/API Tests](https://github.com/ZakhaevK/itc303-team3-broker/blob/merge_dpi/test/python/TestTSDBAPI.py)|Yes|`./load_data.sh`<br>`cd test/python`<br>`python -m pytest -v TestTSDBAPI.py`|needs at least one device with puid and luid #1<br>inserts into database.
 [Webapp time series graph](https://github.com/ZakhaevK/itc303-team3-broker/blob/merge_dpi/test/python/test_web_app.sh)|Yes|`./load_data.sh` <br> `cd test/python`<br>`./test_web_app.sh`|requires devices to exist with id 1, after running script head to the iota web app and check the physical or logical pages for time series data.<br>- hard coded dates, so ~9/10/23 will not show data as it is >30 days
 [Standardised Naming](https://github.com/ZakhaevK/itc303-team3-broker/blob/merge_dpi/test/python/TestStdNaming.py)|No|`cd test/python`<br>`python -m pytest -v TestStdNaming.py`|you need to have to have python 3.10, and ideally most requirements so installing them from `../../src/python/restapi/requirements.txt` is easiest
 ---
@@ -24,13 +24,13 @@ Test|Requires Running Instance|run commands|notes
 Requirement|Test Script|Supported Document
 |--|--|--|
 Storage of time series data|[link](https://github.com/ZakhaevK/itc303-team3-broker/blob/merge_dpi/test/python/TestIntegrationTSDB.py)|[link](#storage-of-time-series-data)
-Retrieval of time series data|[link](https://github.com/ZakhaevK/itc303-team3-broker/blob/merge_dpi/test/python/TestRetrievalTSDB.py)|[link](#retrieval-of-time-series-data)
+Retrieval of time series data|[link](https://github.com/ZakhaevK/itc303-team3-broker/blob/merge_dpi/test/python/TestTSDBAPI.py)|[link](#retrieval-of-time-series-data)
 Runs parallel with existing databases|No|[link](#runs-parallel)
 No cloud hosting|No|[link](#cloud-hosting)
 Backup and restore scripts|No|[link](#backup-and-restore)
 Webapp additional web graph to visualise time series |[link](https://github.com/ZakhaevK/itc303-team3-broker/blob/merge_dpi/test/python/test_web_app.sh)|[link](#webapp-time-series-graph)
 Compatibilty with existing IoTa implementation|No|[link](#iota-compatibility)
-API to query database|No|[link](#api)
+API to query database|[link](https://github.com/ZakhaevK/itc303-team3-broker/blob/merge_dpi/test/python/TestTSDBAPI.py)|[link](#api)
 
 ##### Other Requirements:
 Requirement|Test Script|Supported Document
@@ -94,16 +94,14 @@ File|Changes|Reasons
 ![image](./media/db-direct-query.png)
 
 ---
-#### Retrieval of time series data
-- The TSDBAPI.py file provides the /query/ route for retrieval from TimescaleDB.
-- The TestRetrievalTSDB.py file runs an automated test to confirm functionality is working as expected.
-
----
 #### API
 - the RestAPI uses same end points as existing api
+- The TSDBAPI.py file provides the /query/ route for retrieval from TimescaleDB.
+- The TestTSDBAPI.py file runs an automated test to confirm API functionality is working as expected.
 - typically `0.0.0.0:5687/docs` to get full view of implementented features.
-- main bits are query database, get record by luid, puid, get by function and get by time.
+- main options are query database, get record by luid, puid, get by function and get by time.
 
+![image](./media/api_test.png)
 ![image](./media/api-docs.png)
 
 ---
@@ -122,10 +120,11 @@ File|Changes|Reasons
 
 ---
 #### Backup and Restore
+- Currently only full backup is implmented.
 - There are two scripts to handle this `../../ts_backup.sh` and `../../ts_restore.sh`
 - They are pretty straight forward and quite verbose to ensure that user knows that scripts have run correctly without error.
-
-#todo: add some photos showing scripts
+- Backup data is in the form of chunks due to the hypertables of TimescaleDB used for optimisation.
+- Further information on functionality is within the [user manual](https://docs.google.com/document/d/1Y9wej463ze6CFD0ZhA6pwCcQbC8DD6kX/edit?usp=drive_link&ouid=105542707453657000248&rtpof=true&sd=true).
 
 ---
 #### Cloud hosting
