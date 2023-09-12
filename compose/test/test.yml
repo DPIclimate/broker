@@ -15,3 +15,10 @@ services:
       - ..:/home/broker/broker
     working_dir: "/home/broker/broker"
     entrypoint: [ "./forever.sh" ]
+  mq:
+    ports:
+      - 15672:15672
+  restapi:
+    ports:
+      - 5687:5687
+
