@@ -1,12 +1,13 @@
 import json
 from typing import List
 import requests
-from datetime import datetime
+from datetime import datetime, timezone
 import base64
 
 from pdmodels.Models import PhysicalDevice, LogicalDevice, PhysicalToLogicalMapping, DeviceNote, Location
 
 end_point = 'http://restapi:5687'
+
 
 def get_sources(token: str) -> List[str]:
     """
@@ -233,7 +234,7 @@ def toggle_device_mapping(uid: int, dev_type: str, is_active: bool, token: str):
         response.raise_for_status()
 
 
-def create_logical_device(physical_device: dict, token: str) ->str:
+def create_logical_device(physical_device: PhysicalDevice, token: str) ->str:
     """
         Create a logical device from physical device
 
@@ -247,16 +248,13 @@ def create_logical_device(physical_device: dict, token: str) ->str:
 
     headers = {"Authorization": f"Bearer {token}"}
 
-    timeObject = datetime.now()
     logicalJson = {
         "uid": 0,
-        "name": physical_device['name'],
-        "location": physical_device['location'],
-        "last_seen": str(timeObject),
-        "properties": physical_device['properties']
+        "name": physical_device.name,
+        "location": physical_device.location,
     }
-    response = requests.post(
-        f'{end_point}/broker/api/logical/devices/', json=logicalJson, headers=headers)
+
+    response = requests.post(f'{end_point}/broker/api/logical/devices/', json=logicalJson, headers=headers)
     response.raise_for_status()
 
     logical_device = response.json()
@@ -273,46 +271,27 @@ def delete_note(uid: str, token: str):
     return response.json()
 
 
-def insert_device_mapping(physicalUid: str, logicalUid: str, token: str):
-
+def insert_device_mapping(p_uid: int, l_uid: int, token: str):
     """
         Create a device mapping between a physical and logical device
 
         Params:
-            physicalUid: str - uid of physical device
-            logicalUid: str - uid of logical device
-
+            physicalUid: int - uid of physical device
+            logicalUid: int - uid of logical device
+            token: str - bearer token for the current session
         returns:
 
     """
     headers = {"Authorization": f"Bearer {token}"}
 
-    logicalDevice = get_logical_device(logicalUid, token=token)
-    physicalDevice = get_physical_device(physicalUid, token=token)
-    timeObject = datetime.now()
-    end_physical_mapping(physicalUid, token=token)
+    l_dev: LogicalDevice = get_logical_device(l_uid, token=token)
+    p_dev: PhysicalDevice = get_physical_device(p_uid, token=token)
+    now = datetime.now(tz=timezone.utc)
+    end_physical_mapping(p_uid, token=token)
 
-    mappingJson = {
-        "pd": {
-            "uid": physicalDevice['uid'],
-            "source_name": physicalDevice['source_name'],
-            "name": physicalDevice['name'],
-            "location": physicalDevice['location'],
-            "last_seen": physicalDevice['last_seen'],
-            "source_ids": physicalDevice['source_ids'],
-            "properties": physicalDevice['properties']
-        },
-        "ld": {
-            "uid": logicalDevice['uid'],
-            "name": logicalDevice['name'],
-            "location": logicalDevice['location'],
-            "last_seen": logicalDevice['last_seen'],
-            "properties": logicalDevice['properties']
-        },
-        "start_time": str(timeObject),
-        "end_time": str(timeObject)
-    }
-    response = requests.post(f'{end_point}/broker/api/mappings/', json=mappingJson, headers=headers)
+    mapping = PhysicalToLogicalMapping(pd=p_dev, ld=l_dev, start_time=now)
+
+    response = requests.post(f'{end_point}/broker/api/mappings/', data=mapping.json(), headers=headers)
     response.raise_for_status()
 
     return response.json()

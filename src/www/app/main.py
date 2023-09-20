@@ -375,9 +375,10 @@ def show_map():
 def CreateMapping():
     try:
         uid = request.args['uid']
-        physical_device = get_physical_device(uid=uid, token=session.get('token'))
-        new_ld_uid = create_logical_device(physical_device=physical_device, token=session.get('token'))
-        insert_device_mapping(physicalUid=uid, logicalUid=new_ld_uid, token=session.get('token'))
+        token = session.get('token')
+        physical_device = get_physical_device(uid, token)
+        new_ld_uid = create_logical_device(physical_device, token)
+        insert_device_mapping(physical_device.uid, new_ld_uid, token)
 
         return 'Success', 200
     except requests.exceptions.HTTPError as e:
@@ -455,8 +456,7 @@ def UpdatePhysicalDevice():
 @app.route('/update-mappings', methods=['GET'])
 def UpdateMappings():
     try:
-        insert_device_mapping(
-            physicalUid=request.args['physicalDevice_mapping'], logicalUid=request.args['logicalDevice_mapping'], token=session.get('token'))
+        insert_device_mapping(request.args['physicalDevice_mapping'], request.args['logicalDevice_mapping'], session.get('token'))
         return 'Success', 200
     except requests.exceptions.HTTPError as e:
         if e.response.status_code == 403:
