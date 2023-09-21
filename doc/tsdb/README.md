@@ -120,22 +120,30 @@ File|Changes|Reasons
 
 ---
 #### Backup and Restore
+- Currently only full backup is implmented.
 - There are two scripts to handle this `../../ts_backup.sh` and `../../ts_restore.sh`
 - They are pretty straight forward and quite verbose to ensure that user knows that scripts have run correctly without error.
-
-#todo: add some photos showing scripts
+- Backup data is in the form of chunks due to the hypertables of TimescaleDB used for optimisation.
+- Further information on functionality is within the [user manual](https://docs.google.com/document/d/1Y9wej463ze6CFD0ZhA6pwCcQbC8DD6kX/edit?usp=drive_link&ouid=105542707453657000248&rtpof=true&sd=true).
 
 ---
 #### Cloud hosting
 - All data is self hosted within docker compose stack via Timescale and existing Postgres database.
+- It has been done in the same method as the existing postgresql db.
 
-[docker-compose.yml](https://github.com/ZakhaevK/itc303-team3-broker/blob/master/compose/docker-compose.yml)
 ```
+services:
+  ...
+
+  timescaledb:
     volumes:
-      #- ../timescale/data:/var/lib/postgresql/data # Named volume in repo folder, had permission issues
-      #- timescale_data:/var/lib/postgresql/data # Names volume in local root, permissions fine, needed manual deletion.
-      - /var/lib/postgresql/data
-      - ../timescale/init.sql:/docker-entrypoint-initdb.d/init.sql
+      - tsdb_db:/var/lib/postgresql/ts_data
+
+volumes:
+  ...
+
+  tsdb_db:
+    external: true
 ```
 
 ---

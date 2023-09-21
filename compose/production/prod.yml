@@ -29,9 +29,16 @@ services:
     ports:
       - "127.0.0.1:5000:5000"
 
+  timescaledb:
+    volumes:
+      - tsdb_db:/var/lib/postgresql/ts_data
+
 volumes:
   broker_db:
     external: true
 
   mq_data:
+    external: true
+
+  tsdb_db:
     external: true
