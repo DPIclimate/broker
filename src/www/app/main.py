@@ -237,6 +237,7 @@ def logical_device_form(uid):
 
         #TS data
         ts_data = get_luid_ts(uid)
+
         parsed_ts = parse_ts_data(ts_data)
 
         return render_template('logical_device_form.html',
@@ -434,17 +435,20 @@ def generate_link(data):
 
 
 def parse_ts_data(ts_data):
-    parsed_ts = {}
-    for entry in ts_data['title']:
-        label = entry[1]
-        timestamp = entry[0]
-        value = entry[2]
+    try:
+        parsed_ts = {}
+        for entry in ts_data['title']:
+            label = entry[1]
+            timestamp = entry[0]
+            value = entry[2]
 
-        if label not in parsed_ts:
-            parsed_ts[label] = []
+            if label not in parsed_ts:
+                parsed_ts[label] = []
 
-        parsed_ts[label].append((timestamp, value))
-    return parsed_ts
+            parsed_ts[label].append((timestamp, value))
+        return parsed_ts
+    except:
+        return {}
 
 
 if __name__ == '__main__':

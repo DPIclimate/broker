@@ -347,17 +347,25 @@ def change_user_password(password: str, token: str) -> str:
 
 
 def get_puid_ts(puid: str):
-    #response = requests.get(f"{end_point}/query/p_uid/{puid}")
-    response = requests.get(f"{end_point}/query/?query=select timestamp,name,value from timeseries where p_uid={puid} and timestamp >= current_date - interval '30 days' order by timestamp asc")
-    response.raise_for_status()
-    return response.json()
-
+    try:
+        response = requests.get(f"{end_point}/query/?query=select timestamp,name,value from timeseries where p_uid={puid} and timestamp >= current_date - interval '30 days' order by timestamp asc")
+        response.raise_for_status()
+        return response.json()
+    except:
+        print("webapp: *todo: change this to logging")
+        print("webapp: unable to pull ts_luid data from api")
+        return {}
 
 def get_luid_ts(luid: str):
     #response = requests.get(f"{end_point}/query/l_uid/{luid}")
-    response = requests.get(f"{end_point}/query/?query=select timestamp,name,value from timeseries where l_uid={luid} and timestamp >= current_date - interval '30 days' order by timestamp asc")
-    response.raise_for_status()
-    return response.json()
+    try:
+        response = requests.get(f"{end_point}/query/?query=select timestamp,name,value from timeseries where l_uid={luid} and timestamp >= current_date - interval '30 days' order by timestamp asc")
+        response.raise_for_status()
+        return response.json()
+    except:
+        print("webapp: *todo: change this to logging")
+        print("webapp: unable to pull ts_luid data from api")
+        return {}
 
 
 
