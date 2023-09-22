@@ -12,13 +12,22 @@ import logging
 from fastapi import APIRouter, Depends, FastAPI, HTTPException, Request, Response, status, Query
 from fastapi.security import HTTPBearer, HTTPBasic
 
-#from fastapi.responses import JSONResponse
+from fastapi.responses import JSONResponse
 from typing import Annotated, List, Dict
 
 from pdmodels.Models import DeviceNote, PhysicalDevice, LogicalDevice, PhysicalToLogicalMapping
 import api.client.DAO as dao
 
 import base64
+
+# Prometheus metrics
+from prometheus_client import Counter, Histogram, Gauge, start_http_server
+from prometheus_fastapi_instrumentator import Instrumentator
+request_counter = Counter('requests_total', 'Total Requests')
+errors_counter = Counter('errors_total', 'Total Errors')
+
+# Start up the server to expose the metrics.
+start_http_server(8000)
 
 # Scheme for the Authorization header
 token_auth_scheme = HTTPBearer()
@@ -27,19 +36,23 @@ http_basic_auth = HTTPBasic()
 # router = APIRouter(prefix='/broker/api', dependencies=[Depends(token_auth_scheme)])
 router = APIRouter(prefix='/broker/api')
 
+
 @router.get("/physical/sources/", tags=['physical devices'], dependencies=[Depends(token_auth_scheme)])
 async def get_all_physical_sources() -> List[str]:
+    request_counter.inc()
     """
     Return a list of all physical device sources.
     """
     try:
         return dao.get_all_physical_sources()
     except dao.DAOException as err:
+        errors_counter.inc()
         raise HTTPException(status_code=500, detail=err.msg)
 
 
 @router.get("/physical/devices/", tags=['physical devices'], dependencies=[Depends(token_auth_scheme)])
 async def query_physical_devices(source_name: str = None, include_properties: bool | None = True) -> List[PhysicalDevice]:
+    request_counter.inc()
     """
     Returns a list of PhysicalDevices.
 
@@ -49,7 +62,7 @@ async def query_physical_devices(source_name: str = None, include_properties: bo
     # locals() returns a dict of the local variables. In this case it's like kwargs which is what the
     # dao.get_physical_devices() function is expecting. If any local variables are declared in this
     # function then they will also be passed in but that's probably ok.
-    #return dao.get_physical_devices(locals())
+    # return dao.get_physical_devices(locals())
 
     devs: List[PhysicalDevice] = []
 
@@ -83,27 +96,32 @@ async def query_physical_devices(source_name: str = None, include_properties: bo
 
 @router.get("/physical/devices/{uid}", tags=['physical devices'], dependencies=[Depends(token_auth_scheme)])
 async def get_physical_device(uid: int) -> PhysicalDevice:
+    request_counter.inc()
     """
     Get the PhysicalDevice specified by uid.
     """
     try:
         dev = dao.get_physical_device(uid)
         if dev is None:
+            errors_counter.inc()
             raise HTTPException(status_code=404, detail="Physical device not found")
 
         return dev
     except dao.DAOException as err:
+        errors_counter.inc()
         raise HTTPException(status_code=500, detail=err.msg)
 
 
 @router.get("/physical/devices/unmapped/", tags=['physical devices'], dependencies=[Depends(token_auth_scheme)])
 async def get_unmapped_physical_devices() -> List[PhysicalDevice]:
+    request_counter.inc()
     """
     Returns a list of unmapped PhysicalDevices.
     """
     try:
         return dao.get_unmapped_physical_devices()
     except dao.DAOException as err:
+        errors_counter.inc()
         raise HTTPException(status_code=500, detail=err.msg)
 
 
@@ -117,6 +135,7 @@ async def create_physical_device(device: PhysicalDevice, request: Request, respo
         response.headers['Location'] = f'{request.url}{pd.uid}'
         return pd
     except dao.DAOException as err:
+        errors_counter.inc()
         raise HTTPException(status_code=500, detail=err.msg)
 
 
@@ -128,8 +147,10 @@ async def update_physical_device(device: PhysicalDevice) -> PhysicalDevice:
     try:
         return dao.update_physical_device(device)
     except dao.DAODeviceNotFound as daonf:
+        errors_counter.inc()
         raise HTTPException(status_code=404, detail=daonf.msg)
     except dao.DAOException as err:
+        errors_counter.inc()
         print(err)
         raise HTTPException(status_code=500, detail=err.msg)
 
@@ -142,15 +163,19 @@ async def delete_physical_device(uid: int) -> None:
     try:
         pd = dao.delete_physical_device(uid)
         if pd is None:
+            errors_counter.inc()
             raise HTTPException(status_code=404)
 
     except dao.DAOException as err:
+        errors_counter.inc()
         raise HTTPException(status_code=500, detail=err.msg)
 
 
 """--------------------------------------------------------------------------
 DEVICE NOTES
 --------------------------------------------------------------------------"""
+
+
 @router.post("/physical/devices/notes/{uid}", tags=['physical devices'], status_code=status.HTTP_201_CREATED, dependencies=[Depends(token_auth_scheme)])
 async def create_physical_device_note(uid: int, note: DeviceNote, request: Request, response: Response) -> None:
     """
@@ -160,16 +185,20 @@ async def create_physical_device_note(uid: int, note: DeviceNote, request: Reque
         dao.create_physical_device_note(uid, note.note)
         #response.headers['Location'] = f'{request.url}{pd.uid}'
     except dao.DAODeviceNotFound as err:
+        errors_counter.inc()
         raise HTTPException(status_code=404, detail=err.msg)
     except dao.DAOException as err:
+        errors_counter.inc()
         raise HTTPException(status_code=500, detail=err.msg)
 
 
 @router.get("/physical/devices/notes/{uid}", tags=['physical devices'], dependencies=[Depends(token_auth_scheme)])
 async def get_physical_device_notes(uid: int) -> List[DeviceNote]:
+    request_counter.inc()
     try:
         return dao.get_physical_device_notes(uid)
     except dao.DAOException as err:
+        errors_counter.inc()
         raise HTTPException(status_code=500, detail=err.msg)
 
 
@@ -178,6 +207,7 @@ async def patch_physical_device_note(note: DeviceNote) -> None:
     try:
         dao.update_physical_device_note(note)
     except dao.DAOException as err:
+        errors_counter.inc()
         raise HTTPException(status_code=500, detail=err.msg)
 
 
@@ -189,11 +219,14 @@ async def delete_physical_device_note(uid: int) -> None:
     try:
         dao.delete_physical_device_note(uid)
     except dao.DAOException as err:
+        errors_counter.inc()
         raise HTTPException(status_code=500, detail=err.msg)
+
 
 """--------------------------------------------------------------------------
 LOGICAL DEVICES
 --------------------------------------------------------------------------"""
+
 
 @router.post("/logical/devices/", tags=['logical devices'], status_code=status.HTTP_201_CREATED, dependencies=[Depends(token_auth_scheme)])
 async def create_logical_device(device: LogicalDevice, request: Request, response: Response) -> LogicalDevice:
@@ -205,11 +238,13 @@ async def create_logical_device(device: LogicalDevice, request: Request, respons
         response.headers['Location'] = f'{request.url}{ld.uid}'
         return ld
     except dao.DAOException as err:
+        errors_counter.inc()
         raise HTTPException(status_code=500, detail=err.msg)
 
 
 @router.get("/logical/devices/", tags=['logical devices'], dependencies=[Depends(token_auth_scheme)])
 async def get_logical_devices(include_properties: bool | None = True) -> List[LogicalDevice]:
+    request_counter.inc()
     """
     Get all LogicalDevices.
     """
@@ -222,21 +257,25 @@ async def get_logical_devices(include_properties: bool | None = True) -> List[Lo
 
         return devs
     except dao.DAOException as err:
+        errors_counter.inc()
         raise HTTPException(status_code=500, detail=err.msg)
 
 
 @router.get("/logical/devices/{uid}", tags=['logical devices'], dependencies=[Depends(token_auth_scheme)])
 async def get_logical_device(uid: int) -> LogicalDevice:
+    request_counter.inc()
     """
     Get the LogicalDevice specified by uid.
     """
     try:
         dev = dao.get_logical_device(uid)
         if dev is None:
+            errors_counter.inc()
             raise HTTPException(status_code=404, detail="Logical device not found")
 
         return dev
     except dao.DAOException as err:
+        errors_counter.inc()
         raise HTTPException(status_code=500, detail=err.msg)
 
 
@@ -248,8 +287,10 @@ async def update_logical_device(device: LogicalDevice) -> LogicalDevice:
     try:
         return dao.update_logical_device(device)
     except dao.DAODeviceNotFound as daonf:
+        errors_counter.inc()
         raise HTTPException(status_code=404, detail=daonf.msg)
     except dao.DAOException as err:
+        errors_counter.inc()
         raise HTTPException(status_code=500, detail=err.msg)
 
 
@@ -261,14 +302,17 @@ async def delete_logical_device(uid: int) -> None:
     try:
         ld = dao.delete_logical_device(uid)
         if ld is None:
+            errors_counter.inc()
             raise HTTPException(status_code=404)
     except dao.DAOException as err:
+        errors_counter.inc()
         raise HTTPException(status_code=500, detail=err.msg)
 
 
 """--------------------------------------------------------------------------
 DEVICE MAPPINGS
 --------------------------------------------------------------------------"""
+
 
 @router.post("/mappings/", tags=['device mapping'], status_code=status.HTTP_201_CREATED, dependencies=[Depends(token_auth_scheme)])
 async def insert_mapping(mapping: PhysicalToLogicalMapping) -> None:
@@ -283,15 +327,19 @@ async def insert_mapping(mapping: PhysicalToLogicalMapping) -> None:
     try:
         dao.insert_mapping(mapping)
     except dao.DAODeviceNotFound as daonf:
+        errors_counter.inc()
         raise HTTPException(status_code=404, detail=daonf.msg)
     except dao.DAOUniqeConstraintException as err:
+        errors_counter.inc()
         raise HTTPException(status_code=400, detail=err.msg)
     except dao.DAOException as err:
+        errors_counter.inc()
         raise HTTPException(status_code=500, detail=err.msg)
 
 
 @router.get("/mappings/current/", tags=['device mapping'], response_model=List[PhysicalToLogicalMapping], dependencies=[Depends(token_auth_scheme)])
 async def get_current_mappings(return_uids: bool = True) -> PhysicalToLogicalMapping:
+    request_counter.inc()
     """
     Returns the _current_ mapping for all physical devices. A current mapping is one with no
     end time set, meaning messages from the physical device will be forwarded to the logical
@@ -301,11 +349,13 @@ async def get_current_mappings(return_uids: bool = True) -> PhysicalToLogicalMap
         mappings = dao.get_all_current_mappings(return_uids=return_uids)
         return mappings
     except dao.DAOException as err:
+        errors_counter.inc()
         raise HTTPException(status_code=500, detail=err.msg)
 
 
 @router.get("/mappings/physical/current/{uid}", tags=['device mapping'], response_model=PhysicalToLogicalMapping, dependencies=[Depends(token_auth_scheme)])
 async def get_current_mapping_from_physical_uid(uid: int) -> PhysicalToLogicalMapping:
+    request_counter.inc()
     """
     Returns the _current_ mapping for the given physical device. A current mapping is one with no
     end time set, meaning messages from the physical device will be forwarded to the logical
@@ -314,15 +364,18 @@ async def get_current_mapping_from_physical_uid(uid: int) -> PhysicalToLogicalMa
     try:
         mapping = dao.get_current_device_mapping(pd=uid)
         if mapping is None:
+            errors_counter.inc()
             raise HTTPException(status_code=404, detail=f'Device mapping for physical device {uid} not found.')
 
         return mapping
     except dao.DAOException as err:
+        errors_counter.inc()
         raise HTTPException(status_code=500, detail=err.msg)
 
 
 @router.get("/mappings/physical/latest/{uid}", tags=['device mapping'], response_model=PhysicalToLogicalMapping, dependencies=[Depends(token_auth_scheme)])
 async def get_latest_mapping_from_physical_uid(uid: int) -> PhysicalToLogicalMapping:
+    request_counter.inc()
     """
     Returns the _latest_ mapping for the given physical device. The latest mapping is the most recent
     mapping for the logical device, even if it has ended.
@@ -330,10 +383,12 @@ async def get_latest_mapping_from_physical_uid(uid: int) -> PhysicalToLogicalMap
     try:
         mapping = dao.get_current_device_mapping(pd=uid, only_current_mapping=False)
         if mapping is None:
+            errors_counter.inc()
             raise HTTPException(status_code=404, detail=f'Device mapping for physical device {uid} not found.')
 
         return mapping
     except dao.DAOException as err:
+        errors_counter.inc()
         raise HTTPException(status_code=500, detail=err.msg)
 
 
@@ -347,15 +402,18 @@ async def end_mapping_of_physical_uid(uid: int) -> None:
     try:
         mapping = dao.get_current_device_mapping(pd=uid)
         if mapping is None:
+            errors_counter.inc()
             raise HTTPException(status_code=404, detail=f'Device mapping for physical device {uid} not found.')
 
         dao.end_mapping(pd=uid)
     except dao.DAOException as err:
+        errors_counter.inc()
         raise HTTPException(status_code=500, detail=err.msg)
 
 
 @router.get("/mappings/logical/current/{uid}", tags=['device mapping'], response_model=PhysicalToLogicalMapping, dependencies=[Depends(token_auth_scheme)])
 async def get_current_mapping_to_logical_uid(uid: int) -> PhysicalToLogicalMapping:
+    request_counter.inc()
     """
     Returns the _current_ mapping for the given logical device. A current mapping is one with no
     end time set, meaning messages from the physical device will be forwarded to the logical
@@ -364,15 +422,18 @@ async def get_current_mapping_to_logical_uid(uid: int) -> PhysicalToLogicalMappi
     try:
         mapping = dao.get_current_device_mapping(ld=uid)
         if mapping is None:
+            errors_counter.inc()
             raise HTTPException(status_code=404, detail=f'Device mapping for logical device {uid} not found.')
 
         return mapping
     except dao.DAOException as err:
+        errors_counter.inc()
         raise HTTPException(status_code=500, detail=err.msg)
 
 
 @router.get("/mappings/logical/latest/{uid}", tags=['device mapping'], response_model=PhysicalToLogicalMapping, dependencies=[Depends(token_auth_scheme)])
 async def get_latest_mapping_to_logical_uid(uid: int) -> PhysicalToLogicalMapping:
+    request_counter.inc()
     """
     Returns the _latest_ mapping for the given logical device. The latest mapping is the most recent
     mapping for the logical device, even if it has ended.
@@ -380,25 +441,30 @@ async def get_latest_mapping_to_logical_uid(uid: int) -> PhysicalToLogicalMappin
     try:
         mapping = dao.get_current_device_mapping(ld=uid, only_current_mapping=False)
         if mapping is None:
+            errors_counter.inc()
             raise HTTPException(status_code=404, detail=f'Device mapping for logical device {uid} not found.')
 
         return mapping
     except dao.DAOException as err:
+        errors_counter.inc()
         raise HTTPException(status_code=500, detail=err.msg)
 
 
 @router.get("/mappings/logical/all/{uid}", tags=['device mapping'], dependencies=[Depends(token_auth_scheme)])
 async def get_all_mappings_to_logical_uid(uid: int) -> List[PhysicalToLogicalMapping]:
+    request_counter.inc()
     """
     Returns all mappings made to the given logical device.
     """
     try:
         mappings = dao.get_logical_device_mappings(ld=uid)
         if mappings is None:
+            errors_counter.inc()
             raise HTTPException(status_code=404, detail=f'No mappings to logical device {uid} were found.')
 
         return mappings
     except dao.DAOException as err:
+        errors_counter.inc()
         raise HTTPException(status_code=500, detail=err.msg)
 
 
@@ -412,10 +478,12 @@ async def end_mapping_of_logical_uid(uid: int) -> None:
     try:
         mapping = dao.get_current_device_mapping(ld=uid)
         if mapping is None:
+            errors_counter.inc()
             raise HTTPException(status_code=404, detail=f'Device mapping for logical device {uid} not found.')
 
         dao.end_mapping(ld=uid)
     except dao.DAOException as err:
+        errors_counter.inc()
         raise HTTPException(status_code=500, detail=err.msg)
 
 
@@ -494,13 +562,16 @@ async def get_physical_timeseries(
     except dao.DAOException as err:
         raise HTTPException(status_code=500, detail=err.msg)
 
+
 """--------------------------------------------------------------------------
 USER AUTHENTICATION
 --------------------------------------------------------------------------"""
 
+
 # Get user token
 @router.get("/token", tags=['User Authentication'], dependencies=[Depends(http_basic_auth)])
 async def get_user_token(request: Request) -> str:
+    request_counter.inc()
     """
     Get user token from database if user is authenticated
     """
@@ -510,47 +581,72 @@ async def get_user_token(request: Request) -> str:
     if user_auth_token != None:
         return user_auth_token
     else:
+        errors_counter.inc()
         raise HTTPException(status_code=403, detail="Incorrect username or password")
 
 
 # Change users password
 @router.post("/change-password", tags=['User Authentication'], dependencies=[Depends(token_auth_scheme)])
-async def change_password(password:str, request:Request) -> str:
+async def change_password(password: str, request: Request) -> str:
     """
     Change users password
     """
     try:
-        user_auth_token=dao.user_change_password_and_token(new_passwd=password, prev_token=request.headers['Authorization'].replace("Bearer ",""))
+        user_auth_token = dao.user_change_password_and_token(new_passwd=password,
+                                                             prev_token=request.headers['Authorization'].replace(
+                                                                 "Bearer ", ""))
         return user_auth_token
 
     except dao.DAOException as err:
+        errors_counter.inc()
         raise HTTPException(status_code=500, detail=err.msg)
+
+
+# Custom exception handler for returning JSON response
+async def custom_exception_handler(request: Request, exc: HTTPException) -> JSONResponse:
+    response_content = ErrorResponse(detail=exc.detail)
+    return JSONResponse(content=response_content.dict(), status_code=exc.status_code)
+
+
+# Custom exception handler for returning Prometheus metrics
+async def prometheus_exception_handler(request: Request, exc: HTTPException) -> Response:
+    registry = CollectorRegistry()
+    return Response(content=generate_latest(registry), media_type="text/plain", status_code=200)
 
 
 app = FastAPI(title='IoT Device Broker', version='1.0.0')
 app.include_router(router)
 
+# Instrument the FastAPI application
+Instrumentator().instrument(app).expose(app, include_in_schema=False)
+
 
 @app.middleware("http")
 async def check_auth_header(request: Request, call_next):
-    
     try:
         if not request.url.path in ['/docs', '/openapi.json', '/broker/api/token']:
             if not 'Authorization' in request.headers:
+                errors_counter.inc()
                 return Response(content="", status_code=401)
 
             token = request.headers['Authorization'].split(' ')[1]
-            is_valid=dao.token_is_valid(token)
+            is_valid = dao.token_is_valid(token)
 
             if not is_valid:
+                errors_counter.inc()
                 print(f'Authentication failed for url: {request.url}')
                 return Response(content="", status_code=401)
 
             if request.method != 'GET':
-                user=dao.get_user(auth_token=token)
+                user = dao.get_user(auth_token=token)
                 if user is None or user.read_only is True:
+                    errors_counter.inc()
                     return Response(content="", status_code=403)
     except:
+        errors_counter.inc()
         return Response(content="", status_code=401)
 
     return await call_next(request)
+
+
+

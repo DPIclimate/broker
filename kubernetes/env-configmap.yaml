@@ -29,3 +29,5 @@ data:
   PYTHON_SRC_PATH: "/home/broker/src/python"
   TTN_DECODER_SRC_PATH: "/home/broker/src/js/ttn_decoder/src"
   EAGLEIO_API_TOKEN: "abc1"
+  GF_SECURITY_ADMIN_USER: "admin"
+  GF_SECURITY_ADMIN_PASSWORD: "password"

@@ -1,20 +1,20 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: wombat
+  name: mqtt_processors
   namespace: broker
 spec:
+  replicas: 1
   selector:
     matchLabels:
-      app: wombat
-  replicas: 1
+      app: mqtt_processors
   template:
     metadata:
       labels:
-        app: wombat
+        app: mqtt_processors
     spec:
       containers:
-        - name: wombat
+        - name: mqtt_processors
           image: broker/python-base
           imagePullPolicy: IfNotPresent
           envFrom:
@@ -24,7 +24,9 @@ spec:
           command:
             - python
             - -m
-            - Wombat
+            - mqtt_processors.MQTTProcessors
+          ports:
+            - containerPort: 8000
           volumeMounts:
             - name: shared-data
               mountPath: /home/broker/python
@@ -32,3 +34,15 @@ spec:
         - name: shared-data
           hostPath:
             path: /opt/broker/src/python
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: mqtt_processors
+  namespace: broker
+spec:
+  selector:
+    app: mqtt_processors
+  ports:
+    - name: prometheus
+      port: 8000

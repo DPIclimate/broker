@@ -24,6 +24,8 @@ spec:
           command:
             - python
             - AllMsgsWriter.py
+          ports:
+            - containerPort: 8000
           volumeMounts:
             - name: shared-data
               mountPath: /home/broker/python
@@ -31,3 +33,15 @@ spec:
         - name: shared-data
           hostPath:
             path: /opt/broker/src/python
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: ttn-processor
+  namespace: broker
+spec:
+  selector:
+    app: ttn-processor
+  ports:
+    - name: prometheus
+      port: 8000

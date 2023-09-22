@@ -24,6 +24,8 @@ spec:
             - python
             - -m
             - delivery.FRRED
+          ports:
+            - containerPort: 8000
           volumeMounts:
             - name: shared-data
               mountPath: /home/broker/python
@@ -36,3 +38,15 @@ spec:
         - name: databolt-data
           hostPath:
             path: /opt/databolt/raw_data
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: frred
+  namespace: broker
+spec:
+  selector:
+    app: frred
+  ports:
+    - name: prometheus
+      port: 8000

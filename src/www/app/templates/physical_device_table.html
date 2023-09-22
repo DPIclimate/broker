@@ -12,27 +12,32 @@
 <section id="device-table">
     <div class="container">
         <h2 class="form-heading"><span class='physical-device-orange-icon'></span> Physical Devices</h2>
-        <table class="table table-striped data-table-multi">
+        <table class="table table-striped data-table-checkbox">
             <thead>
                 <tr>
+                    <th></th>
                     <th>UID</th>
                     <th>NAME</th>
                     <th>SOURCE</th>
                     <th>LAST SEEN</th>
+                    <th>MAPPINGS</th>
                 </tr>
             </thead>
             <tbody id="device-table-body">
-                {% for physicalDevice in physicalDevices %}
-                <tr id="{{ physicalDevice.uid }}">
-                    <td>{{ physicalDevice.uid }}</td>
-                    <td><a href="{{ url_for('physical_device_form', uid=physicalDevice.uid) }}">{{ physicalDevice.name }}</a></td>
-                    <td>{{ physicalDevice.source_name }}</td>
-                    <td>{{ physicalDevice.last_seen }}</td>
+                {% for i in range(physicalDevices|length) %}
+                <tr id="{{ physicalDevices[i].uid }}">
+                    <td></td>
+                    <td>{{ physicalDevices[i].uid }}</td>
+                    <td><a href="{{ url_for('physical_device_form', uid=physicalDevices[i].uid) }}">{{ physicalDevices[i].name }}</a></td>
+                    <td>{{ physicalDevices[i].source_name }}</td>
+                    <td>{{ physicalDevices[i].last_seen }}</td>
+                    <td>{{ mappedColumnData[i] }}</td>
                 </tr>
                 {% endfor %}
             </tbody>
         </table>
     </div>
 </section>
+
 
 {% endblock %}
