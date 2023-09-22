@@ -1,0 +1,48 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: pollers
+  namespace: broker
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: pollers
+  template:
+    metadata:
+      labels:
+        app: pollers
+    spec:
+      containers:
+        - name: pollers
+          image: broker/python-base
+          imagePullPolicy: IfNotPresent
+          envFrom:
+            - configMapRef:
+                name: env-configmap
+          workingDir: /home/broker/python
+          command:
+            - python
+            - -m
+            - pollers.ICT_EagleIO
+          ports:
+            - containerPort: 8000
+          volumeMounts:
+            - name: shared-data
+              mountPath: /home/broker/python
+      volumes:
+        - name: shared-data
+          hostPath:
+            path: /opt/broker/src/python
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: pollers
+  namespace: broker
+spec:
+  selector:
+    app: pollers
+  ports:
+    - name: prometheus
+      port: 8000
