@@ -11,6 +11,8 @@ RUN apt-get update && \
 
 # Copy the pgbackrest initialization script into the container
 COPY pgbr_init.sh /docker-entrypoint-initdb.d/pgbr_init.sh
+RUN chmod +x /docker-entrypoint-initdb.d/pgbr_init.sh
+
 
 # Append custom configurations to the existing postgresql.conf
 COPY postgres/custom_postgresql.conf /tmp/custom_postgresql.conf
