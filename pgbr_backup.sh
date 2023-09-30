@@ -20,7 +20,7 @@ if [[ "$BACKUP_TYPE" != "full" && "$BACKUP_TYPE" != "diff" && "$BACKUP_TYPE" != 
 fi
 
 # Perform the backup
-docker exec -t $DB_CONTAINER_NAME pgbackrest --config=/etc/pgbackrest/pgbackrest.conf --stanza=demo --type=$BACKUP_TYPE backup
+docker exec -t $DB_CONTAINER_NAME pgbackrest --config=/home/postgres/pgdata/backup/pgbackrest.conf --stanza=demo --type=$BACKUP_TYPE backup
 
 
 echo "Backup of type $BACKUP_TYPE completed."

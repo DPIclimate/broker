@@ -12,8 +12,8 @@ wait_for_postgres() {
 wait_for_postgres
 
 # Run stanza-create (only if the stanza doesn't already exist)
-if ! pgbackrest info --stanza=demo --config=/home/postgres/pgdata/backup/pgbackrest.conf 2>&1 | grep -q "stanza: demo"; then
-    pgbackrest --stanza=demo --config=/home/postgres/pgdata/backup/pgbackrest.conf stanza-create >> /var/log/timescale/pgbr_init.log 2>&1
+if ! pgbackrest info --stanza=demo --config=/etc/pgbackrest/pgbackrest.conf 2>&1 | grep -q "stanza: demo"; then
+    pgbackrest --stanza=demo --config=/etc/pgbackrest/pgbackrest.conf stanza-create >> /var/log/timescale/pgbr_init.log 2>&1
 fi
 
 # Continue with the default TimescaleDB entrypoint

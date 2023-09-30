@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # Load environment variables from .env file
-source compose/.env
+source compose/.env 2>/dev/null
 
 # Configuration
 BACKUP_REPO_PATH="/var/lib/pgbackrest"
@@ -22,7 +22,7 @@ if [ -z "$TSDB_USER" ] || [ -z "$TSDB_DB" ] || [ -z "$TSDB_PASSWORD" ]; then
 fi
 
 # Restore the database
-docker exec -t $DB_CONTAINER_NAME pgbackrest restore
+docker exec -t $DB_CONTAINER_NAME pgbackrest restore --stanza=demo
 
 echo "Database restored successfully."
 

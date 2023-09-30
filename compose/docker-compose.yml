@@ -213,11 +213,12 @@ services:
       #- timescale_data:/var/lib/postgresql/data # Names volume in local root, permissions fine, needed manual deletion.
       #- /var/lib/postgresql/data
       - ../timescale/init.sql:/docker-entrypoint-initdb.d/init.sql
-      - ../timescale/pgbackrest/pgbackrest.conf:/etc/pgbackrest/pgbackrest.conf
-      - ../timescale/pgbr_init.sh:/usr/local/bin/pgbr_init.sh 
+      - ../timescale/pgbackrest/pgbackrest.conf:/home/postgres/pgdata/backup/pgbackrest.conf
+      - ../timescale/logs:/var/log/timescale
+    #entrypoint: /usr/local/bin/custom-entrypoint.sh
+    #entrypoint: /usr/local/bin/pgbr_init.sh
     ports:
       - "5433:5432"
-    entrypoint: /usr/local/bin/pgbr_init.sh
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U postgres"]
       interval: 10s
