@@ -12,12 +12,10 @@ RUN apt-get update && \
 # Copy the pgbackrest initialization script into the container
 COPY pgbr_init.sh /docker-entrypoint-initdb.d/pgbr_init.sh
 
-# Copy the custom configuration file to a temporary location
-COPY postgres/postgresql.conf /tmp/postgresql.conf
+# Append custom configurations to the existing postgresql.conf
+COPY postgres/custom_postgresql.conf /tmp/custom_postgresql.conf
+RUN echo "cat /tmp/custom_postgresql.conf >> /home/postgres/pgdata/data/postgresql.conf" > /docker-entrypoint-initdb.d/10-append-config.sh
 
-# Create the script to move the configuration file
-RUN echo "cp /tmp/postgresql.conf /home/postgres/pgdata/data/postgresql.conf" > /docker-entrypoint-initdb.d/10-copy-config.sh && \
-    chmod +x /docker-entrypoint-initdb.d/10-copy-config.sh
 
 # Switch back to the postgres user
 USER postgres
