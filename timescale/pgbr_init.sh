@@ -12,7 +12,10 @@ wait_for_postgres() {
 wait_for_postgres
 
 
-pgbackrest --stanza=demo --config=/home/postgres/pgdata/backup/pgbackrest.conf stanza-create 
+if [ ! -f "/var/lib/pgbackrest/backup/demo/backup.info" ]; then
+    pgbackrest --stanza=demo --config=/home/postgres/pgdata/backup/pgbackrest.conf stanza-create
+fi
+
 
 
 # Continue with the default TimescaleDB entrypoint
