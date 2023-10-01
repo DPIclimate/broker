@@ -34,7 +34,14 @@ docker run -d \
   -v prod_pgbackrest_data:/var/lib/pgbackrest \
   -v $(pwd)/timescale/pgbackrest/pgbackrest.conf:/home/postgres/pgdata/backup/pgbackrest.conf \
   custom-timescaledb:latest /bin/sh -c "tail -f /dev/null & wait"
-  
+
+# List the backups
+echo "Available backups:"
+docker exec -t $TEMP_CONTAINER_NAME pgbackrest info --stanza=demo
+
+# Ask the user for the backup label
+read -p "Enter the backup label to restore (or press Enter for the latest): " BACKUP_LABEL
+
   # Ensure the PostgreSQL data directory is empty
 echo "Ensuring the PostgreSQL data directory is empty..."
 docker exec -t $TEMP_CONTAINER_NAME sh -c "rm -rf /home/postgres/pgdata/data/* && rm -rf /home/postgres/pgdata/data/.*"
@@ -42,8 +49,11 @@ docker exec -t $TEMP_CONTAINER_NAME sh -c "rm -rf /home/postgres/pgdata/data/* &
 
 # Restore the database on the temporary container
 echo "Restoring the database..."
-docker exec -t $TEMP_CONTAINER_NAME pgbackrest restore --stanza=demo
-
+if [ -z "$BACKUP_LABEL" ]; then
+    docker exec -t $TEMP_CONTAINER_NAME pgbackrest restore --stanza=demo
+else
+    docker exec -t $TEMP_CONTAINER_NAME pgbackrest restore --stanza=demo --set=$BACKUP_LABEL
+fi
 
 # Stop the temporary container
 echo "Stopping the temporary container..."
