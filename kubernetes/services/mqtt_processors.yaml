@@ -1,20 +1,20 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: mqtt_processors
+  name: mqtt-processors
   namespace: broker
 spec:
   replicas: 1
   selector:
     matchLabels:
-      app: mqtt_processors
+      app: mqtt-processors
   template:
     metadata:
       labels:
-        app: mqtt_processors
+        app: mqtt-processors
     spec:
       containers:
-        - name: mqtt_processors
+        - name: mqtt-processors
           image: broker/python-base
           imagePullPolicy: IfNotPresent
           envFrom:
@@ -38,11 +38,11 @@ spec:
 apiVersion: v1
 kind: Service
 metadata:
-  name: mqtt_processors
+  name: mqtt-processors
   namespace: broker
 spec:
   selector:
-    app: mqtt_processors
+    app: mqtt-processors
   ports:
     - name: prometheus
       port: 8000
