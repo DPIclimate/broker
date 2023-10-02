@@ -1,4 +1,0 @@
-questdb
-requests
-uvicorn
-fastapi
