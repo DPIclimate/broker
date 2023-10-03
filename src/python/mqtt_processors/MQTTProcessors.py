@@ -17,6 +17,14 @@ import util.Timestamps as ts
 
 import mqtt_processors.plugins as plugins
 
+from prometheus_client import start_http_server, Counter
+
+# Prometheus Metrics
+messages_received = Counter('mqtt_messages_received_total', 'Total number of MQTT messages received')
+messages_processed_successfully = Counter('mqtt_messages_processed_successfully_total', 'Total number of MQTT messages processed successfully')
+messages_processed_failed = Counter('mqtt_messages_processed_failed_total', 'Total number of MQTT messages processed with failures')
+start_http_server(8000)  # Starting Prometheus server on port 8000
+
 std_logger = logging.getLogger(__name__)
 
 tx_channel: mq.TxChannel = None
@@ -113,6 +121,7 @@ def on_message(channel, method, properties, body, plugin_name):
         # process message
         std_logger.info(f"{channel}")
         std_logger.info(f"Message Received for {plugin_name}")
+        messages_received.inc()
         processed_message = plugin_modules[plugin_name].on_message(body, { 'channel': channel, 'method': method, 'properties': properties, 'body': body })
         
         # Publish Messages to Physical Timeseries
@@ -121,10 +130,12 @@ def on_message(channel, method, properties, body, plugin_name):
         
         # Log Errors
         for error in processed_message['errors']:
+            messages_processed_successfully.inc()
             std_logger.error(error)
             
     except Exception as e:
         # Log the exception
+        messages_processed_failed.inc()
         std_logger.exception('Error while processing message.')
         
     finally:

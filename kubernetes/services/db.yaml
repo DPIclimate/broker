@@ -1,0 +1,59 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: db
+  namespace: broker
+spec:
+  selector:
+    matchLabels:
+      app: db
+  template:
+    metadata:
+      labels:
+        app: db
+    spec:
+      containers:
+        - name: db
+          image: postgres:14.2
+          envFrom:
+            - configMapRef:
+                name: env-configmap
+          livenessProbe:
+            exec:
+              command:
+                - pg_isready
+                - -q
+                - -d
+                - ${PGDATABASE}
+                - -U
+                - ${PGUSER}
+            initialDelaySeconds: 30
+            periodSeconds: 10
+            timeoutSeconds: 5
+            failureThreshold: 6
+          ports:
+            - containerPort: 5432
+          volumeMounts:
+            - name: db-config
+              mountPath: /docker-entrypoint-initdb.d
+            - name: db-data
+              mountPath: /var/lib/postgresql/data
+      volumes:
+        - name: db-config
+          hostPath:
+            path: /opt/broker/db/init.d
+        - name: db-data
+          hostPath:
+            path: /opt/broker_data/db
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: db
+  namespace: broker
+spec:
+  selector:
+    app: db
+  ports:
+    - name: postgresql
+      port: 5432
