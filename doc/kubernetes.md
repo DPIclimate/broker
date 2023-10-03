@@ -241,3 +241,4 @@ The script can also take an additional parameter to configure which mode it runs
 - `./kubernetes.sh start` - (default) Builds the docker images and applies the configuration files to the Kubernetes cluster under the `broker` namespace.
 - `./kubernetes.sh stop` - Stop all running services and remove the configuration from the Kubernetes cluster.
 - `./kubernetes.sh restart` - Just runs `stop` and then `start`. Note: This will cycle any dynamic IPs or NodePorts.
+- `./kubernetes.sh status` - Lists all the configured resources in the `broker` namespace.
