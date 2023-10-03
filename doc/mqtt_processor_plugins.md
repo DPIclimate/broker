@@ -18,7 +18,7 @@ The `on_message` function will be passed the following parameters.
 | Parameter name | Type | Description |
 |:---:|:---:|:---:|
 | message | <kbd>string</kbd> | The MQTT message received as a string. |
-| properties | <kbd>dictionary</kbd> | An dictionary containing the original pikamq callback parameters. `channel`, `method`, `properties`, `body` |
+| properties | <kbd>dictionary</kbd> | A dictionary containing the following pikamq callback parameters. `channel`, `method`, `properties` |
 
 ### `on_message` return
 

@@ -122,7 +122,7 @@ def on_message(channel, method, properties, body, plugin_name):
         std_logger.info(f"{channel}")
         std_logger.info(f"Message Received for {plugin_name}")
         messages_received.inc()
-        processed_message = plugin_modules[plugin_name].on_message(body, { 'channel': channel, 'method': method, 'properties': properties, 'body': body })
+        processed_message = plugin_modules[plugin_name].on_message(body, { 'channel': channel, 'method': method, 'properties': properties })
         
         # Publish Messages to Physical Timeseries
         for message in processed_message['messages']:
