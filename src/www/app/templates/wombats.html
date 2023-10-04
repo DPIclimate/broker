@@ -15,7 +15,7 @@
         $(document).ready(function () {
             $('#wombat_table').DataTable(
                 {
-                    "dom": 'lrptip',
+                    "dom": 'lrftip',
                     "pagingType": "full_numbers"
                 }
             );
@@ -61,6 +61,7 @@
             </div>
         </div>
 
+<!--
         <div class="nsw-header__search-area js-search-area" id="header-search-0" hidden>
             <form role="search">
                 <label for="nsw-header-input-0" class="sr-only">Search site for:</label>
@@ -76,12 +77,15 @@
                 <span class="sr-only">Close search</span>
             </button>
         </div>
+-->
     </div>
 </header>
 
+<!--
 <div class="nsw-container">
     <div class="nsw-layout">
         <main class="nsw-layout__main">
+-->
             <!-- START: Main content -->
         <div class="nsw-table nsw-table--striped" tabindex="0">
                     <table id="wombat_table" class="table table-striped data-table-multi">
@@ -92,6 +96,7 @@
                             <th>Last seen</th>
                             <th>CCID</th>
                             <th>Firmware</th>
+                            <th></th>
                             <th>Current mapping</th>
                             <th>Ubidots</th>
                         </tr>
@@ -101,7 +106,7 @@
                             <tr id="{{ physicalDevice.uid }}">
                                 <td>{{ physicalDevice.uid }}</td>
                                 <td>
-                                    <a href="{{ url_for('physical_device_form', uid=physicalDevice.uid) }}">{{ physicalDevice.name }}</a>
+                                    <a href="{{ url_for('physical_device_form', uid=physicalDevice.uid) }}" target="_blank">{{ physicalDevice.name }}</a>
                                 </td>
                                 <td data-order="{{ physicalDevice.ts_sort }}">{{ physicalDevice.last_seen }}</td>
                                 <td>
@@ -116,7 +121,12 @@
                                 </td>
                                 <td>
                                     {% if physicalDevice.mapping is defined %}
-                                        <a href="{{ url_for('logical_device_form', uid=physicalDevice.mapping.ld.uid) }}">{{ physicalDevice.mapping.ld.name }}</a>
+                                        {{ physicalDevice.mapping.ld.uid }}
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    {% if physicalDevice.mapping is defined %}
+                                        <a href="{{ url_for('logical_device_form', uid=physicalDevice.mapping.ld.uid) }}" target="_blank">{{ physicalDevice.mapping.ld.name }}</a>
                                     {% endif %}
                                 </td>
                                 <td>
@@ -131,9 +141,11 @@
                     </table>
         </div>
             <!-- END: Main content -->
+<!--
         </main>
     </div>
 </div>
+-->
 
 <script src="https://cdn.jsdelivr.net/npm/nsw-design-system@3/dist/js/main.min.js"></script>
 <script>window.NSW.initSite()</script>
