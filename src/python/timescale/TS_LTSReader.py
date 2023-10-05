@@ -108,13 +108,15 @@ def on_message(channel, method, properties, body):
         parsed_msg = ts.parse_json(msg)
 
         #insert into timeseries and confirm
-        if ts.insert_lines(parsed_msg) == 1:
-            logging.info('Message successfully stored in time series database.')
-        else:
+        inserted = ts.insert_lines(parsed_msg)
+
+        if(inserted != 0):
             lu.cid_logger.error('Message not stored in time series database. Rejecting Message.', extra=msg)
             rx_channel._channel.basic_reject(delivery_tag)
+            return
 
         # This tells RabbitMQ the message is handled and can be deleted from the queue.
+        logging.info('Message successfully stored in time series database.')
         rx_channel._channel.basic_ack(delivery_tag)
 
     except BaseException:

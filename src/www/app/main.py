@@ -1,3 +1,4 @@
+from sys import stderr
 from flask import Flask, render_template, request, make_response, redirect, url_for, session, send_from_directory
 import folium
 import os
@@ -433,21 +434,26 @@ def generate_link(data):
         link+= data['properties']['ubidots']['id']
     return link
 
-
+"""
+parse the timeseries data received by api into what is expected by graph 
+"""
 def parse_ts_data(ts_data):
     try:
         parsed_ts = {}
-        for entry in ts_data['title']:
-            label = entry[1]
+        for entry in ts_data:
             timestamp = entry[0]
+            label = entry[1]
             value = entry[2]
-
             if label not in parsed_ts:
                 parsed_ts[label] = []
-
             parsed_ts[label].append((timestamp, value))
+
+        print("---parse_ts returning:", file=sys.stderr)
+        print(parsed_ts, file=sys.stderr)
         return parsed_ts
+
     except:
+        print("Error parsed_ts", file=sys.stderr)
         return {}
 
 

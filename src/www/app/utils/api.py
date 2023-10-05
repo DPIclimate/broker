@@ -1,4 +1,5 @@
 import json
+import sys
 from typing import List
 import requests
 from datetime import datetime
@@ -350,26 +351,21 @@ def get_puid_ts(puid: str):
     try:
         response = requests.get(f"{end_point}/query/?query=select timestamp,name,value from timeseries where p_uid={puid} and timestamp >= current_date - interval '30 days' order by timestamp asc")
         response.raise_for_status()
+        #print("get_puid_ts ---returns---", file=sys.stderr)
+        #print(response.json(), file=sys.stderr)
         return response.json()
-    except:
-        print("webapp: *todo: change this to logging")
-        print("webapp: unable to pull ts_luid data from api")
+    except Exception as err:
+        print(f"webapp: unable to pull ts_luid data from api: {err}")
         return {}
 
+
 def get_luid_ts(luid: str):
-    #response = requests.get(f"{end_point}/query/l_uid/{luid}")
     try:
         response = requests.get(f"{end_point}/query/?query=select timestamp,name,value from timeseries where l_uid={luid} and timestamp >= current_date - interval '30 days' order by timestamp asc")
         response.raise_for_status()
+        #print("get_puid_ts ---returns---", file=sys.stderr)
+        #print(response.json(), file=sys.stderr)
         return response.json()
-    except:
-        print("webapp: *todo: change this to logging")
-        print("webapp: unable to pull ts_luid data from api")
+    except Exception as err:
+        print(f"webapp: unable to pull ts_luid data from api: {err}")
         return {}
-
-
-
-#def get_ts_names(uid: str):
-#    response = requests.get(f'{end_point}/query/?query=select distinct name from timeseries where p_uid={uid}')
-#    response.raise_for_status()
-#    return response.json()
