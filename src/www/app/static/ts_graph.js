@@ -61,3 +61,6 @@ function filter_chart(days) {
   chart.options.scales.x.max = new Date();
   chart.update();
 }
+
+function toggle_selection() {
+}
