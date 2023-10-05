@@ -78,17 +78,17 @@ def insert_lines(parsed_data: list, connection: str = CONNECTION, table: str = t
     returns 0 if sucessful
     """
     conn = psycopg2.connect(connection)
-    cursor = conn.cursor()
     try:
-        for entry in parsed_data:
-            broker_id, l_uid, p_uid, timestamp, name, value = entry
-            cursor.execute(
-                ## maybe we should update table to use correlation id key
-                f"INSERT INTO {table} (broker_id,{BrokerConstants.LOGICAL_DEVICE_UID_KEY}, {BrokerConstants.PHYSICAL_DEVICE_UID_KEY}, {BrokerConstants.TIMESTAMP_KEY}, name, value) VALUES (%s, %s, %s, %s, %s, %s);",
-                (broker_id, l_uid, p_uid, timestamp, name, value))
-    except (Exception, psycopg2.Error) as error:
-        print(error)
+        with conn:
+            with conn.cursor() as cursor:
+                for entry in parsed_data:
+                    broker_id, l_uid, p_uid, timestamp, name, value = entry
+                    cursor.execute(
+                        f"INSERT INTO {table} (broker_id,{BrokerConstants.LOGICAL_DEVICE_UID_KEY}, {BrokerConstants.PHYSICAL_DEVICE_UID_KEY}, {BrokerConstants.TIMESTAMP_KEY}, name, value) VALUES (%s, %s, %s, %s, %s, %s);",
+                        (broker_id, l_uid, p_uid, timestamp, name, value))
+        conn.close()
         return 0
-    conn.commit()
-    cursor.close
-    return 1
+    except (Exception, psycopg2.Error) as error:
+        logging.error(f"Error inserting: {error}")
+        conn.close()
+        return 0
