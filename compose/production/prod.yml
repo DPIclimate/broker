@@ -31,8 +31,8 @@ services:
 
   timescaledb:
     volumes:
-      - tsdb_db:/var/lib/postgresql/ts_data
-
+      - tsdb_db:/var/lib/postgresql/data
+ 
 volumes:
   broker_db:
     external: true
