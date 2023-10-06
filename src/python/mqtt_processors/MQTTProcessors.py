@@ -130,7 +130,6 @@ def on_message(channel, method, properties, body, plugin_name):
         
         # Log Errors
         for error in processed_message['errors']:
-            messages_processed_successfully.inc()
             std_logger.error(error)
             
     except Exception as e:
@@ -141,6 +140,7 @@ def on_message(channel, method, properties, body, plugin_name):
     finally:
         # Tell RabbitMQ the message has been processed
         channel.basic_ack(delivery_tag)
+        messages_processed_successfully.inc()
 
 
 if __name__ == '__main__':
