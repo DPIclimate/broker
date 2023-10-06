@@ -28,14 +28,8 @@ import util.LoggingUtil as lu
 # Prometheus metrics
 from prometheus_client import Counter, start_http_server
 messages_received_counter = Counter('logicalmapper_messages_received', 'Number of messages received for processing')
-messages_published_counter = Counter('logicalmapper_messages_published', 'Number of messages published to logical_timeseries queue')
-messages_acknowledged_counter = Counter('logicalmapper_messages_acknowledged', 'Number of messages acknowledged to RabbitMQ')
-messages_stored_counter = Counter('logicalmapper_messages_stored', 'Number of messages stored in the physical_timeseries table')
-logical_devices_updated_counter = Counter('logicalmapper_logical_devices_updated', 'Number of logical devices updated in the database')
 message_processing_errors_counter = Counter('logicalmapper_message_processing_errors', 'Number of errors during message processing')
 no_device_mapping_counter = Counter('logicalmapper_no_device_mapping', 'Number of messages processed without an existing device mapping')
-logical_mapper_starts_counter = Counter('logicalmapper_starts', 'Number of times the logical mapper script has started')
-logical_mapper_exits_counter = Counter('logicalmapper_exits', 'Number of times the logical mapper script has exited')
 
 # Start up the server to expose the metrics.
 start_http_server(8000)
@@ -60,7 +54,6 @@ def sigterm_handler(sig_no, stack_frame) -> None:
 
 
 async def main():
-    logical_mapper_starts_counter.inc()
     """
     Initiate the connection to RabbitMQ and then idle until asked to stop.
 
@@ -116,14 +109,12 @@ def on_message(channel, method, properties, body):
             # Ack the message, even though we cannot process it. We don't want it redelivered.
             # We can change this to a Nack if that would provide extra context somewhere.
             rx_channel._channel.basic_ack(delivery_tag)
-            messages_acknowledged_counter.inc()
             return
 
         lu.cid_logger.info(f'Accepted message from {pd.name}', extra=msg)
         messages_received_counter.inc()
         # Store message in the physical timeseries table in the brokers processed, standardised msg format.
         dao.insert_physical_timeseries_message(pd.uid, msg[BrokerConstants.TIMESTAMP_KEY], msg)
-        messages_stored_counter.inc()
 
         mapping = dao.get_current_device_mapping(p_uid)
         if mapping is None:
@@ -141,10 +132,8 @@ def on_message(channel, method, properties, body):
         lu.cid_logger.info(f'Timestamp from message for LD last seen update: {ld.last_seen}', extra=msg)
         ld.properties[BrokerConstants.LAST_MSG] = msg
         dao.update_logical_device(ld)
-        logical_devices_updated_counter.inc()
 
         tx_channel.publish_message('logical_timeseries', msg)
-        messages_published_counter.inc()
         # This tells RabbitMQ the message is handled and can be deleted from the queue.
         rx_channel._channel.basic_ack(delivery_tag)
 
@@ -162,4 +151,3 @@ if __name__ == '__main__':
     # Does not return until SIGTERM is received.
     asyncio.run(main())
     logging.info('Exiting.')
-    logical_mapper_exits_counter.inc()
