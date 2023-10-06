@@ -36,7 +36,6 @@ rabbitmq_failed_connections = Counter('rabbitmq_failed_connections', 'Number of 
 messages_received = Counter('messages_received', 'Number of messages received from RabbitMQ')
 valid_json_messages = Counter('valid_json_messages', 'Number of valid JSON messages processed')
 invalid_json_messages = Counter('invalid_json_messages', 'Number of invalid JSON messages')
-messages_rejected_finish_flag = Counter('messages_rejected_finish_flag', 'Number of messages rejected due to the _finish flag being set')
 
 # Start up the server to expose the metrics.
 start_http_server(8000)
@@ -139,7 +138,6 @@ def on_message(channel, method, properties, body):
     # If the finish flag is set, reject the message so RabbitMQ will re-queue it
     # and return early.
     if _finish:
-        messages_rejected_finish_flag.inc()
         lu.cid_logger.info(f'NACK delivery tag {delivery_tag}, _finish is True', extra=msg)
         _channel.basic_reject(delivery_tag)
         return
