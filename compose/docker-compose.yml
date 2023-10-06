@@ -204,13 +204,10 @@ services:
   timescaledb:
     hostname: "tsdb"
     image: timescale/timescaledb:latest-pg15
-    restart: "no"    
+    restart: "no"
     env_file:
       - .tsdb_env
     volumes:
-      #- ../timescale/data:/var/lib/postgresql/data # Named volume in repo folder, had permission issues
-      #- timescale_data:/var/lib/postgresql/data # Names volume in local root, permissions fine, needed manual deletion.
-      #- /var/lib/postgresql/data
       - ../timescale/init.sql:/docker-entrypoint-initdb.d/init.sql
     ports:
       - "5433:5432"
