@@ -213,8 +213,6 @@ services:
       - ../timescale/init.sql:/docker-entrypoint-initdb.d/init.sql
       - ../timescale/pgbackrest/pgbackrest.conf:/home/postgres/pgdata/backup/pgbackrest.conf
       - ../timescale/logs:/var/log/timescale
-    #entrypoint: /usr/local/bin/custom-entrypoint.sh
-    #entrypoint: /usr/local/bin/pgbr_init.sh
     ports:
       - "5433:5432"
     healthcheck:
