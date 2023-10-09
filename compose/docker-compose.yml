@@ -202,13 +202,19 @@ services:
     entrypoint: [ "python", "-m", "delivery.FRRED" ]
 
   timescaledb:
+    build: ../timescale  # Point to the directory containing the custom Dockerfile
     hostname: "tsdb"
-    image: timescale/timescaledb:latest-pg15
-    restart: "no"
+    image: custom-timescaledb:latest
+    restart: "no"    
+
     env_file:
       - .tsdb_env
     volumes:
       - ../timescale/init.sql:/docker-entrypoint-initdb.d/init.sql
+      - ../timescale/pgbackrest/pgbackrest.conf:/home/postgres/pgdata/backup/pgbackrest.conf
+      - ../timescale/logs:/var/log/timescale
+    #entrypoint: /usr/local/bin/custom-entrypoint.sh
+    #entrypoint: /usr/local/bin/pgbr_init.sh
     ports:
       - "5433:5432"
     healthcheck:
