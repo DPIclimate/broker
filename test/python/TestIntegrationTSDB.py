@@ -55,7 +55,7 @@ def test_send_valid_msg():
     time.sleep(1)
     insert = check_insert("1", "1") ## NAME CHANGES TO BATTERY_V
     assert(result.stdout == "Message published\n")
-    assert(insert['title'][-1] == ['BATTERY_V', 6.66])
+    assert(insert[-1] == ['BATTERY_V', 6.66])
 
 
 def test_send_invalid_msg():
@@ -73,7 +73,7 @@ def test_send_invalid_msg():
     time.sleep(1)
     insert = check_insert("777", "777") ## NAME CHANGES TO BATTERY_V
     assert(result.stdout == "Message published\n")
-    assert(insert['title'] == [])
+    assert(insert == [])
 
 
 #check we can still send a message after a bad one
@@ -100,5 +100,5 @@ def test_send_valid_msg2():
     time.sleep(1)
     insert = check_insert("2", "2") ## NAME CHANGES TO BATTERY_V
     assert(result.stdout == "Message published\n")
-    assert(insert['title'][-1] == ['TEST_NAME_V', 2.99])
-    assert(insert['title'][-2] == ['BATTERY_V', 9.99])
+    assert(insert[-1] == ['TEST_NAME_V', 2.99])
+    assert(insert[-2] == ['BATTERY_V', 9.99])

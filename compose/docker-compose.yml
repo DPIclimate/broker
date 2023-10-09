@@ -206,12 +206,10 @@ services:
     hostname: "tsdb"
     image: custom-timescaledb:latest
     restart: "no"    
+
     env_file:
       - .tsdb_env
     volumes:
-      #- ../timescale/data:/var/lib/postgresql/data # Named volume in repo folder, had permission issues
-      #- timescale_data:/var/lib/postgresql/data # Names volume in local root, permissions fine, needed manual deletion.
-      #- /var/lib/postgresql/data
       - ../timescale/init.sql:/docker-entrypoint-initdb.d/init.sql
       - ../timescale/pgbackrest/pgbackrest.conf:/home/postgres/pgdata/backup/pgbackrest.conf
       - ../timescale/logs:/var/log/timescale
@@ -220,7 +218,7 @@ services:
     ports:
       - "5433:5432"
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      test: ["CMD-SHELL", "pg_isready -U ${TSDB_USER}"]
       interval: 10s
       timeout: 5s
       retries: 3

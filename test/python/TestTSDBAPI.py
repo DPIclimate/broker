@@ -66,18 +66,18 @@ def test_send_and_query_message():
         if insert or time.time() > timeout:
             break
         time.sleep(0.2)
-    
-    assert insert['title'][-1] == ['BATTERY_V', 6.66]
-    
+
+    assert insert[-1] == ['BATTERY_V', 6.66]
+
     query_params = {"timestamp": current_time}
     response = requests.get(f"{end_point}/query/", params=query_params)
     response.raise_for_status()
     data = response.json()
-    
-    assert 'title' in data
-    assert len(data['title']) > 0
-    
-    matching_rows = [row for row in data['title'] if row[3] == current_time]
+
+ #   assert 'title' in data
+    assert len(data) > 0
+
+    matching_rows = [row for row in data if row[3] == current_time]
     assert len(matching_rows) > 0
     assert matching_rows[0][3] == current_time
 
@@ -89,16 +89,16 @@ def test_query_by_time_range():
     current_time2 = get_current_time()
     generate_and_send_message("test2", 1, 1, current_time2, "battery (v)", 9.99)
     time.sleep(1)
-    
+
     query_params = {"timestamp1": current_time1, "timestamp2": current_time2}
     response = requests.get(f"{end_point}/query/", params=query_params)
     response.raise_for_status()
     data = response.json()
-    
-    assert 'title' in data
-    assert len(data['title']) >= 2
-    
-    timestamps = [row[3] for row in data['title']]
+
+ #   assert 'title' in data
+    assert len(data) >= 2
+
+    timestamps = [row[3] for row in data]
     assert current_time1 in timestamps
     assert current_time2 in timestamps
 
