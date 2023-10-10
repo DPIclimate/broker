@@ -20,7 +20,7 @@ def on_message(message, properties):
     try:
         msg = json.loads(message)
     except Exception as e:
-        wombat_messages_received.inc()
+        wombat_messages_error.inc()
         raise Exception(f'JSON parsing failed')
 
     # This code could put the cid into msg (and does so later) and pass msg into the lu_cid
