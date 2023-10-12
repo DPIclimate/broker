@@ -4,12 +4,15 @@
 source compose/.env 2>/dev/null
 
 # Warning prompt about timelines
-echo "WARNING:"
+echo "WARNING! Before continuing, please read the following:"
+
 echo "Postgres makes use of timelines, which keep logs of changes from a point in time, allowing for backups to be restored to a certain point in its history."
 echo
-echo "Due to this, you should only attempt restore to a point prior to your last restore as part of that timeline, otherwise the restore will fail."
+echo "Because of this to this, you should only attempt restore to a point prior to your last restore as part of that timeline, otherwise the restore will fail to complete."
+echo "For example: If you take two backups, A (the first one) and B (the more recent one), if you restore to A, B will now be incompatible with the current timeline."
 echo
-echo "If you have recently performed a logical backup, the timeline history will be erased, resulting in all backups prior being incompatible with the current database."
+echo "If you have recently performed a logical backup restore (ts_restore.sh), the timeline history will be erased,"
+echo "resulting in all physical backups prior to restore becoming incompatible with the current database."
 echo
 read -p "Do you wish to continue? (yes/no): " choice
 
