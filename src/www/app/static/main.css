@@ -5,8 +5,8 @@ body {
     background-color: #f4f4f4;
 }
 
-.container {
-    width: 80%;
+.container-fluid {
+    width: 98%;
     margin: auto;
     overflow: hidden;
 }
@@ -24,6 +24,14 @@ body {
     width: 32px;
     height: 32px;
     background: url(white-physical-device.png) no-repeat;
+    background-size: contain;
+}
+
+a:hover .physical-device-white-icon {
+    display: inline-block;
+    width: 32px;
+    height: 32px;
+    background: url(orange-physical-device.png) no-repeat;
     background-size: contain;
 }
 
@@ -95,8 +103,6 @@ body {
 header {
     background: #063f5c;
     color: #ffffff;
-    padding: 30px;
-    min-height: 70px;
 }
 
 header a {
@@ -112,7 +118,6 @@ header ul {
 }
 
 header li {
-    float: left;
     display: inline;
     padding: 0 20px 0 20px;
 }
@@ -123,16 +128,6 @@ header #header-title {
 
 header #header-title h1 {
     margin: 0;
-}
-
-header nav {
-    float: right;
-    margin-top:30px;
-}
-
-header a:hover {
-    color:#fd7e14;
-    font-weight:bold;
 }
 
 .white-map-icon {
@@ -159,14 +154,6 @@ header a:hover .map-icon {
     background-size: contain;
 }
 
-header a:hover .physical-device-white-icon {
-    display: inline-block;
-    width: 32px;
-    height: 32px;
-    background: url(orange-physical-device.png) no-repeat;
-    background-size: contain;
-}
-
 header a:hover .wombat-white-icon {
     display: inline-block;
     width: 32px;
@@ -183,11 +170,27 @@ header a:hover .logical-device-white-icon {
     background-size: contain;
 }
 
+.nav-bar {
+    background: #063f5c;
+    min-height: 70px;
+    color: #ffffff;
+    padding: 15px;
+}
+
+.nav-text {
+    padding-left: 8px;
+}
+
+.nav-no-icon {
+    display: inline-block;
+    width: 32px;
+    height: 32px;
+    background-size: contain;
+}
+
 .command-bar {
     background: #17a2b8;
-    text-align: center;
-    min-height: 40px;
-    margin: auto;
+    min-height: 70px;
     color: #ffffff;
     padding: 15px;
     border-bottom: #fd7e14 5px solid;
@@ -212,7 +215,6 @@ header a:hover .logical-device-white-icon {
 
 .command-bar a:hover {
     color:#fd7e14;
-    font-weight:bold;
 }
 
 .command-bar .btn {
@@ -224,7 +226,6 @@ header a:hover .logical-device-white-icon {
 
 .command-bar .btn:hover {
     color:#fd7e14;
-    font-weight:bold;
 }
 
 .form-heading {
