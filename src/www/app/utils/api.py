@@ -369,3 +369,15 @@ def get_luid_ts(luid: str):
     except Exception as err:
         print(f"webapp: unable to pull ts_luid data from api: {err}")
         return {}
+
+
+def get_between_dates_ts(luid: str, from_date: str, to_date: str):
+    try:
+        response = requests.get(f"{end_point}/query/?query=select timestamp, name, value from timeseries where l_uid={luid} and timestamp >= DATE '{from_date}' and timestamp <= DATE '{to_date}' order by timestamp asc")
+        response.raise_for_status()
+        #print("get_puid_ts ---returns---", file=sys.stderr)
+        #print(response.json(), file=sys.stderr)
+        return response.json()
+    except Exception as err:
+        print(f"webapp: unable to pull ts_luid data from api: {err}")
+        return {}

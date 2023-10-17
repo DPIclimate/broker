@@ -3,10 +3,185 @@
 <script src="https://cdn.jsdelivr.net/npm/luxon@^2"></script>
 <script src="https://cdn.jsdelivr.net/npm/chartjs-adapter-luxon@^1"></script>
 <script src="{{ url_for('static', filename='ts_graph.js') }}"></script>
+<script src="https://cdn.jsdelivr.net/npm/gridjs/dist/gridjs.umd.js"></script>
+<script src="{{ url_for('static', filename='ts_table.js') }}"></script>
+
+<style>
+h1 {
+  text-align: center;
+}
+<div class="gridjs-head"><div class="gridjs-search"><input type="search" placeholder="Type a keyword..." aria-label="Type a keyword..." class="gridjs-input gridjs-search-input"></div></div>
+#ts-table-div {
+  margin: auto;
+}
+
+.table-body {
+  font-family: monospace;
+}
+
+/* Style the container to display its contents side by side */
+.header-container {
+  display: flex;
+  align-items: center;
+}
+
+/* Style the heading */
+#ts-heading {
+  margin-right: 10px; /* Add spacing between heading and button */
+}
+
+/* Style the button */
+#ts-toggle-view {
+    background-color: #17a2b8;
+    border: none;
+    color: white;
+    text-align: center;
+    text-decoration: none;
+    display: inline-block;
+    font-size: 16px;
+    margin: 5px;
+    cursor: pointer;
+    padding-left: 5px;
+    padding-right: 5px;
+}
+
+/* Style the button on hover */
+#ts-toggle-view:hover {
+    background-color: #fd7e14;
+}
+
+/* Style the table */
+.gridjs-table {
+  border-collapse: collapse; /* Collapse borders into a single border */
+  width: 100%;
+}
+
+/* Style table headers (th) */
+.gridjs-th {
+  border: 1px solid #ccc; /* Add a border around table headers */
+  padding: 10px; /* Add padding for spacing */
+  text-align: left; /* Align text to the left */
+  background-color: #E8E8E8; /* Background color for headers */
+}
+
+/* Style table cells (td) */
+.gridjs-td {
+  border: 1px solid #ccc; /* Add a border around table cells */
+  padding: 10px; /* Add padding for spacing */
+}
+
+/* Style alternating rows with a background color */
+.gridjs-tbody .gridjs-tr:nth-child(even) {
+  background-color: #f9f9f9; /* Background color for even rows */
+}
+
+/* Style the table pagination */
+.gridjs-summary {
+  font-weight: bold; /* Make the summary text bold */
+}
+
+/* Style the search input */
+.gridjs-search-input {
+  padding: 5px;
+  border: 1px solid #ccc;
+  float: right;
+}
+
+/* Style the table headers (th) */
+.gridjs-th {
+  border: 1px solid #ccc; /* Add a border around table headers */
+  border-left: none; /* Remove the left border to preserve vertical borders */
+  padding: 10px; /* Add padding for spacing */
+  text-align: left; /* Align text to the left */
+  background-color: #f0f0f0; /* Background color for headers */
+  position: relative; /* Add relative positioning for arrow placement */
+  font-size: 16px;
+  font-weight: bold;
+}
+
+/* Style the first table header cell to include left border */
+.gridjs-th:first-child {
+  border-left: 1px solid #ccc;
+}
+
+/* Style all table rows on hover */
+.gridjs-table .gridjs-tbody .gridjs-tr:hover {
+  background-color: #e0e0e0 !important; /* Change the background color on hover */
+}
+
+
+/* Style table cells (td) */
+.gridjs-td {
+  border: 1px solid #ccc; /* Add a border around table cells */
+  padding: 10px; /* Add padding for spacing */
+}
+
+/* Style the button */
+.gridjs-sort {
+  width: 20px;
+  height: 20px;
+  background-color: transparent;
+  border: none;
+  position: absolute;
+  top: 50%;
+  right: 0; /* Adjust the positioning as needed */
+  transform: translateY(-50%); /* Center vertically */
+  cursor: pointer;
+  outline: none; /* Remove focus outline */
+}
+
+/* Remove the default active state styling and outline */
+.gridjs-sort:active,
+.gridjs-sort:focus {
+  outline: none; /* Remove focus outline */
+}
+
+/* Style the arrow for ascending */
+.gridjs-sort.gridjs-sort-asc::before {
+  content: '';
+  position: absolute;
+  width: 0;
+  height: 0;
+  border-style: solid;
+  border-width: 0 5px 8px 5px;
+  border-color: transparent transparent #000 transparent;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+}
+
+/* Style the arrow for descending */
+.gridjs-sort.gridjs-sort-desc::before {
+  content: '';
+  position: absolute;
+  width: 0;
+  height: 0;
+  border-style: solid;
+  border-width: 8px 5px 0 5px;
+  border-color: #000 transparent transparent transparent;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+}
+
+.ts-date-picker{
+  float: left;
+}
+
+#timeseries-div{
+  padding-bottom:100px;
+  margin-bottom:100px;
+}
+</style>
 
 <div class="ts-section">
-  <h3 id="ts-heading">Time Series Data</h3>
-  <div class="ts-graph">
+  <div class="header-container">
+    <h3 id="ts-heading">Time Series Data</h3>
+    <div>
+      <button id="ts-toggle-view" name="ts-toggle-view">Show Table</button>
+    </div>
+  </div>
+  <div class="ts-graph" id="ts-graph">
   <div>
     <label for="ts-time-range">Time Range:</label>
     <select id="ts-time-range" name="ts-time-range" onchange="filter_chart(this)">
@@ -14,13 +189,44 @@
       <option value="7">7 Days</option>
       <option value="1">1 Days</option>
     </select>
-      <button id="ts-toggle-onoff" name="ts-toggle-onoff" onclick="toggle_selection()">Toggle</button>
-      <button id="ts-toggle-table" name="ts-toggle-table" onclick="">Table View</<button type=""></button>
-  </div>
+      <button id="ts-toggle-onoff" name="ts-toggle-onoff" onclick="toggle_selection(this)">Select: None</button>
+        </div>
     <canvas id="chart"></canvas>
     <script>
       var data = {{ ts_data | tojson}};
       create_chart(data);
     </script>
   </div>
+  <div class="ts-table" id="ts-table" style="display: none;">
+    <div id="ts-table-div"></div>
+  </div>
 </div>
+
+
+<script>
+  let table_exists = false;
+  const toggle_view_btn = document.getElementById('ts-toggle-view');
+  toggle_view_btn.addEventListener('click', function(){
+    const chart_container = document.getElementById('ts-graph');
+    const table_container = document.getElementById('ts-table');
+
+    if(chart_container.style.display === 'none'){
+      chart_container.style.display = 'block';
+      table_container.style.display = 'none';
+      toggle_view_btn.textContent = 'Show Table';
+    } else {
+      chart_container.style.display = 'none';
+      table_container.style.display = 'block';
+      toggle_view_btn.textContent = 'Show Chart';
+
+      if(!table_exists){
+        // Extract column names and data
+        const columns = get_cols(data);
+        const rows = get_rows(data);
+
+        create_table(columns, rows);
+        table_exists = true;
+        }
+    }
+  })
+</script>

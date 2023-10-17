@@ -1,10 +1,9 @@
 from sys import stderr
-from flask import Flask, render_template, request, make_response, redirect, url_for, session, send_from_directory
+from flask import Flask, render_template, request, make_response, redirect, url_for, session, send_from_directory, jsonify
 import folium
 import os
 from datetime import timedelta, datetime, timezone
 import re
-
 from utils.types import *
 from utils.api import *
 
@@ -422,6 +421,22 @@ def format_location_string(location_json) -> str:
     return formatted_location
 
 
+@app.route('/get_between_dates_luid', methods=['GET'])
+def get_data():
+    try:
+        # Retrieve date parameters from the URL
+        luid = request.args.get('luid')
+        from_date = request.args.get('from_date')
+        to_date = request.args.get('to_date')
+
+        ts_data = get_between_dates_ts(luid, from_date, to_date)
+
+        return parse_ts_data(ts_data)
+
+    except Exception as e:
+        return jsonify({"error": str(e)})
+
+
 def generate_link(data):
     link = ''
     if 'source_name' in data and 'source_ids' in data and 'app_id' in data['source_ids'] and 'dev_id' in data['source_ids']:
@@ -448,8 +463,8 @@ def parse_ts_data(ts_data):
                 parsed_ts[label] = []
             parsed_ts[label].append((timestamp, value))
 
-        print("---parse_ts returning:", file=sys.stderr)
-        print(parsed_ts, file=sys.stderr)
+        #print("---parse_ts returning:", file=sys.stderr)
+        #print(parsed_ts, file=sys.stderr)
         return parsed_ts
 
     except:
