@@ -1,6 +1,15 @@
 {% extends "base.html" %}
 {% block content%}
-    <section style="padding-top: 16px">
+    <section>
+    	<div class="command-bar">
+            <div class="form-buttons">
+                <ul id="wombatlistbuttons">
+        			<li><span class="btn" onclick="handleUploadLogs()">Fetch logs</span></li>
+                </ul>
+            </div>
+        </div>
+
+        <div style="padding-top: 16px">
         <table id="wombat_table" class="table table-striped data-table-wombats">
             <thead>
             <tr>
@@ -52,5 +61,6 @@
             {% endfor %}
             </tbody>
         </table>
+        </div>
     </section>
 {% endblock %}

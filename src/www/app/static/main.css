@@ -8,7 +8,7 @@ body {
 .container-fluid {
     width: 98%;
     margin: auto;
-    overflow: hidden;
+    overflow: scroll;
 }
 
 .container h2 {
@@ -326,12 +326,12 @@ form select {
     cursor: pointer;
 }
 
-.edit-note-container{
+.edit-note-container {
     display: flex; 
     justify-content: space-between;
   }
 
-.edit-note-container span{
+.edit-note-container span {
 flex: 1;
 text-align: center;
 }
@@ -340,12 +340,12 @@ text-align: center;
     background-color: #a8e9f4;
 }
 
-.pause_icon{
+.pause_icon {
     width: 30px;
     height: 30px;
     margin-left: 20px;
 }
 
-.mapping-header{
+.mapping-header {
     display: flex;
 }

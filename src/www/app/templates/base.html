@@ -5,15 +5,15 @@
         <meta name="viewport" content="width=device-width">
         <title>IoTa Device Manager | {{ title }}</title>
         <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.0.1/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-+0n0xVW2eSR5OomGNYDnhzAbDsOXxcvSN1TPprVMTNDbiYZCxYbOOl7+AMvyTG2x" crossorigin="anonymous">
-        <link rel="stylesheet" type="text/css" href="https://cdn.datatables.net/1.10.25/css/dataTables.bootstrap5.css">
+        <link rel="stylesheet" type="text/css" href="https://cdn.datatables.net/1.10.25/css/dataTables.bootstrap5.min.css">
         <link rel="stylesheet" href="{{ url_for('static', filename='main.css') }}">
         <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
         <script type="text/javascript" charset="utf8" src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
-        <script type="text/javascript" charset="utf8" src="https://cdn.datatables.net/1.10.25/js/jquery.dataTables.js"></script>
-        <script type="text/javascript" charset="utf8" src="https://cdn.datatables.net/1.10.25/js/dataTables.bootstrap5.js"></script>
-        
+        <script type="text/javascript" charset="utf8" src="https://cdn.datatables.net/1.10.25/js/jquery.dataTables.min.js"></script>
+        <script type="text/javascript" charset="utf8" src="https://cdn.datatables.net/1.10.25/js/dataTables.bootstrap5.min.js"></script>
         <script type="text/javascript" charset="utf8" src="https://cdn.datatables.net/select/1.4.0/js/dataTables.select.min.js"></script>
         <script type="text/javascript">
+            var wombatTable;
 
             $(document).ready(function () {
                 $('.data-table-multi').DataTable({
@@ -34,7 +34,7 @@
                     }
                 });
 
-                $('.data-table-wombats').DataTable({
+                wombatTable = $('.data-table-wombats').DataTable({
                     columnDefs: [
                         { orderable: false, targets: 7 }
                     ],
@@ -90,6 +90,22 @@
                     }
                     alert('Success');
                 }
+            }
+
+            function handleUploadLogs() {
+                var selected = $('.selected');
+                if (selected.length === 0){
+                    alert('Please select at least one device to fetch logs from.');
+                    return;
+                }
+
+                const items = wombatTable.rows({ selected: true }).data();
+                console.log(items);
+                const p_uid_list = items.map((x) => x[0]).join(',')
+                const url = "{{ url_for('get_wombat_logs') }}" + `?uids=${p_uid_list}`;
+                response = httpGet(url);
+                console.log(response);
+                alert(response);
             }
 
             function handleCreateMapping(uid){

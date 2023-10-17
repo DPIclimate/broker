@@ -1,8 +1,8 @@
-import logging
 from typing import Tuple
 
 from flask import Flask, render_template, request, make_response, redirect, url_for, session, send_from_directory
 import folium
+import paho.mqtt.publish as publish
 import os
 from datetime import timedelta, datetime, timezone
 import re
@@ -14,6 +14,7 @@ from werkzeug.wrappers import Response
 
 from pdmodels.Models import PhysicalDevice, LogicalDevice, PhysicalToLogicalMapping, Location
 
+
 app = Flask(__name__, static_url_path='/static')
 
 app.wsgi_app = DispatcherMiddleware(
@@ -21,8 +22,11 @@ app.wsgi_app = DispatcherMiddleware(
     {'/iota': app.wsgi_app}
 )
 
+_location_re = re.compile(r'([+-]?\d+\.?\d*)\s*,\s*([+-]?\d+\.?\d*)')
 
-location_re = re.compile(r'([+-]?\d+\.?\d*)\s*,\s*([+-]?\d+\.?\d*)')
+_mqtt_host = os.getenv('RABBITMQ_HOST')
+_mqtt_user = os.getenv('RABBITMQ_DEFAULT_USER')
+_mqtt_pass = os.getenv('RABBITMQ_DEFAULT_PASS')
 
 
 def parse_location(loc_str: str) -> Tuple[bool, Location | None]:
@@ -37,7 +41,7 @@ def parse_location(loc_str: str) -> Tuple[bool, Location | None]:
         return True, None
 
     loc_str = loc_str.strip()
-    m: re.Match = location_re.fullmatch(loc_str)
+    m: re.Match = _location_re.fullmatch(loc_str)
     if m is None:
         return False, None
 
@@ -143,6 +147,23 @@ def account():
             return render_template('account.html', failed=True, reason=f"Exception occured {e.response.status_code}")
 
     return render_template('account.html')
+
+
+@app.route('/get_wombat_logs', methods=['GET'])
+def get_wombat_logs():
+    p_uids = list(map(lambda i: int(i), request.args['uids'].split(',')))
+    app.logger.info(f'get_wombat_logs for p_uids: {p_uids}')
+    msgs = []
+
+    for p_uid in p_uids:
+        pd = get_physical_device(p_uid, session.get('token'))
+        if pd is not None:
+            app.logger.info(f'Wombat serial no: {pd.source_ids["serial_no"]}')
+            msgs.append((f'wombat/{pd.source_ids["serial_no"]}', 'ftp login\nupload log.txt\nftp logout\n', 1, True))
+
+    # NOTE! Assuming default port of 1883.
+    publish.multiple(msgs, hostname=_mqtt_host, auth={'username': _mqtt_user, 'password': _mqtt_pass})
+    return "OK"
 
 
 @app.route('/wombats', methods=['GET'])
