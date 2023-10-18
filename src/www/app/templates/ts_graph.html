@@ -6,6 +6,7 @@
 <script src="https://cdn.jsdelivr.net/npm/gridjs/dist/gridjs.umd.js"></script>
 <script src="{{ url_for('static', filename='ts_table.js') }}"></script>
 
+
 <style>
 h1 {
   text-align: center;
@@ -204,6 +205,17 @@ h1 {
 
 
 <script>
+//each page has an empty div to easily identify it, it will then use that id to get correct uid... it is this way as both pages have same variables
+  dev_type = "p_uid";
+  if (document.getElementById('ld_page')) {
+    dev_type = "l_uid";
+    uid = "{{ ld_data.uid }}";
+  } else {
+    uid = "{{ pd_data.uid }}";
+  }
+
+  init(dev_type, uid);
+
   let table_exists = false;
   const toggle_view_btn = document.getElementById('ts-toggle-view');
   toggle_view_btn.addEventListener('click', function(){
