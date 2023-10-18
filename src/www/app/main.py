@@ -166,6 +166,23 @@ def get_wombat_logs():
     return "OK"
 
 
+@app.route('/wombat_ota', methods=['GET'])
+def wombat_ota():
+    p_uids = list(map(lambda i: int(i), request.args['uids'].split(',')))
+    app.logger.info(f'wombat_ota for p_uids: {p_uids}')
+    msgs = []
+
+    for p_uid in p_uids:
+        pd = get_physical_device(p_uid, session.get('token'))
+        if pd is not None:
+            app.logger.info(f'Wombat serial no: {pd.source_ids["serial_no"]}')
+            msgs.append((f'wombat/{pd.source_ids["serial_no"]}', 'config ota 1\nconfig reboot\n', 1, True))
+
+    # NOTE! Assuming default port of 1883.
+    publish.multiple(msgs, hostname=_mqtt_host, auth={'username': _mqtt_user, 'password': _mqtt_pass})
+    return "OK"
+
+
 @app.route('/wombats', methods=['GET'])
 def wombats():
     try:
