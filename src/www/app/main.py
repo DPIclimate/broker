@@ -421,20 +421,27 @@ def format_location_string(location_json) -> str:
     return formatted_location
 
 
-@app.route('/get_between_dates_luid', methods=['GET'])
+@app.route('/get_between_dates_ts', methods=['GET'])
 def get_data():
+    """
+        dev_type (string):      p_uid or l_uid, must match what's in database
+        uid (int):              uid of either p_uid or l_uid ie query could be ... where p_uid='2'
+        from_Date(string):      picker.value
+        to_date(string):        picker.value
+    """
     try:
-        # Retrieve date parameters from the URL
-        luid = request.args.get('luid')
+        dev_type = request.args.get('dev_type')
+        uid = request.args.get('uid')
         from_date = request.args.get('from_date')
         to_date = request.args.get('to_date')
 
-        ts_data = get_between_dates_ts(luid, from_date, to_date)
+        ts_data = get_between_dates_ts(dev_type, uid, from_date, to_date)
 
         return parse_ts_data(ts_data)
 
     except Exception as e:
         return jsonify({"error": str(e)})
+
 
 
 def generate_link(data):
