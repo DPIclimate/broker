@@ -371,13 +371,13 @@ def get_luid_ts(luid: str):
         return {}
 
 
-def get_between_dates_ts(luid: str, from_date: str, to_date: str):
+def get_between_dates_ts(dev_type: str, uid: str, from_date: str, to_date: str):
     try:
-        response = requests.get(f"{end_point}/query/?query=select timestamp, name, value from timeseries where l_uid={luid} and timestamp >= DATE '{from_date}' and timestamp <= DATE '{to_date}' order by timestamp asc")
+        response = requests.get(f"{end_point}/query/?query=select timestamp, name, value from timeseries where {dev_type}='{uid}' and timestamp >= DATE '{from_date}' and timestamp <= DATE '{to_date}' order by timestamp asc")
         response.raise_for_status()
         #print("get_puid_ts ---returns---", file=sys.stderr)
         #print(response.json(), file=sys.stderr)
         return response.json()
     except Exception as err:
-        print(f"webapp: unable to pull ts_luid data from api: {err}")
+        print(f"webapp: unable to pull get_between_dates_ts data from api: {err}")
         return {}
