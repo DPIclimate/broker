@@ -373,7 +373,7 @@ def get_luid_ts(luid: str):
 
 def get_between_dates_ts(dev_type: str, uid: str, from_date: str, to_date: str):
     try:
-        response = requests.get(f"{end_point}/query/?query=select timestamp, name, value from timeseries where {dev_type}='{uid}' and timestamp >= DATE '{from_date}' and timestamp <= DATE '{to_date}' order by timestamp asc")
+        response = requests.get(f"{end_point}/query/?query=select p_uid, l_uid, timestamp, name, value from timeseries where {dev_type}='{uid}' and timestamp BETWEEN '{from_date} 00:00:00' AND '{to_date} 23:59:59' order by timestamp asc")
         response.raise_for_status()
         #print("get_puid_ts ---returns---", file=sys.stderr)
         #print(response.json(), file=sys.stderr)
