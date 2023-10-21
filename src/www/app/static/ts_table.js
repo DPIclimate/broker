@@ -115,7 +115,11 @@ function remove_date_pickers() {
 function handle_go_btn(from_picker, to_picker) {
   const from_date = from_picker.value;
   const to_date = to_picker.value;
+  fetch_and_update_table(from_date, to_date);
 
+}
+
+function fetch_and_update_table(from_date, to_date) {
   if (!is_valid_date(from_date) || !is_valid_date(to_date) || dev_type == '' || uid == '')
     return;
 
@@ -128,14 +132,11 @@ function handle_go_btn(from_picker, to_picker) {
     })
     .then(data => {
       update_table(data.columns, data.data);
-      //}
     })
     .catch(error => {
       console.error('There was a problem with the fetch operation:', error);
     });
 }
-
-
 
 
 function handle_csv_btn() {

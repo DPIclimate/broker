@@ -64,7 +64,8 @@
       toggle_view_btn.textContent = 'Show Chart';
   
       //just create table if it doesn't exist
-      create_table([], []);
+      const today_date = new Date().toISOString().split('T')[0];
+      fetch_and_update_table(today_date, today_date);
     }
   })
 </script>
