@@ -1,0 +1,174 @@
+h1 {
+  text-align: center;
+}
+
+#ts-table-div {
+  margin: auto;
+}
+
+.table-body {
+  font-family: monospace;
+}
+
+.header-container {
+  display: flex;
+  align-items: center;
+}
+
+#ts-heading {
+  margin-right: 10px;
+}
+
+#ts-toggle-view {
+    background-color: #17a2b8;
+    border: none;
+    color: white;
+    text-align: center;
+    text-decoration: none;
+    display: inline-block;
+    font-size: 16px;
+    margin: 5px;
+    cursor: pointer;
+    padding-left: 5px;
+    padding-right: 5px;
+}
+
+#ts-toggle-view:hover {
+    background-color: #fd7e14;
+}
+
+.gridjs-wrapper {
+  width: 100%;
+  overflow-x: auto;
+}
+
+.gridjs-table {
+  border-collapse: collapse;
+  width: 100%;
+}
+
+.gridjs-th {
+  border: 1px solid #ccc;
+  padding: 10px;
+  text-align: left;
+  background-color: #E8E8E8;
+}
+
+
+.gridjs-td {
+  border: 1px solid #ccc;
+  padding: 10px;
+}
+
+
+.gridjs-tbody .gridjs-tr:nth-child(even) {
+  background-color: #f9f9f9;
+}
+
+
+.gridjs-summary {
+  font-weight: bold;
+}
+
+
+.gridjs-search-input {
+  padding: 5px;
+  border: 1px solid #ccc;
+  float: right;
+}
+
+
+.gridjs-th {
+  border: 1px solid #ccc;
+  border-left: none;
+  padding: 10px;
+  text-align: left;
+  background-color: #f0f0f0;
+  position: relative;
+  font-size: 16px;
+  font-weight: bold;
+}
+
+
+.gridjs-th:first-child {
+  border-left: 1px solid #ccc;
+}
+
+
+.gridjs-table .gridjs-tbody .gridjs-tr:hover {
+  background-color: #e0e0e0 !important;
+}
+
+
+
+.gridjs-td {
+  border: 1px solid #ccc;
+  padding: 10px;
+}
+
+
+.gridjs-sort {
+  width: 20px;
+  height: 20px;
+  background-color: transparent;
+  border: none;
+  position: absolute;
+  top: 50%;
+  right: 0;
+  transform: translateY(-50%);
+  cursor: pointer;
+  outline: none;
+  margin-bottom:5px;
+  padding-bottom:5px;
+}
+
+
+.gridjs-sort:active,
+.gridjs-sort:focus {
+  outline: none;
+}
+
+
+.gridjs-sort.gridjs-sort-asc::before {
+  content: '';
+  position: absolute;
+  width: 0;
+  height: 0;
+  border-style: solid;
+  border-width: 0 5px 8px 5px;
+  border-color: transparent transparent #000 transparent;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+}
+
+
+.gridjs-sort.gridjs-sort-desc::before {
+  content: '';
+  position: absolute;
+  width: 0;
+  height: 0;
+  border-style: solid;
+  border-width: 8px 5px 0 5px;
+  border-color: #000 transparent transparent transparent;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+}
+
+.ts-date-picker{
+  float: left;
+}
+
+#timeseries-div{
+  padding-bottom:100px;
+  margin-bottom:100px;
+}
+
+.csv-btn{
+  float:right;
+  margin-right:10px;
+  text-align: center;
+  text-decoration: none;
+  cursor: pointer;
+}

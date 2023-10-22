@@ -1,10 +1,11 @@
 from sys import stderr
-from flask import Flask, render_template, request, make_response, redirect, url_for, session, send_from_directory
+
+from requests.auth import parse_dict_header
+from flask import Flask, render_template, request, make_response, redirect, url_for, session, send_from_directory, jsonify
 import folium
 import os
 from datetime import timedelta, datetime, timezone
 import re
-
 from utils.types import *
 from utils.api import *
 
@@ -422,6 +423,30 @@ def format_location_string(location_json) -> str:
     return formatted_location
 
 
+@app.route('/get_between_dates_ts', methods=['GET'])
+def get_data():
+    """
+        dev_type (string):      p_uid or l_uid, must match what's in database
+        uid (int):              uid of either p_uid or l_uid ie query could be ... where p_uid='2'
+        from_Date(string):      picker.value
+        to_date(string):        picker.value
+    """
+    try:
+        dev_type = request.args.get('dev_type')
+        uid = request.args.get('uid')
+        from_date = request.args.get('from_date')
+        to_date = request.args.get('to_date')
+
+        ts_data = get_between_dates_ts(dev_type, uid, from_date, to_date)
+        parsed =  parse_ts_table_data(ts_data)
+
+        return parsed
+
+    except Exception as e:
+        return jsonify({"error": str(e)})
+
+
+
 def generate_link(data):
     link = ''
     if 'source_name' in data and 'source_ids' in data and 'app_id' in data['source_ids'] and 'dev_id' in data['source_ids']:
@@ -448,13 +473,72 @@ def parse_ts_data(ts_data):
                 parsed_ts[label] = []
             parsed_ts[label].append((timestamp, value))
 
-        print("---parse_ts returning:", file=sys.stderr)
-        print(parsed_ts, file=sys.stderr)
         return parsed_ts
 
     except:
         print("Error parsed_ts", file=sys.stderr)
         return {}
+
+#leaving this here incase of future changes ie broker correlation id
+#input:
+#[
+#   [1, 1, '2023-10-17T14:00:00+00:00', '5_TEMPERATURE', 0.2999783007627932], 
+#   [1, 1, '2023-10-17T14:00:00+00:00', 'BATTERY_V', 11.313449], 
+#   [2, 1, '2023-10-18T14:00:00+00:00', '5_TEMPERATURE', 2.2999783007627932], 
+#   [2, 1, '2023-10-18T14:00:00+00:00', 'BATTERY_V', 12.313449], 
+#   [1, 1, '2023-10-17T14:00:00+00:00', 'TEST', 666]
+#]
+#
+#output:
+#{
+#   columns:["p_uid", "l_uid", "timestamp", "5_TEMPERATURE", "BATTERY_V", "TEST"],
+#   data:[
+#   [1,1,'2023-10-17T14:00:00+00:00', 0.2999783007627933, 11.313449, 666],
+#   [2,1, '2023-10-18T14:00:00+00:00', 2.2999783007627932, 12.313449, null]
+#   ]
+#}
+
+#data is the rows of table,
+#p_uid + l_uid + timeseries forms the unique identifier for the row.
+def parse_ts_table_data(raw_data):
+    if not raw_data:
+        return {"columns": [], "data": []}
+
+    data_dict = {}
+
+    for entry in raw_data:
+        p_uid, l_uid, timestamp, label, value = entry
+        if p_uid not in data_dict:
+            data_dict[p_uid] = {}
+        if l_uid not in data_dict[p_uid]:
+            data_dict[p_uid][l_uid] = {}
+        if timestamp not in data_dict[p_uid][l_uid]:
+            data_dict[p_uid][l_uid][timestamp] = {}
+        data_dict[p_uid][l_uid][timestamp][label] = value
+
+    columns = ["p_uid", "l_uid", "timestamp"]
+
+    for entry in raw_data:
+        p_uid, l_uid, timestamp, label, _ = entry
+
+        if label not in columns:
+            columns.append(label)
+
+    data = []
+
+    for p_uid, p_uid_data in data_dict.items():
+        for l_uid, l_uid_data in p_uid_data.items():
+            for timestamp, timestamp_data in l_uid_data.items():
+                row = [p_uid, l_uid, timestamp]
+                for label in columns[3:]:
+                    if label in timestamp_data:
+                        row.append(timestamp_data[label])
+                    else:
+                        row.append(None)
+                data.append(row)
+
+    result = {"columns": columns, "data": data}
+    return result
 
 
 if __name__ == '__main__':
