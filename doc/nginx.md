@@ -30,6 +30,11 @@ To connect to the RabbitMQ monitor web page, use `https://hostname/rabbitmq`
         # Use the hostname 'restapi' if nginx is running in a container.
         proxy_pass http://localhost:5687/broker/;
     }
+    
+    location /query/ {
+      #use the hostname 'restapi' if nginx is running in a container.
+      proxy_pass http://localhost:5687/query/;
+    }
 
     location /rabbitmq/ {
         # Use the hostname 'mq' if nginx is running in a container.
