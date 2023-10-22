@@ -5,131 +5,54 @@
 #
 #
 
-import re
+import re, os, time, logging
+import api.client.DAO as dao
 
-#WORDS THAT WOULD BE CHANGED TO TRY STANDARDISE
-#These should not change too much but maybe we should move to a less hardcoded approach
-TYPE_MAPS = {
-    "AMP": "A",
-    "AMPERAGE":"A",
-    "AMPS":"A",
-    "VOLT":"V",
-    "VOLTAGE":"V",
-    "VOLTS":"V",
-    "MAXIMUM":"MAX",
-    "MINIMUM":"MIN",
-    "CENTIMETER":"CM",
-    "CENTIMETRE":"CM",
-    "CENTIMETERS":"CM",
-    "CENTIMETRES":"CM",
-    "TEMP":"TEMPERATURE",
-    "AVG":"AVERAGE",
-    "MOIST":"MOISTURE"
-}
 
-#ADD WORDS THAT NEED TO BE SEPARATED
-#These should not change too much but maybe we should move to a less hardcoded approach
-WORD_LIST = [
-    "ACCESS",
-    "ACTUATOR",
-    "AIR",
-    "ALTITUDE",
-    "AMP",
-    "AMPERAGE",
-    "AMPS",
-    "ATMOSPHERIC",
-    "AVERAGE",
-    "AVG",
-    "BAROMETRIC",
-    "BATTERY",
-    "CABLE",
-    "CAPACITY",
-    "CHANNEL",
-    "CHARGING",
-    "CLASS",
-    "CODE",
-    "COMMAND",
-    "CONDUCTIVITY",
-    "COUNT",
-    "COUNTER",
-    "CURRENT",
-    "CYCLE",
-    "DEGREES",
-    "DEPTH",
-    "DEV",
-    "DEVICE",
-    "DISTANCE",
-    "DIRECTION",
-    "DOWN",
-    "EXTERNAL",
-    "FLOW",
-    "FRAUD",
-    "GUST",
-    "HEADER",
-    "HUMIDITY",
-    "HYGRO",
-    "INDICATION",
-    "INTERVAL",
-    "KPH",
-    "LEAK",
-    "MAX",
-    "MAXIMUM",
-    "MIN",
-    "MINIMUM",
-    "MOIST",
-    "MOISTURE",
-    "MOTION",
-    "OPERATING",
-    "PACKET",
-    "PANEL",
-    "PER",
-    "PERIOD",
-    "POWER",
-    "PRECIPITATION",
-    "PRESSURE",
-    "PROCESSOR",
-    "PULSE",
-    "RADIO",
-    "RAINFALL",
-    "RAIN",
-    "READING",
-    "RELATIVE",
-    "REST",
-    "SALINITY",
-    "SIGNAL",
-    "SOLAR",
-    "SOIL",
-    "SPEED",
-    "STRENGTH",
-    "STRIKE",
-    "STRIKES",
-    "STD",
-    "TECHNOLOGY",
-    "TILT",
-    "TIME",
-    "UNIX",
-    "UP",
-    "UPTIME",
-    "VALUE",
-    "VAPOR",
-    "VELOCITY",
-    "VOLT",
-    "VOLTS",
-    "VOLTAGE",
-    "READING",
-    "SHORTEST",
-    "SNR",
-    "SOIL",
-    "TAMPER",
-    "TILT",
-    "TIME",
-    "TEMPERATURE",
-    "TEMP",
-    "UNIX",
-    "UP",
-    "VAPOUR",
-    "WIND"
-]
+def update_data_structs():
+    try:
+        type_maps = dict(dao.get_type_map())
+        word_list = dao.get_word_list()
+        hash_table = dict(dao.get_hash_table())
+        return type_maps, [item[0] for item in word_list], hash_table
+    except Exception as e:
+        logging.info("Error while updating word_list/type_map structures:", e)
+        return {}, [], {"word_list":"", "type_name_map":""}
+
+
+PULL_INTERVAL = int(os.environ.get('NAMING_UPDATE_INTERVAL', 600))
+TYPE_MAPS, WORD_LIST, HASH_TABLE = update_data_structs()
+HASH_TABLE = dict(dao.get_hash_table())
+last_data_pull_time = 0
+
+
+def check_and_update_structs():
+    """
+    atm the hash_table only has two rows, so pulling both at once and checking is probably
+    better,
+    if more hashes go in, then maybe redoing this to query database for just those two hashes
+    """
+    global last_data_pull_time
+    global HASH_TABLE, WORD_LIST, TYPE_MAPS
+
+    current_time = time.time()
+
+    logging.info('in updates')
+
+    if current_time - last_data_pull_time >= PULL_INTERVAL:
+        logging.info('checking for updates')
+        last_data_pull_time = time.time()
+        try:
+            new_hash_table = dict(dao.get_hash_table())
+            if HASH_TABLE['word_list'] != new_hash_table['word_list']:
+                word_list = dao.get_word_list()
+                WORD_LIST = [item[0] for item in word_list]
+                HASH_TABLE['word_list'] = new_hash_table['word_list']
+            if HASH_TABLE['type_name_map'] != new_hash_table['type_name_map']:
+                TYPE_MAPS = dict(dao.get_type_map())
+                HASH_TABLE['type_name_map'] = new_hash_table['type_name_map']
+        except:
+            logging.error("unable to update naming structs")
 
 
 def clean_name(msg: str) -> str:
@@ -146,6 +69,9 @@ def clean_name(msg: str) -> str:
     Additionally, table name must not start or end with the . character. 
     Column name must not contain . -
     """
+
+    check_and_update_structs()
+
     special_characters = '!"#$%&\'()*+,-./:;<=>?@[\\]^_`{|}~ '
     cleaned_name = separate_and_normalise_words(msg.upper().replace(" ", "_").replace("-","_"))
     cleaned_name = cleaned_name.lstrip(special_characters).rstrip(special_characters)
