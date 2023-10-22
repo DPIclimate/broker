@@ -22,7 +22,6 @@ def update_data_structs():
 
 PULL_INTERVAL = int(os.environ.get('NAMING_UPDATE_INTERVAL', 600))
 TYPE_MAPS, WORD_LIST, HASH_TABLE = update_data_structs()
-HASH_TABLE = dict(dao.get_hash_table())
 last_data_pull_time = 0
 
 
