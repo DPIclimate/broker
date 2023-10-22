@@ -109,6 +109,34 @@ create table if not exists word_list(
     full_word text
 );
 
+create table if not exists hash_table(
+  table_name text primary key,
+  data_hash text
+);
+
+create or replace function update_hash_table()
+returns trigger as $$
+begin
+  if TG_OP = 'INSERT' or TG_OP = 'UPDATE' OR TG_OP = 'DELETE' then
+    insert into hash_table (table_name, data_hash)
+    values (TG_TABLE_NAME, MD5(NEW.*::text))
+    on conflict (table_name)
+    do update set data_hash = MD5(NEW.*::text);
+    return new;
+  end if;
+end;
+$$ language plpgsql;
+
+create trigger type_name_map_trigger
+after insert or update or delete on type_name_map
+for each row
+  execute function update_hash_table();
+
+create trigger word_list_trigger
+after insert or update or delete on word_list
+for each row
+  execute function update_hash_table();
+
 create index if not exists pd_src_id_idx on physical_devices using GIN (source_ids);
 
 insert into sources values ('ttn'), ('greenbrain'), ('wombat'), ('ydoc'), ('ict_eagleio');
