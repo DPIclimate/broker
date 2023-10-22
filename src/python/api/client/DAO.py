@@ -1321,3 +1321,33 @@ def get_word_list():
     finally:
         if conn is not None:
             free_conn(conn)
+
+
+def _get_hash_table(conn):
+    """
+    conn: a database connection
+    """
+    hash_table = []
+    with conn.cursor() as cursor:
+        sql = 'select * from hash_table'
+        cursor.execute(sql)
+        row = cursor.fetchall()
+        if row is not None:
+            return row
+    return hash_table
+
+
+@backoff.on_exception(backoff.expo, DAOException, max_time=30)
+def get_hash_table():
+    """
+    CASE INSENSITIVE
+    """
+    conn = None
+    try:
+        with _get_connection() as conn:
+            return _get_hash_table(conn)
+    except Exception as err:
+        raise err if isinstance(err, DAOException) else DAOException('get_hash_table failed.', err)
+    finally:
+        if conn is not None:
+            free_conn(conn)
