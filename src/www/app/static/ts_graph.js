@@ -1,5 +1,6 @@
 var chart;
 var parsed_data = {} //ugly but things need to access it at varied times
+var toggle_state = true;
 //hopefully 20 different colours should be enough
 var GRAPH_COLOURS = [
   "#1f77b4", "#ff7f0e", "#2ca02c", "#d62728", "#9467bd",
@@ -33,6 +34,7 @@ function generate_datasets(parsed_data) {
   return datasets;
 }
 
+
 //create the chart via chartjs
 function create_chart(parsed_data) {
   parsed_data = parsed_data;
@@ -43,6 +45,15 @@ function create_chart(parsed_data) {
       datasets: generate_datasets(parsed_data)
     },
     options: {
+      responsive: true,
+      plugins: {
+        legend: {
+          onClick: function(e, legend_item, legend) {
+            chart.data.datasets[legend_item.datasetIndex].hidden = !chart.data.datasets[legend_item.datasetIndex].hidden;
+            chart.update();
+          }
+        }
+      },
       scales: {
         x: {
           type: 'time',
@@ -62,5 +73,15 @@ function filter_chart(days) {
   chart.update();
 }
 
-function toggle_selection() {
+
+function toggle_selection(btn) {
+  chart.data.datasets.forEach((data_set) => {
+    data_set.hidden = toggle_state;
+  });
+
+  toggle_state = !toggle_state;
+
+  chart.update();
+
+  btn.textContent = toggle_state ? 'Select: None' : 'Select: All';
 }

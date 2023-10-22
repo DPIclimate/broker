@@ -1,12 +1,21 @@
 <!-- timeseries data graph template -->
+<link rel="stylesheet" href="{{ url_for('static', filename='ts_table.css') }}">
 <script src="https://cdn.jsdelivr.net/npm/chart.js@^3"></script>
 <script src="https://cdn.jsdelivr.net/npm/luxon@^2"></script>
 <script src="https://cdn.jsdelivr.net/npm/chartjs-adapter-luxon@^1"></script>
 <script src="{{ url_for('static', filename='ts_graph.js') }}"></script>
+<script src="https://cdn.jsdelivr.net/npm/gridjs/dist/gridjs.umd.js"></script>
+<script src="{{ url_for('static', filename='ts_table.js') }}"></script>
+
 
 <div class="ts-section">
-  <h3 id="ts-heading">Time Series Data</h3>
-  <div class="ts-graph">
+  <div class="header-container">
+    <h3 id="ts-heading">Time Series Data</h3>
+    <div>
+      <button id="ts-toggle-view" name="ts-toggle-view">Show Table</button>
+    </div>
+  </div>
+  <div class="ts-graph" id="ts-graph">
   <div>
     <label for="ts-time-range">Time Range:</label>
     <select id="ts-time-range" name="ts-time-range" onchange="filter_chart(this)">
@@ -14,13 +23,49 @@
       <option value="7">7 Days</option>
       <option value="1">1 Days</option>
     </select>
-      <button id="ts-toggle-onoff" name="ts-toggle-onoff" onclick="toggle_selection()">Toggle</button>
-      <button id="ts-toggle-table" name="ts-toggle-table" onclick="">Table View</<button type=""></button>
-  </div>
+      <button id="ts-toggle-onoff" name="ts-toggle-onoff" onclick="toggle_selection(this)">Select: None</button>
+        </div>
     <canvas id="chart"></canvas>
     <script>
       var data = {{ ts_data | tojson}};
       create_chart(data);
     </script>
   </div>
+  <div class="ts-table" id="ts-table" style="display: none;">
+    <div id="ts-table-div"></div>
+  </div>
 </div>
+
+
+<script>
+//each page has an empty div to easily identify it, it will then use that id to get correct uid... it is this way as both pages have same variables
+  dev_type = "p_uid";
+  if (document.getElementById('ld_page')) {
+    dev_type = "l_uid";
+    uid = "{{ ld_data.uid }}";
+  } else {
+    uid = "{{ pd_data.uid }}";
+  }
+
+  init(dev_type, uid);
+
+  const toggle_view_btn = document.getElementById('ts-toggle-view');
+  toggle_view_btn.addEventListener('click', function(){
+    const chart_container = document.getElementById('ts-graph');
+    const table_container = document.getElementById('ts-table');
+
+    if(chart_container.style.display === 'none'){
+      chart_container.style.display = 'block';
+      table_container.style.display = 'none';
+      toggle_view_btn.textContent = 'Show Table';
+    } else {
+      chart_container.style.display = 'none';
+      table_container.style.display = 'block';
+      toggle_view_btn.textContent = 'Show Chart';
+  
+      //just create table if it doesn't exist
+      const today_date = new Date().toISOString().split('T')[0];
+      fetch_and_update_table(today_date, today_date);
+    }
+  })
+</script>

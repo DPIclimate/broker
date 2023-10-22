@@ -202,16 +202,17 @@ services:
     entrypoint: [ "python", "-m", "delivery.FRRED" ]
 
   timescaledb:
+    build: ../timescale  # Point to the directory containing the custom Dockerfile
     hostname: "tsdb"
-    image: timescale/timescaledb:latest-pg15
+    image: custom-timescaledb:latest
     restart: "no"    
+
     env_file:
       - .tsdb_env
     volumes:
-      #- ../timescale/data:/var/lib/postgresql/data # Named volume in repo folder, had permission issues
-      #- timescale_data:/var/lib/postgresql/data # Names volume in local root, permissions fine, needed manual deletion.
-      #- /var/lib/postgresql/data
       - ../timescale/init.sql:/docker-entrypoint-initdb.d/init.sql
+      - ../timescale/pgbackrest/pgbackrest.conf:/home/postgres/pgdata/backup/pgbackrest.conf
+      - ../timescale/logs:/var/log/timescale
     ports:
       - "5433:5432"
     healthcheck:

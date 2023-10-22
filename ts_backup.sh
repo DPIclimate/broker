@@ -23,7 +23,10 @@ if [ -z "$DB_CONTAINER_NAME" ]; then
     exit 1
 fi
 
-# Backup
+# Check if backup directory exists, if not, create it (for error prevention)
+[ -d "$BACKUP_DIR" ] || mkdir -p "$BACKUP_DIR"
+
+# Perform the backup
 docker exec -t "$DB_CONTAINER_NAME" pg_dump -U "$DB_USER" -d "$DB_NAME" -F c -b -v -f "/tmp/$BACKUP_FILENAME"
 
 # Copy the backup from the container to the host
