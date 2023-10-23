@@ -1247,3 +1247,107 @@ def add_name_map(input_name: str, std_name:str) -> None:
     finally:
         if conn is not None:
             free_conn(conn)
+
+
+"""
+TYPE_NAME_MAP : handles types so they can be updated.
+"""
+def _get_type_map(conn):
+    """
+    Gets standard name given an input name
+
+    This method allows the query to be more lightweight in those circumstances.
+
+    conn: a database connection
+    name: input_name
+    """
+    type_map = []
+    with conn.cursor() as cursor:
+        sql = 'select * from type_name_map'
+        cursor.execute(sql)
+        row = cursor.fetchall()
+        if row is not None:
+            return row
+
+    return type_map
+
+
+@backoff.on_exception(backoff.expo, DAOException, max_time=30)
+def get_type_map():
+    """
+    CASE INSENSITIVE
+    """
+    conn = None
+    try:
+        with _get_connection() as conn:
+            return _get_type_map(conn)
+    except Exception as err:
+        raise err if isinstance(err, DAOException) else DAOException('get_type_map failed.', err)
+    finally:
+        if conn is not None:
+            free_conn(conn)
+
+
+
+"""
+TYPE_NAME_MAP : handles types so they can be updated.
+"""
+def _get_word_list(conn):
+    """
+    conn: a database connection
+    """
+    word_list = []
+    with conn.cursor() as cursor:
+        sql = 'select * from word_list'
+        cursor.execute(sql)
+        row = cursor.fetchall()
+        if row is not None:
+            return row
+
+    return word_list
+
+
+@backoff.on_exception(backoff.expo, DAOException, max_time=30)
+def get_word_list():
+    """
+    CASE INSENSITIVE
+    """
+    conn = None
+    try:
+        with _get_connection() as conn:
+            return _get_word_list(conn)
+    except Exception as err:
+        raise err if isinstance(err, DAOException) else DAOException('get_word_list failed.', err)
+    finally:
+        if conn is not None:
+            free_conn(conn)
+
+
+def _get_hash_table(conn):
+    """
+    conn: a database connection
+    """
+    hash_table = []
+    with conn.cursor() as cursor:
+        sql = 'select * from hash_table'
+        cursor.execute(sql)
+        row = cursor.fetchall()
+        if row is not None:
+            return row
+    return hash_table
+
+
+@backoff.on_exception(backoff.expo, DAOException, max_time=30)
+def get_hash_table():
+    """
+    CASE INSENSITIVE
+    """
+    conn = None
+    try:
+        with _get_connection() as conn:
+            return _get_hash_table(conn)
+    except Exception as err:
+        raise err if isinstance(err, DAOException) else DAOException('get_hash_table failed.', err)
+    finally:
+        if conn is not None:
+            free_conn(conn)

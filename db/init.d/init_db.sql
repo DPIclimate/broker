@@ -100,6 +100,43 @@ create table if not exists data_name_map(
     std_name text not null
 );
 
+create table if not exists type_name_map(
+    full_name text not null primary key,
+    short_name text not null
+);
+
+create table if not exists word_list(
+    full_word text
+);
+
+create table if not exists hash_table(
+  table_name text primary key,
+  data_hash text
+);
+
+create or replace function update_hash_table()
+returns trigger as $$
+begin
+  if TG_OP = 'INSERT' or TG_OP = 'UPDATE' OR TG_OP = 'DELETE' then
+    insert into hash_table (table_name, data_hash)
+    values (TG_TABLE_NAME, MD5(NEW.*::text))
+    on conflict (table_name)
+    do update set data_hash = MD5(NEW.*::text);
+    return new;
+  end if;
+end;
+$$ language plpgsql;
+
+create trigger type_name_map_trigger
+after insert or update or delete on type_name_map
+for each row
+  execute function update_hash_table();
+
+create trigger word_list_trigger
+after insert or update or delete on word_list
+for each row
+  execute function update_hash_table();
+
 create index if not exists pd_src_id_idx on physical_devices using GIN (source_ids);
 
 insert into sources values ('ttn'), ('greenbrain'), ('wombat'), ('ydoc'), ('ict_eagleio');
@@ -287,6 +324,126 @@ insert into data_name_map (input_name, std_name) values
            ('windspeed', 'WIND_SPEED'),
            ('windSpeed', 'WIND_SPEED'),
            ('windStdDevDegrees', 'WIND_STD_DEV_DEGREES');
+
+
+insert into type_name_map (full_name, short_name) values
+            ('AMP', 'A'),
+            ('AMPERAGE', 'A'),
+            ('AMPS', 'A'),
+            ('VOLT', 'V'),
+            ('VOLTAGE', 'V'),
+            ('VOLTS', 'V'),
+            ('MAXIMUM', 'MAX'),
+            ('MINIMUM', 'MIN'),
+            ('CENTIMETER', 'CM'),
+            ('CENTIMETRE', 'CM'),
+            ('CENTIMETERS', 'CM'),
+            ('CENTIMETRES', 'CM'),
+            ('TEMP', 'TEMPERATURE'),
+            ('AVG', 'AVERAGE'),
+            ('MOIST', 'MOISTURE');
+
+insert into word_list values
+            ('ACCESS'),
+            ('ACTUATOR'),
+            ('AIR'),
+            ('ALTITUDE'),
+            ('AMP'),
+            ('AMPERAGE'),
+            ('AMPS'),
+            ('ATMOSPHERIC'),
+            ('AVERAGE'),
+            ('AVG'),
+            ('BAROMETRIC'),
+            ('BATTERY'),
+            ('CABLE'),
+            ('CAPACITY'),
+            ('CHANNEL'),
+            ('CHARGING'),
+            ('CLASS'),
+            ('CODE'),
+            ('COMMAND'),
+            ('CONDUCTIVITY'),
+            ('COUNT'),
+            ('COUNTER'),
+            ('CURRENT'),
+            ('CYCLE'),
+            ('DEGREES'),
+            ('DEPTH'),
+            ('DEV'),
+            ('DEVICE'),
+            ('DISTANCE'),
+            ('DIRECTION'),
+            ('DOWN'),
+            ('EXTERNAL'),
+            ('FLOW'),
+            ('FRAUD'),
+            ('GUST'),
+            ('HEADER'),
+            ('HUMIDITY'),
+            ('HYGRO'),
+            ('INDICATION'),
+            ('INTERVAL'),
+            ('KPH'),
+            ('LEAK'),
+            ('MAX'),
+            ('MAXIMUM'),
+            ('MIN'),
+            ('MINIMUM'),
+            ('MOIST'),
+            ('MOISTURE'),
+            ('MOTION'),
+            ('OPERATING'),
+            ('PACKET'),
+            ('PANEL'),
+            ('PER'),
+            ('PERIOD'),
+            ('POWER'),
+            ('PRECIPITATION'),
+            ('PRESSURE'),
+            ('PROCESSOR'),
+            ('PULSE'),
+            ('RADIO'),
+            ('RAINFALL'),
+            ('RAIN'),
+            ('READING'),
+            ('RELATIVE'),
+            ('REST'),
+            ('SALINITY'),
+            ('SIGNAL'),
+            ('SOLAR'),
+            ('SOIL'),
+            ('SPEED'),
+            ('STRENGTH'),
+            ('STRIKE'),
+            ('STRIKES'),
+            ('STD'),
+            ('TECHNOLOGY'),
+            ('TILT'),
+            ('TIME'),
+            ('UNIX'),
+            ('UP'),
+            ('UPTIME'),
+            ('VALUE'),
+            ('VAPOR'),
+            ('VELOCITY'),
+            ('VOLT'),
+            ('VOLTS'),
+            ('VOLTAGE'),
+            ('READING'),
+            ('SHORTEST'),
+            ('SNR'),
+            ('SOIL'),
+            ('TAMPER'),
+            ('TILT'),
+            ('TIME'),
+            ('TEMPERATURE'),
+            ('TEMP'),
+            ('UNIX'),
+            ('UP'),
+            ('VAPOUR'),
+            ('WIND');
+
 -- Enable the PostGIS extensions
 -- CREATE EXTENSION postgis;
 -- CREATE EXTENSION postgis_raster;

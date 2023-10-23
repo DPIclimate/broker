@@ -1,9 +1,9 @@
 CREATE TABLE timeseries (
-                         broker_id VARCHAR NOT NULL,
+                         broker_id TEXT NOT NULL,
                          l_uid INTEGER NOT NULL,
                          p_uid INTEGER NOT NULL,
                          timestamp TIMESTAMPTZ NOT NULL,
-                         name VARCHAR,
+                         name TEXT,
                          value NUMERIC
                          );
                          
