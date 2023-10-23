@@ -1247,3 +1247,16 @@ def add_name_map(input_name: str, std_name:str) -> None:
     finally:
         if conn is not None:
             free_conn(conn)
+
+
+@backoff.on_exception(backoff.expo, DAOException, max_time=30)
+def remove_name_map(input_name: str) -> None:
+    try:
+        with _get_connection() as conn, conn.cursor() as cursor:
+            cursor.execute("DELETE FROM data_name_map WHERE input_name = %s", (input_name,))
+            conn.commit()
+    except Exception as err:
+        raise err if isinstance(err, DAOException) else DAOException('remove_name_map failed.', err)
+    finally:
+        if conn is not None:
+            free_conn(conn)
