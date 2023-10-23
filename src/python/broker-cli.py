@@ -150,6 +150,29 @@ user_pw_change_passer.add_argument('-p', help="New password for user", dest='pas
 #List users
 user_sub_parsers.add_parser('ls', help="List all users")
 
+
+##TSDB -- related
+
+#name_map
+nmap_parser=main_sub_parsers.add_parser('nmap', help="manage name_map")
+nmap_sub_parsers=nmap_parser.add_subparsers(dest='cmd2')
+
+#add name_map
+nmap_add_parser=nmap_sub_parsers.add_parser('add', help="Add name_map")
+nmap_add_parser.add_argument('--in', help="Incoming name", dest='inname', required=True)
+nmap_add_parser.add_argument('--out', help="Out name", dest='outname', required=True)
+
+#remove name_map
+nmap_rm_parser=nmap_sub_parsers.add_parser('rm', help="Remove name_map")
+nmap_rm_parser.add_argument('--in', help="Incoming name", dest='inname', required=True)
+
+#update name_map
+nmap_update_parser=nmap_sub_parsers.add_parser('update', help="Update name_map")
+nmap_update_parser.add_argument('--in', help="Incoming name", dest='inname', required=True)
+nmap_update_parser.add_argument('--out', help="Out name", dest='outname', required=True)
+
+
+
 args = main_parser.parse_args()
 
 def serialise_datetime(obj):
@@ -365,6 +388,16 @@ def main() -> None:
         
         elif args.cmd2=='ls':
             print(dao.user_ls())
+
+    elif args.cmd1=='nmap':
+        if args.cmd2=='add':
+            dao.add_name_map(input_name=args.inname, std_name=args.outname)
+        
+        elif args.cmd2=='rm':
+            dao.remove_name_map(input_name=args.inname)
+
+        elif args.cmd2=='update':
+            dao.update_name_map(input_name=args.inname, std_name=args.outname)
 
 if __name__ == '__main__':
     main()
