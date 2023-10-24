@@ -150,6 +150,69 @@ user_pw_change_passer.add_argument('-p', help="New password for user", dest='pas
 #List users
 user_sub_parsers.add_parser('ls', help="List all users")
 
+
+##TSDB -- related
+
+#name_map
+nmap_parser=main_sub_parsers.add_parser('nmap', help="manage name_map")
+nmap_sub_parsers=nmap_parser.add_subparsers(dest='cmd2')
+
+#add name_map
+nmap_add_parser=nmap_sub_parsers.add_parser('add', help="Add name_map")
+nmap_add_parser.add_argument('--in', help="Incoming name", dest='inname', required=True)
+nmap_add_parser.add_argument('--out', help="Out name", dest='outname', required=True)
+
+#remove name_map
+nmap_rm_parser=nmap_sub_parsers.add_parser('rm', help="Remove name_map")
+nmap_rm_parser.add_argument('--in', help="Incoming name", dest='inname', required=True)
+
+#update name_map
+nmap_update_parser=nmap_sub_parsers.add_parser('update', help="Update name_map")
+nmap_update_parser.add_argument('--in', help="Incoming name", dest='inname', required=True)
+nmap_update_parser.add_argument('--out', help="Out name", dest='outname', required=True)
+
+#list name_map
+nmap_ls_parser=nmap_sub_parsers.add_parser('ls', help="List name_map")
+nmap_ls_parser.add_argument('-w', help="column_width", dest='width', required=False)
+
+
+#word_list
+wlist_parser=main_sub_parsers.add_parser('wlist', help="manage word_list")
+wlist_sub_parsers=wlist_parser.add_subparsers(dest='cmd2')
+
+#add word_list
+wlist_add_parser=wlist_sub_parsers.add_parser('add', help="Add word_list")
+wlist_add_parser.add_argument('-w', help="word to add", dest='word', required=True)
+
+#remove word_list
+wlist_rm_parser=wlist_sub_parsers.add_parser('rm', help="Remove word_list")
+wlist_rm_parser.add_argument('-w', help="word to remove", dest='word', required=True)
+
+#list word_list
+wlist_ls_parser=wlist_sub_parsers.add_parser('ls', help="List word_list")
+
+#type_map
+tmap_parser=main_sub_parsers.add_parser('tmap', help="manage type_map")
+tmap_sub_parsers=tmap_parser.add_subparsers(dest='cmd2')
+
+#add type_map
+tmap_add_parser=tmap_sub_parsers.add_parser('add', help="Add type_map")
+tmap_add_parser.add_argument('--in', help="Incoming name", dest='inname', required=True)
+tmap_add_parser.add_argument('--out', help="Out name", dest='outname', required=True)
+
+#remove type_map
+tmap_rm_parser=tmap_sub_parsers.add_parser('rm', help="Remove type_map")
+tmap_rm_parser.add_argument('--in', help="Incoming name", dest='inname', required=True)
+
+#update type_map
+tmap_update_parser=tmap_sub_parsers.add_parser('update', help="Update type_map")
+tmap_update_parser.add_argument('--in', help="Incoming name", dest='inname', required=True)
+tmap_update_parser.add_argument('--out', help="Out name", dest='outname', required=True)
+
+#list type_map
+tmap_ls_parser=tmap_sub_parsers.add_parser('ls', help="List type_map")
+tmap_ls_parser.add_argument('-w', help="column_width", dest='width', required=False)
+
 args = main_parser.parse_args()
 
 def serialise_datetime(obj):
@@ -365,6 +428,56 @@ def main() -> None:
         
         elif args.cmd2=='ls':
             print(dao.user_ls())
+
+    elif args.cmd1=='nmap':
+        if args.cmd2=='add':
+            dao.add_name_map(input_name=args.inname, std_name=args.outname)
+        
+        elif args.cmd2=='rm':
+            dao.remove_name_map(input_name=args.inname)
+
+        elif args.cmd2=='update':
+            dao.update_name_map(input_name=args.inname, std_name=args.outname)
+
+        elif args.cmd2=='ls':
+            name_map =  dao.list_name_map()
+            header = "input_name | std_name"
+            column_width = args.width if args.width else 30
+            print("{:^{width}} | {:^{width}}".format(header.split('|')[0], header.split('|')[1], width=column_width))
+            for input_name, mapped_name in name_map:
+                print("{:^{width}} | {:^{width}}".format(input_name, mapped_name, width=column_width))
+
+    elif args.cmd1=='wlist':
+        if args.cmd2=='add':
+            dao.add_word_list(full_word=args.word)
+        
+        elif args.cmd2=='rm':
+            dao.remove_word_list(full_word=args.word)
+
+        elif args.cmd2=='ls':
+            words =  dao.list_word_list()
+            header = "full_word"
+            for full_word in words:
+                print(full_word)
+
+    elif args.cmd1=='tmap':
+        if args.cmd2=='add':
+            dao.add_type_map(input_name=args.inname, std_name=args.outname)
+        
+        elif args.cmd2=='rm':
+            dao.remove_type_map(input_name=args.inname)
+
+        elif args.cmd2=='update':
+            dao.update_type_map(input_name=args.inname, std_name=args.outname)
+
+        elif args.cmd2=='ls':
+            type_maps =  dao.list_type_map()
+            header = "full_name | short_name"
+            column_width = args.width if args.width else 30
+            print("{:^{width}} | {:^{width}}".format(header.split('|')[0], header.split('|')[1], width=column_width))
+            for input_type, mapped_name in type_maps:
+                print("{:^{width}} | {:^{width}}".format(input_type, mapped_name, width=column_width))
+
 
 if __name__ == '__main__':
     main()

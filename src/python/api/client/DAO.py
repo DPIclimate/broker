@@ -8,6 +8,7 @@ import backoff
 import dateutil.parser
 import psycopg2
 from psycopg2 import pool
+from typing import List, Tuple  # Import Tuple
 import psycopg2.errors
 from psycopg2.extensions import register_adapter, AsIs
 from psycopg2.extras import Json, register_uuid
@@ -1249,15 +1250,62 @@ def add_name_map(input_name: str, std_name:str) -> None:
             free_conn(conn)
 
 
+@backoff.on_exception(backoff.expo, DAOException, max_time=30)
+def remove_name_map(input_name: str) -> None:
+    try:
+        with _get_connection() as conn, conn.cursor() as cursor:
+            cursor.execute("DELETE FROM data_name_map WHERE input_name = %s", (input_name,))
+            conn.commit()
+    except Exception as err:
+        raise err if isinstance(err, DAOException) else DAOException('remove_name_map failed.', err)
+    finally:
+        if conn is not None:
+            free_conn(conn)
+
+@backoff.on_exception(backoff.expo, DAOException, max_time=30)
+def list_name_map() -> List[Tuple[str, str]]:
+    try:
+        with _get_connection() as conn, conn.cursor() as cursor:
+            cursor.execute("SELECT input_name, std_name FROM data_name_map")
+            results = cursor.fetchall()
+            return results
+    except Exception as err:
+        raise err if isinstance(err, DAOException) else DAOException('list_name_map failed.', err)
+    finally:
+        if conn is not None:
+            free_conn(conn)
+
+@backoff.on_exception(backoff.expo, DAOException, max_time=30)
+def add_word_list(full_word: str) -> None:
+    try:
+        with _get_connection() as conn, conn.cursor() as cursor:
+            cursor.execute("INSERT INTO word_list (full_word) VALUES (%s)", (full_word,))
+            conn.commit()
+    except Exception as err:
+        raise err if isinstance(err, DAOException) else DAOException('add_word_list failed.', err)
+    finally:
+        if conn is not None:
+            free_conn(conn)
+
+@backoff.on_exception(backoff.expo, DAOException, max_time=30)
+def remove_word_list(full_word: str) -> None:
+    try:
+        with _get_connection() as conn, conn.cursor() as cursor:
+            cursor.execute("DELETE FROM word_list WHERE full_word = %s", (full_word,))
+            conn.commit()
+    except Exception as err:
+        raise err if isinstance(err, DAOException) else DAOException('remove_word_list failed.', err)
+    finally:
+        if conn is not None:
+            free_conn(conn)
+
 """
 TYPE_NAME_MAP : handles types so they can be updated.
 """
 def _get_type_map(conn):
     """
     Gets standard name given an input name
-
     This method allows the query to be more lightweight in those circumstances.
-
     conn: a database connection
     name: input_name
     """
@@ -1268,9 +1316,7 @@ def _get_type_map(conn):
         row = cursor.fetchall()
         if row is not None:
             return row
-
     return type_map
-
 
 @backoff.on_exception(backoff.expo, DAOException, max_time=30)
 def get_type_map():
@@ -1289,6 +1335,43 @@ def get_type_map():
 
 
 
+@backoff.on_exception(backoff.expo, DAOException, max_time=30)
+def list_word_list() -> List[str]:
+    try:
+        with _get_connection() as conn, conn.cursor() as cursor:
+            cursor.execute("SELECT full_word FROM word_list")
+            results = [row[0] for row in cursor.fetchall()]
+            return results
+    except Exception as err:
+        raise err if isinstance(err, DAOException) else DAOException('list_word_list failed.', err)
+    finally:
+        if conn is not None:
+            free_conn(conn)
+
+
+@backoff.on_exception(backoff.expo, DAOException, max_time=30)
+def update_type_map(input_name: str, std_name:str) -> None:
+    try:
+        with _get_connection() as conn, conn.cursor() as cursor:
+            cursor.execute("update type_name_map set short_name=%s where full_name=%s", (std_name, input_name))
+            conn.commit()
+    except Exception as err:
+        raise err if isinstance(err, DAOException) else DAOException('update_type_map failed.', err)
+    finally:
+        if conn is not None:
+            free_conn(conn)
+
+
+@backoff.on_exception(backoff.expo, DAOException, max_time=30)
+def add_type_map(input_name: str, std_name:str) -> None:
+    try:
+        with _get_connection() as conn, conn.cursor() as cursor:
+            cursor.execute("insert into type_name_map (full_name, short_name) values (%s, %s)", (input_name, std_name))
+            conn.commit()
+    except Exception as err:
+        raise err if isinstance(err, DAOException) else DAOException('add_type_map failed.', err)
+
+        
 """
 TYPE_NAME_MAP : handles types so they can be updated.
 """
@@ -1322,6 +1405,32 @@ def get_word_list():
         if conn is not None:
             free_conn(conn)
 
+
+@backoff.on_exception(backoff.expo, DAOException, max_time=30)
+def remove_type_map(input_name: str) -> None:
+    try:
+        with _get_connection() as conn, conn.cursor() as cursor:
+            cursor.execute("DELETE FROM type_name_map WHERE full_name=%s", (input_name,))
+            conn.commit()
+    except Exception as err:
+        raise err if isinstance(err, DAOException) else DAOException('remove_type_map failed.', err)
+    finally:
+        if conn is not None:
+            free_conn(conn)
+
+
+@backoff.on_exception(backoff.expo, DAOException, max_time=30)
+def list_type_map() -> List[Tuple[str, str]]:
+    try:
+        with _get_connection() as conn, conn.cursor() as cursor:
+            cursor.execute("SELECT full_name, short_name FROM type_name_map")
+            results = cursor.fetchall()
+            return results
+    except Exception as err:
+        raise err if isinstance(err, DAOException) else DAOException('list_type_map failed.', err)
+    finally:
+        if conn is not None:
+            free_conn(conn)
 
 def _get_hash_table(conn):
     """
