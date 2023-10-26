@@ -201,6 +201,6 @@ services:
         condition: "service_healthy"
     volumes:
       - ../src/python:/home/broker/python
-      - ${DATABOLT_SHARED_DIR}/raw_data:/raw_data
+      - ${DATABOLT_SHARED_DIR}/nectar_raw_data:/raw_data
     working_dir: "/home/broker/python"
     entrypoint: [ "python", "-m", "delivery.FRRED" ]
