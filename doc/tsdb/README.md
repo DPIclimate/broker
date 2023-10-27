@@ -75,9 +75,9 @@ File|Changes|Reasons
 [/load-data.sh](https://github.com/ZakhaevK/itc303-team3-broker/blob/merge_dpi/load-data.sh)|- added file|- useful script for adding and mapping some devices to test
 [/ts_backup.sh](https://github.com/ZakhaevK/itc303-team3-broker/blob/merge_dpi/ts_backup.sh)|- added file|- used to back up the time series database
 [/ts_restore.sh](https://github.com/ZakhaevK/itc303-team3-broker/blob/merge_dpi/ts_restore.sh)|- added file|- used to restore the back up file
-[/pgbr_backup.sh](https://github.com/ZakhaevK/itc303-team3-broker/blob/inc_backup/pgbr_backup.sh)|- added file|- used for physical back up the time series database
-[/pbgr_restore.sh](https://github.com/ZakhaevK/itc303-team3-broker/blob/inc_backup/pgbr_restore.sh)|- added file|- used to restore from the physical back up files
-[/pbgr_cleanup.sh](https://github.com/ZakhaevK/itc303-team3-broker/blob/inc_backup/pgbr_restore.sh)|- added file|- used for wiping and recreating pgbr<br>- Best used when following a logical restore.
+[/pgbr_backup.sh](https://github.com/ZakhaevK/itc303-team3-broker/blob/merge_dpi/pgbr_backup.sh)|- added file|- used for physical back up the time series database
+[/pgbr_restore.sh](https://github.com/ZakhaevK/itc303-team3-broker/blob/merge_dpi/pgbr_restore.sh)|- added file|- used to restore from the physical back up files
+[/pgbr_cleanup.sh](https://github.com/ZakhaevK/itc303-team3-broker/blob/merge_dpi/pgbr_cleanup.sh)|- added file|- used for wiping and recreating pgbr<br>- best used when following a logical restore.
 
 ---
 #### Storage of time series data
