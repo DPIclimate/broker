@@ -77,6 +77,7 @@ File|Changes|Reasons
 [/ts_restore.sh](https://github.com/ZakhaevK/itc303-team3-broker/blob/merge_dpi/ts_restore.sh)|- added file|- used to restore the back up file
 [/pgbr_backup.sh](https://github.com/ZakhaevK/itc303-team3-broker/blob/inc_backup/pgbr_backup.sh)|- added file|- used for physical back up the time series database
 [/pbgr_restore.sh](https://github.com/ZakhaevK/itc303-team3-broker/blob/inc_backup/pgbr_restore.sh)|- added file|- used to restore from the physical back up files
+[/pbgr_cleanup.sh](https://github.com/ZakhaevK/itc303-team3-broker/blob/inc_backup/pgbr_restore.sh)|- added file|- used for wiping and recreating pgbr<br>- Best used when following a logical restore.
 
 ---
 #### Storage of time series data

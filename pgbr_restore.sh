@@ -80,13 +80,13 @@ echo "Stopping the temporary container..."
 docker stop $TEMP_CONTAINER_NAME
 docker rm $TEMP_CONTAINER_NAME
 
-# Start the original container normally
-echo "Starting the original container normally..."
+# Start the original containers
+echo "Starting the original containers..."
 docker start $DB_CONTAINER_NAME
 sleep 5
 docker exec -it $DB_CONTAINER_NAME psql -U $TSDB_USER -d $TSDB_DB -c "SELECT pg_wal_replay_resume();"
 sleep 1
 docker start $DECODER_CONTAINER_NAME
 
-echo "Database restored successfully."
+echo "Database restore completed."
 
