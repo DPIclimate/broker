@@ -3,7 +3,6 @@
 source compose/.env 2>/dev/null
 
 # Configuration
-COMPOSE_PROJECT_DIR="compose/"
 DB_NAME="${TSDB_DB}"
 DB_USER="${TSDB_USER}"
 DB_PASSWORD="${TSDB_PASSWORD}"

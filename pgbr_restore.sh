@@ -21,10 +21,17 @@ if [[ "$choice" != "yes" ]]; then
     exit 1
 fi
 
-# Find the container name containing "timescale-1"
+# Find the container name containing "timescaledb-1"
 DB_CONTAINER_NAME=$(docker ps --format '{{.Names}}' | grep "timescaledb-1")
 if [ -z "$DB_CONTAINER_NAME" ]; then
-    echo "Error: Container containing 'timescale-1' not found."
+    echo "Error: Container containing 'timescaledb-1' not found."
+    exit 1
+fi
+
+# Find the container name containing "iota_tsdb_decoder-1"
+DECODER_CONTAINER_NAME=$(docker ps --format '{{.Names}}' | grep "iota_tsdb_decoder-1")
+if [ -z "$DECODER_CONTAINER_NAME" ]; then
+    echo "Error: Container containing 'iota_tsdb_decoder-1' not found."
     exit 1
 fi
 
@@ -41,8 +48,9 @@ docker exec -t $DB_CONTAINER_NAME pgbackrest info --stanza=demo
 # Ask the user for the backup label
 read -p "Enter the backup label to restore (or press Enter for the latest): " BACKUP_LABEL
 
-# Stop the original container
+# Stop the original container and decoder to stop message consumption
 echo "Stopping the original container..."
+docker stop $DECODER_CONTAINER_NAME
 docker stop $DB_CONTAINER_NAME
 
 # Start a new temporary container using the same image but with a different entry point
@@ -77,6 +85,8 @@ echo "Starting the original container normally..."
 docker start $DB_CONTAINER_NAME
 sleep 5
 docker exec -it $DB_CONTAINER_NAME psql -U $TSDB_USER -d $TSDB_DB -c "SELECT pg_wal_replay_resume();"
+sleep 1
+docker start $DECODER_CONTAINER_NAME
 
 echo "Database restored successfully."
 

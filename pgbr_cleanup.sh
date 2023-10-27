@@ -1,0 +1,39 @@
+#!/bin/bash
+
+echo "WARNING! Before continuing, please read the following:"
+echo "This file will wipe all pgBackRest files in the case of corruption, or following a logical restore."
+read -p "Do you wish to continue? (yes/no): " response
+
+if [[ "$response" != "yes" ]]; then
+    echo "Aborting."
+    exit 1
+fi
+
+# Configuration
+PG_BACKREST_VOLUME="prod_pgbackrest_data"
+
+# Find the container name containing "timescaledb-1"
+DB_CONTAINER_NAME=$(docker ps --format '{{.Names}}' | grep "timescaledb-1")
+
+if [ -z "$DB_CONTAINER_NAME" ]; then
+    echo "Error: Container containing 'timescaledb-1' not found."
+    exit 1
+fi
+
+# Stop the TimescaleDB container
+echo "Stopping TimescaleDB container..."
+docker stop "$DB_CONTAINER_NAME"
+
+# Clear the data within the volume using a temporary container
+echo "Clearing data inside pgbackrest_data volume..."
+docker run --rm -v "${PG_BACKREST_VOLUME}:/data" busybox sh -c 'rm -rf /data/*'
+
+sleep 5
+# Start the TimescaleDB container
+echo "Starting TimescaleDB container..."
+docker start "$DB_CONTAINER_NAME"
+
+docker exec -t "$DB_CONTAINER_NAME" pgbackrest --stanza=demo --config=/home/postgres/pgdata/backup/pgbackrest.conf stanza-create
+
+echo "Process completed."
+
