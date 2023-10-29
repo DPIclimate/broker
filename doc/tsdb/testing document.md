@@ -47,38 +47,6 @@ System is at least as easy as existing implementation|No|[link](#easy-to-use)
 - We have mirrored existing designs to try ensure consistency.
 - See below table for a list of <i>some</i> of the changes to existing IoTa files and directories.
 
-File|Changes|Reasons
-|--|--|--|
-[compose/docker-compose.yml](https://github.com/ZakhaevK/itc303-team3-broker/blob/merge_dpi/compose/docker-compose.yml)|- added timescaledb, iota_tsdb_decoder services<br>|- additional services to meet requirements.
-|[compose/.env](https://github.com/ZakhaevK/itc303-team3-broker/blob/merge_dpi/compose/.env)|- added TSDB_XXX settings<br>|-trying to match existing .env structure. This is what the python applications use to login with, it does <u>not</u> set the database up.
-[compose/.tsdb_env](https://github.com/ZakhaevK/itc303-team3-broker/blob/merge_dpi/compose/.tsdb_env)|-added file that contains tsdb POSTGRES credentials|- since Timescale is built on postgres, there was a conflict with both databases using same .env file to set credentials. Had to split this up into a second file.
-[db/init.d/init_db.sql](https://github.com/ZakhaevK/itc303-team3-broker/blob/merge_dpi/db/init.d/init_db.sql)|-added extra table `data_name_map`<br>- added insert into `data_name_map` of standard values|- Efficient implementation of standardising the names for time series data<br>- Name maps are accessable by everything that has access to dao, or database.
-[timescale/init.sql](https://github.com/ZakhaevK/itc303-team3-broker/blob/merge_dpi/timescale/init.sql)|- creates `timeseries` table<br>- sets schema up|- requirement to set up the time series database.
-[timescale/Dockerfile](https://github.com/ZakhaevK/itc303-team3-broker/blob/inc_backup/timescale/Dockerfile)|- Used for custom timescaleDB image. |- Main purpose is to install pgBackRest for physical backup into the timescale image.
-[timescale/pgbr_init.sh](https://github.com/ZakhaevK/itc303-team3-broker/blob/inc_backup/timescale/pgbr_init.sh)|- Added file. |- Main purpose is to establish the stanza for pgBackRest so that physical backup can be performed.
-[timescale/postgres/postgresql.conf](https://github.com/ZakhaevK/itc303-team3-broker/blob/inc_backup/timescale/postgres/custom_postgresql.conf)|- Added file. |- Required for configuration of postgres in use with pgBackRest.
-[timescale/pgbackrest/pgbackrest.conf](https://github.com/ZakhaevK/itc303-team3-broker/blob/inc_backup/timescale/pgbackrest/pgbackrest.conf)|- Added file. |- Required for configuration of pgBackRest.
-[src/python/broker-cli.py](https://github.com/ZakhaevK/itc303-team3-broker/blob/merge_dpi/src/python/broker-cli.py)|- added logical device pretty output|- physical devices had pretty output but logical devices did not
-[src/python/api/client/DAO.py](https://github.com/ZakhaevK/itc303-team3-broker/blob/merge_dpi/src/python/api/client/DAO.py)|- added CRUD for new table `data_name_map`|- ability to access the new table correctly.
-[src/python/pdmodels/Models.py](https://github.com/ZakhaevK/itc303-team3-broker/blob/merge_dpi/src/python/pdmodels/Models.py)|- Added `DataNameMap` class|- following current structure for IoTa.
-[src/python/restapi/TSDBAPI.py](https://github.com/ZakhaevK/itc303-team3-broker/tree/merge_dpi/src/python/restapi)|- new file for implementing the time series API|- uses same end point as existing RESTAPI<br>- implements API requests for getting time series data from Timescale
-[src/python/restapi/requirements.txt](https://github.com/ZakhaevK/itc303-team3-broker/blob/merge_dpi/src/python/restapi/requirements.txt)|- added extra modules|- some newer features needed extra modules to work.<br>- made setting up a local test enviornment slightly easier by using file to install requirements
-[src/python/timescale/TS_LTSReader.py](https://github.com/ZakhaevK/itc303-team3-broker/blob/merge_dpi/src/python/timescale/TS_LTSReader.py)|- added file|- this is the rabbit mq message listener that receives and handles the incoming messages
-[src/python/timescale/Timescale.py](https://github.com/ZakhaevK/itc303-team3-broker/blob/merge_dpi/src/python/timescale/Timescale.py)|- added file|- this parses incoming messages into the timescale instance
-[src/python/util/NamingConstants.py](https://github.com/ZakhaevK/itc303-team3-broker/blob/merge_dpi/src/python/util/NamingConstants.py)|- added file|- this handles the name_map parsing and standardises the names<br>- the word split and word expansions are currently hardcoded into file, however if required this can be changed.
-[src/www/app/utils/api.py](https://github.com/ZakhaevK/itc303-team3-broker/blob/merge_dpi/src/www/app/utils/api.py)|- added ability to time series data|- required time series data for web graph
-[src/www/app/main.py](https://github.com/ZakhaevK/itc303-team3-broker/blob/merge_dpi/src/www/app/main.py)|- added time series data requests via api.py|- required time series data for web graph pages
-[src/www/app/static/ts_graph.js](https://github.com/ZakhaevK/itc303-team3-broker/blob/merge_dpi/src/www/app/static/ts_graph.js)|- added file |- this is the time series graph, both puid and luid use it
-[src/www/app/templates/ts_graph.html](https://github.com/ZakhaevK/itc303-team3-broker/blob/master/src/www/app/templates/ts_graph.html)|- added file|- template for puid and luid pages to add the graph
-[src/www/app/templates/physical_device_form.html](https://github.com/ZakhaevK/itc303-team3-broker/blob/merge_dpi/src/www/app/templates/physical_device_form.html)|- added reference to ts_graph.js|- adds time series graph to page
-[src/www/app/templates/logical_device_form.html](https://github.com/ZakhaevK/itc303-team3-broker/blob/merge_dpi/src/www/app/templates/logical_device_form.html)|- added reference to ts_graph.js|- adds time series graph to page
-[/load-data.sh](https://github.com/ZakhaevK/itc303-team3-broker/blob/merge_dpi/load-data.sh)|- added file|- useful script for adding and mapping some devices to test
-[/ts_backup.sh](https://github.com/ZakhaevK/itc303-team3-broker/blob/merge_dpi/ts_backup.sh)|- added file|- used to back up the time series database
-[/ts_restore.sh](https://github.com/ZakhaevK/itc303-team3-broker/blob/merge_dpi/ts_restore.sh)|- added file|- used to restore the back up file
-[/pgbr_backup.sh](https://github.com/ZakhaevK/itc303-team3-broker/blob/merge_dpi/pgbr_backup.sh)|- added file|- used for physical back up the time series database
-[/pgbr_restore.sh](https://github.com/ZakhaevK/itc303-team3-broker/blob/merge_dpi/pgbr_restore.sh)|- added file|- used to restore from the physical back up files
-[/pgbr_cleanup.sh](https://github.com/ZakhaevK/itc303-team3-broker/blob/merge_dpi/pgbr_cleanup.sh)|- added file|- used for wiping and recreating pgbr<br>- best used when following a logical restore.
-
 ---
 #### Storage of time series data
 - Listener (TS_LTSReader.py) performs message handling in conjunction with Timescale.py for insertion.
@@ -88,7 +56,7 @@ File|Changes|Reasons
 - The TestIntegrationTSDB.py file tests this functionality, and passes as seen in the image below:
 
 ![LINKED IMAGE](./media/store_msgs.png)
-
+![LINKED IMAGE](./media/2023-10-29_17-10-1698559983.png)
 ---
 #### Retrieval of time series data
 - The main method of retrieving the time series data is via API (covered in API section)
@@ -124,6 +92,12 @@ File|Changes|Reasons
 ![images](../../doc/tsdb/media/logical_30_days.png)
 ![images](../../doc/tsdb/media/logical_7_days.png)
 ![images](../../doc/tsdb/media/logical_7_days_2.png)
+![images](./media/2023-10-29_17-10-1698559816.png)
+![images](./media/2023-10-29_17-10-1698559841.png)
+![images](./media/2023-10-29_17-10-1698560040.png)
+![images](./media/2023-10-29_17-10-1698560140.png)
+
+
 
 ---
 #### Logical Backup and Restore
