@@ -231,7 +231,7 @@ swag/*
 !swag/nginx/proxy-confs/dpi-device-manager.subfolder.conf
 *.pem
 
+settings.json
+
 #303 back up database
 backup-db/
-303/scripts/msgs
-303/scripts/smsgs

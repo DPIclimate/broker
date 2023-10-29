@@ -1,17 +1,16 @@
 <header>
-    <iframe name="hidden-frame" class="hidden"></iframe>
-    <div class="container">
-        <div id="header-title">
-            <h2><img src="{{ url_for('static', filename='dpi-logo-white.svg') }}" style="margin-top: -15px;">  Device Manager</h1>
-        </div>
-        <nav>
-            <ul>
-                <li><a id="physical-device-banner-heading" href="{{ url_for('index') }}"><span class='physical-device-white-icon' style="margin-top: -10px;"></span> Physical Devices</a></li>
-                <li><a id="logical-device-banner-heading" href="{{ url_for('logical_device_table') }}"><span class='logical-device-white-icon' style="margin-top: -10px;"></span> Logical Devices</a></li>
-                <li><a id="map-banner-heading" href="{{ url_for('map') }}"><span class="white-map-icon" style="margin-top: -10px;"></span> Map</a></li>
-                <li><a id="map-banner-heading" href="{{ url_for('account') }}">Account</a></li>
-                <li><a id="map-banner-heading" href="{{ url_for('signout') }}">Signout</a></li>
-            </ul>
-        </nav>
-    </div>
+    <h1 style="padding: 8px">IoTa Device Manager</h1>
+    <nav class="nav-bar">
+        <ul>
+            <li>
+                <a id="physical-device-banner-heading" href="{{ url_for('physical_device_table') }}">
+                    <span class="nav-text">Physical Devices</span>
+                </a></li>
+            <li><a id="logical-device-banner-heading" href="{{ url_for('logical_device_table') }}">Logical Devices</a></li>
+            <li><a id="wombats-banner-heading" href="{{ url_for('wombats') }}">Wombats</a></li>
+            <li><a id="map-banner-heading" href="{{ url_for('show_map') }}">Map</a></li>
+            <li><a id="account-banner-heading" href="{{ url_for('account') }}">Account</a></li>
+            <li><a id="logout-banner-heading" href="{{ url_for('signout') }}">Signout</a></li>
+        </ul>
+    </nav>
 </header>

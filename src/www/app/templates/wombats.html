@@ -1,0 +1,67 @@
+{% extends "base.html" %}
+{% block content%}
+    <section>
+    	<div class="command-bar">
+            <div class="form-buttons">
+                <ul id="wombatlistbuttons">
+        			<li><span class="btn" onclick="handleUploadLogs()">Fetch logs</span></li>
+        			<li><span class="btn" onclick="handleOTA()">FW OTA</span></li>
+                </ul>
+            </div>
+        </div>
+
+        <div style="padding-top: 16px">
+        <table id="wombat_table" class="table table-striped data-table-wombats">
+            <thead>
+            <tr>
+                <th>Id</th>
+                <th>Name</th>
+                <th>Last seen</th>
+                <th>CCID</th>
+                <th>Firmware</th>
+                <th></th>
+                <th>Current mapping</th>
+                <th>Ubidots</th>
+            </tr>
+            </thead>
+            <tbody id="device-table-body">
+            {% for physicalDevice in physicalDevices %}
+                <tr id="{{ physicalDevice.uid }}">
+                    <td>{{ physicalDevice.uid }}</td>
+                    <td>
+                        <a href="{{ url_for('physical_device_form', uid=physicalDevice.uid) }}" target="_blank">{{ physicalDevice.name }}</a>
+                    </td>
+                    <td data-order="{{ physicalDevice.ts_sort }}">{{ physicalDevice.last_seen }}</td>
+                    <td>
+                        {% if physicalDevice.ccid is defined %}
+                            {{ physicalDevice.ccid }}
+                        {% endif %}
+                    </td>
+                    <td>
+                        {% if physicalDevice.fw is defined %}
+                            {{ physicalDevice.fw|safe }}
+                        {% endif %}
+                    </td>
+                    <td>
+                        {% if physicalDevice.mapping is defined %}
+                            {{ physicalDevice.mapping.ld.uid }}
+                        {% endif %}
+                    </td>
+                    <td>
+                        {% if physicalDevice.mapping is defined %}
+                            <a href="{{ url_for('logical_device_form', uid=physicalDevice.mapping.ld.uid) }}" target="_blank">{{ physicalDevice.mapping.ld.name }}</a>
+                        {% endif %}
+                    </td>
+                    <td>
+                        {% if physicalDevice.ubidots_link is defined %}
+                            <a href="{{ physicalDevice.ubidots_link }}" target="_blank"><span
+                                    class="material-icons">open_in_new</span></a>
+                        {% endif %}
+                    </td>
+                </tr>
+            {% endfor %}
+            </tbody>
+        </table>
+        </div>
+    </section>
+{% endblock %}

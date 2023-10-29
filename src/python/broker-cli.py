@@ -268,7 +268,7 @@ def dict_from_file_or_string() -> dict:
             with open(args.in_filename) as jf:
                 json_obj = json.load(jf)
 
-    elif args.pd is not None:
+    elif hasattr(args, 'pd'):
         json_obj = args.pd
 
     elif hasattr(args, 'ld'):
@@ -333,8 +333,15 @@ def main() -> None:
 
             dev = PhysicalDevice.parse_obj(dev)
             print(pretty_print_json(dao.update_physical_device(dev)))
+        
         elif args.cmd2 == 'rm':
+            # Delete all physical_logical mappings to avoid foreign key violation
+            mappings = dao.get_physical_device_mappings(pd=args.p_uid)
+            for mapping in mappings:
+                dao.delete_mapping(mapping)
+
             print(pretty_print_json(dao.delete_physical_device(args.p_uid)))
+
     elif args.cmd1 == 'ld':
         if args.cmd2 == 'ls':
             devs = dao.get_logical_devices()
@@ -477,7 +484,6 @@ def main() -> None:
             print("{:^{width}} | {:^{width}}".format(header.split('|')[0], header.split('|')[1], width=column_width))
             for input_type, mapped_name in type_maps:
                 print("{:^{width}} | {:^{width}}".format(input_type, mapped_name, width=column_width))
-
 
 if __name__ == '__main__':
     main()

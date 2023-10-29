@@ -1,9 +1,13 @@
 import json
+from typing import List
 import sys
 from typing import List
 import requests
 from datetime import datetime
 import base64
+
+from pdmodels.Models import PhysicalDevice, LogicalDevice, PhysicalToLogicalMapping, DeviceNote, Location
+
 
 end_point = 'http://restapi:5687'
 
@@ -18,15 +22,12 @@ def get_sources(token: str) -> List[str]:
             sources: List[str] - A list of sources
     """
     headers = {"Authorization": f"Bearer {token}"}
-
     response = requests.get(f'{end_point}/broker/api/physical/sources/', headers=headers)
-
     response.raise_for_status()
-
     return response.json()
 
 
-def get_physical_devices(token: str) -> List[dict]:
+def get_physical_devices(token: str, **kwargs) -> List[PhysicalDevice]:
     """
         Get all physical devices
 
@@ -38,10 +39,17 @@ def get_physical_devices(token: str) -> List[dict]:
     """
     headers = {"Authorization": f"Bearer {token}"}
 
-    response = requests.get(f"{end_point}/broker/api/physical/devices/?include_properties=false", headers=headers)
+    query_params = {'include_properties': False}
+    for k, v in kwargs.items():
+        if k == 'source_name':
+            query_params[k] = v
+        elif k == 'include_properties':
+            query_params[k] = v
+
+    response = requests.get(f"{end_point}/broker/api/physical/devices/", params=query_params, headers=headers)
     response.raise_for_status()
 
-    return response.json()
+    return list(map(lambda ld: PhysicalDevice.parse_obj(ld), response.json()))
 
 
 def get_physical_notes(uid: str, token: str) -> List[dict]:
@@ -54,10 +62,10 @@ def get_physical_notes(uid: str, token: str) -> List[dict]:
     """
     headers = {"Authorization": f"Bearer {token}"}
 
-    response = requests.get(f"{end_point}/broker/api/physical/devices/notes/{uid}",headers=headers)
+    response = requests.get(f"{end_point}/broker/api/physical/devices/notes/{uid}", headers=headers)
 
     response.raise_for_status()
-    return response.json()
+    return list(map(lambda note: DeviceNote.parse_obj(note), response.json()))
 
 
 def get_logical_devices(token: str, include_properties: bool = False):
@@ -66,19 +74,19 @@ def get_logical_devices(token: str, include_properties: bool = False):
     response = requests.get(
         f'{end_point}/broker/api/logical/devices/?include_properties={include_properties}', headers=headers)
     response.raise_for_status()
-    return response.json()
+
+    return list(map(lambda ld: LogicalDevice.parse_obj(ld), response.json()))
 
 
 def get_physical_unmapped(token: str):
     headers = {"Authorization": f"Bearer {token}"}
 
-    response = requests.get(f'{end_point}/broker/api/physical/devices/unmapped/',
-                            headers=headers)
+    response = requests.get(f'{end_point}/broker/api/physical/devices/unmapped/', headers=headers)
     response.raise_for_status()
     return response.json()
 
 
-def get_physical_device(uid: str, token: str) -> dict:
+def get_physical_device(uid: str, token: str) -> PhysicalDevice:
     """
         Get a physical device object from a uid
 
@@ -89,16 +97,13 @@ def get_physical_device(uid: str, token: str) -> dict:
         returns:
             physical_device: dict - Phyical device object
     """
-
     headers = {"Authorization": f"Bearer {token}"}
-
-    response = requests.get(f'{end_point}/broker/api/physical/devices/{uid}',headers=headers)
+    response = requests.get(f'{end_point}/broker/api/physical/devices/{uid}', headers=headers)
     response.raise_for_status()
+    return PhysicalDevice.parse_obj(response.json())
 
-    return response.json()
 
-
-def get_logical_device(uid: str, token: str) -> dict:
+def get_logical_device(uid: str, token: str) -> LogicalDevice:
     """
         Get a logical device object from a uid
 
@@ -111,20 +116,27 @@ def get_logical_device(uid: str, token: str) -> dict:
     """
 
     headers = {"Authorization": f"Bearer {token}"}
-
-    response = requests.get(f'{end_point}/broker/api/logical/devices/{uid}',
-                            headers=headers)
+    response = requests.get(f'{end_point}/broker/api/logical/devices/{uid}', headers=headers)
     response.raise_for_status()
-    return response.json()
+    return LogicalDevice.parse_obj(response.json())
+
+
+def get_current_mappings(token: str):
+    """
+        Returns the current mapping for all physical devices. A current mapping is one with no end time set, meaning messages from the physical device will be forwarded to the logical device.
+    """
+    headers = {"Authorization": f"Bearer {token}"}
+    response = requests.get(f"{end_point}/broker/api/mappings/current/", headers=headers)
+    response.raise_for_status()
+    return list(map(lambda mapping_obj: PhysicalToLogicalMapping.parse_obj(mapping_obj), response.json()))
 
 
 def get_all_mappings_for_logical_device(uid: str, token: str):
     headers = {"Authorization": f"Bearer {token}"}
 
-    response = requests.get(f'{end_point}/broker/api/mappings/logical/all/{uid}',
-                            headers=headers)
+    response = requests.get(f'{end_point}/broker/api/mappings/logical/all/{uid}', headers=headers)
     response.raise_for_status()
-    return response.json()
+    return list(map(lambda ld: PhysicalToLogicalMapping.parse_obj(ld), response.json()))
 
 
 def get_current_mapping_from_physical_device(uid: str, token: str):
@@ -136,31 +148,40 @@ def get_current_mapping_from_physical_device(uid: str, token: str):
         return
 
     response.raise_for_status()
-    return response.json()
+    return list(map(lambda mapping_obj: PhysicalToLogicalMapping.parse_obj(mapping_obj), response.json()))
 
 
-def update_physical_device(uid: str, name: str, location: str, token: str):
+def get_all_mappings_for_physical_device(uid:str, token:str):
     headers = {"Authorization": f"Bearer {token}"}
 
-    device = get_physical_device(uid, token)
-    device['name'] = name
-    device['location'] = location
-    response = requests.patch(f'{end_point}/broker/api/physical/devices/',
-                              headers=headers, json=device)
+    response = requests.get(f'{end_point}/broker/api/mappings/physical/all/{uid}', headers=headers)
+
+    if response.status_code == 404:
+        return
+
     response.raise_for_status()
-    return response.json()
+    return list(map(lambda mapping_obj: PhysicalToLogicalMapping.parse_obj(mapping_obj), response.json()))
 
 
-def update_logical_device(uid: str, name: str, location: str, token: str):
+def update_physical_device(uid: int, name: str, location: Location | None, token: str):
+    headers = {"Authorization": f"Bearer {token}"}
+
+    device: PhysicalDevice = get_physical_device(uid, token)
+    device.name = name
+    device.location = location
+    response = requests.patch(f'{end_point}/broker/api/physical/devices/', headers=headers, data=device.json())
+    response.raise_for_status()
+    return PhysicalDevice.parse_obj(response.json())
+
+
+def update_logical_device(uid: int, name: str, location: Location | None, token: str):
     headers = {"Authorization": f"Bearer {token}"}
 
     device = get_logical_device(uid, token)
-    device['name'] = name
-    device['location'] = location
-    response = requests.patch(
-        f'{end_point}/broker/api/logical/devices/', headers=headers, json=device)
+    device.name = name
+    device.location = location
+    response = requests.patch(f'{end_point}/broker/api/logical/devices/', headers=headers, data=device.json())
     response.raise_for_status()
-
     return response.json()
 
 
@@ -189,7 +210,33 @@ def end_physical_mapping(uid: str, token: str):
         response.raise_for_status()
 
 
-def create_logical_device(physical_device: dict, token: str) ->str:
+def toggle_device_mapping(uid: int, dev_type: str, is_active: bool, token: str):
+    """
+        Send request to restAPI to toggle the status of the device mapping
+    """
+
+    headers = {"Authorization": f"Bearer {token}"}
+
+    url = f'{end_point}/broker/api/mappings/toggle-active/'
+    body = {
+        'is_active': is_active
+    }
+
+    if dev_type == 'LD':
+        body['luid'] = uid
+    elif dev_type == 'PD':
+        body['puid'] = uid
+    else:
+        raise RuntimeError(f'Invalid dev_type: {dev_type}')
+
+    response = requests.patch(url, headers=headers, params=body)
+
+    # 404 is returned when there are no device mappings
+    if response.status_code != 200:
+        response.raise_for_status()
+
+
+def create_logical_device(physical_device: PhysicalDevice, token: str) ->str:
     """
         Create a logical device from physical device
 
@@ -203,16 +250,13 @@ def create_logical_device(physical_device: dict, token: str) ->str:
 
     headers = {"Authorization": f"Bearer {token}"}
 
-    timeObject = datetime.now()
     logicalJson = {
         "uid": 0,
-        "name": physical_device['name'],
-        "location": physical_device['location'],
-        "last_seen": str(timeObject),
-        "properties": physical_device['properties']
+        "name": physical_device.name,
+        "location": physical_device.location,
     }
-    response = requests.post(
-        f'{end_point}/broker/api/logical/devices/', json=logicalJson, headers=headers)
+
+    response = requests.post(f'{end_point}/broker/api/logical/devices/', json=logicalJson, headers=headers)
     response.raise_for_status()
 
     logical_device = response.json()
@@ -229,46 +273,27 @@ def delete_note(uid: str, token: str):
     return response.json()
 
 
-def insert_device_mapping(physicalUid: str, logicalUid: str, token: str):
-
+def insert_device_mapping(p_uid: int, l_uid: int, token: str):
     """
         Create a device mapping between a physical and logical device
 
         Params:
-            physicalUid: str - uid of physical device
-            logicalUid: str - uid of logical device
-
+            physicalUid: int - uid of physical device
+            logicalUid: int - uid of logical device
+            token: str - bearer token for the current session
         returns:
 
     """
     headers = {"Authorization": f"Bearer {token}"}
 
-    logicalDevice = get_logical_device(logicalUid, token=token)
-    physicalDevice = get_physical_device(physicalUid, token=token)
-    timeObject = datetime.now()
-    end_physical_mapping(physicalUid, token=token)
+    l_dev: LogicalDevice = get_logical_device(l_uid, token=token)
+    p_dev: PhysicalDevice = get_physical_device(p_uid, token=token)
+    now = datetime.now(tz=timezone.utc)
+    end_physical_mapping(p_uid, token=token)
 
-    mappingJson = {
-        "pd": {
-            "uid": physicalDevice['uid'],
-            "source_name": physicalDevice['source_name'],
-            "name": physicalDevice['name'],
-            "location": physicalDevice['location'],
-            "last_seen": physicalDevice['last_seen'],
-            "source_ids": physicalDevice['source_ids'],
-            "properties": physicalDevice['properties']
-        },
-        "ld": {
-            "uid": logicalDevice['uid'],
-            "name": logicalDevice['name'],
-            "location": logicalDevice['location'],
-            "last_seen": logicalDevice['last_seen'],
-            "properties": logicalDevice['properties']
-        },
-        "start_time": str(timeObject),
-        "end_time": str(timeObject)
-    }
-    response = requests.post(f'{end_point}/broker/api/mappings/', json=mappingJson, headers=headers)
+    mapping = PhysicalToLogicalMapping(pd=p_dev, ld=l_dev, start_time=now)
+
+    response = requests.post(f'{end_point}/broker/api/mappings/', data=mapping.json(), headers=headers)
     response.raise_for_status()
 
     return response.json()
@@ -337,15 +362,14 @@ def change_user_password(password: str, token: str) -> str:
             password: str - User's new password
             token: str - User's authentication token
         
-        return: |
-            token: str - User's new authentication token |
+        reutrn:
+            token: str - User's new authentication token
     """
     headers = {"Authorization": f"Bearer {token}"}
     response = requests.post(f"{end_point}/broker/api/change-password", headers=headers, params={"password":password})
     response.raise_for_status()
 
     return response.json()
-
 
 def get_puid_ts(puid: str):
     try:

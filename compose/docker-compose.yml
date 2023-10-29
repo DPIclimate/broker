@@ -8,6 +8,7 @@ services:
       - .env
     volumes:
       - ../db/init.d:/docker-entrypoint-initdb.d
+      - ../db/upgrade:/upgrade
     healthcheck:
       test: [ "CMD", "pg_isready", "-q", "-d", "${PGDATABASE}", "-U", "${PGUSER}" ]
       timeout: 45s
@@ -47,11 +48,14 @@ services:
     image: broker/mgmt-app
     env_file:
       - .env
+    environment:
+      - PYTHONPATH=/app:/iota
     depends_on:
       restapi:
         condition: "service_healthy"
     volumes:
       - ../src/www:/app
+      - ../src/python:/iota
 
   ttn_webhook:
     image: broker/python-base

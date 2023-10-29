@@ -104,19 +104,25 @@ def on_message(channel, method, properties, body):
 
         lu.cid_logger.info(f'Accepted message from {pd.name}', extra=msg)
 
-        # Store message in the physical timeseries table in the brokers processed, standardised msg format.
-        dao.insert_physical_timeseries_message(pd.uid, msg[BrokerConstants.TIMESTAMP_KEY], msg)
-
         mapping = dao.get_current_device_mapping(p_uid)
-        if mapping is None:
-            lu.cid_logger.warning(f'No device mapping found for {pd.source_ids}, cannot continue. Dropping message.', extra=msg)
+        if mapping is None or mapping.is_active is not True:
+            # Add the message even though it has no logical device id in it.
+            dao.insert_physical_timeseries_message(msg)
+
+            if mapping is None:
+                lu.cid_logger.warning(f'No device mapping found for {pd.source_ids}, cannot continue. Dropping message.', extra=msg)
+            else:
+                lu.cid_logger.warning(f'Mapping for {pd.source_ids} is paused, cannot continue. Dropping message.', extra=msg)
+
             # Ack the message, even though we cannot process it. We don't want it redelivered.
             # We can change this to a Nack if that would provide extra context somewhere.
             rx_channel._channel.basic_ack(delivery_tag)
             return
 
         msg[BrokerConstants.LOGICAL_DEVICE_UID_KEY] = mapping.ld.uid
-        
+
+        dao.insert_physical_timeseries_message(msg)
+
         ld = mapping.ld
         ld.last_seen = msg[BrokerConstants.TIMESTAMP_KEY]
         lu.cid_logger.info(f'Timestamp from message for LD last seen update: {ld.last_seen}', extra=msg)
