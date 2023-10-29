@@ -63,14 +63,14 @@ done
 echo
 
 # print devices
-echo 'PHYSICAL DEVICES:'
-devices=$(docker exec "$container_name" python -m broker-cli pd ls --plain)
-echo -e "listed devices:\n${devices}"
-echo 'LOGICAL DEVICES:'
-devices=$(docker exec "$container_name" python -m broker-cli ld ls --plain)
-echo -e "listed devices:\n${devices}"
-echo 'MAPPINGS:'
-for puid in "${puids[@]}"; do
-	output=$(docker exec "$container_name" python -m broker-cli map ls --puid "$puid")
-	echo "$output" | jq -r '"pd uid:\(.pd.uid) -> ld uid:\(.ld.uid)"'
-done
+#echo 'PHYSICAL DEVICES:'
+#devices=$(docker exec "$container_name" python -m broker-cli pd ls --plain)
+#echo -e "listed devices:\n${devices}"
+#echo 'LOGICAL DEVICES:'
+#devices=$(docker exec "$container_name" python -m broker-cli ld ls --plain)
+#echo -e "listed devices:\n${devices}"
+#echo 'MAPPINGS:'
+#for puid in "${puids[@]}"; do
+#	output=$(docker exec "$container_name" python -m broker-cli map ls --puid "$puid")
+#	echo "$output" | jq -r '"pd uid:\(.pd.uid) -> ld uid:\(.ld.uid)"'
+#done

@@ -8,19 +8,12 @@ import os
 from datetime import timedelta, datetime, timezone
 import re
 
-from utils.types import *
 from utils.api import *
 
 from werkzeug.middleware.dispatcher import DispatcherMiddleware
 from werkzeug.wrappers import Response
 
 app = Flask(__name__, static_url_path='/static')
-
-app.wsgi_app = DispatcherMiddleware(
-    Response('Not Found', status=404),
-    {'/iota': app.wsgi_app}
-)
-
 
 _location_re = re.compile(r'([+-]?\d+\.?\d*)\s*,\s*([+-]?\d+\.?\d*)')
 
@@ -596,13 +589,19 @@ def format_location_string(location: Location) -> str:
     return formatted_location
 
 
+def add_cors_headers(response):
+    response.headers['Access-Control-Allow-Origin'] = '*'
+    response.headers['Access-Control-Allow-Methods'] = 'GET, POST, OPTIONS'
+    response.headers['Access-Control-Allow-Headers'] = 'Content-Type'
+    return response
+
 @app.route('/get_between_dates_ts', methods=['GET'])
 def get_data():
     """
-        dev_type (string):      p_uid or l_uid, must match what's in database
-        uid (int):              uid of either p_uid or l_uid ie query could be ... where p_uid='2'
-        from_Date(string):      picker.value
-        to_date(string):        picker.value
+    dev_type (string): p_uid or l_uid, must match what's in the database
+    uid (int): uid of either p_uid or l_uid ie query could be ... where p_uid='2'
+    from_date(string): picker.value
+    to_date(string): picker.value
     """
     try:
         dev_type = request.args.get('dev_type')
@@ -611,13 +610,15 @@ def get_data():
         to_date = request.args.get('to_date')
 
         ts_data = get_between_dates_ts(dev_type, uid, from_date, to_date)
-        parsed =  parse_ts_table_data(ts_data)
+        parsed = parse_ts_table_data(ts_data)
 
-        return parsed
+        response = jsonify(parsed)
+        response = add_cors_headers(response)
+
+        return response
 
     except Exception as e:
         return jsonify({"error": str(e)})
-
 
 def generate_link(data):
     link = ''
@@ -719,4 +720,4 @@ def parse_ts_table_data(raw_data):
 
 
 if __name__ == '__main__':
-    app.run(debug=debug_enabled, port='5000', host='0.0.0.0')
+    app.run(port='5000', host='0.0.0.0')
