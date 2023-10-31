@@ -1,13 +1,15 @@
 import json
 from typing import List
+import sys
+from typing import List
 import requests
-from datetime import datetime, timezone
+from datetime import datetime
 import base64
 
 from pdmodels.Models import PhysicalDevice, LogicalDevice, PhysicalToLogicalMapping, DeviceNote, Location
 
-end_point = 'http://restapi:5687'
 
+end_point = 'http://restapi:5687'
 
 def get_sources(token: str) -> List[str]:
     """
@@ -368,3 +370,38 @@ def change_user_password(password: str, token: str) -> str:
     response.raise_for_status()
 
     return response.json()
+
+def get_puid_ts(puid: str):
+    try:
+        response = requests.get(f"{end_point}/query/?query=select timestamp,name,value from timeseries where p_uid={puid} and timestamp >= current_date - interval '30 days' order by timestamp asc")
+        response.raise_for_status()
+        #print("get_puid_ts ---returns---", file=sys.stderr)
+        #print(response.json(), file=sys.stderr)
+        return response.json()
+    except Exception as err:
+        print(f"webapp: unable to pull ts_luid data from api: {err}")
+        return {}
+
+
+def get_luid_ts(luid: str):
+    try:
+        response = requests.get(f"{end_point}/query/?query=select timestamp,name,value from timeseries where l_uid={luid} and timestamp >= current_date - interval '30 days' order by timestamp asc")
+        response.raise_for_status()
+        #print("get_puid_ts ---returns---", file=sys.stderr)
+        #print(response.json(), file=sys.stderr)
+        return response.json()
+    except Exception as err:
+        print(f"webapp: unable to pull ts_luid data from api: {err}")
+        return {}
+
+
+def get_between_dates_ts(dev_type: str, uid: str, from_date: str, to_date: str):
+    try:
+        response = requests.get(f"{end_point}/query/?query=select p_uid, l_uid, timestamp, name, value from timeseries where {dev_type}='{uid}' and timestamp BETWEEN '{from_date} 00:00:00' AND '{to_date} 23:59:59' order by timestamp asc")
+        response.raise_for_status()
+        #print("get_between dates ---returns---", file=sys.stderr)
+        #print(response.json(), file=sys.stderr)
+        return response.json()
+    except Exception as err:
+        print(f"webapp: unable to pull get_between_dates_ts data from api: {err}")
+        return {}

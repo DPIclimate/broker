@@ -4,13 +4,13 @@
 <div class="command-bar">
 	<div class="form-buttons">
 		<ul>
-			<li><span class="btn" onclick="handleSubmit('device-form', 'Are you sure you want to Save?')">Save</span></li>
+			<li><span class="btn" onclick="handleSubmit('device-form', 'Are you sure you want to Save?')">Save</a></li>
 			<li><span class="btn" onclick="handleMapping('physical device')">Update Mapping</span></li>
 			<li><span class="btn" onclick="handleCreateMapping('{{ pd_data.uid }}')">Create Mapping</span></li>
 			<li><span class="btn" onclick="handleEndMapping('{{ pd_data.uid }}', 'PD')">End Mapping</span></li>
-				{% if currentMappings | length > 0 %}
-					<li><span class="btn" onclick="handleToggleMapping('{{ currentMappings[0].pd.uid }}','{{ currentMappings[0].is_active }}', 'PD')">{{ "Pause Mapping" if currentMappings[0].is_active == True else "Resume Mapping" }}</span></li>
-				{% endif %}
+      {% if currentMappings | length > 0 %}
+			    <li><span class="btn" onclick="handleToggleMapping('{{ currentMappings[0].pd.uid }}','{{ currentMappings[0].is_active }}', 'PD')">{{ "Pause Mapping" if currentMappings[0].is_active == True else "Resume Mapping" }}</span></li>
+			{% endif %}
 		</ul>
 	</div>
 </div>
@@ -21,7 +21,7 @@
 		<div class="column">
 			<div class="form-section">
 				<h3 id="form-heading">Form</h3>
-				<form id="device-form" action="{{ url_for('UpdatePhysicalDevice') }}" target="hidden-frame">
+				<form id="device-form" action="{{ url_for('UpdatePhysicalDevice') }}" method="GET" target="hidden-frame">
 					<div>
 						<label for="form-uid">UID</label>
 						<input type="text" id="form-uid" name="form_uid" value="{{ pd_data.uid }}" readonly>
@@ -95,16 +95,16 @@
 						<th>Device Name</th>
 						<th>Start Time</th>
 						<th>End Time</th>
-						<th>Is Active</th>
+            <th>Is Active</th>
 					</thead>
 					<tbody>
 					{% for mapping in currentMappings %}
 						<tr>
-							<td>{{ mapping.ld.uid }}</td>
-							<td><a href="{{ url_for('logical_device_form', uid=mapping.ld.uid) }}">{{ mapping.ld.name }}</a></td>
+							<td>{{ mapping.ld_uid }}</td>
+							<td><a href="{{ url_for('logical_device_form', uid=mapping.ld_uid) }}">{{ mapping.ld_name }}</a></td>
 							<td>{{ mapping.start_time }}</td>
 							<td>{{ mapping.end_time }}</td>
-							<td>{{ mapping.is_active }}</td>
+              <td>{{ mapping.is_active }}</td>
 						</tr>
 					{% endfor %}
 				</tbody>
@@ -131,16 +131,20 @@
 					{% for note in deviceNotes %}
 					<tr >
 						<td onclick="handleClickNote(this)"> <input type="checkbox" name ='note-uid' value="{{ note.uid }}">
-						<label for="note-uid">{{ note.uid }}</label></td>
+						<label for="note-uid"></label></td>
 						<td name ='note'>{{ note.note }}</td>
 						<td>{{ note.ts }}</td>
 						<td><input id="edit-note-btn" class="form-btn" type="button" onclick="handleEditNote(this)" value="Edit"></td>
 					</tr>
 					{% endfor%}
 					</tbody>
-				</table>				
+				</table>
 			</div>
 		</div>
+    <div id="timeseries-div">
+      <div id="pd_page"></div>
+      {% include 'ts_graph.html' %}
+    </div>
 	</div>
 </section>
 

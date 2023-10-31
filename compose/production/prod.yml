@@ -31,9 +31,20 @@ services:
     ports:
       - "127.0.0.1:5000:5000"
 
+  timescaledb:
+    volumes:
+      - tsdb_db:/home/postgres/pgdata/data
+      - pgbackrest_data:/var/lib/pgbackrest
+
 volumes:
   broker_db:
     external: true
 
   mq_data:
     external: true
+
+  tsdb_db:
+    external: true
+    
+  pgbackrest_data:
+    external: false

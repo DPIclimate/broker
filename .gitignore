@@ -232,3 +232,6 @@ swag/*
 *.pem
 
 settings.json
+
+#303 back up database
+backup-db/

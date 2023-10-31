@@ -4,12 +4,12 @@
 <div class="command-bar">
 	<div class="form-buttons">
 		<ul>
-			<li><span class="btn" onclick="handleSubmit('device-form', 'Are you sure you want to Save?')">Save</span></li>
+			<li><span class="btn" onclick="handleSubmit('device-form', 'Are you sure you want to Save?')">Save</a></li>
 			<li><span class="btn" onclick="handleMapping('logical device')">Update Mapping</span></li>
 			<li><span class="btn" onclick="handleEndMapping('{{ ld_data.uid }}', 'LD')">End Mapping</span></li>
-			{% if deviceMappings | length > 0 %}
-                <li><span class="btn" onclick="handleToggleMapping('{{ deviceMappings[0].pd.uid }}','{{ deviceMappings[0].is_active }}', 'PD')">{{ "Pause Mapping" if deviceMappings[0].is_active == True else "Resume Mapping" }}</span></li>
-            {% endif %}
+      {% if deviceMappings | length > 0 %}
+        <li><span class="btn" onclick="handleToggleMapping('{{ deviceMappings[0].pd.uid }}','{{ deviceMappings[0].is_active }}', 'PD')">{{ "Pause Mapping" if deviceMappings[0].is_active == True else "Resume Mapping" }}</span></li>
+      {% endif %}
 		</ul>
 	</div>
 </div>
@@ -20,7 +20,7 @@
 		<div class="column">
 			<div class="form-section">
 				<h3>Form</h3>
-				<form id="device-form" action="{{ url_for('UpdateLogicalDevice') }}" target="hidden-frame">
+				<form id="device-form" action="{{ url_for('UpdateLogicalDevice') }}" method="GET" target="hidden-frame">
 					<div>
 						<label for="form-uid">UID</label>
 						<input type="text" id="form-uid" name="form_uid" value="{{ ld_data.uid }}" readonly>
@@ -79,7 +79,7 @@
 						<input type="button" class="form-btn" value="Update Mapping" onClick="handleSubmit('mapping-form', 'Are you sure you want to map these?')">
 					</form>
 				</dialog>
-				<div class="mapping-header">
+        	<div class="mapping-header">
 					<h3 id="mapping-heading">Mapping</h3>
 					{% if deviceMappings | length > 0 %}
 						{% if deviceMappings[0].is_active == False %}
@@ -87,28 +87,33 @@
 						{% endif %}
 					{% endif %}
 				</div>
+				<h3>Mappings</h3>
 				<table class="table table-striped data-table">
 					<thead>
 						<th>ID</th>
 						<th>Name</th>
 						<th>Start</th>
 						<th>End</th>
-						<th>Is Active</th>
+            <th>Is Active</th>
 					</thead>
 						{% for mapping in deviceMappings %}
 						<tbody>
 							<tr>
-								<td>{{ mapping.pd.uid }}</td>
-								<td><a href="{{ url_for('physical_device_form', uid=mapping.pd.uid) }}">{{ mapping.pd.name }}</a></td>
+								<td>{{ mapping.pd_uid }}</td>
+								<td><a href="{{ url_for('physical_device_form', uid=mapping.pd_uid) }}">{{ mapping.pd_name }}</a></td>
 								<td>{{ mapping.start_time }}</td>
 								<td>{{ mapping.end_time }}</td>
-								<td>{{ mapping.is_active }}</td>
+                <td>{{ mapping.is_active }}</td>
 							</tr>
 						</tbody>
 						{% endfor %}
 				</table>
 			</div>
 		</div>
+    <div id="timeseries-div">
+      <div id="ld_page"></div>
+      {% include 'ts_graph.html' %}
+    </div>
 	</div>
 </section>
 

@@ -38,7 +38,7 @@ services:
     volumes:
       - ../src/python:/home/broker/python
     working_dir: "/home/broker/python/restapi"
-    entrypoint: [ "/home/broker/.local/bin/uvicorn", "--proxy-headers", "--host", "0.0.0.0", "--port", "5687", "RestAPI:app" ]
+    entrypoint: [ "/home/broker/.local/bin/uvicorn", "--host", "0.0.0.0", "--port", "5687", "RestAPI:app", "--reload" ]
     healthcheck:
       test: curl --fail -I http://localhost:5687/openapi.json || exit 1
       interval: 1m
@@ -204,3 +204,40 @@ services:
       - ${DATABOLT_SHARED_DIR}/raw_data:/raw_data
     working_dir: "/home/broker/python"
     entrypoint: [ "python", "-m", "delivery.FRRED" ]
+
+  timescaledb:
+    build: ../timescale  # Point to the directory containing the custom Dockerfile
+    hostname: "tsdb"
+    image: custom-timescaledb:latest
+    restart: "no"    
+
+    env_file:
+      - .tsdb_env
+    volumes:
+      - ../timescale/init.sql:/docker-entrypoint-initdb.d/init.sql
+      - ../timescale/pgbackrest/pgbackrest.conf:/home/postgres/pgdata/backup/pgbackrest.conf
+      - ../timescale/logs:/var/log/timescale
+    ports:
+      - "5433:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${TSDB_USER}"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+
+  iota_tsdb_decoder:
+    image: broker/python-base
+    restart: "no"
+    env_file:
+      - .env
+    depends_on:
+      timescaledb:
+        condition: "service_healthy"
+      mq:
+        condition: "service_healthy"
+    volumes:
+      - ../src/python:/home/broker/python
+    working_dir: "/home/broker/python"
+    entrypoint: [ "python", "-m", "timescale.TS_LTSReader" ]
+
+
