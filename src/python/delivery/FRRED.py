@@ -28,6 +28,18 @@ import api.client.Ubidots as ubidots
 import api.client.DAO as dao
 import util.LoggingUtil as lu
 
+# Prometheus metrics
+from prometheus_client import Counter, start_http_server
+rabbitmq_connection_attempts = Counter('rabbitmq_connection_attempts', 'Number of connection attempts to RabbitMQ')
+rabbitmq_successful_connections = Counter('rabbitmq_successful_connections', 'Number of successful connections to RabbitMQ')
+rabbitmq_failed_connections = Counter('rabbitmq_failed_connections', 'Number of failed connection attempts to RabbitMQ')
+messages_received = Counter('messages_received', 'Number of messages received from RabbitMQ')
+valid_json_messages = Counter('valid_json_messages', 'Number of valid JSON messages processed')
+invalid_json_messages = Counter('invalid_json_messages', 'Number of invalid JSON messages')
+
+# Start up the server to expose the metrics.
+start_http_server(8000)
+
 _user = os.environ['RABBITMQ_DEFAULT_USER']
 _passwd = os.environ['RABBITMQ_DEFAULT_PASS']
 _host = os.environ['RABBITMQ_HOST']
@@ -81,7 +93,9 @@ def main():
     while connection is None:
         try:
             connection = pika.BlockingConnection(pika.URLParameters(_amqp_url_str))
+            rabbitmq_successful_connections.inc()
         except:
+            rabbitmq_failed_connections.inc()
             conn_attempts += 1
             logging.warning(f'Connection to RabbitMQ attempt {conn_attempts} failed.')
 
@@ -112,6 +126,7 @@ def main():
 
 
 def on_message(channel, method, properties, body):
+    messages_received.inc()
     """
     This function is called when a message arrives from RabbitMQ.
     """
@@ -130,6 +145,7 @@ def on_message(channel, method, properties, body):
     try:
         # Parse the message just to confirm it is valid JSON.
         msg = json.loads(body)
+        valid_json_messages.inc()
         p_uid = msg[BrokerConstants.PHYSICAL_DEVICE_UID_KEY]
         l_uid = msg[BrokerConstants.LOGICAL_DEVICE_UID_KEY]
 
@@ -180,6 +196,7 @@ def on_message(channel, method, properties, body):
         _channel.basic_ack(delivery_tag)
 
     except BaseException:
+        invalid_json_messages.inc()
         logging.exception('Error while processing message.')
         _channel.basic_reject(delivery_tag, requeue=False)
 

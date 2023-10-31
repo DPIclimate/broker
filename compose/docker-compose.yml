@@ -100,13 +100,13 @@ services:
     working_dir: "/usr/src/ttn_decoder"
     entrypoint: [ "node", "src" ]
 
-  ydoc:
+  mqtt_processors:
     image: broker/python-base
     restart: "no"
     env_file:
       - .env
     profiles:
-      - ydoc
+      - mqttprocessors
     depends_on:
       db:
         condition: "service_healthy"
@@ -115,24 +115,7 @@ services:
     volumes:
       - ../src/python:/home/broker/python
     working_dir: "/home/broker/python"
-    entrypoint: [ "python", "-m", "ydoc.YDOC" ]
-
-  wombat:
-    image: broker/python-base
-    restart: "no"
-    env_file:
-      - .env
-    profiles:
-      - wombat
-    depends_on:
-      db:
-        condition: "service_healthy"
-      mq:
-        condition: "service_healthy"
-    volumes:
-      - ../src/python:/home/broker/python
-    working_dir: "/home/broker/python"
-    entrypoint: [ "python", "-m", "ydoc.Wombat" ]
+    entrypoint: [ "python", "-m", "mqtt_processors.MQTTProcessors" ]
 
   lm:
     image: broker/python-base
@@ -150,7 +133,7 @@ services:
     entrypoint: [ "python", "-m", "logical_mapper.LogicalMapper" ]
 
   delivery:
-    image: broker/python-base
+    image: broker/python-base:latest
     restart: unless-stopped
     env_file:
       - .env
@@ -200,3 +183,26 @@ services:
       - ${DATABOLT_SHARED_DIR}/raw_data:/raw_data
     working_dir: "/home/broker/python"
     entrypoint: [ "python", "-m", "delivery.FRRED" ]
+
+  prometheus:
+    image: prom/prometheus
+    volumes:
+      - ../config/prometheus.yml:/etc/prometheus/prometheus.yml
+    command:
+      - '--config.file=/etc/prometheus/prometheus.yml'
+    ports:
+      - "9090:9090"
+
+  grafana:
+    image: grafana/grafana
+    env_file:
+      - .env
+    ports:
+      - "3000:3000"
+    volumes:
+      - grafana-storage:/var/lib/grafana
+    depends_on:
+      - prometheus
+
+volumes:
+  grafana-storage:

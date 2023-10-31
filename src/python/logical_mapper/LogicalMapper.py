@@ -25,6 +25,15 @@ import api.client.RabbitMQ as mq
 import api.client.DAO as dao
 import util.LoggingUtil as lu
 
+# Prometheus metrics
+from prometheus_client import Counter, start_http_server
+messages_received_counter = Counter('logicalmapper_messages_received', 'Number of messages received for processing')
+message_processing_errors_counter = Counter('logicalmapper_message_processing_errors', 'Number of errors during message processing')
+no_device_mapping_counter = Counter('logicalmapper_no_device_mapping', 'Number of messages processed without an existing device mapping')
+
+# Start up the server to expose the metrics.
+start_http_server(8000)
+
 rx_channel = None
 tx_channel = None
 mq_client = None
@@ -103,12 +112,13 @@ def on_message(channel, method, properties, body):
             return
 
         lu.cid_logger.info(f'Accepted message from {pd.name}', extra=msg)
-
+        messages_received_counter.inc()
         # Store message in the physical timeseries table in the brokers processed, standardised msg format.
         dao.insert_physical_timeseries_message(pd.uid, msg[BrokerConstants.TIMESTAMP_KEY], msg)
 
         mapping = dao.get_current_device_mapping(p_uid)
         if mapping is None:
+            no_device_mapping_counter.inc()
             lu.cid_logger.warning(f'No device mapping found for {pd.source_ids}, cannot continue. Dropping message.', extra=msg)
             # Ack the message, even though we cannot process it. We don't want it redelivered.
             # We can change this to a Nack if that would provide extra context somewhere.
@@ -124,11 +134,11 @@ def on_message(channel, method, properties, body):
         dao.update_logical_device(ld)
 
         tx_channel.publish_message('logical_timeseries', msg)
-
         # This tells RabbitMQ the message is handled and can be deleted from the queue.
         rx_channel._channel.basic_ack(delivery_tag)
 
     except BaseException as e:
+        message_processing_errors_counter.inc()
         logging.exception('Error while processing message')
         rx_channel._channel.basic_ack(delivery_tag)
 

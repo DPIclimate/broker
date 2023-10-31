@@ -1,0 +1,48 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: mqtt-processors
+  namespace: broker
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: mqtt-processors
+  template:
+    metadata:
+      labels:
+        app: mqtt-processors
+    spec:
+      containers:
+        - name: mqtt-processors
+          image: broker/python-base
+          imagePullPolicy: IfNotPresent
+          envFrom:
+            - configMapRef:
+                name: env-configmap
+          workingDir: /home/broker/python
+          command:
+            - python
+            - -m
+            - mqtt_processors.MQTTProcessors
+          ports:
+            - containerPort: 8000
+          volumeMounts:
+            - name: shared-data
+              mountPath: /home/broker/python
+      volumes:
+        - name: shared-data
+          hostPath:
+            path: /opt/broker/src/python
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: mqtt-processors
+  namespace: broker
+spec:
+  selector:
+    app: mqtt-processors
+  ports:
+    - name: prometheus
+      port: 8000

@@ -1,0 +1,12 @@
+import logging
+std_logger = logging.getLogger(__name__)
+
+TOPICS = ['test']
+
+
+def on_message(message):
+    std_logger.info("Test Message Recieved")
+    return {
+        'messages': ['Test Returned'],
+        'errors': []
+    }

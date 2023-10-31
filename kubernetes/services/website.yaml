@@ -1,0 +1,47 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: website
+  namespace: broker
+spec:
+  selector:
+    matchLabels:
+      app: website
+  replicas: 1
+  template:
+    metadata:
+      labels:
+        app: website
+    spec:
+      containers:
+        - name: website
+          image: broker/mgmt-app
+          imagePullPolicy: IfNotPresent
+          envFrom:
+            - configMapRef:
+                name: env-configmap
+          command:
+            - sh
+            - -c
+            - tail -f /dev/null
+          ports:
+            - containerPort: 5000
+          volumeMounts:
+            - name: shared-data
+              mountPath: /app
+      volumes:
+        - name: shared-data
+          hostPath:
+            path: /opt/broker/src/www
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: website
+  namespace: broker
+spec:
+  selector:
+    app: website
+  ports:
+    - name: http
+      port: 5000

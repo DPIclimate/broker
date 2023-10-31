@@ -21,6 +21,12 @@ import api.client.DAO as dao
 
 import util.LoggingUtil as lu
 
+# Prometheus metrics
+from prometheus_client import Counter, start_http_server
+request_counter = Counter('ttn_processor_total', 'Total number of incoming requests to TTN processor')
+# Start up the server to expose the metrics.
+start_http_server(8000)
+
 rx_channel: mq.RxChannel = None
 tx_channel: mq.TxChannel = None
 mq_client: mq.RabbitMQConnection = None
@@ -107,6 +113,9 @@ _decoder_req_headers = {
 
 
 def on_message(channel, method, properties, body):
+    # Increment the request counter
+    request_counter.inc()
+
     """
     This function is called when a message arrives from RabbitMQ.
     """
@@ -276,3 +285,4 @@ if __name__ == '__main__':
     # Does not return until SIGTERM is received.
     asyncio.run(main())
     logging.info('Exiting.')
+

@@ -1,0 +1,47 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: ttn-processor
+  namespace: broker
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: ttn-processor
+  template:
+    metadata:
+      labels:
+        app: ttn-processor
+    spec:
+      containers:
+        - name: ttn-processor
+          image: broker/python-base
+          imagePullPolicy: IfNotPresent
+          envFrom:
+            - configMapRef:
+                name: env-configmap
+          workingDir: /home/broker/python/ttn
+          command:
+            - python
+            - AllMsgsWriter.py
+          ports:
+            - containerPort: 8000
+          volumeMounts:
+            - name: shared-data
+              mountPath: /home/broker/python
+      volumes:
+        - name: shared-data
+          hostPath:
+            path: /opt/broker/src/python
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: ttn-processor
+  namespace: broker
+spec:
+  selector:
+    app: ttn-processor
+  ports:
+    - name: prometheus
+      port: 8000
