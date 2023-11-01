@@ -3,7 +3,7 @@ from typing import List
 import sys
 from typing import List
 import requests
-from datetime import datetime
+from datetime import datetime, timezone
 import base64
 
 from pdmodels.Models import PhysicalDevice, LogicalDevice, PhysicalToLogicalMapping, DeviceNote, Location
