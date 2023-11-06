@@ -15,7 +15,7 @@ from fastapi.security import HTTPBearer, HTTPBasic
 #from fastapi.responses import JSONResponse
 from typing import Annotated, List, Dict
 
-import psycopg2, os, sys, restapi.TSDBAPI
+import psycopg2, os, sys, TSDBAPI
 
 from pdmodels.Models import DeviceNote, PhysicalDevice, LogicalDevice, PhysicalToLogicalMapping
 import api.client.DAO as dao
