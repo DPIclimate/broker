@@ -14,7 +14,7 @@
         <script type="text/javascript" charset="utf8" src="https://cdn.datatables.net/select/1.4.0/js/dataTables.select.min.js"></script>
         <script type="text/javascript">
             var wombatTable;
-
+            
             $(document).ready(function () {
                 $('.data-table-multi').DataTable({
                     select: {
@@ -92,41 +92,7 @@
                 }
             }
 
-            function handleUploadLogs() {
-                var selected = $('.selected');
-                if (selected.length === 0){
-                    alert('Please select at least one device to fetch logs from.');
-                    return;
-                }
-
-                const items = wombatTable.rows({ selected: true }).data();
-                console.log(items);
-                const p_uid_list = items.map((x) => x[0]).join(',')
-                const url = "{{ url_for('get_wombat_logs') }}" + `?uids=${p_uid_list}`;
-                response = httpGet(url);
-                console.log(response);
-                alert(response);
-            }
-
-            function handleOTA() {
-                var selected = $('.selected');
-                if (selected.length === 0){
-                    alert('Please select at least one device to update.');
-                    return;
-                }
-
-                if (confirm('Confirm firmware update for the selected devices.')) {
-                    const items = wombatTable.rows({ selected: true }).data();
-                    console.log(items);
-                    const p_uid_list = items.map((x) => x[0]).join(',')
-                    const url = "{{ url_for('wombat_ota') }}" + `?uids=${p_uid_list}`;
-                    response = httpGet(url);
-                    console.log(response);
-                    alert(response);
-                }
-            }
-
-            function handleCreateMapping(uid){
+            function handleCreateMapping(uid) {
                 if(confirm('Are you sure you want to Create Mapping?')){
                     var url = "{{ url_for('CreateMapping') }}" + '?uid=' + uid;
                     alert(httpGet(url));

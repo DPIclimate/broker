@@ -39,7 +39,7 @@ class LogicalDevice(BaseModel, extra=Extra.allow):
     name: str
     location: Optional[Location]
     last_seen: Optional[datetime]
-    properties = {}
+    properties: Dict = {}
 
 
 class PhysicalToLogicalMapping(BaseModel):
