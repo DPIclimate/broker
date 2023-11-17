@@ -229,7 +229,13 @@ def account():
 
 @app.route('/wombats/config/logs', methods=['GET'])
 def get_wombat_logs():
-    _send_mqtt_msg_via_uids(request.args['uids'], 'ftp login\nupload log.txt\nftp logout\n')
+    _send_mqtt_msg_via_uids(request.args['uids'], 'ftp login\nftp upload log.txt\nftp logout\n')
+    return "OK"
+
+
+@app.route('/wombats/config/data', methods=['GET'])
+def get_wombat_data():
+    _send_mqtt_msg_via_uids(request.args['uids'], 'ftp login\nftp upload data.json\nftp logout\n')
     return "OK"
 
 

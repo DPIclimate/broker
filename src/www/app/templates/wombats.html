@@ -38,11 +38,24 @@
         }
 
         const items = wombatTable.rows({ selected: true }).data();
-        console.log(items);
         const p_uid_list = items.map((x) => x[0]).join(',')
         const url = "{{ url_for('get_wombat_logs') }}" + `?uids=${p_uid_list}`;
         response = httpGet(url);
-        console.log(response);
+        alert(response);
+        location.reload();
+    }
+
+    function handleUploadData() {
+        var selected = $('.selected');
+        if (selected.length === 0) {
+            alert('Please select at least one device to fetch data from.');
+            return;
+        }
+
+        const items = wombatTable.rows({ selected: true }).data();
+        const p_uid_list = items.map((x) => x[0]).join(',')
+        const url = "{{ url_for('get_wombat_data') }}" + `?uids=${p_uid_list}`;
+        response = httpGet(url);
         alert(response);
         location.reload();
     }
@@ -56,11 +69,9 @@
 
         if (confirm('Confirm firmware update for the selected devices.')) {
             const items = wombatTable.rows({ selected: true }).data();
-            console.log(items);
             const p_uid_list = items.map((x) => x[0]).join(',')
             const url = "{{ url_for('wombat_ota') }}" + `?uids=${p_uid_list}`;
             response = httpGet(url);
-            console.log(response);
             alert(response);
         }
 
@@ -73,6 +84,7 @@
             <div class="form-buttons">
                 <ul id="wombatlistbuttons">
                     <li><span class="btn" onclick="handleUploadLogs()">Fetch logs</span></li>
+                    <li><span class="btn" onclick="handleUploadData()">Fetch data</span></li>
                     <li><span class="btn" onclick="handleOTA()">FW OTA</span></li>
                     <li><span class="btn" onclick="clearSelectedScripts()">Clear Scripts</span></li>
                 </ul>
