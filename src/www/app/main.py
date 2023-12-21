@@ -586,10 +586,10 @@ def UpdatePhysicalDevice():
         return f"HTTP request with RestAPI failed with error {e.response.status_code}", e.response.status_code
 
 
-@app.route('/update-mappings', methods=['GET'])
+@app.route('/update-mappings', methods=['PATCH'])
 def UpdateMappings():
     try:
-        insert_device_mapping(request.args['physicalDevice_mapping'], request.args['logicalDevice_mapping'], session.get('token'))
+        insert_device_mapping(request.form.get('physicalDevice_mapping'), request.form.get('logicalDevice_mapping'), session.get('token'))
         return 'Success', 200
     except requests.exceptions.HTTPError as e:
         if e.response.status_code == 403:
