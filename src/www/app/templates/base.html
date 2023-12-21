@@ -49,16 +49,20 @@
 
             });
 
-            function handleSubmit(form_id, warning_message) {
+            function handleSubmit(form_id, warning_message, event) {
+                event.preventDefault()
                 if (confirm(warning_message)) {
                     const formElement = document.getElementById(form_id);
                     const formData = new FormData(formElement);
-
+                    
                     fetch(formElement.action, {
                         method: 'PATCH',
                         body: formData
                     })
-                    .then(response => window.location.reload())
+                    .then(data => {
+                         //Handle success, e.g., reload the page
+                         window.location.reload();
+                    })
                     .catch(error => {
                         console.error('Error:', error);
                         alert("Error occured on submission", error)
@@ -76,6 +80,12 @@
                     document.getElementById('mapping-dialog').close();
                     isDialogHidden = true;
                 }
+            }
+            
+            function closeDialog() {
+                var dialog = document.getElementById('mapping-dialog');
+                dialog.close();
+                isDialogHidden = true;
             }
 
             function handleCreateMultipleMappings(){
