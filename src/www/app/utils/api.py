@@ -1,4 +1,4 @@
-import json
+import json, logging, os
 from typing import List
 import requests
 from datetime import datetime, timezone
@@ -6,7 +6,7 @@ import base64
 
 from pdmodels.Models import PhysicalDevice, LogicalDevice, PhysicalToLogicalMapping, DeviceNote, Location
 
-end_point = 'http://restapi:5687'
+end_point = os.getenv('IOTA_API_URL', 'http://restapi:5687')
 
 
 def get_sources(token: str) -> List[str]:
@@ -359,8 +359,8 @@ def change_user_password(password: str, token: str) -> str:
         Params:
             password: str - User's new password
             token: str - User's authentication token
-        
-        reutrn:
+
+        return:
             token: str - User's new authentication token
     """
     headers = {"Authorization": f"Bearer {token}"}

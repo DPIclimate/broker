@@ -57,10 +57,12 @@
 		<div class="column">
 			<div class="form-section">
 				<dialog id="mapping-dialog" class="dialog-box">
+					<button onclick="closeDialog()">&times</button>
 					<h3 id="mapping-dialog-heading">Select Logical Device to Map</h3>
-					<form id="mapping-form" action="{{ url_for('UpdateMappings') }}" method="GET" target="hidden-frame">
+					<form id="mapping-form" action="{{ url_for('UpdateMappings') }}" method="PATCH" target="hidden-frame" enctype="application/x-www-form-urlencoded">
 						<table class="table table-striped data-table-single">
 							<thead>
+								<th>Select</th>
 								<th>Uid</th>
 								<th>Name</th>
 								<th>Location</th>
@@ -69,7 +71,8 @@
 							<tbody>
 							{% for logicalDevice in ld_data %}
 								<tr id="{{ logicalDevice.uid }}">
-									<td>{{ logicalDevice.uid }}</td>
+									<td><input type="radio" name="logicalDevice_mapping" value="{{ logicalDevice.uid }}"></td>
+									<td>{{logicalDevice.uid}}</td>
 									<td><a href="{{ url_for('logical_device_form', uid=logicalDevice.uid) }}">{{ logicalDevice.name }}</a></td>
 									<td>{{ logicalDevice.location }}</td>
 									<td>{{ logicalDevice.last_seen }}</td>
@@ -78,7 +81,7 @@
 						</tbody>
 						</table>
 						<input type="text" id="mapping-id" name="physicalDevice_mapping" class="hidden" value="{{ pd_data.uid }}" readonly>
-						<input type="button" class="form-btn" value="Update Mapping" onClick="handleSubmit('mapping-form', 'Are you sure you want to map these?')">
+						<input type="button" class="form-btn" value="Update Mapping" onClick="handleSubmit('mapping-form', 'Are you sure you want to map these?', event)">
 					</form>
 				</dialog>
 				<div class="mapping-header">

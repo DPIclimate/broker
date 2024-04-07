@@ -1,8 +1,11 @@
+import atexit
+import time
 from typing import Tuple
 
-from flask import Flask, render_template, request, make_response, redirect, url_for, session, send_from_directory
+from flask import Flask, render_template, request, redirect, url_for, session, send_from_directory
+
 import folium
-import paho.mqtt.publish as publish
+import paho.mqtt.client as mqtt
 import os
 from datetime import timedelta, datetime, timezone
 import re
@@ -14,6 +17,23 @@ from werkzeug.wrappers import Response
 
 from pdmodels.Models import PhysicalDevice, LogicalDevice, PhysicalToLogicalMapping, Location
 
+from logging.config import dictConfig
+
+dictConfig({
+    'version': 1,
+    'formatters': {'default': {
+        'format': '[%(asctime)s] %(levelname)s in %(module)s: %(message)s',
+    }},
+    'handlers': {'wsgi': {
+        'class': 'logging.StreamHandler',
+        'stream': 'ext://flask.logging.wsgi_errors_stream',
+        'formatter': 'default'
+    }},
+    'root': {
+        'level': 'INFO',
+        'handlers': ['wsgi']
+    }
+})
 
 app = Flask(__name__, static_url_path='/static')
 
@@ -71,6 +91,64 @@ def time_since(date: datetime) -> str:
     return f'{seconds} seconds ago'
 
 
+#-------------
+# MQTT section
+#-------------
+
+_mqtt_client = None
+_wombat_config_msgs = {}
+
+def mqtt_on_connect(client, userdata, flags, rc):
+    global _mqtt_client
+    app.logger.info('MQTT connected')
+    _mqtt_client.subscribe(f'wombat/+')
+
+def mqtt_on_message(client, userdata, msg):
+    tp = msg.topic.split('/')
+    if len(tp) == 2:
+        sn = tp[1]
+        if len(msg.payload) > 0:
+            script = str(msg.payload, encoding='UTF-8')
+            _wombat_config_msgs[sn] = script
+        else:
+            _wombat_config_msgs[sn] = None
+
+
+def _send_mqtt_msg_via_sn(serial_nos: List[str], msg: str | None) -> None:
+    """
+    Publish a config script to a list of Wombats.
+
+    Params:
+        serial_nos: A list of Wombat serial numbers.
+        msg: The config script to send, use None to clear the script.
+    """
+    if _mqtt_client.is_connected():
+        for sn in serial_nos:
+            _mqtt_client.publish(f'wombat/{sn}', msg, 1, True)
+
+
+def _send_mqtt_msg_via_uids(p_uids: str | List[int], msg: str | None) -> None:
+    """
+    Publish a config script to a list of Wombats.
+
+    Params:
+        p_uids: A list of integer physical device ids or a string of the form "1,2,3".
+        msg: The config script to send, use None to clear the script.
+    """
+    if _mqtt_client.is_connected():
+        if isinstance(p_uids, str):
+            p_uids = list(map(lambda i: int(i), p_uids.split(',')))
+
+        serial_nos = []
+        for p_uid in p_uids:
+            pd = get_physical_device(p_uid, session.get('token'))
+            if pd is not None and pd.source_ids.get('serial_no', None) is not None:
+                serial_nos.append(pd.source_ids['serial_no'])
+
+        _send_mqtt_msg_via_sn(serial_nos, msg)
+
+
+
 """
 Session cookie config
 """
@@ -87,7 +165,7 @@ def check_user_logged_in():
     if not session.get('token'):
         if request.path != '/login' and request.path != '/static/main.css':
             # Stores the url user tried to go to in session so when they log in, we take them back to it
-            session['original_url'] = request.url 
+            session['original_url'] = request.url
             return redirect(url_for('login'), code=302)
 
 
@@ -107,10 +185,10 @@ def login():
             user_token = get_user_token(username=username, password=password)
             session['user'] = username
             session['token'] = user_token
-            
+
             if 'original_url' in session:
                 return redirect(session.pop('original_url'))
-            
+
             return redirect(url_for('index'))
         return render_template("login.html")
 
@@ -149,37 +227,47 @@ def account():
     return render_template('account.html')
 
 
-@app.route('/get_wombat_logs', methods=['GET'])
+@app.route('/wombats/config/logs', methods=['GET'])
 def get_wombat_logs():
-    p_uids = list(map(lambda i: int(i), request.args['uids'].split(',')))
-    app.logger.info(f'get_wombat_logs for p_uids: {p_uids}')
-    msgs = []
-
-    for p_uid in p_uids:
-        pd = get_physical_device(p_uid, session.get('token'))
-        if pd is not None:
-            app.logger.info(f'Wombat serial no: {pd.source_ids["serial_no"]}')
-            msgs.append((f'wombat/{pd.source_ids["serial_no"]}', 'ftp login\nupload log.txt\nftp logout\n', 1, True))
-
-    # NOTE! Assuming default port of 1883.
-    publish.multiple(msgs, hostname=_mqtt_host, auth={'username': _mqtt_user, 'password': _mqtt_pass})
+    _send_mqtt_msg_via_uids(request.args['uids'], 'ftp login\nftp upload log.txt\nftp logout\n')
     return "OK"
 
 
-@app.route('/wombat_ota', methods=['GET'])
+@app.route('/wombats/config/data', methods=['GET'])
+def get_wombat_data():
+    _send_mqtt_msg_via_uids(request.args['uids'], 'ftp login\nftp upload data.json\nftp logout\n')
+    return "OK"
+
+
+@app.route('/wombats/config/ota', methods=['GET'])
 def wombat_ota():
-    p_uids = list(map(lambda i: int(i), request.args['uids'].split(',')))
-    app.logger.info(f'wombat_ota for p_uids: {p_uids}')
-    msgs = []
+    _send_mqtt_msg_via_uids(request.args['uids'], 'config ota 1\nconfig reboot\n')
+    return "OK"
 
-    for p_uid in p_uids:
-        pd = get_physical_device(p_uid, session.get('token'))
-        if pd is not None:
-            app.logger.info(f'Wombat serial no: {pd.source_ids["serial_no"]}')
-            msgs.append((f'wombat/{pd.source_ids["serial_no"]}', 'config ota 1\nconfig reboot\n', 1, True))
 
-    # NOTE! Assuming default port of 1883.
-    publish.multiple(msgs, hostname=_mqtt_host, auth={'username': _mqtt_user, 'password': _mqtt_pass})
+@app.route('/wombats/config/clear')
+def clear_wombat_config_script():
+    """
+    Clear the config scripts for the Wombats identified by the sn request parameter.
+
+    If the id request parameter is "uid" then sn must contain a list of phyiscal device ids. If id is "sn"
+    then sn must contain a list of Wombat serial numbers.
+    """
+    sn = request.args['sn']
+    if sn is not None:
+        id_type = request.args.get('id', 'id')
+        app.logger.info(f'Clearing config script for {sn}, id={id_type}')
+
+        # Publish an empty retained message to clear the config script message from the topic.
+        if id_type == 'uid':
+            ids = list(map(lambda i: int(i), sn.split(',')))
+            app.logger.info(ids)
+            _send_mqtt_msg_via_uids(ids, None)
+        else:
+            ids = sn.split(',')
+            app.logger.info(ids)
+            _send_mqtt_msg_via_sn(ids, None)
+
     return "OK"
 
 
@@ -198,14 +286,21 @@ def wombats():
         mappings = get_current_mappings(session.get('token'))
 
         for dev in physical_devices:
+            sn = dev.source_ids["serial_no"]
             ccid = dev.source_ids.get('ccid', None)
             fw_version: str = dev.source_ids.get('firmware', None)
+            config_script: str | None = _wombat_config_msgs.get(dev.source_ids["serial_no"], None)
 
             if ccid is not None:
                 setattr(dev, 'ccid', ccid)
 
             if fw_version is not None:
                 setattr(dev, 'fw', fw_version)
+
+            if config_script is not None:
+                setattr(dev, 'script', config_script)
+
+            setattr(dev, 'sn', sn)
 
             setattr(dev, 'ts_sort', dev.last_seen.timestamp())
             dev.last_seen = time_since(dev.last_seen)
@@ -422,7 +517,7 @@ def CreateMapping():
     except requests.exceptions.HTTPError as e:
         if e.response.status_code == 403:
             return f"You do not have sufficient permissions to make this change", e.response.status_code
-        
+
         return f"HTTP request with RestAPI failed with error {e.response.status_code}", e.response.status_code
 
 
@@ -436,7 +531,7 @@ def CreateNote(noteText, uid):
     except requests.exceptions.HTTPError as e:
         if e.response.status_code == 403:
             return f"You do not have sufficient permissions to make this change", e.response.status_code
-        
+
         return f"HTTP request with RestAPI failed with error {e.response.status_code}", e.response.status_code
 
 
@@ -448,7 +543,7 @@ def DeleteNote(noteUID):
     except requests.exceptions.HTTPError as e:
         if e.response.status_code == 403:
             return f"You do not have sufficient permissions to make this change", e.response.status_code
-        
+
         return f"HTTP request with RestAPI failed with error {e.response.status_code}", e.response.status_code
 
 
@@ -461,7 +556,7 @@ def EditNote(noteText, uid):
     except requests.exceptions.HTTPError as e:
         if e.response.status_code == 403:
             return f"You do not have sufficient permissions to make this change", e.response.status_code
-        
+
         return f"HTTP request with RestAPI failed with error {e.response.status_code}", e.response.status_code
 
 
@@ -483,23 +578,23 @@ def UpdatePhysicalDevice():
         update_physical_device(uid, new_name, location, token)
 
         return 'Success', 200
-    
+
     except requests.exceptions.HTTPError as e:
         if e.response.status_code == 403:
             return f"You do not have sufficient permissions to make this change", e.response.status_code
-        
+
         return f"HTTP request with RestAPI failed with error {e.response.status_code}", e.response.status_code
 
 
-@app.route('/update-mappings', methods=['GET'])
+@app.route('/update-mappings', methods=['PATCH'])
 def UpdateMappings():
     try:
-        insert_device_mapping(request.args['physicalDevice_mapping'], request.args['logicalDevice_mapping'], session.get('token'))
+        insert_device_mapping(request.form.get('physicalDevice_mapping'), request.form.get('logicalDevice_mapping'), session.get('token'))
         return 'Success', 200
     except requests.exceptions.HTTPError as e:
         if e.response.status_code == 403:
             return f"You do not have sufficient permissions to make this change", e.response.status_code
-        
+
         return f"HTTP request with RestAPI failed with error {e.response.status_code}", e.response.status_code
 
 
@@ -527,7 +622,7 @@ def ToggleDeviceMapping():
     is_active = request.args['is_active']
 
     toggle_device_mapping(uid=uid, dev_type=dev_type, is_active=is_active, token=session.get('token'))
-    
+
     return 'Success', 200
 
 
@@ -553,7 +648,7 @@ def UpdateLogicalDevice():
     except requests.exceptions.HTTPError as e:
         if e.response.status_code == 403:
             return f"You do not have sufficient permissions to make this change", e.response.status_code
-        
+
         return f"HTTP request with RestAPI failed with error {e.response.status_code}", e.response.status_code
 
 
@@ -597,5 +692,31 @@ def generate_link(data):
     return link
 
 
+def exit_handler():
+    global _mqtt_client
+
+    app.logger.info('Stopping')
+    _mqtt_client.disconnect()
+
+    while _mqtt_client.is_connected():
+        time.sleep(0.5)
+
+    _mqtt_client.loop_stop()
+    app.logger.info('Done')
+
+
 if __name__ == '__main__':
+    app.logger.info('Starting')
+    _mqtt_client = mqtt.Client()
+    _mqtt_client.username_pw_set(_mqtt_user, _mqtt_pass)
+    _mqtt_client.on_connect = mqtt_on_connect
+    _mqtt_client.on_message = mqtt_on_message
+
+    app.logger.info('Connecting to MQTT broker')
+    _mqtt_client.connect_async(_mqtt_host)
+    app.logger.info('Starting MQTT thread')
+    _mqtt_client.loop_start()
+
+    atexit.register(exit_handler)
+
     app.run(port='5000', host='0.0.0.0')

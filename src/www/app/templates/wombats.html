@@ -1,11 +1,92 @@
 {% extends "base.html" %}
 {% block content%}
+<script type="text/javascript">
+    function clearConfigScript(sn) {
+        if (confirm(`Cancel config script for ${sn}?`)) {
+            const url = "{{ url_for('clear_wombat_config_script') }}" + `?sn=${sn}&id=sn`;
+            response = httpGet(url);
+            console.log(response);
+            alert(response);
+            location.reload();
+        }
+    }
+
+    function clearSelectedScripts() {
+        var selected = $('.selected');
+        if (selected.length === 0) {
+            alert('Please select at least one device.');
+            return;
+        }
+
+        if (confirm('Confirm clearing the config script for the selected devices.')) {
+            const items = wombatTable.rows({ selected: true }).data();
+            console.log(items);
+            const p_uid_list = items.map((x) => x[0]).join(',')
+            const url = "{{ url_for('clear_wombat_config_script') }}" + `?sn=${p_uid_list}&id=uid`;
+            response = httpGet(url);
+            console.log(response);
+            alert(response);
+            location.reload();
+        }
+    }
+
+    function handleUploadLogs() {
+        var selected = $('.selected');
+        if (selected.length === 0) {
+            alert('Please select at least one device to fetch logs from.');
+            return;
+        }
+
+        const items = wombatTable.rows({ selected: true }).data();
+        const p_uid_list = items.map((x) => x[0]).join(',')
+        const url = "{{ url_for('get_wombat_logs') }}" + `?uids=${p_uid_list}`;
+        response = httpGet(url);
+        alert(response);
+        location.reload();
+    }
+
+    function handleUploadData() {
+        var selected = $('.selected');
+        if (selected.length === 0) {
+            alert('Please select at least one device to fetch data from.');
+            return;
+        }
+
+        const items = wombatTable.rows({ selected: true }).data();
+        const p_uid_list = items.map((x) => x[0]).join(',')
+        const url = "{{ url_for('get_wombat_data') }}" + `?uids=${p_uid_list}`;
+        response = httpGet(url);
+        alert(response);
+        location.reload();
+    }
+
+    function handleOTA() {
+        var selected = $('.selected');
+        if (selected.length === 0) {
+            alert('Please select at least one device to update.');
+            return;
+        }
+
+        if (confirm('Confirm firmware update for the selected devices.')) {
+            const items = wombatTable.rows({ selected: true }).data();
+            const p_uid_list = items.map((x) => x[0]).join(',')
+            const url = "{{ url_for('wombat_ota') }}" + `?uids=${p_uid_list}`;
+            response = httpGet(url);
+            alert(response);
+        }
+
+        location.reload();
+    }
+
+</script>
     <section>
     	<div class="command-bar">
             <div class="form-buttons">
                 <ul id="wombatlistbuttons">
-        			<li><span class="btn" onclick="handleUploadLogs()">Fetch logs</span></li>
-        			<li><span class="btn" onclick="handleOTA()">FW OTA</span></li>
+                    <li><span class="btn" onclick="handleUploadLogs()">Fetch logs</span></li>
+                    <li><span class="btn" onclick="handleUploadData()">Fetch data</span></li>
+                    <li><span class="btn" onclick="handleOTA()">FW OTA</span></li>
+                    <li><span class="btn" onclick="clearSelectedScripts()">Clear Scripts</span></li>
                 </ul>
             </div>
         </div>
@@ -22,6 +103,7 @@
                 <th></th>
                 <th>Current mapping</th>
                 <th>Ubidots</th>
+                <th></th>
             </tr>
             </thead>
             <tbody id="device-table-body">
@@ -56,6 +138,11 @@
                         {% if physicalDevice.ubidots_link is defined %}
                             <a href="{{ physicalDevice.ubidots_link }}" target="_blank"><span
                                     class="material-icons">open_in_new</span></a>
+                        {% endif %}
+                    </td>
+                    <td>
+                        {% if physicalDevice.script is defined %}
+                            <span class="material-icons" title="{{ physicalDevice.script }}" onclick="clearConfigScript('{{ physicalDevice.sn }}')">install_desktop</span>
                         {% endif %}
                     </td>
                 </tr>
