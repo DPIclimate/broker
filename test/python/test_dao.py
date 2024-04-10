@@ -22,13 +22,31 @@ class TestDAO(unittest.TestCase):
                     truncate physical_logical_map cascade;
                     truncate device_notes cascade;
                     truncate physical_timeseries cascade;
-                    truncate raw_messages cascade''')
+                    truncate raw_messages cascade;
+                    delete from sources where source_name = 'axistech';''')
         finally:
             dao.free_conn(conn)
 
     def test_get_all_physical_sources(self):
         sources = dao.get_all_physical_sources()
         self.assertEqual(sources, ['greenbrain', 'ict_eagleio', 'ttn', 'wombat', 'ydoc'])
+
+    def test_add_physical_source(self):
+        sources = dao.get_all_physical_sources()
+        self.assertFalse(BrokerConstants.AXISTECH in sources)
+        dao.add_physical_source(BrokerConstants.AXISTECH)
+        sources = dao.get_all_physical_sources()
+        self.assertTrue(BrokerConstants.AXISTECH in sources)
+
+        # Do it again to ensure it doesn't crash, and there is only one instance of the string.
+        dao.add_physical_source(BrokerConstants.AXISTECH)
+        sources = dao.get_all_physical_sources()
+        i = 0
+        for s in sources:
+            if s == BrokerConstants.AXISTECH:
+                i += 1
+
+        self.assertEqual(1, i)
 
     def now(self):
         return datetime.datetime.now(tz=datetime.timezone.utc)
