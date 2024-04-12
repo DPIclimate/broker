@@ -57,7 +57,8 @@ def make_msg(row: pd.Series) -> Dict:
     values = dict(zip(row.index.values, row.values))
     correlation_id = str(uuid.uuid4())
     str_timestamp = ts.isoformat(timespec='seconds')
-    msg = {BrokerConstants.TIMESTAMP_KEY: str_timestamp, 'source_ids': {'serial_no': serial_no},
+    source_ids = {'serial_no': serial_no, 'sdi-12': [f'AXTUS-{serial_no}']}
+    msg = {BrokerConstants.TIMESTAMP_KEY: str_timestamp, 'source_ids': source_ids,
            BrokerConstants.TIMESERIES_KEY: [], BrokerConstants.CORRELATION_ID_KEY: correlation_id}
 
     for name, value in values.items():
