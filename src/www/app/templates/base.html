@@ -50,7 +50,10 @@
             });
 
             function handleSubmit(form_id, warning_message, event) {
-                event.preventDefault()
+                if ( ! event === undefined) {
+                    event.preventDefault()
+                }
+
                 if (confirm(warning_message)) {
                     const formElement = document.getElementById(form_id);
                     const formData = new FormData(formElement);
