@@ -971,7 +971,6 @@ def add_raw_json_message(source_name: str, ts: datetime, correlation_uuid: str, 
             free_conn(conn)
 
 
-@backoff.on_exception(backoff.expo, DAOException, max_time=30)
 def insert_physical_timeseries_message(msg: Dict[str, Any]) -> None:
     conn = None
     p_uid = msg[BrokerConstants.PHYSICAL_DEVICE_UID_KEY]
@@ -988,8 +987,7 @@ def insert_physical_timeseries_message(msg: Dict[str, Any]) -> None:
             free_conn(conn)
 
 
-@backoff.on_exception(backoff.expo, DAOException, max_time=30)
-def get_physical_timeseries_message(p_uid: int, start: datetime, end: datetime, count: int, only_timestamp: bool) -> List[Dict]:
+def get_physical_timeseries_message(start: datetime | None = None, end: datetime | None = None, count: int | None = None, only_timestamp: bool = False, p_uid: int = None, l_uid: int = None) -> List[Dict]:
     conn = None
 
     if start is None:
@@ -1001,20 +999,44 @@ def get_physical_timeseries_message(p_uid: int, start: datetime, end: datetime, 
     if count < 1:
         count = 1
 
+    if p_uid is None and l_uid is None:
+        raise DAOException('p_uid or l_uid must be supplied.')
+
+    if p_uid is not None and l_uid is not None:
+        raise DAOException('Both p_uid and l_uid were provided, only give one.')
+
+    if p_uid is not None:
+        uid_col_name = 'physical_uid'
+        uid = p_uid
+    else:
+        uid_col_name = 'logical_uid'
+        uid = l_uid
+
+    if not isinstance(uid, int):
+        raise TypeError
+
+    if not isinstance(start, datetime):
+        raise TypeError
+
+    if not isinstance(end, datetime):
+        raise TypeError
+
     column_name = 'ts' if only_timestamp else 'json_msg'
 
     try:
+        # Order messages by descending timestamp. If a caller asks for one message, they probably want the latest
+        # message.
         with _get_connection() as conn, conn.cursor() as cursor:
             qry = f"""
                 select {column_name} from physical_timeseries
-                 where physical_uid = %s
+                 where {uid_col_name} = %s
                  and ts > %s
                  and ts <= %s
-                 order by ts asc
+                 order by ts desc
                  limit %s
                 """
 
-            args = (p_uid, start, end, count)
+            args = (uid, start, end, count)
             cursor.execute(qry, args)
             return [row[0] for row in cursor.fetchall()]
     except Exception as err:
