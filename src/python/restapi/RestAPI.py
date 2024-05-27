@@ -519,6 +519,7 @@ async def get_physical_timeseries(
 
             start = end - diff
 
+        msgs = None
         if p_uid is not None:
             msgs = dao.get_physical_timeseries_message(start, end, count, only_timestamp, p_uid=p_uid)
         elif l_uid is not None:
