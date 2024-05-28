@@ -11,6 +11,7 @@ from pdmodels.Models import DeviceNote, PhysicalDevice, PhysicalToLogicalMapping
 from typing import Tuple
 
 import os
+from test_utils import now
 
 logging.basicConfig(level=logging.INFO, format='%(asctime)s %(name)s: %(message)s', datefmt='%Y-%m-%dT%H:%M:%S%z')
 logger = logging.getLogger(__name__)
@@ -62,13 +63,10 @@ class TestRESTAPI(unittest.TestCase):
         self._admin_token = dao.user_get_token(self._admin_username, 'password')
         self._ADMIN_HEADERS['Authorization'] = f'Bearer {self._admin_token}'
 
-    def now(self):
-        return datetime.datetime.now(tz=datetime.timezone.utc)
-
     def _create_physical_device(self, expected_code=201, req_header=_HEADERS, dev=None) -> Tuple[
         PhysicalDevice, PhysicalDevice]:
         if dev is None:
-            last_seen = self.now()
+            last_seen = now()
             dev = PhysicalDevice(source_name='ttn', name='Test Device', location=Location(lat=3, long=-31),
                                  last_seen=last_seen,
                                  source_ids={'appId': 'x', 'devId': 'y'},
@@ -292,10 +290,12 @@ class TestRESTAPI(unittest.TestCase):
     LOGICAL DEVICES
     --------------------------------------------------------------------------"""
 
-    def _create_default_logical_device(self, expected_code=201, req_header=_HEADERS, dev=None) -> Tuple[
-        LogicalDevice, LogicalDevice]:
+    def _create_default_logical_device(self, expected_code=201, req_header=None, dev=None) -> Tuple[LogicalDevice, LogicalDevice]:
+        if req_header is None:
+            req_header = self._HEADERS
+
         if dev is None:
-            last_seen = self.now()
+            last_seen = now()
             dev = LogicalDevice(name='Test Device', location=Location(lat=3, long=-31), last_seen=last_seen,
                                 properties={'appId': 'x', 'devId': 'y', 'other': 'z'})
 
@@ -416,7 +416,7 @@ class TestRESTAPI(unittest.TestCase):
     def test_insert_mapping(self):
         pdev, new_pdev = self._create_physical_device(req_header=self._ADMIN_HEADERS)
         ldev, new_ldev = self._create_default_logical_device(req_header=self._ADMIN_HEADERS)
-        mapping = PhysicalToLogicalMapping(pd=new_pdev, ld=new_ldev, start_time=self.now())
+        mapping = PhysicalToLogicalMapping(pd=new_pdev, ld=new_ldev, start_time=now())
 
         # This should work.
         url = f'{_BASE}/mappings/'
@@ -430,7 +430,7 @@ class TestRESTAPI(unittest.TestCase):
 
         # This should fail because the physical device has a current mapping.
         time.sleep(0.001)
-        mapping.start_time = self.now()
+        mapping.start_time = now()
         payload = mapping.json()
         r = requests.post(url, headers=self._ADMIN_HEADERS, data=payload)
         self.assertEqual(r.status_code, 400)
@@ -438,14 +438,14 @@ class TestRESTAPI(unittest.TestCase):
         # End the current mapping and create a new one. This should work and
         # simulates 'pausing' a physical device while working on it.
         requests.patch(f'{url}physical/end/{mapping.pd.uid}', headers=self._ADMIN_HEADERS)
-        mapping.start_time = self.now()
+        mapping.start_time = now()
         payload = mapping.json()
         r = requests.post(url, headers=self._ADMIN_HEADERS, data=payload)
         self.assertEqual(r.status_code, 201)
 
         pdx = copy.deepcopy(new_pdev)
         pdx.uid = -1
-        mapping = PhysicalToLogicalMapping(pd=pdx, ld=new_ldev, start_time=self.now())
+        mapping = PhysicalToLogicalMapping(pd=pdx, ld=new_ldev, start_time=now())
         # This should fail due to invalid physical uid.
         payload = mapping.json()
         r = requests.post(url, headers=self._ADMIN_HEADERS, data=payload)
@@ -453,7 +453,7 @@ class TestRESTAPI(unittest.TestCase):
 
         ldx = copy.deepcopy(new_ldev)
         ldx.uid = -1
-        mapping = PhysicalToLogicalMapping(pd=new_pdev, ld=ldx, start_time=self.now())
+        mapping = PhysicalToLogicalMapping(pd=new_pdev, ld=ldx, start_time=now())
 
         # End the current mapping for the phyiscal device so the RESTAPI doesn't
         # return status 400.
@@ -467,7 +467,7 @@ class TestRESTAPI(unittest.TestCase):
     def test_get_mapping_from_physical(self):
         pdev, new_pdev = self._create_physical_device(req_header=self._ADMIN_HEADERS)
         ldev, new_ldev = self._create_default_logical_device(req_header=self._ADMIN_HEADERS)
-        mapping = PhysicalToLogicalMapping(pd=new_pdev, ld=new_ldev, start_time=self.now())
+        mapping = PhysicalToLogicalMapping(pd=new_pdev, ld=new_ldev, start_time=now())
 
         url = f'{_BASE}/mappings/'
         payload = mapping.json()
@@ -491,7 +491,7 @@ class TestRESTAPI(unittest.TestCase):
         # Confirm the latest mapping is returned.
         time.sleep(0.001)
         mapping2 = copy.deepcopy(mapping)
-        mapping2.start_time = self.now()
+        mapping2.start_time = now()
         self.assertNotEqual(mapping, mapping2)
         payload = mapping2.json()
         r = requests.post(url, headers=self._ADMIN_HEADERS, data=payload)
@@ -505,7 +505,7 @@ class TestRESTAPI(unittest.TestCase):
     def test_get_mapping_from_logical(self):
         pdev, new_pdev = self._create_physical_device(req_header=self._ADMIN_HEADERS)
         ldev, new_ldev = self._create_default_logical_device(req_header=self._ADMIN_HEADERS)
-        mapping = PhysicalToLogicalMapping(pd=new_pdev, ld=new_ldev, start_time=self.now())
+        mapping = PhysicalToLogicalMapping(pd=new_pdev, ld=new_ldev, start_time=now())
 
         url = f'{_BASE}/mappings/'
         payload = mapping.json()
@@ -529,7 +529,7 @@ class TestRESTAPI(unittest.TestCase):
         # Confirm the latest mapping is returned.
         time.sleep(0.001)
         mapping2 = copy.deepcopy(mapping)
-        mapping2.start_time = self.now()
+        mapping2.start_time = now()
         self.assertNotEqual(mapping, mapping2)
         payload = mapping2.json()
         r = requests.post(url, headers=self._ADMIN_HEADERS, data=payload)
@@ -546,7 +546,7 @@ class TestRESTAPI(unittest.TestCase):
     def test_get_latest_mapping_from_physical(self):
         pdev, new_pdev = self._create_physical_device(req_header=self._ADMIN_HEADERS)
         ldev, new_ldev = self._create_default_logical_device(req_header=self._ADMIN_HEADERS)
-        mapping = PhysicalToLogicalMapping(pd=new_pdev, ld=new_ldev, start_time=self.now())
+        mapping = PhysicalToLogicalMapping(pd=new_pdev, ld=new_ldev, start_time=now())
 
         url = f'{_BASE}/mappings/'
 
@@ -590,7 +590,7 @@ class TestRESTAPI(unittest.TestCase):
     def test_get_latest_mapping_from_logical(self):
         pdev, new_pdev = self._create_physical_device(req_header=self._ADMIN_HEADERS)
         ldev, new_ldev = self._create_default_logical_device(req_header=self._ADMIN_HEADERS)
-        mapping = PhysicalToLogicalMapping(pd=new_pdev, ld=new_ldev, start_time=self.now())
+        mapping = PhysicalToLogicalMapping(pd=new_pdev, ld=new_ldev, start_time=now())
 
         url = f'{_BASE}/mappings/'
 
@@ -639,7 +639,7 @@ class TestRESTAPI(unittest.TestCase):
         # Using the DAO to create the test data, the REST API methods to do this are
         # tested elsewhere.
 
-        mapping1 = PhysicalToLogicalMapping(pd=new_pdev, ld=new_ldev, start_time=self.now())
+        mapping1 = PhysicalToLogicalMapping(pd=new_pdev, ld=new_ldev, start_time=now())
         dao.insert_mapping(mapping1)
         time.sleep(0.1)
         dao.end_mapping(ld=new_ldev.uid)
@@ -649,7 +649,7 @@ class TestRESTAPI(unittest.TestCase):
         pdev2.name = 'D2'
         pdev2, new_pdev2 = self._create_physical_device(dev=pdev2, req_header=self._ADMIN_HEADERS)
         time.sleep(0.1)
-        mapping2 = PhysicalToLogicalMapping(pd=new_pdev2, ld=new_ldev, start_time=self.now())
+        mapping2 = PhysicalToLogicalMapping(pd=new_pdev2, ld=new_ldev, start_time=now())
         dao.insert_mapping(mapping2)
         time.sleep(0.1)
         dao.end_mapping(ld=new_ldev.uid)
@@ -659,7 +659,7 @@ class TestRESTAPI(unittest.TestCase):
         pdev3.name = 'D3'
         pdev3, new_pdev3 = self._create_physical_device(dev=pdev3, req_header=self._ADMIN_HEADERS)
         time.sleep(0.1)
-        mapping3 = PhysicalToLogicalMapping(pd=new_pdev3, ld=new_ldev, start_time=self.now())
+        mapping3 = PhysicalToLogicalMapping(pd=new_pdev3, ld=new_ldev, start_time=now())
         dao.insert_mapping(mapping3)
 
         url = f'{_BASE}/mappings/logical/all/{new_ldev.uid}'

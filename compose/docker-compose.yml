@@ -2,8 +2,8 @@ version: '3.1'
 
 services:
   db:
-    image: postgres:14.2
-    restart: "no"
+    image: postgis/postgis:14-3.4
+    restart: always
     env_file:
       - .env
     volumes:
@@ -18,7 +18,7 @@ services:
   mq:
     hostname: "mq"
     image: rabbitmq:3.9-management
-    restart: "no"
+    restart: always
     env_file:
       - .env
     volumes:

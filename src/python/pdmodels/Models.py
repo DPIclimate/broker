@@ -4,8 +4,8 @@ from typing import Optional, Dict
 
 
 class Location(BaseModel):
-    lat: float
-    long: float
+    lat: Optional[float]
+    long: Optional[float]
 
     @staticmethod
     def from_ttn_device(ttn_dev: Dict):
@@ -22,24 +22,25 @@ class Location(BaseModel):
 
 # Allowing extra attributes in this class to make life easier for the webapp - it can pass extra info
 # to the templates in the device object rather than passing in lists of mappings etc.
-class PhysicalDevice(BaseModel, extra=Extra.allow):
+class BaseDevice(BaseModel, extra=Extra.allow):
     uid: Optional[int]
-    source_name: str
     name: str
     location: Optional[Location]
     last_seen: Optional[datetime]
-    source_ids: Dict = {}
     properties: Dict = {}
 
 
 # Allowing extra attributes in this class to make life easier for the webapp - it can pass extra info
 # to the templates in the device object rather than passing in lists of mappings etc.
-class LogicalDevice(BaseModel, extra=Extra.allow):
-    uid: Optional[int]
-    name: str
-    location: Optional[Location]
-    last_seen: Optional[datetime]
-    properties: Dict = {}
+class PhysicalDevice(BaseDevice, extra=Extra.allow):
+    source_name: str
+    source_ids: Dict = {}
+
+
+# Allowing extra attributes in this class to make life easier for the webapp - it can pass extra info
+# to the templates in the device object rather than passing in lists of mappings etc.
+class LogicalDevice(BaseDevice, extra=Extra.allow):
+    pass
 
 
 class PhysicalToLogicalMapping(BaseModel):
