@@ -6,6 +6,7 @@ import time
 import uuid
 from typing import Dict, Optional
 
+import dateutil.tz as dtz
 import dateutil.parser as dup
 import pandas as pd
 import pika
@@ -38,6 +39,16 @@ Holds the most recent message timestamp for each AxisTech device. Keyed by devic
 """
 
 
+_sydney_tz = dtz.gettz('Australia/Sydney')
+
+
+def local_time_str(ts: dt.datetime) -> str:
+    """
+    Return an AE[S|D]T string representation of ts, eg '16/01/2024 23:11'
+    """
+    return ts.astimezone(_sydney_tz).strftime('%d/%m/%Y %H:%M')
+
+
 def z_ts(ts: dt.datetime) -> str:
     """
     AxisTech will only accept start and end timestamps with a time component in the form YYYY-MM-DDThh:mm:ssZ,
@@ -51,13 +62,14 @@ def make_msg(row: pd.Series) -> Dict:
     """
     Transform a row from the DataFrame with the AxisTech data into a row with an IoTa format message.
     """
-    global _recent_msg_times
-
     serial_no, ts = row.name
     values = dict(zip(row.index.values, row.values))
     correlation_id = str(uuid.uuid4())
     str_timestamp = ts.isoformat(timespec='seconds')
-    source_ids = {'serial_no': serial_no, 'sdi-12': [f'AXTUS-{serial_no}']}
+    if str_timestamp.endswith('+00:00'):
+        str_timestamp = str_timestamp.replace('+00:00', 'Z')
+
+    source_ids = {'serial_no': serial_no, 'sdi-12': [f'813AXSTECH AWS   000{serial_no}']}
     msg = {BrokerConstants.TIMESTAMP_KEY: str_timestamp, 'source_ids': source_ids,
            BrokerConstants.TIMESERIES_KEY: [], BrokerConstants.CORRELATION_ID_KEY: correlation_id}
 
@@ -96,9 +108,7 @@ def process_msg(msg: Dict) -> None:
 
     msg[BrokerConstants.PHYSICAL_DEVICE_UID_KEY] = pdev.uid
     lu.cid_logger.info(f'Posting msg: {msg}', extra=msg)
-    _channel.basic_publish(BrokerConstants.PHYSICAL_TIMESERIES_EXCHANGE_NAME, 'physical_timeseries',
-                           json.dumps(msg).encode('UTF-8'))
-
+    _channel.basic_publish(BrokerConstants.PHYSICAL_TIMESERIES_EXCHANGE_NAME, 'physical_timeseries', json.dumps(msg).encode('UTF-8'))
     _connection.process_data_events(0)
 
     # Update last seen here so if the publish fails and the process restarts, the message will be reprocessed because
@@ -146,6 +156,7 @@ def get_messages(start: dt.datetime, end: dt.datetime) -> Optional[pd.DataFrame]
 
         df = pd.concat(frames, axis=0)
         df['rainfall'] = df['rainfall'].astype(float)
+        df['humidity_avg'] = df['humidity_avg'].astype(float)
         df['temperature_avg'] = df['temperature_avg'].astype(float)
         df['wind_speed_avg'] = df['wind_speed_avg'].astype(float)
         df['wind_speed_max'] = df['wind_speed_max'].astype(float)
@@ -181,7 +192,7 @@ def poll() -> None:
     #
     # If we only ever polled for say the last hour, we'd rarely if ever get any messages.
     end_ts = dt.datetime.now(dt.timezone.utc)
-    start_ts = end_ts - dt.timedelta(hours=12)
+    start_ts = end_ts - dt.timedelta(days=5)
 
     # Find the earliest 'most recent' message time. If one can be found there is no point asking for
     # messages from before then because they've already been seen. One hole in this logic would be
@@ -196,9 +207,10 @@ def poll() -> None:
     # start of the window if the code has not sent a message in longer than that, but the alternative is to risk
     # the window growing indefinitely if a device goes offline.
     if some_ts is not None and some_ts > start_ts:
+        logging.info(f'Adjusting start_ts, was {local_time_str(start_ts)}, will be {local_time_str(some_ts)}')
         start_ts = some_ts
 
-    logging.info(f'Polling for message between {z_ts(start_ts)} and {z_ts(end_ts)}')
+    logging.info(f'Polling for message between {z_ts(start_ts)} and {z_ts(end_ts)}, [{local_time_str(start_ts)} to {local_time_str(end_ts)}]')
     msgs_df = get_messages(start_ts, end_ts)
     if msgs_df is None:
         logging.info('No new messages')
@@ -227,8 +239,8 @@ def main() -> None:
 
     # Initialise the most recent message timestamp cache. This is used to control the time window
     # used in the AxisTech API calls.
-    for pdev in dao.get_physical_devices_from_source(BrokerConstants.AXISTECH):
-        _recent_msg_times[pdev.source_ids['serial_no']] = pdev.last_seen
+    #for pdev in dao.get_physical_devices_from_source(BrokerConstants.AXISTECH):
+    #    _recent_msg_times[pdev.source_ids['serial_no']] = pdev.last_seen
 
     try:
         logging.info('Opening connection')
@@ -269,6 +281,3 @@ def main() -> None:
 if __name__ == '__main__':
     main()
 
-"""
-https://data.exchange.axisstream.co/?token=6e394e28096df2025066f2c57a07c740a8a83174287a2cb8cd5fee5ef38ff9e40f4ac3097f7b417465a2ba5444d059c868c5cba18ec3147f0ac2ec52a1209663&startDate=2024-04-08T17:17:04Z&endDate=2024-04-09T05:17:04Z
-"""
