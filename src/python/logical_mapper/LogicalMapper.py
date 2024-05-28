@@ -18,6 +18,9 @@ device to be associated with the IoT platform device.
 """
 
 import asyncio, json, logging, signal
+import datetime
+
+import dateutil.parser
 
 import BrokerConstants
 from pika.exchange_type import ExchangeType
@@ -25,10 +28,12 @@ import api.client.RabbitMQ as mq
 import api.client.DAO as dao
 import util.LoggingUtil as lu
 
-rx_channel = None
-tx_channel = None
-mq_client = None
-finish = False
+_rx_channel = None
+_tx_channel = None
+_mq_client = None
+_finish = False
+
+_max_delta = datetime.timedelta(hours=-1)
 
 
 def sigterm_handler(sig_no, stack_frame) -> None:
@@ -36,12 +41,12 @@ def sigterm_handler(sig_no, stack_frame) -> None:
     Handle SIGTERM from docker by closing the mq and db connections and setting a
     flag to tell the main loop to exit.
     """
-    global finish, mq_client
+    global _finish, _mq_client
 
-    logging.info(f'{signal.strsignal(sig_no)}, setting finish to True')
-    finish = True
+    logging.info(f'{signal.strsignal(sig_no)}, setting _finish to True')
+    _finish = True
     dao.stop()
-    mq_client.stop()
+    _mq_client.stop()
 
 
 async def main():
@@ -53,25 +58,25 @@ async def main():
 
     It would be good to find a better way to do nothing than the current loop.
     """
-    global mq_client, rx_channel, tx_channel, finish
+    global _mq_client, _rx_channel, _tx_channel, _finish
 
     logging.info('===============================================================')
     logging.info('               STARTING LOGICAL MAPPER')
     logging.info('===============================================================')
 
-    rx_channel = mq.RxChannel(exchange_name=BrokerConstants.PHYSICAL_TIMESERIES_EXCHANGE_NAME, exchange_type=ExchangeType.fanout, queue_name='lm_physical_timeseries', on_message=on_message)
-    tx_channel = mq.TxChannel(exchange_name=BrokerConstants.LOGICAL_TIMESERIES_EXCHANGE_NAME, exchange_type=ExchangeType.fanout)
-    mq_client = mq.RabbitMQConnection(channels=[rx_channel, tx_channel])
+    _rx_channel = mq.RxChannel(exchange_name=BrokerConstants.PHYSICAL_TIMESERIES_EXCHANGE_NAME, exchange_type=ExchangeType.fanout, queue_name='lm_physical_timeseries', on_message=on_message)
+    _tx_channel = mq.TxChannel(exchange_name=BrokerConstants.LOGICAL_TIMESERIES_EXCHANGE_NAME, exchange_type=ExchangeType.fanout)
+    _mq_client = mq.RabbitMQConnection(channels=[_rx_channel, _tx_channel])
 
-    asyncio.create_task(mq_client.connect())
+    asyncio.create_task(_mq_client.connect())
 
-    while not (rx_channel.is_open and tx_channel.is_open):
+    while not (_rx_channel.is_open and _tx_channel.is_open):
         await asyncio.sleep(0)
 
-    while not finish:
+    while not _finish:
         await asyncio.sleep(2)
 
-    while not mq_client.stopped:
+    while not _mq_client.stopped:
         await asyncio.sleep(1)
 
 
@@ -80,14 +85,14 @@ def on_message(channel, method, properties, body):
     This function is called when a message arrives from RabbitMQ.
     """
 
-    global rx_channel, tx_channel, finish
+    global _rx_channel, _tx_channel, _finish
 
     delivery_tag = method.delivery_tag
 
-    # If the finish flag is set, reject the message so RabbitMQ will re-queue it
+    # If the _finish flag is set, reject the message so RabbitMQ will re-queue it
     # and return early.
-    if finish:
-        rx_channel._channel.basic_reject(delivery_tag)
+    if _finish:
+        _rx_channel._channel.basic_reject(delivery_tag)
         return
 
     try:
@@ -99,7 +104,7 @@ def on_message(channel, method, properties, body):
             lu.cid_logger.error(f'Physical device not found, cannot continue. Dropping message.', extra=msg)
             # Ack the message, even though we cannot process it. We don't want it redelivered.
             # We can change this to a Nack if that would provide extra context somewhere.
-            rx_channel._channel.basic_ack(delivery_tag)
+            _rx_channel._channel.basic_ack(delivery_tag)
             return
 
         lu.cid_logger.info(f'Accepted message from {pd.name}', extra=msg)
@@ -116,7 +121,7 @@ def on_message(channel, method, properties, body):
 
             # Ack the message, even though we cannot process it. We don't want it redelivered.
             # We can change this to a Nack if that would provide extra context somewhere.
-            rx_channel._channel.basic_ack(delivery_tag)
+            _rx_channel._channel.basic_ack(delivery_tag)
             return
 
         msg[BrokerConstants.LOGICAL_DEVICE_UID_KEY] = mapping.ld.uid
@@ -124,19 +129,39 @@ def on_message(channel, method, properties, body):
         dao.insert_physical_timeseries_message(msg)
 
         ld = mapping.ld
-        ld.last_seen = msg[BrokerConstants.TIMESTAMP_KEY]
+
+        # Determine if the message has a future timestamp.
+        ts_str: datetime.datetime = msg[BrokerConstants.TIMESTAMP_KEY]
+        ts = dateutil.parser.isoparse(ts_str)
+        utc_now = datetime.datetime.now(datetime.timezone.utc)
+        ts_delta = utc_now - ts
+
+        # Drop messages with a timestamp more than 1 hour in the future.
+        if ts_delta < _max_delta:
+            lu.cid_logger.warning(f'Message with future timestamp. Dropping message.', extra=msg)
+            # Ack the message, even though we cannot process it. We don't want it redelivered.
+            # We can change this to a Nack if that would provide extra context somewhere.
+            _rx_channel._channel.basic_ack(delivery_tag)
+            return
+
+        if ts > utc_now:
+            # If the timestamp is a bit in the future then make the last seen time 'now'.
+            ld.last_seen = utc_now
+        else:
+            ld.last_seen = ts
+
         lu.cid_logger.info(f'Timestamp from message for LD last seen update: {ld.last_seen}', extra=msg)
         ld.properties[BrokerConstants.LAST_MSG] = msg
         dao.update_logical_device(ld)
 
-        tx_channel.publish_message('logical_timeseries', msg)
+        _tx_channel.publish_message('logical_timeseries', msg)
 
         # This tells RabbitMQ the message is handled and can be deleted from the queue.
-        rx_channel._channel.basic_ack(delivery_tag)
+        _rx_channel._channel.basic_ack(delivery_tag)
 
     except BaseException as e:
         logging.exception('Error while processing message')
-        rx_channel._channel.basic_ack(delivery_tag)
+        _rx_channel._channel.basic_ack(delivery_tag)
 
 
 if __name__ == '__main__':
