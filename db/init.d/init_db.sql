@@ -90,7 +90,7 @@ create table if not exists physical_logical_map (
     primary key(physical_uid, logical_uid, start_time)
 );
 
-create table if not exists users(
+create table if not exists users (
     uid integer generated always as identity primary key,
     username text not null unique,
     salt text not null,
@@ -100,11 +100,11 @@ create table if not exists users(
     read_only boolean default True not null
 );
 
+create table if not exists version (
+    version integer not null
+);
+
 create index if not exists pd_src_id_idx on physical_devices using GIN (source_ids);
 
 insert into sources values ('ttn'), ('greenbrain'), ('wombat'), ('ydoc'), ('ict_eagleio');
-
--- Enable the PostGIS extensions
--- CREATE EXTENSION postgis;
--- CREATE EXTENSION postgis_raster;
--- CREATE EXTENSION postgis_sfcgal;
+insert into version values (1);
