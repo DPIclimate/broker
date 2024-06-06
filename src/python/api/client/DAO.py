@@ -354,7 +354,18 @@ def update_physical_device(device: PhysicalDevice) -> PhysicalDevice:
             for name, val in vars(device).items():
                 if val != current_values[name]:
                     update_col_names.append(f'{name} = %s')
-                    update_col_values.append(val if name not in ('source_ids', 'properties') else Json(val))
+                    match name:
+                        case 'location':
+                            if val is not None:
+                                val = AsIs(f"ST_PointFromText('POINT({val.long} {val.lat})')")
+
+                            update_col_values.append(val)
+
+                        case 'properties' | 'source_ids':
+                            update_col_values.append(Json(val))
+
+                        case _:
+                            update_col_values.append(val)
 
             logging.debug(update_col_names)
             logging.debug(update_col_values)
@@ -589,7 +600,18 @@ def update_logical_device(device: LogicalDevice) -> LogicalDevice:
             for name, val in vars(device).items():
                 if val != current_values[name]:
                     update_col_names.append(f'{name} = %s')
-                    update_col_values.append(val if name != 'properties' else Json(val))
+                    match name:
+                        case 'location':
+                            if val is not None:
+                                val = AsIs(f"ST_PointFromText('POINT({val.long} {val.lat})')")
+
+                            update_col_values.append(val)
+
+                        case 'properties':
+                            update_col_values.append(Json(val))
+
+                        case _:
+                            update_col_values.append(val)
 
             if len(update_col_names) < 1:
                 return device

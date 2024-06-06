@@ -250,6 +250,7 @@ async def update_logical_device(device: LogicalDevice) -> LogicalDevice:
     except dao.DAODeviceNotFound as daonf:
         raise HTTPException(status_code=404, detail=daonf.msg)
     except dao.DAOException as err:
+        logging.exception(err)
         raise HTTPException(status_code=500, detail=err.msg)
 
 
