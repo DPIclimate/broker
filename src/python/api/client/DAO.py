@@ -41,7 +41,6 @@ class DAOUniqeConstraintException(DAOException):
 
 
 conn_pool = None
-_geometry_type_oid = None
 _physical_device_select_all_cols = """
 select uid, source_name, name, (select row_to_json(_) from (select ST_Y(location) as lat, ST_X(location) as long) as _) as location, last_seen, source_ids, properties from physical_devices
 """
