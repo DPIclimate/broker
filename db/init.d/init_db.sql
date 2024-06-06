@@ -93,7 +93,7 @@ create table if not exists physical_logical_map (
     primary key(physical_uid, logical_uid, start_time)
 );
 
-create table if not exists users(
+create table if not exists users (
     uid integer generated always as identity primary key,
     username text not null unique,
     salt text not null,
