@@ -79,7 +79,6 @@ def _get_connection():
         if conn_pool is None:
             logging.info('Creating connection pool, registering type converters.')
             conn_pool = pool.ThreadedConnectionPool(1, 5)
-            # register_type_adapters()
             register_uuid()
 
         conn = conn_pool.getconn()
