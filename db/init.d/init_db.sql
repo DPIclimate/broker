@@ -1,3 +1,6 @@
+CREATE EXTENSION postgis;
+CREATE EXTENSION pgcrypto;
+
 create table if not exists sources (
     source_name text primary key not null
 );
@@ -6,7 +9,7 @@ create table if not exists physical_devices (
     uid integer generated always as identity primary key,
     source_name text not null references sources,
     name text not null,
-    location point,
+    location geometry('POINT', 4283),
     last_seen timestamptz,
     -- Store only top level key value pairs here; it is used
     -- for quickly finding a device using information carried
@@ -72,7 +75,7 @@ create table if not exists device_blobs (
 create table if not exists logical_devices (
     uid integer generated always as identity primary key,
     name text not null,
-    location point,
+    location geometry('POINT', 4283),
     last_seen timestamptz,
     properties jsonb not null default '{}'
 );
@@ -107,4 +110,4 @@ create table if not exists version (
 create index if not exists pd_src_id_idx on physical_devices using GIN (source_ids);
 
 insert into sources values ('ttn'), ('greenbrain'), ('wombat'), ('ydoc'), ('ict_eagleio');
-insert into version values (1);
+insert into version values (2);

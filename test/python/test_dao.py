@@ -267,12 +267,12 @@ class TestDAO(unittest.TestCase):
         dao.insert_mapping(mapping)
 
         # This should fail due to duplicate start time.
-        self.assertRaises(dao.DAOException, dao.insert_mapping, mapping)
+        self.assertRaises(ValueError, dao.insert_mapping, mapping)
 
         # This should fail due to the physical device is still mapped to something.
         time.sleep(0.001)
         mapping.start_time= _now()
-        self.assertRaises(dao.DAOException, dao.insert_mapping, mapping)
+        self.assertRaises(ValueError, dao.insert_mapping, mapping)
 
         # Unmap the physical device so the next test doesn't fail due to the device being mapped.
         dao.end_mapping(pd=new_pdev)
@@ -306,11 +306,11 @@ class TestDAO(unittest.TestCase):
         self.assertIsNone(dao.get_current_device_mapping(ld=new_ldev))
 
         # Confirm pd or ld must be given.
-        self.assertRaises(dao.DAOException, dao.get_current_device_mapping)
+        self.assertRaises(ValueError, dao.get_current_device_mapping)
 
         # Confirm only pd or ld can be given.
-        self.assertRaises(dao.DAOException, dao.get_current_device_mapping, -1, -1)
-        self.assertRaises(dao.DAOException, dao.get_current_device_mapping, new_pdev, new_ldev)
+        self.assertRaises(ValueError, dao.get_current_device_mapping, -1, -1)
+        self.assertRaises(ValueError, dao.get_current_device_mapping, new_pdev, new_ldev)
 
         # confirm a physical device can be mapped to a logical device.
         mapping1 = PhysicalToLogicalMapping(pd=new_pdev, ld=new_ldev, start_time=_now())
@@ -384,6 +384,13 @@ class TestDAO(unittest.TestCase):
     def test_end_mapping(self):
         pdev, new_pdev = self._create_physical_device()
         ldev, new_ldev = self._create_default_logical_device()
+
+        # Confirm pd or ld must be given.
+        self.assertRaises(ValueError, dao.end_mapping)
+
+        # Confirm only pd or ld can be given.
+        self.assertRaises(ValueError, dao.end_mapping, -1, -1)
+        self.assertRaises(ValueError, dao.end_mapping, new_pdev, new_ldev)
 
         mapping1 = PhysicalToLogicalMapping(pd=new_pdev, ld=new_ldev, start_time=_now())
         dao.insert_mapping(mapping1)
@@ -543,11 +550,11 @@ class TestDAO(unittest.TestCase):
 
     def test_add_raw_json_message(self):
         uuid1 = uuid.uuid4()
-        obj1 = {'a':1, 'b':'2', 'c':True, 'd':False}
+        obj1 = {'a': 1, 'b': '2', 'c': True, 'd': False}
         dao.add_raw_json_message('ttn', _now(), uuid1, obj1)
 
         uuid2 = uuid.uuid4()
-        obj2 = {'a':1, 'b':'2', 'c':False, 'd':True}
+        obj2 = {'a': 1, 'b': '2', 'c': False, 'd': True}
         dao.add_raw_json_message('ttn', _now(), uuid2, obj2, 1)
 
         with dao._get_connection() as conn, conn.cursor() as cursor:
@@ -667,7 +674,7 @@ class TestDAO(unittest.TestCase):
         self.assertEqual(len(msgs), 1)
         self.assertEqual(msgs[0], msg_ts[0])
 
-        self.assertRaises(dao.DAOException, dao.get_physical_timeseries_message)
+        self.assertRaises(ValueError, dao.get_physical_timeseries_message)
         self.assertRaises(TypeError, dao.get_physical_timeseries_message, p_uid='x')
         self.assertRaises(TypeError, dao.get_physical_timeseries_message, l_uid='x')
         self.assertRaises(TypeError, dao.get_physical_timeseries_message, start='x', l_uid=1)
@@ -703,13 +710,13 @@ class TestDAO(unittest.TestCase):
             dao.add_raw_text_message('ttn', _now(), uuid1, msg1)
 
     def test_user_add(self):
-        uname= _create_test_user()
-        users=dao.user_ls()
+        uname = _create_test_user()
+        users = dao.user_ls()
 
         self.assertEqual(uname, users[-1])
 
     def test_user_rm(self):
-        uname= _create_test_user()
+        uname = _create_test_user()
         dao.user_rm(uname)
         self.assertFalse(uname in dao.user_ls())
 
@@ -722,39 +729,39 @@ class TestDAO(unittest.TestCase):
 
     def test_add_non_unique_user(self):
         #Check that two users with the same username cannot be created
-        uname= _create_test_user()
+        uname = _create_test_user()
         self.assertRaises(dao.DAOUniqeConstraintException, dao.user_add, uname, 'password', False)
     
     def test_get_user_token(self):
-        uname= _create_test_user()
+        uname = _create_test_user()
         self.assertIsNotNone(dao.user_get_token(username=uname, password='password'))
         self.assertIsNone(dao.user_get_token(username=uname, password='x'))
 
     def test_user_token_refresh(self):
-        uname= _create_test_user()
-        token1=dao.user_get_token(username=uname, password='password')
+        uname = _create_test_user()
+        token1 = dao.user_get_token(username=uname, password='password')
         dao.token_refresh(uname=uname)
-        token2=dao.user_get_token(username=uname, password='password')
+        token2 = dao.user_get_token(username=uname, password='password')
 
         self.assertNotEqual(token1, token2)
 
     def test_user_token_disable(self):
-        uname= _create_test_user()
-        user_token=dao.user_get_token(username=uname, password='password')
+        uname = _create_test_user()
+        user_token = dao.user_get_token(username=uname, password='password')
         
         dao.token_disable(uname)
         self.assertFalse(dao.token_is_valid(user_token))
         
     def test_user_token_enable(self):
-        uname= _create_test_user()
-        user_token=dao.user_get_token(username=uname, password='password')
+        uname = _create_test_user()
+        user_token = dao.user_get_token(username=uname, password='password')
         
         dao.token_disable(uname)
         dao.token_enable(uname)
         self.assertTrue(dao.token_is_valid(user_token))
         
     def test_user_change_password(self):
-        uname= _create_test_user()
+        uname = _create_test_user()
         dao.user_change_password(uname, 'nuiscyeriygsreiuliu')
         self.assertIsNotNone(dao.user_get_token(username=uname, password='nuiscyeriygsreiuliu'))
 

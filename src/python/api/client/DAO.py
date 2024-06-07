@@ -1,37 +1,36 @@
 from contextlib import contextmanager
 from datetime import datetime, timezone
-from email.utils import parseaddr
-import logging, re, warnings
-from turtle import back
-from unittest import result
-import backoff
+import logging, warnings
 import dateutil.parser
 import psycopg2
 from psycopg2 import pool
 import psycopg2.errors
-from psycopg2.extensions import register_adapter, AsIs
+from psycopg2.extensions import AsIs
 from psycopg2.extras import Json, register_uuid
 from typing import Any, Dict, List, Optional, Union
 import hashlib
-import base64
 import os
 
 import BrokerConstants
-from pdmodels.Models import DeviceNote, Location, LogicalDevice, PhysicalDevice, PhysicalToLogicalMapping, User
+from pdmodels.Models import BaseDevice, DeviceNote, LogicalDevice, PhysicalDevice, PhysicalToLogicalMapping, User
 
 logging.captureWarnings(True)
+
 
 class DAOException(Exception):
     def __init__(self, msg: str = None, wrapped: Exception = None):
         self.msg: str = msg
         self.wrapped: Exception = wrapped
 
+
 # This is raised in update methods when the entity to be updated does not exist.
 class DAODeviceNotFound(DAOException):
     pass
 
+
 class DAOUserNotFound(DAOException):
     pass
+
 
 # This is raised if Postgres raises a unique constraint exception. It is useful
 # for the REST API to know this was the problem rather than some general database
@@ -41,29 +40,14 @@ class DAOUniqeConstraintException(DAOException):
     pass
 
 
-def adapt_location(location: Location):
-    """
-    Transform a Location instance into a value usable in an SQL statement.
-    """
-    return AsIs(f"('{location.lat},{location.long}')")
-
-
-def cast_point(value, cur):
-    """
-    Transform a value from an SQL result into a Location instance.
-    """
-    if value is None:
-        return None
-
-    if isinstance(value, str):
-        m = re.fullmatch(r'\(([+-]?\d+\.?\d*),([+-]?\d+\.?\d*)\)', value)
-        if m is not None:
-            return Location(lat=float(m.group(1)),long=m.group(2))
-
-    raise psycopg2.InterfaceError(f'Bad point representation: {value}')
-
-
 conn_pool = None
+_physical_device_select_all_cols = """
+select uid, source_name, name, (select row_to_json(_) from (select ST_Y(location) as lat, ST_X(location) as long) as _) as location, last_seen, source_ids, properties from physical_devices
+"""
+
+_logical_device_select_all_cols = """
+select uid, name, (select row_to_json(_) from (select ST_Y(location) as lat, ST_X(location) as long) as _) as location, last_seen, properties from logical_devices
+"""
 
 
 def stop() -> None:
@@ -94,7 +78,7 @@ def _get_connection():
         if conn_pool is None:
             logging.info('Creating connection pool, registering type converters.')
             conn_pool = pool.ThreadedConnectionPool(1, 5)
-            _register_type_adapters()
+            register_uuid()
 
         conn = conn_pool.getconn()
         logging.debug(f'Taking conn {conn}')
@@ -119,25 +103,6 @@ def free_conn(conn) -> None:
     conn_pool.putconn(conn)
 
 
-def _register_type_adapters():
-    """
-    Register adapter functions to handle Location <-> SQL Point data types.
-    """
-    # Apapter to convert from a Location instance to a quoted SQL string.
-    register_adapter(Location, adapt_location)
-
-    # Adapter to convert from an SQL result to a Location instance.
-    with _get_connection() as conn, conn.cursor() as cursor:
-        conn.autocommit = True
-        cursor.execute("SELECT NULL::point")
-        point_oid = cursor.description[0][1]
-        POINT = psycopg2.extensions.new_type((point_oid,), "POINT", cast_point)
-        psycopg2.extensions.register_type(POINT)
-
-    free_conn(conn)
-    register_uuid()
-
-
 def _dict_from_row(result_metadata, row) -> Dict[str, Any]:
     obj = {}
     for i, col_def in enumerate(result_metadata):
@@ -146,14 +111,28 @@ def _dict_from_row(result_metadata, row) -> Dict[str, Any]:
     return obj
 
 
+def _device_to_query_params(device: BaseDevice) -> dict:
+    dev_fields = {}
+    for k, v in vars(device).items():
+        match k:
+            case 'properties' | 'source_ids':
+                dev_fields[k] = Json(v)
+            case 'location':
+                if device.location is None or device.location.lat is None or device.location.long is None:
+                    dev_fields[k] = None
+                else:
+                    dev_fields[k] = AsIs(f"ST_GeomFromText('POINT({device.location.long} {device.location.lat})')")
+            case _:
+                dev_fields[k] = v
+
+    return dev_fields
+
+
 """
 Physical device source CRUD methods
-
-create table if not exists sources (
-    source_name text primary key not null
-);
 """
-@backoff.on_exception(backoff.expo, DAOException, max_time=30)
+
+
 def get_all_physical_sources() -> List[PhysicalDevice]:
     conn = None
     try:
@@ -175,21 +154,16 @@ def get_all_physical_sources() -> List[PhysicalDevice]:
 """
 Physical device CRUD methods
 """
-@backoff.on_exception(backoff.expo, DAOException, max_time=30)
 def create_physical_device(device: PhysicalDevice) -> PhysicalDevice:
     conn = None
     try:
-        dev_fields = {}
-        for k, v in vars(device).items():
-            dev_fields[k] = v if k not in ('source_ids', 'properties') else Json(v)
-
+        dev_fields = _device_to_query_params(device)
         with _get_connection() as conn, conn.cursor() as cursor:
             #logging.info(cursor.mogrify("insert into physical_devices (source_name, name, location, last_seen, source_ids, properties) values (%(source_name)s, %(name)s, %(location)s, %(last_seen)s, %(source_ids)s, %(properties)s) returning uid", dev_fields))
             cursor.execute("insert into physical_devices (source_name, name, location, last_seen, source_ids, properties) values (%(source_name)s, %(name)s, %(location)s, %(last_seen)s, %(source_ids)s, %(properties)s) returning uid", dev_fields)
             uid = cursor.fetchone()[0]
             dev = _get_physical_device(conn, uid)
-
-        return dev
+            return dev
     except Exception as err:
         raise err if isinstance(err, DAOException) else DAOException('create_physical_device failed.', err)
     finally:
@@ -211,7 +185,7 @@ def _get_physical_device(conn, uid: int) -> PhysicalDevice:
     """
     dev = None
     with conn.cursor() as cursor:
-        sql = 'select uid, source_name, name, location, last_seen, source_ids, properties from physical_devices where uid = %s'
+        sql = f'{_physical_device_select_all_cols} where uid = %s'
         cursor.execute(sql, (uid, ))
         row = cursor.fetchone()
         if row is not None:
@@ -221,15 +195,12 @@ def _get_physical_device(conn, uid: int) -> PhysicalDevice:
     return dev
 
 
-@backoff.on_exception(backoff.expo, DAOException, max_time=30)
 def get_physical_device(uid: int) -> PhysicalDevice:
     conn = None
     try:
-        dev = None
         with _get_connection() as conn:
             dev = _get_physical_device(conn, uid)
-
-        return dev
+            return dev
     except Exception as err:
         raise err if isinstance(err, DAOException) else DAOException('get_physical_device failed.', err)
     finally:
@@ -237,13 +208,12 @@ def get_physical_device(uid: int) -> PhysicalDevice:
             free_conn(conn)
 
 
-@backoff.on_exception(backoff.expo, DAOException, max_time=30)
 def get_pyhsical_devices_using_source_ids(source_name: str, source_ids: Dict[str, str]) -> List[PhysicalDevice]:
     conn = None
     try:
         devs = []
         with _get_connection() as conn, conn.cursor() as cursor:
-            sql = 'select uid, source_name, name, location, last_seen, source_ids, properties from physical_devices where source_name = %s and source_ids @> %s order by uid asc'
+            sql = f'{_physical_device_select_all_cols} where source_name = %s and source_ids @> %s order by uid asc'
             args = (source_name, Json(source_ids))
             #logging.info(cursor.mogrify(sql, args))
             cursor.execute(sql, args)
@@ -259,13 +229,12 @@ def get_pyhsical_devices_using_source_ids(source_name: str, source_ids: Dict[str
             free_conn(conn)
 
 
-@backoff.on_exception(backoff.expo, DAOException, max_time=30)
 def get_all_physical_devices() -> List[PhysicalDevice]:
     conn = None
     try:
         devs = []
         with _get_connection() as conn, conn.cursor() as cursor:
-            sql = 'select uid, source_name, name, location, last_seen, source_ids, properties from physical_devices order by uid asc'
+            sql = f'{_physical_device_select_all_cols} order by uid asc'
             cursor.execute(sql)
             cursor.arraysize = 200
             rows = cursor.fetchmany()
@@ -284,13 +253,12 @@ def get_all_physical_devices() -> List[PhysicalDevice]:
             free_conn(conn)
 
 
-@backoff.on_exception(backoff.expo, DAOException, max_time=30)
 def get_physical_devices_from_source(source_name: str) -> List[PhysicalDevice]:
     conn = None
     try:
         devs = []
         with _get_connection() as conn, conn.cursor() as cursor:
-            sql = 'select uid, source_name, name, location, last_seen, source_ids, properties from physical_devices where source_name = %s order by uid asc'
+            sql = f'{_physical_device_select_all_cols} where source_name = %s order by uid asc'
             cursor.execute(sql, (source_name, ))
             cursor.arraysize = 200
             rows = cursor.fetchmany()
@@ -309,13 +277,15 @@ def get_physical_devices_from_source(source_name: str) -> List[PhysicalDevice]:
             free_conn(conn)
 
 
-@backoff.on_exception(backoff.expo, DAOException, max_time=30)
-def get_physical_devices(query_args = {}) -> List[PhysicalDevice]:
+def get_physical_devices(query_args=None) -> List[PhysicalDevice]:
+    if query_args is None:
+        query_args = {}
+
     conn = None
     try:
         devs = []
         with _get_connection() as conn, conn.cursor() as cursor:
-            sql = 'select uid, source_name, name, location, last_seen, source_ids, properties from physical_devices'
+            sql = _physical_device_select_all_cols
             args = {}
 
             add_where = True
@@ -368,7 +338,6 @@ def get_physical_devices(query_args = {}) -> List[PhysicalDevice]:
             free_conn(conn)
 
 
-@backoff.on_exception(backoff.expo, DAOException, max_time=30)
 def update_physical_device(device: PhysicalDevice) -> PhysicalDevice:
     conn = None
     try:
@@ -384,7 +353,18 @@ def update_physical_device(device: PhysicalDevice) -> PhysicalDevice:
             for name, val in vars(device).items():
                 if val != current_values[name]:
                     update_col_names.append(f'{name} = %s')
-                    update_col_values.append(val if name not in ('source_ids', 'properties') else Json(val))
+                    match name:
+                        case 'location':
+                            if val is not None:
+                                val = AsIs(f"ST_PointFromText('POINT({val.long} {val.lat})')")
+
+                            update_col_values.append(val)
+
+                        case 'properties' | 'source_ids':
+                            update_col_values.append(Json(val))
+
+                        case _:
+                            update_col_values.append(val)
 
             logging.debug(update_col_names)
             logging.debug(update_col_values)
@@ -415,7 +395,6 @@ def update_physical_device(device: PhysicalDevice) -> PhysicalDevice:
             free_conn(conn)
 
 
-@backoff.on_exception(backoff.expo, DAOException, max_time=30)
 def delete_physical_device(uid: int) -> PhysicalDevice:
     conn = None
     try:
@@ -433,7 +412,6 @@ def delete_physical_device(uid: int) -> PhysicalDevice:
             free_conn(conn)
 
 
-@backoff.on_exception(backoff.expo, DAOException, max_time=30)
 def create_physical_device_note(uid: int, note: str) -> None:
     conn = None
     try:
@@ -448,7 +426,6 @@ def create_physical_device_note(uid: int, note: str) -> None:
             free_conn(conn)
 
 
-@backoff.on_exception(backoff.expo, DAOException, max_time=30)
 def get_physical_device_notes(uid: int) -> List[DeviceNote]:
     conn = None
     try:
@@ -466,7 +443,6 @@ def get_physical_device_notes(uid: int) -> List[DeviceNote]:
             free_conn(conn)
 
 
-@backoff.on_exception(backoff.expo, DAOException, max_time=30)
 def update_physical_device_note(note: DeviceNote) -> None:
     conn = None
     try:
@@ -480,7 +456,6 @@ def update_physical_device_note(note: DeviceNote) -> None:
             free_conn(conn)
 
 
-@backoff.on_exception(backoff.expo, DAOException, max_time=30)
 def delete_physical_device_note(uid: int) -> None:
     conn = None
     try:
@@ -499,21 +474,15 @@ def delete_physical_device_note(uid: int) -> None:
 Logical Device CRUD methods
 """
 
-@backoff.on_exception(backoff.expo, DAOException, max_time=30)
 def create_logical_device(device: LogicalDevice) -> LogicalDevice:
     conn = None
     try:
-        dev = None
-        dev_fields = {}
-        for k, v in vars(device).items():
-            dev_fields[k] = v if k != 'properties' else Json(v)
-
+        dev_fields = _device_to_query_params(device)
         with _get_connection() as conn, conn.cursor() as cursor:
             cursor.execute("insert into logical_devices (name, location, last_seen, properties) values (%(name)s, %(location)s, %(last_seen)s, %(properties)s) returning uid", dev_fields)
             uid = cursor.fetchone()[0]
             dev = _get_logical_device(conn, uid)
-
-        return dev
+            return dev
     except Exception as err:
         raise err if isinstance(err, DAOException) else DAOException('create_logical_device failed.', err)
     finally:
@@ -535,7 +504,15 @@ def _get_logical_device(conn, uid: int) -> LogicalDevice:
     """
     dev = None
     with conn.cursor() as cursor:
-        sql = 'select uid, name, location, last_seen, properties from logical_devices where uid = %s'
+        """
+        See: https://dba.stackexchange.com/questions/27732/set-names-to-attributes-when-creating-json-with-row-to-json
+        
+        for an explanation of how to name the fields in a row_to_json call.
+        
+        Example query tested in psql:
+        select uid, name, (select row_to_json(_) from (select ST_Y(location) as lat, ST_X(location) as long) as _) as location from logical_devices;
+        """
+        sql = f'{_logical_device_select_all_cols} where uid = %s'
         cursor.execute(sql, (uid, ))
         row = cursor.fetchone()
         if row is not None:
@@ -545,7 +522,6 @@ def _get_logical_device(conn, uid: int) -> LogicalDevice:
     return dev
 
 
-@backoff.on_exception(backoff.expo, DAOException, max_time=30)
 def get_logical_device(uid: int) -> LogicalDevice:
     conn = None
     try:
@@ -559,15 +535,12 @@ def get_logical_device(uid: int) -> LogicalDevice:
             free_conn(conn)
 
 
-@backoff.on_exception(backoff.expo, DAOException, max_time=30)
 def get_logical_devices(query_args = {}) -> List[LogicalDevice]:
     conn = None
     try:
         devs = []
         with _get_connection() as conn, conn.cursor() as cursor:
-            #conn.autocommit = True
-
-            sql = 'select uid, name, location, last_seen, properties from logical_devices'
+            sql = _logical_device_select_all_cols
             args = {}
 
             add_where = True
@@ -592,12 +565,11 @@ def get_logical_devices(query_args = {}) -> List[LogicalDevice]:
             sql = sql + ' order by uid asc'
 
             #logging.info(cursor.mogrify(sql, args))
-
+            logging.info(cursor.mogrify(sql, args))
             cursor.execute(sql, args)
             cursor.arraysize = 200
             rows = cursor.fetchmany()
             while len(rows) > 0:
-                #logging.info(f'processing {len(rows)} rows.')
                 for r in rows:
                     d = LogicalDevice.parse_obj(_dict_from_row(cursor.description, r))
                     devs.append(d)
@@ -612,7 +584,6 @@ def get_logical_devices(query_args = {}) -> List[LogicalDevice]:
             free_conn(conn)
 
 
-@backoff.on_exception(backoff.expo, DAOException, max_time=30)
 def update_logical_device(device: LogicalDevice) -> LogicalDevice:
     conn = None
     try:
@@ -628,7 +599,18 @@ def update_logical_device(device: LogicalDevice) -> LogicalDevice:
             for name, val in vars(device).items():
                 if val != current_values[name]:
                     update_col_names.append(f'{name} = %s')
-                    update_col_values.append(val if name != 'properties' else Json(val))
+                    match name:
+                        case 'location':
+                            if val is not None:
+                                val = AsIs(f"ST_PointFromText('POINT({val.long} {val.lat})')")
+
+                            update_col_values.append(val)
+
+                        case 'properties':
+                            update_col_values.append(Json(val))
+
+                        case _:
+                            update_col_values.append(val)
 
             if len(update_col_names) < 1:
                 return device
@@ -652,7 +634,6 @@ def update_logical_device(device: LogicalDevice) -> LogicalDevice:
             free_conn(conn)
 
 
-@backoff.on_exception(backoff.expo, DAOException, max_time=30)
 def delete_logical_device(uid: int) -> LogicalDevice:
     conn = None
     try:
@@ -681,7 +662,6 @@ create table if not exists physical_logical_map (
 );
 
 """
-@backoff.on_exception(backoff.expo, DAOException, max_time=30)
 def insert_mapping(mapping: PhysicalToLogicalMapping) -> None:
     """
     Insert a device mapping.
@@ -691,7 +671,7 @@ def insert_mapping(mapping: PhysicalToLogicalMapping) -> None:
         with _get_connection() as conn, conn.cursor() as cursor:
             current_mapping = _get_current_device_mapping(conn, pd=mapping.pd.uid)
             if current_mapping is not None:
-                raise DAOUniqeConstraintException(f'insert_mapping failed: physical device {current_mapping.pd.uid} / "{current_mapping.pd.name}" is already mapped to logical device {current_mapping.ld.uid} / "{current_mapping.ld.name}"')
+                raise ValueError(f'insert_mapping failed: physical device {current_mapping.pd.uid} / "{current_mapping.pd.name}" is already mapped to logical device {current_mapping.ld.uid} / "{current_mapping.ld.name}"')
 
             current_mapping = _get_current_device_mapping(conn, ld=mapping.ld.uid)
             if current_mapping is not None:
@@ -703,26 +683,33 @@ def insert_mapping(mapping: PhysicalToLogicalMapping) -> None:
     except psycopg2.errors.UniqueViolation as err:
         raise DAOUniqeConstraintException(f'Mapping already exists: {mapping.pd.uid} {mapping.pd.name} -> {mapping.ld.uid} {mapping.ld.name}, starting at {mapping.start_time}.', err)
     except Exception as err:
-        raise err if isinstance(err, DAOException) else DAOException('insert_mapping failed.', err)
+        match err:
+            case DAOException() | ValueError():
+                raise err
+            case _:
+                raise DAOException('insert_mapping failed.', err)
     finally:
         if conn is not None:
             free_conn(conn)
 
 
-@backoff.on_exception(backoff.expo, DAOException, max_time=30)
 def end_mapping(pd: Optional[Union[PhysicalDevice, int]] = None, ld: Optional[Union[LogicalDevice, int]] = None) -> None:
     conn = None
     try:
         with _get_connection() as conn:
             _end_mapping(conn, pd, ld)
     except Exception as err:
-        raise err if isinstance(err, DAOException) else DAOException('end_mapping failed.', err)
+        match err:
+            case DAOException() | ValueError():
+                raise err
+            case _:
+                raise DAOException('end_mapping failed.', err)
+
     finally:
         if conn is not None:
             free_conn(conn)
 
 
-@backoff.on_exception(backoff.expo, DAOException, max_time=30)
 def _end_mapping(conn, pd: Optional[Union[PhysicalDevice, int]] = None, ld: Optional[Union[LogicalDevice, int]] = None) -> None:
     with conn.cursor() as cursor:
         mapping: PhysicalToLogicalMapping = _get_current_device_mapping(conn, pd, ld)
@@ -730,10 +717,10 @@ def _end_mapping(conn, pd: Optional[Union[PhysicalDevice, int]] = None, ld: Opti
             return
 
         if pd is None and ld is None:
-            raise DAOException('A PhysicalDevice or a LogicalDevice (or an uid for one of them) must be supplied to end a mapping.')
+            raise ValueError('A PhysicalDevice or a LogicalDevice (or an uid for one of them) must be supplied to end a mapping.')
 
         if pd is not None and ld is not None:
-            raise DAOException('Both pd and ld were provided, only give one when ending a mapping.')
+            raise ValueError('Both pd and ld were provided, only give one when ending a mapping.')
 
         p_uid = None
         if pd is not None:
@@ -752,7 +739,6 @@ def _end_mapping(conn, pd: Optional[Union[PhysicalDevice, int]] = None, ld: Opti
             logging.warning(f'No mapping was updated during end_mapping for {pd.uid} {pd.name} -> {ld.uid} {ld.name}')
 
 
-@backoff.on_exception(backoff.expo, DAOException, max_time=30)
 def delete_mapping(mapping: PhysicalToLogicalMapping) -> None:
     """
         Remove an entry from the physical_logical_map table. Advised to use end_mapping instead. This method should only be used when permanently deleting a physical or logical device from the database.
@@ -769,7 +755,6 @@ def delete_mapping(mapping: PhysicalToLogicalMapping) -> None:
             free_conn(conn)       
 
 
-@backoff.on_exception(backoff.expo, DAOException, max_time=30)
 def toggle_device_mapping(is_active: bool, pd: Optional[Union[PhysicalDevice, int]] = None, ld: Optional[Union[LogicalDevice, int]] = None) -> None:
     """
         Change the is_active column in the database
@@ -790,10 +775,10 @@ def toggle_device_mapping(is_active: bool, pd: Optional[Union[PhysicalDevice, in
 def _toggle_device_mapping(conn, is_active, pd: Optional[Union[PhysicalDevice, int]] = None, ld: Optional[Union[LogicalDevice, int]] = None):
 
     if pd is None and ld is None:
-        raise DAOException('A PhysicalDevice or a LogicalDevice (or an uid for one of them) must be supplied to find a mapping.')
+        raise ValueError('A PhysicalDevice or a LogicalDevice (or an uid for one of them) must be supplied to find a mapping.')
 
     if pd is not None and ld is not None:
-        raise DAOException('Both pd and ld were provided, only give one.')
+        raise ValueError('Both pd and ld were provided, only give one.')
     
     p_uid = None
     if pd is not None:
@@ -811,17 +796,19 @@ def _toggle_device_mapping(conn, is_active, pd: Optional[Union[PhysicalDevice, i
         return None
 
 
-@backoff.on_exception(backoff.expo, DAOException, max_time=30)
 def get_current_device_mapping(pd: Optional[Union[PhysicalDevice, int]] = None, ld: Optional[Union[LogicalDevice, int]] = None, only_current_mapping: bool = True) -> Optional[PhysicalToLogicalMapping]:
     conn = None
     try:
-        mapping = None
         with _get_connection() as conn:
             mapping = _get_current_device_mapping(conn, pd, ld, only_current_mapping)
-
-        return mapping
+            return mapping
     except Exception as err:
-        raise err if isinstance(err, DAOException) else DAOException('get_current_device_mapping failed.', err)
+        match err:
+            case DAOException() | ValueError():
+                raise err
+            case _:
+                raise DAOException('insert_mapping failed.', err)
+
     finally:
         if conn is not None:
             free_conn(conn)
@@ -831,10 +818,10 @@ def _get_current_device_mapping(conn, pd: Optional[Union[PhysicalDevice, int]] =
     mappings = None
 
     if pd is None and ld is None:
-        raise DAOException('A PhysicalDevice or a LogicalDevice (or an uid for one of them) must be supplied to find a mapping.')
+        raise ValueError('A PhysicalDevice or a LogicalDevice (or an uid for one of them) must be supplied to find a mapping.')
 
     if pd is not None and ld is not None:
-        raise DAOException('Both pd and ld were provided, only give one.')
+        raise ValueError('Both pd and ld were provided, only give one.')
 
     p_uid = None
     if pd is not None:
@@ -868,13 +855,12 @@ def _get_current_device_mapping(conn, pd: Optional[Union[PhysicalDevice, int]] =
         return None
 
 
-@backoff.on_exception(backoff.expo, DAOException, max_time=30)
 def get_unmapped_physical_devices() -> List[PhysicalDevice]:
     conn = None
     try:
         devs = []
         with _get_connection() as conn, conn.cursor() as cursor:
-            cursor.execute('select * from physical_devices where uid not in (select physical_uid from physical_logical_map where end_time is null) order by uid asc')
+            cursor.execute(f'{_physical_device_select_all_cols} where uid not in (select physical_uid from physical_logical_map where end_time is null) order by uid asc')
             for r in cursor:
                 dfr = _dict_from_row(cursor.description, r)
                 devs.append(PhysicalDevice.parse_obj(dfr))
@@ -887,7 +873,6 @@ def get_unmapped_physical_devices() -> List[PhysicalDevice]:
             free_conn(conn)
 
 
-@backoff.on_exception(backoff.expo, DAOException, max_time=30)
 def get_logical_device_mappings(ld: Union[LogicalDevice, int]) -> List[PhysicalToLogicalMapping]:
     conn = None
     try:
@@ -909,7 +894,6 @@ def get_logical_device_mappings(ld: Union[LogicalDevice, int]) -> List[PhysicalT
             free_conn(conn)
 
 
-@backoff.on_exception(backoff.expo, DAOException, max_time=30)
 def get_physical_device_mappings(pd: Union[PhysicalDevice, int]) -> List[PhysicalToLogicalMapping]:
     conn = None
     try:
@@ -931,7 +915,6 @@ def get_physical_device_mappings(pd: Union[PhysicalDevice, int]) -> List[Physica
         if conn is not None:
             free_conn(conn)
 
-@backoff.on_exception(backoff.expo, DAOException, max_time=30)
 def get_all_current_mappings(return_uids: bool = True) -> List[PhysicalToLogicalMapping]:
     conn = None
     try:
@@ -956,7 +939,6 @@ def get_all_current_mappings(return_uids: bool = True) -> List[PhysicalToLogical
             free_conn(conn)
 
 
-@backoff.on_exception(backoff.expo, DAOException, max_time=30)
 def add_raw_json_message(source_name: str, ts: datetime, correlation_uuid: str, msg, uid: int=None):
     conn = None
     try:
@@ -1000,10 +982,10 @@ def get_physical_timeseries_message(start: datetime | None = None, end: datetime
         count = 1
 
     if p_uid is None and l_uid is None:
-        raise DAOException('p_uid or l_uid must be supplied.')
+        raise ValueError('p_uid or l_uid must be supplied.')
 
     if p_uid is not None and l_uid is not None:
-        raise DAOException('Both p_uid and l_uid were provided, only give one.')
+        raise ValueError('Both p_uid and l_uid were provided, only give one.')
 
     if p_uid is not None:
         uid_col_name = 'physical_uid'
@@ -1046,7 +1028,6 @@ def get_physical_timeseries_message(start: datetime | None = None, end: datetime
             free_conn(conn)
 
 
-@backoff.on_exception(backoff.expo, DAOException, max_time=30)
 def add_raw_text_message(source_name: str, ts: datetime, correlation_uuid: str, msg, uid: int=None):
     conn = None
     try:
@@ -1065,7 +1046,6 @@ def add_raw_text_message(source_name: str, ts: datetime, correlation_uuid: str, 
 """
 User and authentication CRUD methods
 """
-@backoff.on_exception(backoff.expo, DAOException, max_time=30)
 def user_add(uname: str, passwd: str, disabled: bool) -> None:
 
     #Generate salted password
@@ -1088,7 +1068,6 @@ def user_add(uname: str, passwd: str, disabled: bool) -> None:
             free_conn(conn)
 
 
-@backoff.on_exception(backoff.expo, DAOException, max_time=30)
 def user_rm(uname: str) -> None:
     conn = None
     try:
@@ -1102,7 +1081,6 @@ def user_rm(uname: str) -> None:
             free_conn(conn)
 
 
-@backoff.on_exception(backoff.expo, DAOException, max_time=30)
 def user_set_read_only(uname: str, read_only: bool) -> None:
     try:
         with _get_connection() as conn, conn.cursor() as cursor:
@@ -1114,11 +1092,10 @@ def user_set_read_only(uname: str, read_only: bool) -> None:
             free_conn(conn)
 
 
-@backoff.on_exception(backoff.expo, DAOException, max_time=30)
 def get_user(uid = None, username = None, auth_token = None) -> User:
     conn = None
     if uid is None and username is None and auth_token is None:
-        raise DAOException('get_user requires at least one parameter')
+        raise ValueError('get_user requires at least one parameter')
     else:
         try:
             user = None
@@ -1141,12 +1118,11 @@ def get_user(uid = None, username = None, auth_token = None) -> User:
                 free_conn(conn)
 
 
-@backoff.on_exception(backoff.expo, DAOException, max_time=30)
 def user_ls() -> List:
     try:
         with _get_connection() as conn, conn.cursor() as cursor:
             cursor.execute("select username from users order by uid")
-            results=cursor.fetchall()
+            results = cursor.fetchall()
             return [i[0] for i in results]
 
     except Exception as err:
@@ -1156,15 +1132,13 @@ def user_ls() -> List:
             free_conn(conn)
 
 
-@backoff.on_exception(backoff.expo, DAOException, max_time=30)
 def user_get_token(username, password) -> str | None:
 
     conn = None
     try:
         with _get_connection() as conn, conn.cursor() as cursor:
             cursor.execute("select salt, password, auth_token from users where username=%s",(username,))
-            result=cursor.fetchone()
-
+            result = cursor.fetchone()
             if result is None:
                 return None
             
@@ -1184,7 +1158,6 @@ def user_get_token(username, password) -> str | None:
             free_conn(conn)
 
 
-@backoff.on_exception(backoff.expo, DAOException, max_time=30)
 def token_is_valid(user_token) -> bool:
     '''
     Check if token is in database and is valid
@@ -1192,7 +1165,7 @@ def token_is_valid(user_token) -> bool:
     try:
         with _get_connection() as conn, conn.cursor() as cursor:
             cursor.execute("select uid from users where auth_token=%s and valid='True'", (user_token,))
-            result=cursor.fetchone()
+            result = cursor.fetchone()
 
             if result is None:
                 return False
@@ -1204,11 +1177,10 @@ def token_is_valid(user_token) -> bool:
             free_conn(conn)
 
 
-@backoff.on_exception(backoff.expo, DAOException, max_time=30)
-def token_refresh(uname)-> None:
+def token_refresh(uname) -> None:
     
     # Auth token to be used on other endpoints.
-    auth_token=os.urandom(64).hex()
+    auth_token = os.urandom(64).hex()
 
     try:
         with _get_connection() as conn, conn.cursor() as cursor:
@@ -1222,10 +1194,9 @@ def token_refresh(uname)-> None:
             free_conn(conn)
 
 
-@backoff.on_exception(backoff.expo, DAOException, max_time=30)
 def user_change_password(username: str, new_passwd: str) -> None:
-    salt=os.urandom(64).hex()
-    pass_hash=hashlib.scrypt(password=new_passwd.encode(), salt=salt.encode(), n=2**14, r=8, p=1, maxmem=0, dklen=64).hex()
+    salt = os.urandom(64).hex()
+    pass_hash = hashlib.scrypt(password=new_passwd.encode(), salt=salt.encode(), n=2**14, r=8, p=1, maxmem=0, dklen=64).hex()
 
     try:
         with _get_connection() as conn, conn.cursor() as cursor:
@@ -1238,17 +1209,16 @@ def user_change_password(username: str, new_passwd: str) -> None:
             free_conn(conn)
 
 
-@backoff.on_exception(backoff.expo, DAOException, max_time=30)
 def user_change_password_and_token(new_passwd: str, prev_token: str) -> str:
     """
         Changes user's password and auth token, returns users new auth token upon success
     """
     #Generate salted password
-    salt=os.urandom(64).hex()
-    pass_hash=hashlib.scrypt(password=new_passwd.encode(), salt=salt.encode(), n=2**14, r=8, p=1, maxmem=0, dklen=64).hex()
+    salt = os.urandom(64).hex()
+    pass_hash = hashlib.scrypt(password=new_passwd.encode(), salt=salt.encode(), n=2**14, r=8, p=1, maxmem=0, dklen=64).hex()
     
     #Auth token to be used on other endpoints
-    auth_token=os.urandom(64).hex()
+    auth_token = os.urandom(64).hex()
     
     try:
         with _get_connection() as conn, conn.cursor() as cursor:
@@ -1266,8 +1236,7 @@ def user_change_password_and_token(new_passwd: str, prev_token: str) -> str:
             free_conn(conn)
 
 
-@backoff.on_exception(backoff.expo, DAOException, max_time=30)
-def token_disable(uname)->None:
+def token_disable(uname) -> None:
     
     try:
         with _get_connection() as conn, conn.cursor() as cursor:
@@ -1280,7 +1249,6 @@ def token_disable(uname)->None:
             free_conn(conn)
 
 
-@backoff.on_exception(backoff.expo, DAOException, max_time=30)
 def token_enable(uname)-> None:
     try:
         with _get_connection() as conn, conn.cursor() as cursor:

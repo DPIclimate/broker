@@ -250,6 +250,7 @@ async def update_logical_device(device: LogicalDevice) -> LogicalDevice:
     except dao.DAODeviceNotFound as daonf:
         raise HTTPException(status_code=404, detail=daonf.msg)
     except dao.DAOException as err:
+        logging.exception(err)
         raise HTTPException(status_code=500, detail=err.msg)
 
 
@@ -288,6 +289,8 @@ async def insert_mapping(mapping: PhysicalToLogicalMapping) -> None:
         raise HTTPException(status_code=400, detail=err.msg)
     except dao.DAOException as err:
         raise HTTPException(status_code=500, detail=err.msg)
+    except ValueError as err:
+        raise HTTPException(status_code=400, detail=str(err))
 
 
 @router.get("/mappings/current/", tags=['device mapping'], response_model=List[PhysicalToLogicalMapping], dependencies=[Depends(token_auth_scheme)])
