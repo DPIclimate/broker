@@ -474,7 +474,7 @@ def show_map():
         # folium.Marker([-31.956194913619864, 115.85911692112582], popup="<i>Mt. Hood Meadows</i>", tooltip='click me').add_to(center_map)
         data: List[LogicalDevice] = get_logical_devices(session.get('token'), include_properties=True)
         for dev in data:
-            if dev.location is not None:
+            if dev.location is not None and dev.location.lat is not None and dev.location.long is not None:
                 color = 'blue'
 
                 if dev.last_seen is None:

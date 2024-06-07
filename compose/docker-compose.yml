@@ -30,7 +30,11 @@ services:
 
   restapi:
     image: broker/python-base
-    restart: "no"
+    logging:
+      driver: local
+      options:
+        max-file: "3"
+    restart: unless-stopped
     env_file:
       - .env
     depends_on:
@@ -46,6 +50,11 @@ services:
 
   website:
     image: broker/mgmt-app
+    logging:
+      driver: local
+      options:
+        max-file: "3"
+    restart: unless-stopped
     env_file:
       - .env
     environment:
@@ -59,7 +68,11 @@ services:
 
   ttn_webhook:
     image: broker/python-base
-    restart: "no"
+    logging:
+      driver: local
+      options:
+        max-file: "3"
+    restart: unless-stopped
     env_file:
       - .env
     profiles:
@@ -74,7 +87,11 @@ services:
 
   ttn_processor:
     image: broker/python-base
-    restart: "no"
+    logging:
+      driver: local
+      options:
+        max-file: "3"
+    restart: unless-stopped
     env_file:
       - .env
     profiles:
@@ -93,7 +110,11 @@ services:
 
   ttn_decoder:
     image: broker/ttn_decoder
-    restart: "no"
+    logging:
+      driver: local
+      options:
+        max-file: "3"
+    restart: unless-stopped
     env_file:
       - .env
     profiles:
@@ -106,7 +127,11 @@ services:
 
   ydoc:
     image: broker/python-base
-    restart: "no"
+    logging:
+      driver: local
+      options:
+        max-file: "3"
+    restart: unless-stopped
     env_file:
       - .env
     profiles:
@@ -123,7 +148,11 @@ services:
 
   wombat:
     image: broker/python-base
-    restart: "no"
+    logging:
+      driver: local
+      options:
+        max-file: "3"
+    restart: unless-stopped
     env_file:
       - .env
     profiles:
@@ -140,7 +169,11 @@ services:
 
   lm:
     image: broker/python-base
-    restart: "no"
+    logging:
+      driver: local
+      options:
+        max-file: "3"
+    restart: unless-stopped
     env_file:
       - .env
     depends_on:
@@ -155,6 +188,10 @@ services:
 
   delivery:
     image: broker/python-base
+    logging:
+      driver: local
+      options:
+        max-file: "3"
     restart: unless-stopped
     env_file:
       - .env
