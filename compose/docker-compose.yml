@@ -2,7 +2,7 @@ version: '3.1'
 
 services:
   db:
-    image: postgres:14.2
+    image: postgis/postgis:14-3.4
     logging:
       driver: local
       options:

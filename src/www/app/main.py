@@ -1,4 +1,5 @@
 import atexit
+import logging
 import time
 from typing import Tuple
 
@@ -473,7 +474,7 @@ def show_map():
         # folium.Marker([-31.956194913619864, 115.85911692112582], popup="<i>Mt. Hood Meadows</i>", tooltip='click me').add_to(center_map)
         data: List[LogicalDevice] = get_logical_devices(session.get('token'), include_properties=True)
         for dev in data:
-            if dev.location is not None:
+            if dev.location is not None and dev.location.lat is not None and dev.location.long is not None:
                 color = 'blue'
 
                 if dev.last_seen is None:
@@ -646,6 +647,7 @@ def UpdateLogicalDevice():
         return 'Success', 200
 
     except requests.exceptions.HTTPError as e:
+        logging.exception(e)
         if e.response.status_code == 403:
             return f"You do not have sufficient permissions to make this change", e.response.status_code
 
@@ -669,7 +671,7 @@ def format_time_stamp(unformatted_time: datetime) -> str:
 
 def format_location_string(location: Location) -> str:
     formatted_location = ''
-    if location is not None:
+    if location is not None and location.lat is not None and location.long is not None:
         formatted_location = f'{location.lat:.5f}, {location.long:.5f}'
 
     return formatted_location
