@@ -13,7 +13,7 @@ services:
       # nginx will accept a connection on 1883, forward it to
       # 127.0.0.1:1884, which docker will forward to port 1883
       # within the container.
-      - "127.0.0.1:1884:1883"
+      - "0.0.0.0:1883:1883"
       - "127.0.0.1:15672:15672"
       - "127.0.0.1:15692:15692"
     volumes:

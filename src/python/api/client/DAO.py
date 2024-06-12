@@ -151,6 +151,32 @@ def get_all_physical_sources() -> List[PhysicalDevice]:
             free_conn(conn)
 
 
+def add_physical_source(name: str) -> None:
+    """
+    Add a new physical device source if it does not already exist.
+    """
+    conn = None
+    try:
+        with _get_connection() as conn, conn.cursor() as cursor:
+            conn.autocommit = False
+            cursor.execute('select source_name from sources where source_name = %s', (name, ))
+            if cursor.rowcount == 0:
+                cursor.execute("insert into sources values (%s)", (name, ))
+                cursor.execute('select source_name from sources where source_name = %s', (name, ))
+                if cursor.rowcount == 1:
+                    logging.info(f'Added physical device source {name}')
+                    conn.commit()
+                else:
+                    logging.error(f'Failed to add physical device source {name}')
+                    conn.rollback()
+    except Exception as err:
+        conn.rollback()
+        raise err if isinstance(err, DAOException) else DAOException('add_physical_source failed.', err)
+    finally:
+        if conn is not None:
+            free_conn(conn)
+
+
 """
 Physical device CRUD methods
 """
