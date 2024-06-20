@@ -995,7 +995,7 @@ def insert_physical_timeseries_message(msg: Dict[str, Any]) -> None:
             free_conn(conn)
 
 
-def get_physical_timeseries_message(start: datetime | None = None, end: datetime | None = None, count: int | None = None, only_timestamp: bool = False, p_uid: int = None, l_uid: int = None) -> List[Dict]:
+def get_physical_timeseries_message(start: datetime | None = None, end: datetime | None = None, count: int | None = None, only_timestamp: bool = False, include_received_at: bool = False, p_uid: int = None, l_uid: int = None) -> List[Dict]:
     conn = None
 
     if start is None:
@@ -1029,14 +1029,21 @@ def get_physical_timeseries_message(start: datetime | None = None, end: datetime
     if not isinstance(end, datetime):
         raise TypeError
 
-    column_name = 'ts' if only_timestamp else 'json_msg'
+    column_names = ['ts']
+    if include_received_at:
+        column_names.append('received_at')
+
+    if not only_timestamp:
+        column_names.append('json_msg')
+
+    column_names = ', '.join(column_names)
 
     try:
         # Order messages by descending timestamp. If a caller asks for one message, they probably want the latest
         # message.
         with _get_connection() as conn, conn.cursor() as cursor:
             qry = f"""
-                select {column_name} from physical_timeseries
+                select ts {column_names} from physical_timeseries
                  where {uid_col_name} = %s
                  and ts > %s
                  and ts <= %s
@@ -1046,12 +1053,28 @@ def get_physical_timeseries_message(start: datetime | None = None, end: datetime
 
             args = (uid, start, end, count)
             cursor.execute(qry, args)
-            return [row[0] for row in cursor.fetchall()]
+            return [_msg_tuple_to_obj(*row) for row in cursor.fetchall()]
     except Exception as err:
         raise DAOException('get_physical_timeseries_message failed.', err)
     finally:
         if conn is not None:
             free_conn(conn)
+
+
+def _msg_tuple_to_obj(ts: datetime, arg2: datetime | dict | None = None, arg3: datetime | dict | None = None) -> dict:
+    msg_dict = {'ts': ts}
+    if arg2 is not None:
+        if isinstance(arg2, datetime):
+            msg_dict['received_at'] = arg2
+        else:
+            msg_dict['msg'] = arg2
+    if arg3 is not None:
+        if isinstance(arg3, datetime):
+            msg_dict['received_at'] = arg3
+        else:
+            msg_dict['msg'] = arg3
+
+    return msg_dict
 
 
 def add_raw_text_message(source_name: str, ts: datetime, correlation_uuid: str, msg, uid: int=None):

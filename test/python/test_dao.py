@@ -5,7 +5,6 @@ import api.client.DAO as dao
 from pdmodels.Models import PhysicalDevice, PhysicalToLogicalMapping, Location, LogicalDevice
 from typing import Tuple
 import os
-import pprint as pp
 
 logging.basicConfig(level=logging.INFO, format='%(asctime)s %(name)s: %(message)s', datefmt='%Y-%m-%dT%H:%M:%S%z')
 logger = logging.getLogger(__name__)
@@ -644,15 +643,16 @@ class TestDAO(unittest.TestCase):
             dao.insert_physical_timeseries_message(msg)
             msg_ts.append(dateutil.parser.isoparse(msg[BrokerConstants.TIMESTAMP_KEY]))
 
-        msgs = dao.get_physical_timeseries_message(None, None, 1, only_timestamp=True, p_uid=new_pdev.uid)
+        msgs = dao.get_physical_timeseries_message(None, None, 1, only_timestamp=False, include_received_at=False, p_uid=new_pdev.uid)
+        print(msgs)
         self.assertEqual(len(msgs), 1)
-        self.assertEqual(msgs[0], msg_ts[0])
+        self.assertEqual(msgs[0]['ts'], msg_ts[0])
 
         msgs = dao.get_physical_timeseries_message(None, None, None, only_timestamp=True, p_uid=new_pdev.uid)
 
         self.assertEqual(len(msgs), len(msg_list))
-        for i, ts in enumerate(msgs):
-            self.assertEqual(ts, msg_ts[i])
+        for i, msg in enumerate(msgs):
+            self.assertEqual(msg['ts'], msg_ts[i])
 
         _, new_ldev = self._create_default_logical_device()
         mapping = PhysicalToLogicalMapping(pd=new_pdev, ld=new_ldev, start_time=_now())
@@ -679,18 +679,18 @@ class TestDAO(unittest.TestCase):
         # batch should be returned.
         msgs = dao.get_physical_timeseries_message(only_timestamp=True, l_uid=new_ldev.uid)
         self.assertEqual(len(msgs), 1)
-        self.assertEqual(msgs[0], msg_ts[-1])
+        self.assertEqual(msgs[0]['ts'], msg_ts[-1])
 
         # This will return all the messages because 'end' has been set past the latest message timestamp.
         msgs = dao.get_physical_timeseries_message(end=now + datetime.timedelta(days=1), only_timestamp=True, l_uid=new_ldev.uid)
         self.assertEqual(len(msgs), len(msg_list))
-        for i, ts in enumerate(msgs):
-            self.assertEqual(ts, msg_ts[i])
+        for i, msg in enumerate(msgs):
+            self.assertEqual(msg['ts'], msg_ts[i])
 
         # Should return only the latest message.
         msgs = dao.get_physical_timeseries_message(end=now + datetime.timedelta(days=1), only_timestamp=True, count=1, l_uid=new_ldev.uid)
         self.assertEqual(len(msgs), 1)
-        self.assertEqual(msgs[0], msg_ts[0])
+        self.assertEqual(msgs[0]['ts'], msg_ts[0])
 
         self.assertRaises(ValueError, dao.get_physical_timeseries_message)
         self.assertRaises(TypeError, dao.get_physical_timeseries_message, p_uid='x')

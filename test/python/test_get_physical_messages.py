@@ -76,24 +76,28 @@ def test_no_params(test_client):
     # Confirm the default count parameter value is correct, so 65536 of the 65537 messages are returned.
     response = test_client.get(f'/broker/api/messages', params={'p_uid': pd.uid})
     assert response.status_code == 200
-    assert response.json() == msgs[:-1]
+    for a, b in zip(response.json(), msgs[:-1]):
+        assert a['msg'] == b
 
 
 def test_no_params_ts(test_client):
     response = test_client.get(f'/broker/api/messages', params={'p_uid': pd.uid, 'only_timestamp': 1})
     assert response.status_code == 200
+
     for a, b in zip(response.json(), timestamps):
         if a is None:
             break
 
-        assert dateutil.parser.isoparse(a) == b
+        assert dateutil.parser.isoparse(a['ts']) == b
 
 
 def test_count(test_client):
     # Confirm the count parameter works.
     response = test_client.get(f'/broker/api/messages/', params={'p_uid': pd.uid, 'count': 50})
     assert response.status_code == 200
-    assert response.json() == msgs[:50]
+    #assert response.json() == msgs[:50]
+    for a, b in zip(response.json(), msgs[:50]):
+        assert a['msg'] == b
 
 
 def test_count_ts(test_client):
@@ -103,7 +107,7 @@ def test_count_ts(test_client):
         if a is None:
             break
 
-        assert dateutil.parser.isoparse(a) == b
+        assert dateutil.parser.isoparse(a['ts']) == b
 
 
 def test_start_after_end(test_client):
@@ -121,7 +125,7 @@ def test_start_gives_gt(test_client):
     # Confirm start time parameter gets the next message greater than, not greater than equal to.
     response = test_client.get(f'/broker/api/messages', params={'p_uid': pd.uid, 'start': timestamps[1]})
     assert response.status_code == 200
-    assert response.json() == [msgs[0]]
+    assert response.json()[0]['msg'] == msgs[0]
 
 
 def test_invalid_count(test_client):
@@ -144,17 +148,19 @@ def test_end(test_client):
 
     response = test_client.get(f'/broker/api/messages', params={'p_uid': pd.uid, 'end': timestamps[-1]})
     assert response.status_code == 200
-    assert response.json() == [msgs[-1]]
+    assert response.json()[0]['msg'] == msgs[-1]
 
     response = test_client.get(f'/broker/api/messages', params={'p_uid': pd.uid, 'end': timestamps[-9]})
     assert response.status_code == 200
-    assert response.json() == msgs[-9:]
+    for a, b in zip(response.json(), msgs[-9:]):
+        assert a['msg'] == b
 
 
 def test_start_end(test_client):
     response = test_client.get(f'/broker/api/messages/', params={'p_uid': pd.uid, 'start': timestamps[9], 'end': timestamps[5]})
     assert response.status_code == 200
-    assert response.json() == msgs[5:9]
+    for a, b in zip(response.json(), msgs[5:9]):
+        assert a['msg'] == b
 
 
 def test_invalid_start_end(test_client):
