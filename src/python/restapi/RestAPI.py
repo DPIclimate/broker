@@ -460,7 +460,7 @@ async def end_mapping_of_logical_uid(uid: int) -> None:
 MESSAGE RELATED
 --------------------------------------------------------------------------"""
 
-@router.get("/messages", tags=['Messages'])
+@router.get("/messages", tags=['Messages'], dependencies=[Depends(token_auth_scheme)])
 async def get_physical_timeseries(
         request: Request,
         p_uid: int | None = None,
@@ -469,7 +469,8 @@ async def get_physical_timeseries(
         last: str = None,
         start: datetime.datetime = None,
         end: datetime.datetime = None,
-        only_timestamp: bool = False):
+        include_received_at: bool = False,
+        only_timestamp: bool = False) -> List[Dict]:
     """
     Get the physical_timeseries entries described by the physical device uid and the parameters.
 
@@ -505,8 +506,7 @@ async def get_physical_timeseries(
             except:
                 raise HTTPException(status_code=422, detail={"detail": [{"loc": ["query", "last"], "msg": "the first part of last must be an integer"}]})
 
-            unit = last[-1]
-
+            unit = str(last[-1]).lower()
             if unit == 'h':
                 diff = datetime.timedelta(hours=i)
             elif unit == 'd':
@@ -524,9 +524,9 @@ async def get_physical_timeseries(
 
         msgs = None
         if p_uid is not None:
-            msgs = dao.get_physical_timeseries_message(start, end, count, only_timestamp, p_uid=p_uid)
+            msgs = dao.get_physical_timeseries_message(start, end, count, only_timestamp, include_received_at, p_uid=p_uid)
         elif l_uid is not None:
-            msgs = dao.get_physical_timeseries_message(start, end, count, only_timestamp, l_uid=l_uid)
+            msgs = dao.get_physical_timeseries_message(start, end, count, only_timestamp, include_received_at, l_uid=l_uid)
 
         if msgs is None:
             raise HTTPException(status_code=404, detail="Failed to retrieve messages")
