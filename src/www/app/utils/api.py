@@ -1,4 +1,4 @@
-import json, logging, os
+import json, os
 from typing import List
 import requests
 from datetime import datetime, timezone
@@ -253,6 +253,10 @@ def create_logical_device(physical_device: PhysicalDevice, token: str) ->str:
         "name": physical_device.name,
         "location": physical_device.location,
     }
+
+    # This is to work around a problem that turned up after the change to PostGIS.
+    if logicalJson['location'] is not None and (logicalJson['location'].lat is None or logicalJson['location'].long is None):
+        logicalJson.pop('location')
 
     response = requests.post(f'{end_point}/broker/api/logical/devices/', json=logicalJson, headers=headers)
     response.raise_for_status()

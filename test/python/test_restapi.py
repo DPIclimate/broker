@@ -1,16 +1,15 @@
 import base64
-import copy, datetime, logging, time, unittest, uuid
-from typing_extensions import assert_type
-import re
+import copy
+import logging
+import os
+import time
+import unittest
 from typing import Tuple
 
-import api.client.DAO as dao
 import requests
 
+import api.client.DAO as dao
 from pdmodels.Models import DeviceNote, PhysicalDevice, PhysicalToLogicalMapping, Location, LogicalDevice
-from typing import Tuple
-
-import os
 from test_utils import now
 
 logging.basicConfig(level=logging.INFO, format='%(asctime)s %(name)s: %(message)s', datefmt='%Y-%m-%dT%H:%M:%S%z')
