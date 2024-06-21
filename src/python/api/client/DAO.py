@@ -1062,9 +1062,9 @@ def get_physical_timeseries_message(start: datetime | None = None, end: datetime
 
 
 def _msg_tuple_to_obj(ts: datetime, arg2: datetime | dict | None = None, arg3: datetime | dict | None = None) -> dict:
-    print(ts, arg2, arg3)
+    #print(ts, arg2, arg3)
     if arg2 is None and arg3 is None:
-        return {BrokerConstants.TIMESTAMP_KEY: ts}
+        return {BrokerConstants.TIMESTAMP_KEY: ts.isoformat()}
 
     if arg2 is not None and arg3 is None:
         if isinstance(arg2, datetime):
