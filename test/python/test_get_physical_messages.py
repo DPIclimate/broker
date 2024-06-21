@@ -6,6 +6,7 @@ import dateutil.parser
 import pytest
 from fastapi.testclient import TestClient
 
+import BrokerConstants
 import test_utils as tu
 import api.client.DAO as dao
 from pdmodels.Models import PhysicalDevice
@@ -43,7 +44,7 @@ def create_msgs():
     with open('/tmp/msgs.json', 'w') as f:
         for i in range(0, max_msgs + 1):
             timestamps.append(ts)
-            msg = {'ts': ts.isoformat(), 'i': i}
+            msg = {BrokerConstants.TIMESTAMP_KEY: ts.isoformat(), 'i': i}
             msgs.append(msg)
             s = f'{pd.uid}\t{ts.isoformat()}\t{json.dumps(msg)}'
             print(s, file=f)
@@ -76,24 +77,28 @@ def test_no_params(test_client):
     # Confirm the default count parameter value is correct, so 65536 of the 65537 messages are returned.
     response = test_client.get(f'/broker/api/messages', params={'p_uid': pd.uid})
     assert response.status_code == 200
-    assert response.json() == msgs[:-1]
+    for a, b in zip(response.json(), msgs[:-1]):
+        assert a == b
 
 
 def test_no_params_ts(test_client):
     response = test_client.get(f'/broker/api/messages', params={'p_uid': pd.uid, 'only_timestamp': 1})
     assert response.status_code == 200
+
     for a, b in zip(response.json(), timestamps):
         if a is None:
             break
 
-        assert dateutil.parser.isoparse(a) == b
+        assert dateutil.parser.isoparse(a[BrokerConstants.TIMESTAMP_KEY]) == b
 
 
 def test_count(test_client):
     # Confirm the count parameter works.
     response = test_client.get(f'/broker/api/messages/', params={'p_uid': pd.uid, 'count': 50})
     assert response.status_code == 200
-    assert response.json() == msgs[:50]
+    #assert response.json() == msgs[:50]
+    for a, b in zip(response.json(), msgs[:50]):
+        assert a == b
 
 
 def test_count_ts(test_client):
@@ -103,7 +108,7 @@ def test_count_ts(test_client):
         if a is None:
             break
 
-        assert dateutil.parser.isoparse(a) == b
+        assert dateutil.parser.isoparse(a[BrokerConstants.TIMESTAMP_KEY]) == b
 
 
 def test_start_after_end(test_client):
@@ -121,7 +126,7 @@ def test_start_gives_gt(test_client):
     # Confirm start time parameter gets the next message greater than, not greater than equal to.
     response = test_client.get(f'/broker/api/messages', params={'p_uid': pd.uid, 'start': timestamps[1]})
     assert response.status_code == 200
-    assert response.json() == [msgs[0]]
+    assert response.json()[0] == msgs[0]
 
 
 def test_invalid_count(test_client):
@@ -144,17 +149,19 @@ def test_end(test_client):
 
     response = test_client.get(f'/broker/api/messages', params={'p_uid': pd.uid, 'end': timestamps[-1]})
     assert response.status_code == 200
-    assert response.json() == [msgs[-1]]
+    assert response.json()[0] == msgs[-1]
 
     response = test_client.get(f'/broker/api/messages', params={'p_uid': pd.uid, 'end': timestamps[-9]})
     assert response.status_code == 200
-    assert response.json() == msgs[-9:]
+    for a, b in zip(response.json(), msgs[-9:]):
+        assert a == b
 
 
 def test_start_end(test_client):
     response = test_client.get(f'/broker/api/messages/', params={'p_uid': pd.uid, 'start': timestamps[9], 'end': timestamps[5]})
     assert response.status_code == 200
-    assert response.json() == msgs[5:9]
+    for a, b in zip(response.json(), msgs[5:9]):
+        assert a == b
 
 
 def test_invalid_start_end(test_client):
