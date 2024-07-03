@@ -13,6 +13,7 @@ import pika
 import pika.adapters.blocking_connection as pab
 import pika.channel
 import pika.spec
+import pprint
 import requests
 from pika.exchange_type import ExchangeType
 
@@ -138,6 +139,8 @@ def get_messages(start: dt.datetime, end: dt.datetime) -> Optional[pd.DataFrame]
         data = r.json()
 
         if 'bb5d4f86-6eaa-494d-abcc-8f2e9b66b214' not in data['data']:
+            logging.warning('Did not find expected UUID in data object.')
+            logging.warning(pprint.pformat(data))
             return None
 
         frames = []
@@ -180,7 +183,7 @@ def get_messages(start: dt.datetime, end: dt.datetime) -> Optional[pd.DataFrame]
         return df
 
     except BaseException as e:
-        logging.error(e)
+        logging.exception(e)
 
     return None
 
@@ -239,8 +242,8 @@ def main() -> None:
 
     # Initialise the most recent message timestamp cache. This is used to control the time window
     # used in the AxisTech API calls.
-    #for pdev in dao.get_physical_devices_from_source(BrokerConstants.AXISTECH):
-    #    _recent_msg_times[pdev.source_ids['serial_no']] = pdev.last_seen
+    for pdev in dao.get_physical_devices_from_source(BrokerConstants.AXISTECH):
+        _recent_msg_times[pdev.source_ids['serial_no']] = pdev.last_seen
 
     try:
         logging.info('Opening connection')
