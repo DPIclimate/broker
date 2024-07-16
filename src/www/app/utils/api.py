@@ -1,5 +1,6 @@
+import logging
 import json, os
-from typing import List
+from typing import Any, List, Optional
 import requests
 from datetime import datetime, timezone
 import base64
@@ -188,6 +189,20 @@ def end_logical_mapping(uid: str, token: str):
 
     url = f'{end_point}/broker/api/mappings/logical/end/{uid}'
     requests.patch(url, headers=headers)
+
+
+def get_messages(token: str, l_uid: int, start_ts: Optional[datetime] = None, end_ts: Optional[datetime] = None) -> List[Any]:
+    headers = {"Authorization": f"Bearer {token}"}
+    params = {"l_uid": l_uid, "include_received_at": True}
+    if start_ts is not None:
+        params['start'] = start_ts
+    if end_ts is not None:
+        params['end'] = start_ts
+
+    response = requests.get(f'{end_point}/broker/api/messages', headers=headers, params=params)
+    logging.info(response)
+    response.raise_for_status()
+    return response.json()
 
 
 def end_physical_mapping(uid: str, token: str):

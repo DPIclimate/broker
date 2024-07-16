@@ -1,9 +1,13 @@
 import atexit
+import io
 import logging
+import pandas as pd
 import time
 from typing import Tuple
+import uuid
+from zoneinfo import ZoneInfo
 
-from flask import Flask, render_template, request, redirect, url_for, session, send_from_directory
+from flask import Flask, render_template, request, redirect, url_for, session, send_from_directory, send_file
 
 import folium
 import paho.mqtt.client as mqtt
@@ -599,6 +603,62 @@ def UpdateMappings():
         return f"HTTP request with RestAPI failed with error {e.response.status_code}", e.response.status_code
 
 
+@app.route('/download-data', methods=['POST'])
+def DownloadData():
+    try:
+        user_timezone = request.cookies.get('timezone')
+        logging.info(f'tz = {user_timezone}')
+
+        l_uid = int(request.form.get('l_uid'))
+        start_ts = request.form.get('start_ts')
+        end_ts = request.form.get('end_ts')
+
+        token = session.get('token')
+
+        logical_dev = get_logical_device(l_uid, token)
+
+        logging.info(request.form)
+        logging.info(f'start_ts = {start_ts}')
+        logging.info(f'end_ts = {end_ts}')
+        logging.info(f'l_uid = {l_uid}')
+
+        start = None
+        end = None
+        if start_ts is not None and len(start_ts) > 7:
+            start = datetime.fromisoformat(start_ts).replace(tzinfo=ZoneInfo(user_timezone))
+        if end_ts is not None and len(end_ts) > 7:
+            start = datetime.fromisoformat(start_ts).replace(tzinfo=ZoneInfo(user_timezone))
+
+        msgs = get_messages(token, l_uid, start, end)
+        logging.info(msgs)
+        if len(msgs) < 1:
+            return 'Success', 200
+
+        dataset = []
+        for msg in msgs:
+            item = {'l_uid': l_uid, 'ts': msg['timestamp'], 'received_at': msg['received_at']}
+            for obj in msg['timeseries']:
+                item[obj['name']] = obj['value']
+            dataset.append(item)
+
+        df = pd.DataFrame(dataset)
+        df.set_index(['l_uid', 'ts'], inplace=True)
+        df.sort_index(level=0, sort_remaining=True, inplace=True, ascending=True)
+
+        buffer = io.BytesIO()
+        df.to_csv(buffer, encoding='UTF-8')
+        buffer.seek(0)
+
+        return send_file(buffer, as_attachment=True, download_name=f'{logical_dev.name}.csv')
+
+
+    except requests.exceptions.HTTPError as e:
+        if e.response.status_code == 403:
+            return f"You do not have sufficient permissions to make this change", e.response.status_code
+
+        return f"HTTP request with RestAPI failed with error {e.response.status_code}", e.response.status_code
+
+
 @app.route('/end-ld-mapping', methods=['GET'])
 def EndLogicalDeviceMapping():
     uid = request.args['uid']
@@ -721,4 +781,7 @@ if __name__ == '__main__':
 
     atexit.register(exit_handler)
 
+    #app.jinja_env.auto_reload = True
+    #app.config['TEMPLATES_AUTO_RELOAD'] = True
+    #app.run(port='5000', host='0.0.0.0', debug=True)
     app.run(port='5000', host='0.0.0.0')
