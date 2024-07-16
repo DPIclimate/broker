@@ -266,7 +266,7 @@ services:
     profiles:
       - frred
     depends_on:
-      db
+      - db
     entrypoint: [ "python", "-m", "pollers.axistech" ]
     
   timescaledb:
