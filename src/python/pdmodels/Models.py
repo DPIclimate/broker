@@ -63,3 +63,8 @@ class User(BaseModel):
     auth_token: str
     valid: bool
     read_only: bool
+
+
+class DataNameMap(BaseModel):
+    input_name: str
+    std_name: str

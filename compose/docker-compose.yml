@@ -253,6 +253,7 @@ services:
     working_dir: "/home/broker/python"
     entrypoint: [ "python", "-m", "delivery.FRRED" ]
 
+
   axistech:
     image: broker/python-base
     logging:
@@ -266,10 +267,39 @@ services:
       - frred
     depends_on:
       db:
+    entrypoint: [ "python", "-m", "pollers.axistech" ]
+    
+  timescaledb:
+    build: ../timescale  # Point to the directory containing the custom Dockerfile
+    hostname: "tsdb"
+    image: custom-timescaledb:latest
+    restart: "no"    
+
+    env_file:
+      - .tsdb_env
+    volumes:
+      - ../timescale/init.sql:/docker-entrypoint-initdb.d/init.sql
+      - ../timescale/pgbackrest/pgbackrest.conf:/home/postgres/pgdata/backup/pgbackrest.conf
+      - ../timescale/logs:/var/log/timescale
+    ports:
+      - "5433:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${TSDB_USER}"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+
+  iota_tsdb_decoder:
+    image: broker/python-base
+    restart: "no"
+    env_file:
+      - .env
+    depends_on:
+      timescaledb:
         condition: "service_healthy"
       mq:
         condition: "service_healthy"
     volumes:
       - ../src/python:/home/broker/python
     working_dir: "/home/broker/python"
-    entrypoint: [ "python", "-m", "pollers.axistech" ]
+    entrypoint: [ "python", "-m", "timescale.TS_LTSReader" ]

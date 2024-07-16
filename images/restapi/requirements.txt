@@ -44,3 +44,8 @@ uvicorn==0.17.6
 uvloop==0.16.0
 watchgod==0.8.2
 websockets==10.3
+exceptiongroup==1.1.1
+iniconfig==2.0.0
+packaging==23.1
+pluggy==1.2.0
+tomli==2.0.1

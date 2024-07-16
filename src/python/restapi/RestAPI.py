@@ -15,6 +15,8 @@ from fastapi.security import HTTPBearer, HTTPBasic
 #from fastapi.responses import JSONResponse
 from typing import Annotated, List, Dict
 
+import psycopg2, os, sys, TSDBAPI
+
 from pdmodels.Models import DeviceNote, PhysicalDevice, LogicalDevice, PhysicalToLogicalMapping
 import api.client.DAO as dao
 
@@ -569,32 +571,31 @@ async def change_password(password:str, request:Request) -> str:
 
     except dao.DAOException as err:
         raise HTTPException(status_code=500, detail=err.msg)
-
-
+    
 app = FastAPI(title='IoT Device Broker', version='1.0.0')
 app.include_router(router)
+app.include_router(TSDBAPI.router)
 
-
-@app.middleware("http")
-async def check_auth_header(request: Request, call_next):
+# @app.middleware("http")
+# async def check_auth_header(request: Request, call_next):
     
-    try:
-        if not request.url.path in ['/docs', '/openapi.json', '/broker/api/token']:
-            if not 'Authorization' in request.headers:
-                return Response(content="", status_code=401)
+#     try:
+#         if not request.url.path in ['/docs', '/openapi.json', '/broker/api/token']:
+#             if not 'Authorization' in request.headers:
+#                 return Response(content="", status_code=401)
 
-            token = request.headers['Authorization'].split(' ')[1]
-            is_valid=dao.token_is_valid(token)
+#             token = request.headers['Authorization'].split(' ')[1]
+#             is_valid=dao.token_is_valid(token)
 
-            if not is_valid:
-                print(f'Authentication failed for url: {request.url}')
-                return Response(content="", status_code=401)
+#             if not is_valid:
+#                 print(f'Authentication failed for url: {request.url}')
+#                 return Response(content="", status_code=401)
 
-            if request.method != 'GET':
-                user=dao.get_user(auth_token=token)
-                if user is None or user.read_only is True:
-                    return Response(content="", status_code=403)
-    except:
-        return Response(content="", status_code=401)
+#             if request.method != 'GET':
+#                 user=dao.get_user(auth_token=token)
+#                 if user is None or user.read_only is True:
+#                     return Response(content="", status_code=403)
+#     except:
+#         return Response(content="", status_code=401)
 
-    return await call_next(request)
+#     return await call_next(request)
