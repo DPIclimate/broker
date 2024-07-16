@@ -1,4 +1,4 @@
-import json
+import json, os
 from typing import List
 import sys
 from typing import List
@@ -9,7 +9,7 @@ import base64
 from pdmodels.Models import PhysicalDevice, LogicalDevice, PhysicalToLogicalMapping, DeviceNote, Location
 
 
-end_point = 'http://restapi:5687'
+end_point = os.getenv('IOTA_API_URL', 'http://restapi:5687')
 
 def get_sources(token: str) -> List[str]:
     """
@@ -256,6 +256,10 @@ def create_logical_device(physical_device: PhysicalDevice, token: str) ->str:
         "location": physical_device.location,
     }
 
+    # This is to work around a problem that turned up after the change to PostGIS.
+    if logicalJson['location'] is not None and (logicalJson['location'].lat is None or logicalJson['location'].long is None):
+        logicalJson.pop('location')
+
     response = requests.post(f'{end_point}/broker/api/logical/devices/', json=logicalJson, headers=headers)
     response.raise_for_status()
 
@@ -361,8 +365,8 @@ def change_user_password(password: str, token: str) -> str:
         Params:
             password: str - User's new password
             token: str - User's authentication token
-        
-        reutrn:
+
+        return:
             token: str - User's new authentication token
     """
     headers = {"Authorization": f"Bearer {token}"}

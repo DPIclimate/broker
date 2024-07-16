@@ -66,6 +66,7 @@ ld_sub_parsers = ld_parser.add_subparsers(dest='cmd2')
 
 ## List logical devices
 ld_ls_parser = ld_sub_parsers.add_parser('ls', help='list logical devices')
+ld_ls_parser.add_argument('--properties', action='store_true', help='Include the properties field in the output', dest='include_props', required=False)
 ld_ls_parser.add_argument('--plain', action='store_true', help='Plain output, not JSON', dest='plain')
 
 ## Create logical devices
@@ -345,11 +346,19 @@ def main() -> None:
     elif args.cmd1 == 'ld':
         if args.cmd2 == 'ls':
             devs = dao.get_logical_devices()
+
+            if args.include_props:
+                tmp_list = list(map(lambda dev: dev.dict(), devs))
+            else:
+                tmp_list = list(map(lambda dev: dev.dict(exclude={'properties'}), devs))
+            print(pretty_print_json(tmp_list))
+
             tmp_list = list(map(lambda dev: dev.dict(exclude={'properties'}), devs))
             if not args.plain:
                 print(pretty_print_json(tmp_list))
             else:
                 plain_pd_list(devs)
+
         elif args.cmd2 == 'create':
             dev = LogicalDevice.parse_obj(dict_from_file_or_string())
             print(dao.create_logical_device(dev))

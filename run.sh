@@ -14,7 +14,7 @@ fi
 
 cd $BROKER_ROOT
 cd compose/$MODE
-./dc.sh stop
+./dc.sh down
 cd $BROKER_ROOT
 docker build -t broker/python-base -f images/restapi/Dockerfile .
 docker build -t broker/ttn_decoder -f images/ttn_decoder/Dockerfile .

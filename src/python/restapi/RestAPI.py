@@ -252,6 +252,7 @@ async def update_logical_device(device: LogicalDevice) -> LogicalDevice:
     except dao.DAODeviceNotFound as daonf:
         raise HTTPException(status_code=404, detail=daonf.msg)
     except dao.DAOException as err:
+        logging.exception(err)
         raise HTTPException(status_code=500, detail=err.msg)
 
 
@@ -290,6 +291,8 @@ async def insert_mapping(mapping: PhysicalToLogicalMapping) -> None:
         raise HTTPException(status_code=400, detail=err.msg)
     except dao.DAOException as err:
         raise HTTPException(status_code=500, detail=err.msg)
+    except ValueError as err:
+        raise HTTPException(status_code=400, detail=str(err))
 
 
 @router.get("/mappings/current/", tags=['device mapping'], response_model=List[PhysicalToLogicalMapping], dependencies=[Depends(token_auth_scheme)])
@@ -459,21 +462,24 @@ async def end_mapping_of_logical_uid(uid: int) -> None:
 MESSAGE RELATED
 --------------------------------------------------------------------------"""
 
-@router.get("/physical/messages/{uid}", tags=['messages'])
+@router.get("/messages", tags=['Messages'], dependencies=[Depends(token_auth_scheme)])
 async def get_physical_timeseries(
         request: Request,
-        uid: int,
+        p_uid: int | None = None,
+        l_uid: int | None = None,
         count: Annotated[int | None, Query(gt=0, le=65536)] = None,
         last: str = None,
         start: datetime.datetime = None,
         end: datetime.datetime = None,
-        only_timestamp: bool = False):
+        include_received_at: bool = False,
+        only_timestamp: bool = False) -> List[Dict]:
     """
     Get the physical_timeseries entries described by the physical device uid and the parameters.
 
     Args:
         request: The HTTP request object.
-        uid: The unique identifier of the physical device.
+        p_uid: The unique identifier of a physical device. Mutually exclusive with l_uid.
+        l_uid: The unique identifier of a logical device. Mutually exclusive with p_uid.
         count: The maximum number of entries to return.
         last: Return messages from the last nx interval where n is a number and x is 'h'ours, 'd'ays, 'w'eeks, 'm'onths, 'y'ears.
         start: The start date and time of the time range.
@@ -487,7 +493,6 @@ async def get_physical_timeseries(
         HTTPException: If an error occurs.
     """
     try:
-        #logging.info(f'start: {start.isoformat() if start is not None else start}, end: {end.isoformat() if end is not None else end}, count: {count}, only_timestamp: {only_timestamp}')
         if end is not None:
             if start is not None and start >= end:
                 raise HTTPException(status_code=422, detail={"detail": [{"loc": ["query", "start"], "msg": "ensure start value is less than end"}]})
@@ -503,8 +508,7 @@ async def get_physical_timeseries(
             except:
                 raise HTTPException(status_code=422, detail={"detail": [{"loc": ["query", "last"], "msg": "the first part of last must be an integer"}]})
 
-            unit = last[-1]
-
+            unit = str(last[-1]).lower()
             if unit == 'h':
                 diff = datetime.timedelta(hours=i)
             elif unit == 'd':
@@ -520,7 +524,12 @@ async def get_physical_timeseries(
 
             start = end - diff
 
-        msgs = dao.get_physical_timeseries_message(uid, start, end, count, only_timestamp)
+        msgs = None
+        if p_uid is not None:
+            msgs = dao.get_physical_timeseries_message(start, end, count, only_timestamp, include_received_at, p_uid=p_uid)
+        elif l_uid is not None:
+            msgs = dao.get_physical_timeseries_message(start, end, count, only_timestamp, include_received_at, l_uid=l_uid)
+
         if msgs is None:
             raise HTTPException(status_code=404, detail="Failed to retrieve messages")
 
@@ -529,6 +538,7 @@ async def get_physical_timeseries(
         return msgs
     except dao.DAOException as err:
         raise HTTPException(status_code=500, detail=err.msg)
+
 
 """--------------------------------------------------------------------------
 USER AUTHENTICATION

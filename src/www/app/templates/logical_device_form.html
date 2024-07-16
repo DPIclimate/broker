@@ -53,8 +53,9 @@
 		<div class="column">
 			<div class="form-section">
 				<dialog id="mapping-dialog" class="dialog-box">
+					<button onclick="closeDialog()">&times</button> <!--//Add closed button -->
 					<h3 id="mapping-dialog-heading">Select Physical Device to Map</h3>
-					<form id="mapping-form" action="{{ url_for('UpdateMappings') }}" method="GET" target="hidden-frame">
+					<form id="mapping-form" action="{{ url_for('UpdateMappings') }}" method="PATCH" target="hidden-frame" enctype="application/x-www-form-urlencoded">
 						<table class="table table-striped data-table">
 							<thead>
 								<th>Select</th>
@@ -76,7 +77,7 @@
 						</tbody>
 						</table>
 						<input type="text" id="mapping-id" name="logicalDevice_mapping" class="hidden" value="{{ ld_data.uid }}" readonly>
-						<input type="button" class="form-btn" value="Update Mapping" onClick="handleSubmit('mapping-form', 'Are you sure you want to map these?')">
+						<input type="submit" class="form-btn" value="Update Mapping" onClick="handleSubmit('mapping-form', 'Are you sure you want to map these?', event)">
 					</form>
 				</dialog>
         	<div class="mapping-header">

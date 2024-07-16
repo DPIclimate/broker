@@ -2,8 +2,12 @@ version: '3.1'
 
 services:
   db:
-    image: postgres:14.2
-    restart: "no"
+    image: postgis/postgis:14-3.4
+    logging:
+      driver: local
+      options:
+        max-file: "3"
+    restart: unless-stopped
     env_file:
       - .env
     volumes:
@@ -18,7 +22,11 @@ services:
   mq:
     hostname: "mq"
     image: rabbitmq:3.9-management
-    restart: "no"
+    logging:
+      driver: local
+      options:
+        max-file: "3"
+    restart: unless-stopped
     env_file:
       - .env
     volumes:
@@ -30,7 +38,11 @@ services:
 
   restapi:
     image: broker/python-base
-    restart: "no"
+    logging:
+      driver: local
+      options:
+        max-file: "3"
+    restart: unless-stopped
     env_file:
       - .env
     depends_on:
@@ -38,20 +50,21 @@ services:
     volumes:
       - ../src/python:/home/broker/python
     working_dir: "/home/broker/python/restapi"
-    entrypoint: [ "/home/broker/.local/bin/uvicorn", "--host", "0.0.0.0", "--port", "5687", "RestAPI:app", "--reload" ]
-    healthcheck:
-      test: curl --fail -I http://localhost:5687/openapi.json || exit 1
-      interval: 1m
-      start_period: 20s
+    entrypoint: [ "/home/broker/.local/bin/uvicorn", "--proxy-headers", "--host", "0.0.0.0", "--port", "5687", "RestAPI:app" ]
 
   website:
     image: broker/mgmt-app
+    logging:
+      driver: local
+      options:
+        max-file: "3"
+    restart: unless-stopped
     env_file:
       - .env
     environment:
       - PYTHONPATH=/app:/iota
     depends_on:
-      restapi:
+      db:
         condition: "service_healthy"
     volumes:
       - ../src/www:/app
@@ -59,7 +72,11 @@ services:
 
   ttn_webhook:
     image: broker/python-base
-    restart: "no"
+    logging:
+      driver: local
+      options:
+        max-file: "3"
+    restart: unless-stopped
     env_file:
       - .env
     profiles:
@@ -74,7 +91,11 @@ services:
 
   ttn_processor:
     image: broker/python-base
-    restart: "no"
+    logging:
+      driver: local
+      options:
+        max-file: "3"
+    restart: unless-stopped
     env_file:
       - .env
     profiles:
@@ -93,7 +114,11 @@ services:
 
   ttn_decoder:
     image: broker/ttn_decoder
-    restart: "no"
+    logging:
+      driver: local
+      options:
+        max-file: "3"
+    restart: unless-stopped
     env_file:
       - .env
     profiles:
@@ -106,7 +131,11 @@ services:
 
   ydoc:
     image: broker/python-base
-    restart: "no"
+    logging:
+      driver: local
+      options:
+        max-file: "3"
+    restart: unless-stopped
     env_file:
       - .env
     profiles:
@@ -123,11 +152,14 @@ services:
 
   wombat:
     image: broker/python-base
-    restart: "no"
+    logging:
+      driver: local
+      options:
+        max-file: "3"
+    restart: unless-stopped
     env_file:
       - .env
-    profiles:
-      - wombat
+    profiles: ["wombat", "frred"]
     depends_on:
       db:
         condition: "service_healthy"
@@ -140,7 +172,11 @@ services:
 
   lm:
     image: broker/python-base
-    restart: "no"
+    logging:
+      driver: local
+      options:
+        max-file: "3"
+    restart: unless-stopped
     env_file:
       - .env
     depends_on:
@@ -155,6 +191,10 @@ services:
 
   delivery:
     image: broker/python-base
+    logging:
+      driver: local
+      options:
+        max-file: "3"
     restart: unless-stopped
     env_file:
       - .env
@@ -172,6 +212,10 @@ services:
 
   pollers:
     image: broker/python-base
+    logging:
+      driver: local
+      options:
+        max-file: "3"
     restart: unless-stopped
     env_file:
       - .env
@@ -189,6 +233,10 @@ services:
 
   frred:
     image: broker/python-base
+    logging:
+      driver: local
+      options:
+        max-file: "3"
     restart: unless-stopped
     env_file:
       - .env
@@ -201,10 +249,26 @@ services:
         condition: "service_healthy"
     volumes:
       - ../src/python:/home/broker/python
-      - ${DATABOLT_SHARED_DIR}/raw_data:/raw_data
+      - ${DATABOLT_SHARED_DIR}/nectar_raw_data:/raw_data
     working_dir: "/home/broker/python"
     entrypoint: [ "python", "-m", "delivery.FRRED" ]
 
+
+  axistech:
+    image: broker/python-base
+    logging:
+      driver: local
+      options:
+        max-file: "3"
+    restart: unless-stopped
+    env_file:
+      - .env
+    profiles:
+      - frred
+    depends_on:
+      - db
+    entrypoint: [ "python", "-m", "pollers.axistech" ]
+    
   timescaledb:
     build: ../timescale  # Point to the directory containing the custom Dockerfile
     hostname: "tsdb"
@@ -239,5 +303,3 @@ services:
       - ../src/python:/home/broker/python
     working_dir: "/home/broker/python"
     entrypoint: [ "python", "-m", "timescale.TS_LTSReader" ]
-
-

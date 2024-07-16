@@ -147,7 +147,7 @@ def on_message(channel, method, properties, body):
             _channel.basic_ack(delivery_tag)
             return
 
-        if BrokerConstants.WOMBAT != pd.source_name:
+        if pd.source_name not in [BrokerConstants.WOMBAT, BrokerConstants.AXISTECH]:
             _channel.basic_ack(delivery_tag)
             return
 
