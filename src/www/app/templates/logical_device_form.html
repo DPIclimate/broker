@@ -13,7 +13,34 @@
 		right: 16px;
 		width: 100%;
 		text-align: right;
-	  }
+	}
+
+	#loading-spinner {
+		position: fixed;
+		top: 0;
+		left: 0;
+		width: 100%;
+		height: 100%;
+		background-color: rgba(0, 0, 0, 0.5); /* semi-transparent background */
+		z-index: 9999; /* high z-index to ensure it's on top */
+		display: flex;
+		justify-content: center;
+		align-items: center;
+	}
+
+	.spinner {
+		border: 4px solid #f3f3f3;
+		border-top: 4px solid #3498db;
+		border-radius: 50%;
+		width: 40px;
+		height: 40px;
+		animation: spin 1s linear infinite;
+	}
+	
+	@keyframes spin {
+		0% { transform: rotate(0deg); }
+		100% { transform: rotate(360deg); }
+	}
 </style>
 
 <script type="text/javascript">
@@ -21,31 +48,26 @@ let start_ts_inst = null;
 let end_ts_inst = null;
 let dialog = null;
 
-$(document).ready(function () {
-	dialog = document.getElementById('export-data');
-	// A submit handler would avoid this getting called when the dialog is dismissed using
-	// the escape key, but it does not get the correct value for dialog.returnValue.
-	//
-	// The close handler gets called all the time but at least dialog.returnValue has a
-	// valid value.
-	dialog.addEventListener("close", function(event) {
-		console.log($("#start_ts").val());
-		console.log($("#end_ts").val());
-		console.log(dialog.returnValue);
+async function doFetch(event) {
+	console.log($("#start_ts").val());
+	console.log($("#end_ts").val());
+	console.log(dialog.returnValue);
 
-		if (start_ts_inst) {
-			start_ts_inst.destroy();
-		}
-		if (end_ts_inst) {
-			end_ts_inst.destroy();
-		}
+	if (start_ts_inst) {
+		start_ts_inst.destroy();
+	}
+	if (end_ts_inst) {
+		end_ts_inst.destroy();
+	}
 
-		if ('Export'.localeCompare(dialog.returnValue) === 0) {
+	if ('Export'.localeCompare(dialog.returnValue) === 0) {
+		try {
+			showSpinner();
 			console.log('Exporting data');
 			const formElement = document.getElementById('single-ld-export');
 			const formData = new FormData(formElement);
 			console.log(formData);
-			fetch(formElement.action, {
+			x = fetch(formElement.action, {
 				method: 'POST',
 				body: formData
 			})
@@ -55,38 +77,54 @@ $(document).ready(function () {
 				}
 				const blob = await response.blob();
 				const filename = response.headers.get('Content-Disposition')?.split('filename=')[1]?.replace(/['"]/g, '') || 'download.csv';
-			  
+			
 				// Check if the showSaveFilePicker API is available
 				if ('showSaveFilePicker' in window) {
-				  try {
+				try {
 					const handle = await window.showSaveFilePicker({
-					  suggestedName: filename,
-					  types: [{
+					suggestedName: filename,
+					types: [{
 						description: 'CSV File',
 						accept: {'text/csv': ['.csv']},
-					  }],
+					}],
 					});
 					const writable = await handle.createWritable();
 					await writable.write(blob);
 					await writable.close();
-				  } catch (err) {
+				} catch (err) {
 					if (err.name !== 'AbortError') {
-					  console.error('Failed to save file:', err);
-					  // Fallback to the older method
-					  saveBlobAsFile(blob, filename);
+					console.error('Failed to save file:', err);
+					// Fallback to the older method
+					saveBlobAsFile(blob, filename);
 					}
-				  }
+				}
 				} else {
-				  // Fallback for browsers that don't support showSaveFilePicker
-				  saveBlobAsFile(blob, filename);
+				// Fallback for browsers that don't support showSaveFilePicker
+				saveBlobAsFile(blob, filename);
 				}
 			})
 			.catch(error => {
 				console.error('Error:', error);
+				// Does this show up when the spinnder is active?
 				alert("Error occured on submission", error);
 			});
+
+			// Wait for the fetch to finish so the spinner shows up.
+			await x;
+		} finally {
+			hideSpinner();
 		}
-	});
+	}
+}
+
+$(document).ready(function () {
+	dialog = document.getElementById('export-data');
+	// A submit handler would avoid this getting called when the dialog is dismissed using
+	// the escape key, but it does not get the correct value for dialog.returnValue.
+	//
+	// The close handler gets called all the time but at least dialog.returnValue has a
+	// valid value.
+	dialog.addEventListener("close", doFetch);
 });
 
 function exportData(l_uid, name) {
@@ -121,8 +159,23 @@ function saveBlobAsFile(blob, filename) {
 	a.click();
 	window.URL.revokeObjectURL(url);
 	document.body.removeChild(a);
-  }
+}
+
+function showSpinner() {
+	console.log('showing spinner');
+	document.getElementById('loading-spinner').style.display = 'flex';
+}
+  
+function hideSpinner() {
+	console.log('hiding spinner');
+	document.getElementById('loading-spinner').style.display = 'none';
+}
 </script>
+
+<!-- Are the nested divs necessary or is the inner one sufficient? -->
+<div id="loading-spinner" style="display: none;">
+	<div class="spinner"></div>
+</div>
 
 <dialog id="export-data">
 	<header>
@@ -157,8 +210,8 @@ function saveBlobAsFile(blob, filename) {
 			<li><span class="btn" onclick="handleMapping('logical device')">Update Mapping</span></li>
 			<li><span class="btn" onclick="handleEndMapping('{{ ld_data.uid }}', 'LD')">End Mapping</span></li>
 			{% if deviceMappings | length > 0 %}
-                <li><span class="btn" onclick="handleToggleMapping('{{ deviceMappings[0].pd.uid }}','{{ deviceMappings[0].is_active }}', 'PD')">{{ "Pause Mapping" if deviceMappings[0].is_active == True else "Resume Mapping" }}</span></li>
-            {% endif %}
+				<li><span class="btn" onclick="handleToggleMapping('{{ deviceMappings[0].pd.uid }}','{{ deviceMappings[0].is_active }}', 'PD')">{{ "Pause Mapping" if deviceMappings[0].is_active == True else "Resume Mapping" }}</span></li>
+			{% endif %}
 		</ul>
 	</div>
 </div>
