@@ -642,7 +642,6 @@ def DownloadData():
             logging.info(f'adjusted end = {end}')
 
         msgs = get_messages(token, l_uid, start, end)
-        logging.info(msgs)
         if len(msgs) < 1:
             return 'Success', 200
 
