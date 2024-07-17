@@ -627,21 +627,35 @@ def DownloadData():
         if start_ts is not None and len(start_ts) > 7:
             start = datetime.fromisoformat(start_ts).replace(tzinfo=ZoneInfo(user_timezone))
         if end_ts is not None and len(end_ts) > 7:
-            start = datetime.fromisoformat(start_ts).replace(tzinfo=ZoneInfo(user_timezone))
+            end = datetime.fromisoformat(end_ts).replace(tzinfo=ZoneInfo(user_timezone))
+
+        if start is not None:
+            logging.info(f'start = {start}')
+
+        if end is not None:
+            logging.info(f'end = {end}')
+
+            # The web page accepts an end-date with no time attached. Assuming the user wants the messages from
+            # the end day, and the DB query does a < on the end date, add 1 day to the end date to take it to
+            # midnight of the selected end date.
+            end = end + timedelta(days=1)
+            logging.info(f'adjusted end = {end}')
 
         msgs = get_messages(token, l_uid, start, end)
-        logging.info(msgs)
         if len(msgs) < 1:
             return 'Success', 200
 
         dataset = []
         for msg in msgs:
-            item = {'l_uid': l_uid, 'ts': msg['timestamp'], 'received_at': msg['received_at']}
+            item = {'l_uid': l_uid, 'ts': msg['timestamp'], 'received_at': msg['received_at_utc']}
             for obj in msg['timeseries']:
                 item[obj['name']] = obj['value']
             dataset.append(item)
 
         df = pd.DataFrame(dataset)
+        df['ts'] = pd.to_datetime(df['ts'])
+        df['received_at'] = pd.to_datetime(df['received_at'])
+        df['ts_local'] = df['ts'].dt.tz_convert(user_timezone)
         df.set_index(['l_uid', 'ts'], inplace=True)
         df.sort_index(level=0, sort_remaining=True, inplace=True, ascending=True)
 

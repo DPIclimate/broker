@@ -313,17 +313,17 @@ async def toggle_device_mapping(is_active:bool, puid: int = None, luid:int = Non
     """
     if puid != None and luid != None:
         raise HTTPException(status_code=400, detail="Both physical and logical uid were provided. Only give one")
-    
+
     if puid == None and luid == None:
         raise HTTPException(status_code=400, detail="A uid must be provided")
-    
+
     current_mapping = dao.get_current_device_mapping(pd=puid, ld=luid)
     if current_mapping == None:
         raise HTTPException(status_code=404, detail="Device with uid provided could not be found")
 
     try:
         dao.toggle_device_mapping(is_active=is_active, pd=puid, ld=luid);
-    
+
     except dao.DAOException as err:
         raise HTTPException(status_code=500, detail=err.msg)
 
@@ -535,6 +535,7 @@ async def get_physical_timeseries(
         #logging.info(f'read {len(msgs)} messages')
         return msgs
     except dao.DAOException as err:
+        logging.exception(err)
         raise HTTPException(status_code=500, detail=err.msg)
 
 
@@ -577,7 +578,7 @@ app.include_router(router)
 
 @app.middleware("http")
 async def check_auth_header(request: Request, call_next):
-    
+
     try:
         if not request.url.path in ['/docs', '/openapi.json', '/broker/api/token']:
             if not 'Authorization' in request.headers:
