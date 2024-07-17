@@ -355,7 +355,7 @@ def get_physical_devices(query_args=None) -> List[PhysicalDevice]:
                     devs.append(d)
 
                 rows = cursor.fetchmany()
-        
+
         return devs
     except Exception as err:
         raise err if isinstance(err, DAOException) else DAOException('get_physical_devices failed.', err)
@@ -532,9 +532,9 @@ def _get_logical_device(conn, uid: int) -> LogicalDevice:
     with conn.cursor() as cursor:
         """
         See: https://dba.stackexchange.com/questions/27732/set-names-to-attributes-when-creating-json-with-row-to-json
-        
+
         for an explanation of how to name the fields in a row_to_json call.
-        
+
         Example query tested in psql:
         select uid, name, (select row_to_json(_) from (select ST_Y(location) as lat, ST_X(location) as long) as _) as location from logical_devices;
         """
@@ -778,14 +778,14 @@ def delete_mapping(mapping: PhysicalToLogicalMapping) -> None:
         raise err if isinstance(err, DAOException) else DAOException('delete_mapping failed.', err)
     finally:
         if conn is not None:
-            free_conn(conn)       
+            free_conn(conn)
 
 
 def toggle_device_mapping(is_active: bool, pd: Optional[Union[PhysicalDevice, int]] = None, ld: Optional[Union[LogicalDevice, int]] = None) -> None:
     """
         Change the is_active column in the database
     """
-    
+
     conn = None
     try:
         with _get_connection() as conn:
@@ -805,7 +805,7 @@ def _toggle_device_mapping(conn, is_active, pd: Optional[Union[PhysicalDevice, i
 
     if pd is not None and ld is not None:
         raise ValueError('Both pd and ld were provided, only give one.')
-    
+
     p_uid = None
     if pd is not None:
         p_uid = pd.uid if isinstance(pd, PhysicalDevice) else pd
@@ -927,7 +927,7 @@ def get_physical_device_mappings(pd: Union[PhysicalDevice, int]) -> List[Physica
         with _get_connection() as conn, conn.cursor() as cursor:
             p_uid = pd.uid if isinstance(pd, PhysicalDevice) else pd
             cursor.execute('select physical_uid, logical_uid, start_time, end_time, is_active from physical_logical_map where physical_uid = %s order by start_time desc', (p_uid, ))
-            
+
             for p_uid, l_uid, start_time, end_time, is_active in cursor:
                 pd = _get_physical_device(conn, p_uid)
                 ld = _get_logical_device(conn, l_uid)
@@ -1003,7 +1003,7 @@ def get_physical_timeseries_message(start: datetime | None = None, end: datetime
     if end is None:
         end = datetime.now(timezone.utc)
     if count is None or count > 65536:
-        count = 65536
+        count = 65536 * 2
     if count < 1:
         count = 1
 
@@ -1029,9 +1029,22 @@ def get_physical_timeseries_message(start: datetime | None = None, end: datetime
     if not isinstance(end, datetime):
         raise TypeError
 
-    column_names = ['ts']
+    """
+    select date_trunc('second', ts at time zone 'UTC') as ts_utc,
+           date_trunc('second', received_at at time zone 'UTC') as recvd_utc,
+           json_msg
+    from physical_timeseries
+    where logical_uid = 413
+    and ts
+        > '1970-01-01T00:00:00Z'
+    and ts <= NOW()
+    order by ts desc
+    limit 65535;
+    """
+
+    column_names = ["date_trunc('second', ts at time zone 'UTC') as ts_utc"]
     if include_received_at:
-        column_names.append('received_at')
+        column_names.append("date_trunc('second', received_at at time zone 'UTC') as received_at_utc")
 
     if not only_timestamp:
         column_names.append('json_msg')
@@ -1043,7 +1056,7 @@ def get_physical_timeseries_message(start: datetime | None = None, end: datetime
         # message.
         with _get_connection() as conn, conn.cursor() as cursor:
             qry = f"""
-                select ts {column_names} from physical_timeseries
+                select {column_names} from physical_timeseries
                  where {uid_col_name} = %s
                  and ts > %s
                  and ts <= %s
@@ -1053,7 +1066,7 @@ def get_physical_timeseries_message(start: datetime | None = None, end: datetime
 
             args = (uid, start, end, count)
             cursor.execute(qry, args)
-            return [_msg_tuple_to_obj(*row) for row in cursor.fetchall()]
+            return [_msg_tuple_to_obj(cursor.description, row) for row in cursor.fetchall()]
     except Exception as err:
         raise DAOException('get_physical_timeseries_message failed.', err)
     finally:
@@ -1061,30 +1074,15 @@ def get_physical_timeseries_message(start: datetime | None = None, end: datetime
             free_conn(conn)
 
 
-def _msg_tuple_to_obj(ts: datetime, arg2: datetime | dict | None = None, arg3: datetime | dict | None = None) -> dict:
-    if arg2 is None and arg3 is None:
-        return {BrokerConstants.TIMESTAMP_KEY: ts.isoformat()}
-
-    if arg2 is not None and arg3 is None:
-        if isinstance(arg2, datetime):
-            return {BrokerConstants.TIMESTAMP_KEY: ts, 'received_at': arg2}
-        else:
-            return arg2
-
+def _msg_tuple_to_obj(cursor_description, values) -> dict:
     msg_dict = {}
-    if arg3 is not None:
-        if isinstance(arg3, datetime):
-            msg_dict: dict = arg2
-            if isinstance(arg3, datetime):
-                msg_dict['received_at'] = arg3.isoformat()
-            else:
-                msg_dict['received_at'] = arg3
-        else:
-            msg_dict: dict = arg3
-            if isinstance(arg2, datetime):
-                msg_dict['received_at'] = arg2.isoformat()
-            else:
-                msg_dict['received_at'] = arg2
+
+    for k, v in zip(cursor_description, values):
+        if isinstance(v, datetime):
+            # This function expects naive datetime instances to represent the time in UTC.
+            msg_dict[k.name] = v.astimezone(timezone.utc).isoformat()
+        elif isinstance(v, dict):
+            msg_dict.update(v)
 
     return msg_dict
 
@@ -1112,7 +1110,7 @@ def user_add(uname: str, passwd: str, disabled: bool) -> None:
     #Generate salted password
     salt=os.urandom(64).hex()
     pass_hash=hashlib.scrypt(password=passwd.encode(), salt=salt.encode(), n=2**14, r=8, p=1, maxmem=0, dklen=64).hex()
-    
+
     #Auth token to be used on other endpoints
     auth_token=os.urandom(64).hex()
     conn = None
@@ -1134,7 +1132,7 @@ def user_rm(uname: str) -> None:
     try:
         with _get_connection() as conn, conn.cursor() as cursor:
             cursor.execute("delete from users where username=%s", (uname,))
-    
+
     except Exception as err:
         raise err if isinstance(err, DAOException) else DAOException('user_ls failed.', err)
     finally:
@@ -1202,14 +1200,14 @@ def user_get_token(username, password) -> str | None:
             result = cursor.fetchone()
             if result is None:
                 return None
-            
+
             db_salt, db_password, auth_token=result
             input_pw_hash=hashlib.scrypt(password=password.encode(), salt=db_salt.encode(), n=2**14, r=8, p=1, maxmem=0, dklen=64).hex()
 
             if input_pw_hash != db_password:
                 #Incorrect password supplied
                 return None
-            
+
             return auth_token
 
     except Exception as err:
@@ -1239,7 +1237,7 @@ def token_is_valid(user_token) -> bool:
 
 
 def token_refresh(uname) -> None:
-    
+
     # Auth token to be used on other endpoints.
     auth_token = os.urandom(64).hex()
 
@@ -1277,10 +1275,10 @@ def user_change_password_and_token(new_passwd: str, prev_token: str) -> str:
     #Generate salted password
     salt = os.urandom(64).hex()
     pass_hash = hashlib.scrypt(password=new_passwd.encode(), salt=salt.encode(), n=2**14, r=8, p=1, maxmem=0, dklen=64).hex()
-    
+
     #Auth token to be used on other endpoints
     auth_token = os.urandom(64).hex()
-    
+
     try:
         with _get_connection() as conn, conn.cursor() as cursor:
             cursor.execute("update users set salt=%s, password=%s, auth_token=%s where auth_token=%s", (salt, pass_hash, auth_token, prev_token))
@@ -1298,11 +1296,11 @@ def user_change_password_and_token(new_passwd: str, prev_token: str) -> str:
 
 
 def token_disable(uname) -> None:
-    
+
     try:
         with _get_connection() as conn, conn.cursor() as cursor:
             cursor.execute("update users set valid='F' where username=%s", (uname,))
-            
+
     except Exception as err:
         raise err if isinstance(err, DAOException) else DAOException('disable_token failed.', err)
     finally:
@@ -1314,10 +1312,10 @@ def token_enable(uname)-> None:
     try:
         with _get_connection() as conn, conn.cursor() as cursor:
             cursor.execute("update users set valid='T' where username=%s", (uname,))
-            
+
     except Exception as err:
         raise err if isinstance(err, DAOException) else DAOException('disable_token failed.', err)
     finally:
         if conn is not None:
             free_conn(conn)
-            
+
