@@ -127,8 +127,7 @@ $(document).ready(function () {
 	dialog.addEventListener("close", doFetch);
 });
 
-function exportData(l_uid, name) {
-	console.log("exportData " + l_uid + " " + name);
+function exportData(l_uid) {
 	dialog.returnValue = "Cancel";
 	dialog.showModal();
 
@@ -205,7 +204,7 @@ function hideSpinner() {
 <div class="command-bar">
 	<div class="form-buttons">
 		<ul>
-			<li><span class="btn" onclick="exportData('{{ ld_data.uid }}', '{{ ld_data.name}}')">Export Data</span></li>
+			<li><span class="btn" onclick="exportData('{{ ld_data.uid }}')">Export Data</span></li>
 			<li><span class="btn" onclick="handleSubmit('device-form', 'Are you sure you want to Save?')">Save</span></li>
 			<li><span class="btn" onclick="handleMapping('logical device')">Update Mapping</span></li>
 			<li><span class="btn" onclick="handleEndMapping('{{ ld_data.uid }}', 'LD')">End Mapping</span></li>
