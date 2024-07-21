@@ -197,10 +197,12 @@ def get_messages(token: str, l_uid: int, start_ts: Optional[datetime] = None, en
     if start_ts is not None:
         params['start'] = start_ts
     if end_ts is not None:
-        params['end'] = start_ts
+        params['end'] = end_ts
 
     response = requests.get(f'{end_point}/broker/api/messages', headers=headers, params=params)
-    logging.info(response)
+    if response.status_code != 200:
+        logging.error(response.json())
+
     response.raise_for_status()
     return response.json()
 

@@ -12,7 +12,34 @@
 		right: 16px;
 		width: 100%;
 		text-align: right;
-	  }
+	}
+
+	#loading-spinner {
+		position: fixed;
+		top: 0;
+		left: 0;
+		width: 100%;
+		height: 100%;
+		background-color: rgba(0, 0, 0, 0.5); /* semi-transparent background */
+		z-index: 9999; /* high z-index to ensure it's on top */
+		display: flex;
+		justify-content: center;
+		align-items: center;
+	}
+
+	.spinner {
+		border: 4px solid #f3f3f3;
+		border-top: 4px solid #3498db;
+		border-radius: 50%;
+		width: 40px;
+		height: 40px;
+		animation: spin 1s linear infinite;
+	}
+	
+	@keyframes spin {
+		0% { transform: rotate(0deg); }
+		100% { transform: rotate(360deg); }
+	}
 </style>
 
 <script type="text/javascript">
@@ -33,6 +60,11 @@ async function doFetch(event) {
 			body: formData
 		})
 		.then(async response => {
+			if (response.status == 204) {
+				alert('No messages found in selected date range.');
+				return;
+			}
+			
 			if (!response.ok) {
 				throw new Error('Network response was not ok');
 			}
@@ -81,8 +113,7 @@ $(document).ready(function () {
 	dialog.addEventListener("close", doFetch);
 });
 
-function exportData(l_uid, name) {
-	console.log("exportData " + l_uid + " " + name);
+function exportData(l_uid) {
 	dialog.returnValue = "Cancel";
 	dialog.showModal();
 }
@@ -97,8 +128,23 @@ function saveBlobAsFile(blob, filename) {
 	a.click();
 	window.URL.revokeObjectURL(url);
 	document.body.removeChild(a);
-  }
+}
+
+function showSpinner() {
+	console.log('showing spinner');
+	document.getElementById('loading-spinner').style.display = 'flex';
+}
+  
+function hideSpinner() {
+	console.log('hiding spinner');
+	document.getElementById('loading-spinner').style.display = 'none';
+}
 </script>
+
+<!-- Are the nested divs necessary or is the inner one sufficient? -->
+<div id="loading-spinner" style="display: none;">
+	<div class="spinner"></div>
+</div>
 
 <dialog id="export-data">
 	<header>
@@ -129,13 +175,13 @@ function saveBlobAsFile(blob, filename) {
 <div class="command-bar">
 	<div class="form-buttons">
 		<ul>
-			<li><span class="btn" onclick="exportData('{{ ld_data.uid }}', '{{ ld_data.name}}')">Export Data</span></li>
+			<li><span class="btn" onclick="exportData('{{ ld_data.uid }}')">Export Data</span></li>
 			<li><span class="btn" onclick="handleSubmit('device-form', 'Are you sure you want to Save?')">Save</span></li>
 			<li><span class="btn" onclick="handleMapping('logical device')">Update Mapping</span></li>
 			<li><span class="btn" onclick="handleEndMapping('{{ ld_data.uid }}', 'LD')">End Mapping</span></li>
 			{% if deviceMappings | length > 0 %}
-                <li><span class="btn" onclick="handleToggleMapping('{{ deviceMappings[0].pd.uid }}','{{ deviceMappings[0].is_active }}', 'PD')">{{ "Pause Mapping" if deviceMappings[0].is_active == True else "Resume Mapping" }}</span></li>
-            {% endif %}
+				<li><span class="btn" onclick="handleToggleMapping('{{ deviceMappings[0].pd.uid }}','{{ deviceMappings[0].is_active }}', 'PD')">{{ "Pause Mapping" if deviceMappings[0].is_active == True else "Resume Mapping" }}</span></li>
+			{% endif %}
 		</ul>
 	</div>
 </div>
