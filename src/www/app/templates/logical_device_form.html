@@ -3,8 +3,7 @@
 
 <style>
 	#export-data {
-		min-height: 500px; /* Adjust this value as needed */
-		width: 800px; /* Adjust this value as needed */
+		min-height: 250px;
 	}
 
 	.bottom-right-div {
@@ -44,21 +43,12 @@
 </style>
 
 <script type="text/javascript">
-let start_ts_inst = null;
-let end_ts_inst = null;
 let dialog = null;
 
 async function doFetch(event) {
 	console.log($("#start_ts").val());
 	console.log($("#end_ts").val());
 	console.log(dialog.returnValue);
-
-	if (start_ts_inst) {
-		start_ts_inst.destroy();
-	}
-	if (end_ts_inst) {
-		end_ts_inst.destroy();
-	}
 
 	if ('Export'.localeCompare(dialog.returnValue) === 0) {
 		try {
@@ -131,22 +121,6 @@ function exportData(l_uid, name) {
 	console.log("exportData " + l_uid + " " + name);
 	dialog.returnValue = "Cancel";
 	dialog.showModal();
-
-	start_ts_inst = $("#start_ts").flatpickr({
-		static: true,
-		appendTo: document.getElementById('start_ts'),
-		onChange: function(selectedDates, dateStr) {
-			$("#start_ts").val(dateStr);
-		}
-	});
-
-	end_ts_inst = $("#end_ts").flatpickr({
-		static: true,
-		appendTo: document.getElementById('end_ts'),
-		onChange: function(selectedDates, dateStr) {
-			$("#end_ts").val(dateStr);
-		}
-	});
 }
 
 function saveBlobAsFile(blob, filename) {
@@ -182,14 +156,15 @@ function hideSpinner() {
 		<h3 style="padding: 8px">Export data</h3>
 	</header>
 	<form id="single-ld-export" action="{{ url_for('DownloadData') }}" method="dialog">
+		<div><p style="margin-top: 32px">Data will be exported from the beginning of 'From' until the end of 'To'.</p></div>
 		<div>
 			<table>
 				<tr>
 					<td>From</td><td>To</td>
 				</tr>
 				<tr>
-				<td><input type="text" id="start_ts" name="start_ts" /></td>
-				<td><input type="text" id="end_ts" name="end_ts" /></td>
+				<td><input type="date" id="start_ts" name="start_ts" /></td>
+				<td><input type="date" id="end_ts" name="end_ts" /></td>
 				</tr>
 			</table>
 		</div>
