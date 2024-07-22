@@ -643,7 +643,7 @@ def DownloadData():
 
         msgs = get_messages(token, l_uid, start, end)
         if len(msgs) < 1:
-            return 'Success', 200
+            return 'No messages.', 204
 
         dataset = []
         for msg in msgs:
@@ -663,7 +663,9 @@ def DownloadData():
         df.to_csv(buffer, encoding='UTF-8')
         buffer.seek(0)
 
-        return send_file(buffer, as_attachment=True, download_name=f'{logical_dev.name}.csv')
+        sanitised_dev_name = re.sub(r'[^a-zA-Z0-9_-]', '', logical_dev.name)
+
+        return send_file(buffer, as_attachment=True, download_name=f'{sanitised_dev_name}.csv')
 
 
     except requests.exceptions.HTTPError as e:
