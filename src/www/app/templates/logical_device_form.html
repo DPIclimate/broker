@@ -51,55 +51,64 @@ async function doFetch(event) {
 	console.log(dialog.returnValue);
 
 	if ('Export'.localeCompare(dialog.returnValue) === 0) {
-		console.log('Exporting data');
-		const formElement = document.getElementById('single-ld-export');
-		const formData = new FormData(formElement);
-		console.log(formData);
-		fetch(formElement.action, {
-			method: 'POST',
-			body: formData
-		})
-		.then(async response => {
-			if (response.status == 204) {
-				alert('No messages found in selected date range.');
-				return;
-			}
-			
-			if (!response.ok) {
-				throw new Error('Network response was not ok');
-			}
-			const blob = await response.blob();
-			const filename = response.headers.get('Content-Disposition')?.split('filename=')[1]?.replace(/['"]/g, '') || 'download.csv';
-			
-			// Check if the showSaveFilePicker API is available
-			if ('showSaveFilePicker' in window) {
-				try {
-				const handle = await window.showSaveFilePicker({
-					suggestedName: filename,
-					types: [{
-					description: 'CSV File',
-					accept: {'text/csv': ['.csv']},
-					}],
-				});
-				const writable = await handle.createWritable();
-				await writable.write(blob);
-				await writable.close();
-				} catch (err) {
-				if (err.name !== 'AbortError') {
-					console.error('Failed to save file:', err);
-					// Fallback to the older method
+		try {
+			showSpinner();
+
+			console.log('Exporting data');
+			const formElement = document.getElementById('single-ld-export');
+			const formData = new FormData(formElement);
+			console.log(formData);
+			x = fetch(formElement.action, {
+				method: 'POST',
+				body: formData
+			})
+			.then(async response => {
+				if (response.status == 204) {
+					alert('No messages found in selected date range.');
+					return;
+				}
+				
+				if (!response.ok) {
+					throw new Error('Network response was not ok');
+				}
+				const blob = await response.blob();
+				const filename = response.headers.get('Content-Disposition')?.split('filename=')[1]?.replace(/['"]/g, '') || 'download.csv';
+				
+				// Check if the showSaveFilePicker API is available
+				if ('showSaveFilePicker' in window) {
+					try {
+					const handle = await window.showSaveFilePicker({
+						suggestedName: filename,
+						types: [{
+						description: 'CSV File',
+						accept: {'text/csv': ['.csv']},
+						}],
+					});
+					const writable = await handle.createWritable();
+					await writable.write(blob);
+					await writable.close();
+					} catch (err) {
+					if (err.name !== 'AbortError') {
+						console.error('Failed to save file:', err);
+						// Fallback to the older method
+						saveBlobAsFile(blob, filename);
+					}
+					}
+				} else {
+					// Fallback for browsers that don't support showSaveFilePicker
 					saveBlobAsFile(blob, filename);
 				}
-				}
-			} else {
-				// Fallback for browsers that don't support showSaveFilePicker
-				saveBlobAsFile(blob, filename);
-			}
-		})
-		.catch(error => {
-			console.error('Error:', error);
-			alert("Error occured on submission", error);
-		});
+			})
+			.catch(error => {
+				console.error('Error:', error);
+				alert("Error occured on submission", error);
+			});
+
+			// Wait for the fetch to finish so the spinner shows up.
+			await x;
+		} finally {
+			hideSpinner();
+		}
 	}
 }
 
