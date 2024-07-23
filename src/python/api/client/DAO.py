@@ -1363,7 +1363,8 @@ def get_delivery_msg_count(name: str) -> int:
 def get_delivery_msg_batch(name: str, from_uid: int = 0, batch_size: int = 10) -> List[Tuple[int, list[dict[Any]]]]:
     try:
         with _get_connection() as conn, conn.cursor() as cursor:
-            cursor.execute(f'select uid, json_msg, retry_count from {_get_delivery_table_id(name)} where uid > %s limit %s', (from_uid, batch_size))
+            # Using order by asc in case time series databases need values inserted in timestamp order.
+            cursor.execute(f'select uid, json_msg, retry_count from {_get_delivery_table_id(name)} where uid > %s order by uid asc limit %s', (from_uid, batch_size))
             if cursor.rowcount < 1:
                 return 0, []
 

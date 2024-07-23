@@ -6,7 +6,6 @@ from pdmodels.Models import LogicalDevice, PhysicalDevice
 import json, logging, os, signal, time
 
 import BrokerConstants
-import multiprocessing as mp
 import pika, pika.channel, pika.spec
 from pika.exchange_type import ExchangeType
 
@@ -44,11 +43,9 @@ class BaseWriter:
         delivery_thread = None
         try:
             dao.create_delivery_table(self.name)
+
             delivery_thread = Thread(target=self.delivery_thread_proc, name='delivery_thread')
             delivery_thread.start()
-            # mp.set_start_method('spawn')
-            # self.del_proc = mp.Process(target=self.delivery_thread_proc)
-            # self.del_proc.start()
         except dao.DAOException as err:
             use_delivery_table = False
 
@@ -101,7 +98,7 @@ class BaseWriter:
                 time.sleep(10)
                 continue
 
-        # Ask the delivery thread to stop if the main thread got an error.
+        # Tell the delivery thread to stop if the main thread got an error.
         self.keep_running = False
         if self.connection is not None:
             logging.info('Closing connection')
@@ -109,8 +106,6 @@ class BaseWriter:
 
         logging.info('Waiting for delivery thread')
         delivery_thread.join()
-        # self.del_proc.kill()
-        # self.del_proc.join()
 
     def delivery_thread_proc(self) -> None:
         logging.info('Delivery threat started')
@@ -120,6 +115,7 @@ class BaseWriter:
                 time.sleep(30)
                 continue
 
+            logging.info(f'Processing {count} messages')
             msg_rows = dao.get_delivery_msg_batch(self.name)
             for msg_uid, msg, retry_count in msg_rows:
                 logging.info(f'msg from table {msg_uid}, {retry_count}')
@@ -140,7 +136,7 @@ class BaseWriter:
                     lu.cid_logger.error(f'Could not find logical device, dropping message: {msg}', extra=msg)
                     dao.remove_delivery_msg(self.name, msg_uid)
 
-                rc = self.on_message(pd, ld, msg)
+                rc = self.on_message(pd, ld, msg, retry_count)
                 if rc == BaseWriter.MSG_OK:
                     lu.cid_logger.info('Message processed ok.', extra=msg)
                     dao.remove_delivery_msg(self.name, msg_uid)
@@ -160,8 +156,8 @@ class BaseWriter:
         dao.stop()
         logging.info('Delivery threat stopped.')
 
-    def on_message(self, pd: PhysicalDevice, ld: LogicalDevice, msg: dict[Any]) -> int:
-        logging.info(f'{pd.name} / {ld.name}: {msg}')
+    def on_message(self, pd: PhysicalDevice, ld: LogicalDevice, msg: dict[Any], retry_count: int) -> int:
+        logging.info(f'{pd.name} / {ld.name} / {retry_count}: {msg}')
         return BaseWriter.MSG_OK
 
     def sigterm_handler(self, sig_no, stack_frame) -> None:

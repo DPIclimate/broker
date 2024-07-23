@@ -3,6 +3,7 @@ This program receives logical device timeseries messages and forwards them
 on to Ubidots.
 """
 
+import time
 from typing import Any
 import dateutil.parser
 
@@ -21,7 +22,7 @@ class UbidotsWriter(BaseWriter):
     def __init__(self, name) -> None:
         super().__init__(name)
 
-    def on_message(self, pd: PhysicalDevice, ld: LogicalDevice, msg: dict[Any]):
+    def on_message(self, pd: PhysicalDevice, ld: LogicalDevice, msg: dict[Any], retry_count: int) -> int:
         """
         This function is called when a message arrives from RabbitMQ.
 
@@ -49,10 +50,9 @@ class UbidotsWriter(BaseWriter):
         """
 
         try:
-            logging.info(f'{pd.name} / {ld.name}')
+            lu.cid_logger.info(f'{pd.name} / {ld.name}', extra=msg)
 
             ts = 0.0
-            # TODO: Find or create a class to hide all the Python datetime processing.
             try:
                 ts_float = dateutil.parser.isoparse(msg[BrokerConstants.TIMESTAMP_KEY]).timestamp()
                 # datetime.timestamp() returns a float where the ms are to the right of the
@@ -131,11 +131,15 @@ class UbidotsWriter(BaseWriter):
             # data is posted to Ubidots.
             #
             ubidots_dev_label = ld.properties['ubidots']['label']
-            if not ubidots.post_device_data(ubidots_dev_label, ubidots_payload):
+            if not ubidots.post_device_data(ubidots_dev_label, ubidots_payload, {BrokerConstants.CORRELATION_ID_KEY: msg[BrokerConstants.CORRELATION_ID_KEY]}):
                 # The write to Ubidots failed.
-                logging.error('Delivery to Ubidots failed at API call.')
-                # Make this retry later.
-                return BaseWriter.MSG_FAIL
+                lu.cid_logger.error('Delivery to Ubidots failed at API call.', extra=msg)
+                if retry_count > 4:
+                    lu.cid_logger.error(f'Retried message 5 times, giving up.', extra=msg)
+                    return BaseWriter.MSG_FAIL
+                else:
+                    time.sleep(5) # Pause in case Ubidtos is flooded.
+                    return BaseWriter.MSG_RETRY
 
             if new_device:
                 # Update the Ubidots device with info from the source device and/or the
@@ -166,14 +170,14 @@ class UbidotsWriter(BaseWriter):
 
                     # TODO: What about Green Brain devices?
 
-                ubidots.update_device(ubidots_dev_label, patch_obj)
+                ubidots.update_device(ubidots_dev_label, patch_obj, {BrokerConstants.CORRELATION_ID_KEY: msg[BrokerConstants.CORRELATION_ID_KEY]})
 
                 # Update the newly created logical device properties with the information
                 # returned from Ubidots, but nothing else. We don't want to overwite the
                 # last_seen value because that should be set to the timestamp from the
                 # message, which was done in the mapper process.
                 lu.cid_logger.info('Updating logical device properties from Ubidots.', extra=msg)
-                ud = ubidots.get_device(ubidots_dev_label)
+                ud = ubidots.get_device(ubidots_dev_label, {BrokerConstants.CORRELATION_ID_KEY: msg[BrokerConstants.CORRELATION_ID_KEY]})
                 if ud is not None:
                     ld.properties['ubidots'] = ud.properties['ubidots']
                     dao.update_logical_device(ld)
@@ -181,7 +185,7 @@ class UbidotsWriter(BaseWriter):
             return self.MSG_OK
 
         except BaseException:
-            logging.exception('Error while processing message.')
+            lu.cid_logger.exception('Error while processing message.', extra=msg)
             return self.MSG_FAIL
 
 
