@@ -85,7 +85,7 @@ class UbidotsWriter(BaseWriter):
                             BrokerConstants.CORRELATION_ID_KEY: msg[BrokerConstants.CORRELATION_ID_KEY]
                         }
                     }
-                except ValueError:
+                except (ValueError, TypeError):
                     # Ubidots will not accept values that are not floats, so skip this value.
                     pass
 
