@@ -49,7 +49,7 @@ class UbidotsWriter(BaseWriter):
         """
 
         try:
-            logging.info(f'{pd.name} / {ld.name}: {msg}')
+            logging.info(f'{pd.name} / {ld.name}')
 
             ts = 0.0
             # TODO: Find or create a class to hide all the Python datetime processing.

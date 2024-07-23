@@ -1,3 +1,4 @@
+from threading import Thread
 from typing import Any
 
 from pdmodels.Models import LogicalDevice, PhysicalDevice
@@ -5,7 +6,7 @@ from pdmodels.Models import LogicalDevice, PhysicalDevice
 import json, logging, os, signal, time
 
 import BrokerConstants
-
+import multiprocessing as mp
 import pika, pika.channel, pika.spec
 from pika.exchange_type import ExchangeType
 
@@ -38,6 +39,19 @@ class BaseWriter:
         logging.info(f'               STARTING {self.name.upper()} WRITER')
         logging.info('===============================================================')
 
+        use_delivery_table = True
+
+        delivery_thread = None
+        try:
+            dao.create_delivery_table(self.name)
+            delivery_thread = Thread(target=self.delivery_thread_proc, name='delivery_thread')
+            delivery_thread.start()
+            # mp.set_start_method('spawn')
+            # self.del_proc = mp.Process(target=self.delivery_thread_proc)
+            # self.del_proc.start()
+        except dao.DAOException as err:
+            use_delivery_table = False
+
         while self.keep_running:
             try:
                 logging.info('Opening connection')
@@ -58,10 +72,8 @@ class BaseWriter:
 
                 logging.info('Waiting for messages.')
                 # This loops until _channel.cancel is called in the signal handler.
-                for method, properties, body in self.channel.consume('ubidots_logical_msg_queue'):
+                for method, properties, body in self.channel.consume(f'{self.name}_logical_msg_queue'):
                     delivery_tag = method.delivery_tag
-                    logging.info(method)
-                    logging.info(properties)
 
                     # If the finish flag is set, reject the message so RabbitMQ will re-queue it
                     # and return early.
@@ -71,36 +83,9 @@ class BaseWriter:
                         continue    # This will break from loop without running all the logic within the loop below here.
 
                     msg = json.loads(body)
-                    p_uid = msg[BrokerConstants.PHYSICAL_DEVICE_UID_KEY]
-                    l_uid = msg[BrokerConstants.LOGICAL_DEVICE_UID_KEY]
-                    lu.cid_logger.info(f'Accepted message from physical / logical device ids {p_uid} / {l_uid}', extra=msg)
-
-                    pd = dao.get_physical_device(p_uid)
-                    if pd is None:
-                        lu.cid_logger.error(f'Could not find physical device, dropping message: {body}', extra=msg)
-                        return BaseWriter.MSG_FAIL
-
-                    ld = dao.get_logical_device(l_uid)
-                    if ld is None:
-                        lu.cid_logger.error(f'Could not find logical device, dropping message: {body}', extra=msg)
-                        return BaseWriter.MSG_FAIL
-
-                    rc = self.on_message(pd, ld, msg)
-                    if rc == BaseWriter.MSG_OK:
-                        lu.cid_logger.info('Message processed ok.', extra=msg)
-                        self.channel.basic_ack(delivery_tag)
-                    elif rc == BaseWriter.MSG_RETRY:
-                        # This is where the message should be published to a different exchange,
-                        # private to the delivery service in question, so it can be retried later
-                        # but not stuck at the head of the queue and immediately redelivered to
-                        # here, possibly causing an endless loop.
-                        lu.cid_logger.warning('Message processing failed, retrying message.', extra=msg)
-                        self.channel.basic_nack(delivery_tag, requeue=True)
-                    elif rc == BaseWriter.MSG_FAIL:
-                        lu.cid_logger.error('Message processing failed, dropping message.', extra=msg)
-                        self.channel.basic_nack(delivery_tag, requeue=False)
-                    else:
-                        logging.error(f'Invalid message processing return value: {rc}')
+                    logging.info('Adding message to delivery table')
+                    dao.add_delivery_msg(self.name, msg)
+                    self.channel.basic_ack(delivery_tag)
 
             except pika.exceptions.ConnectionClosedByBroker:
                     logging.info('Connection closed by server.')
@@ -116,13 +101,64 @@ class BaseWriter:
                 time.sleep(10)
                 continue
 
+        # Ask the delivery thread to stop if the main thread got an error.
+        self.keep_running = False
         if self.connection is not None:
             logging.info('Closing connection')
             self.connection.close()
 
-        logging.info('Waiting forever')
-        while True:
-            time.sleep(60)
+        logging.info('Waiting for delivery thread')
+        delivery_thread.join()
+        # self.del_proc.kill()
+        # self.del_proc.join()
+
+    def delivery_thread_proc(self) -> None:
+        logging.info('Delivery threat started')
+        while self.keep_running:
+            count = dao.get_delivery_msg_count(self.name)
+            if count < 1:
+                time.sleep(30)
+                continue
+
+            msg_rows = dao.get_delivery_msg_batch(self.name)
+            for msg_uid, msg, retry_count in msg_rows:
+                logging.info(f'msg from table {msg_uid}, {retry_count}')
+                if not self.keep_running:
+                    break
+
+                p_uid = msg[BrokerConstants.PHYSICAL_DEVICE_UID_KEY]
+                l_uid = msg[BrokerConstants.LOGICAL_DEVICE_UID_KEY]
+                lu.cid_logger.info(f'Accepted message from physical / logical device ids {p_uid} / {l_uid}', extra=msg)
+
+                pd = dao.get_physical_device(p_uid)
+                if pd is None:
+                    lu.cid_logger.error(f'Could not find physical device, dropping message: {msg}', extra=msg)
+                    dao.remove_delivery_msg(self.name, msg_uid)
+
+                ld = dao.get_logical_device(l_uid)
+                if ld is None:
+                    lu.cid_logger.error(f'Could not find logical device, dropping message: {msg}', extra=msg)
+                    dao.remove_delivery_msg(self.name, msg_uid)
+
+                rc = self.on_message(pd, ld, msg)
+                if rc == BaseWriter.MSG_OK:
+                    lu.cid_logger.info('Message processed ok.', extra=msg)
+                    dao.remove_delivery_msg(self.name, msg_uid)
+                elif rc == BaseWriter.MSG_RETRY:
+                    # This is where the message should be published to a different exchange,
+                    # private to the delivery service in question, so it can be retried later
+                    # but not stuck at the head of the queue and immediately redelivered to
+                    # here, possibly causing an endless loop.
+                    lu.cid_logger.warning('Message processing failed, retrying message.', extra=msg)
+                    dao.retry_delivery_msg(self.name, msg_uid)
+                elif rc == BaseWriter.MSG_FAIL:
+                    lu.cid_logger.error('Message processing failed, dropping message.', extra=msg)
+                    dao.remove_delivery_msg(self.name, msg_uid)
+                else:
+                    logging.error(f'Invalid message processing return value: {rc}')
+
+        dao.stop()
+        logging.info('Delivery threat stopped.')
 
     def on_message(self, pd: PhysicalDevice, ld: LogicalDevice, msg: dict[Any]) -> int:
         logging.info(f'{pd.name} / {ld.name}: {msg}')

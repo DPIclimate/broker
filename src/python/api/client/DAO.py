@@ -3,11 +3,11 @@ from datetime import datetime, timezone
 import logging, warnings
 import dateutil.parser
 import psycopg2
-from psycopg2 import pool
+from psycopg2 import pool, sql
 import psycopg2.errors
 from psycopg2.extensions import AsIs
 from psycopg2.extras import Json, register_uuid
-from typing import Any, Dict, List, Optional, Union
+from typing import Any, Dict, List, Optional, Tuple, Union
 import hashlib
 import os
 
@@ -1319,3 +1319,100 @@ def token_enable(uname)-> None:
         if conn is not None:
             free_conn(conn)
 
+
+# ===========================================================================
+# Delivery thread related functions
+# ===========================================================================
+
+def _get_delivery_table_id(name: str) -> str:
+    #return sql.Identifier(f'{name}_delivery_q')
+    return f'{name}_delivery_q'
+
+def create_delivery_table(name: str) -> None:
+    logging.info(f'Creating message delivery table for service {name}')
+
+    try:
+        qry = f"""create table if not exists {_get_delivery_table_id(name)} (
+                    uid integer generated always as identity primary key,
+                    json_msg jsonb not null,
+                    retry_count integer not null default 0)"""
+
+        with _get_connection() as conn, conn.cursor() as cursor:
+            cursor.execute(qry)
+
+    except Exception as err:
+        raise err if isinstance(err, DAOException) else DAOException('create_delivery_table failed.', err)
+    finally:
+        if conn is not None:
+            conn.commit()
+            free_conn(conn)
+
+def get_delivery_msg_count(name: str) -> int:
+    try:
+        with _get_connection() as conn, conn.cursor() as cursor:
+            cursor.execute(f'select count(uid) from {_get_delivery_table_id(name)}')
+            return cursor.fetchone()[0]
+
+    except Exception as err:
+        raise err if isinstance(err, DAOException) else DAOException('get_delivery_msg_count failed.', err)
+    finally:
+        if conn is not None:
+            conn.commit()
+            free_conn(conn)
+
+def get_delivery_msg_batch(name: str, from_uid: int = 0, batch_size: int = 10) -> List[Tuple[int, list[dict[Any]]]]:
+    try:
+        with _get_connection() as conn, conn.cursor() as cursor:
+            cursor.execute(f'select uid, json_msg, retry_count from {_get_delivery_table_id(name)} where uid > %s limit %s', (from_uid, batch_size))
+            if cursor.rowcount < 1:
+                return 0, []
+
+            return cursor.fetchall()
+
+    except Exception as err:
+        raise err if isinstance(err, DAOException) else DAOException('get_delivery_msg_batch failed.', err)
+    finally:
+        if conn is not None:
+            conn.commit()
+            free_conn(conn)
+
+def add_delivery_msg(name: str, msg: dict[Any]) -> None:
+    try:
+        with _get_connection() as conn, conn.cursor() as cursor:
+            cursor.execute(f'insert into {_get_delivery_table_id(name)} (json_msg) values (%s)', (Json(msg), ))
+
+    except Exception as err:
+        raise err if isinstance(err, DAOException) else DAOException('add_delivery_msg failed.', err)
+    finally:
+        if conn is not None:
+            conn.commit()
+            free_conn(conn)
+
+def remove_delivery_msg(name: str, uid: int) -> None:
+    try:
+        with _get_connection() as conn, conn.cursor() as cursor:
+            cursor.execute(f'delete from {_get_delivery_table_id(name)} where uid = %s', (uid, ))
+
+    except Exception as err:
+        raise err if isinstance(err, DAOException) else DAOException('remove_delivery_msg failed.', err)
+    finally:
+        if conn is not None:
+            conn.commit()
+            free_conn(conn)
+
+def retry_delivery_msg(name: str, uid: int) -> None:
+    try:
+        with _get_connection() as conn, conn.cursor() as cursor:
+            cursor.execute(f'select retry_count from {_get_delivery_table_id(name)} where uid = %s', (uid, ))
+            if cursor.rowcount < 1:
+                return
+
+            retry_count = cursor.fetchone()[0] + 1
+            cursor.execute(f'update {_get_delivery_table_id(name)} set retry_count = %s where uid = %s', (retry_count, uid))
+
+    except Exception as err:
+        raise err if isinstance(err, DAOException) else DAOException('retry_delivery_msg failed.', err)
+    finally:
+        if conn is not None:
+            conn.commit()
+            free_conn(conn)
