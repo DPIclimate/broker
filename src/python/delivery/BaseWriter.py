@@ -80,7 +80,7 @@ class BaseWriter:
                         continue    # This will break from loop without running all the logic within the loop below here.
 
                     msg = json.loads(body)
-                    logging.info('Adding message to delivery table')
+                    lu.cid_logger.info('Adding message to delivery table', extra=msg)
                     dao.add_delivery_msg(self.name, msg)
                     self.channel.basic_ack(delivery_tag)
 
@@ -118,7 +118,7 @@ class BaseWriter:
             logging.info(f'Processing {count} messages')
             msg_rows = dao.get_delivery_msg_batch(self.name)
             for msg_uid, msg, retry_count in msg_rows:
-                logging.info(f'msg from table {msg_uid}, {retry_count}')
+                lu.cid_logger.info(f'msg from table {msg_uid}, {retry_count}', extra=msg)
                 if not self.keep_running:
                     break
 
@@ -151,13 +151,13 @@ class BaseWriter:
                     lu.cid_logger.error('Message processing failed, dropping message.', extra=msg)
                     dao.remove_delivery_msg(self.name, msg_uid)
                 else:
-                    logging.error(f'Invalid message processing return value: {rc}')
+                    lu.cid_logger.error(f'Invalid message processing return value: {rc}', extra=msg)
 
         dao.stop()
         logging.info('Delivery threat stopped.')
 
     def on_message(self, pd: PhysicalDevice, ld: LogicalDevice, msg: dict[Any], retry_count: int) -> int:
-        logging.info(f'{pd.name} / {ld.name} / {retry_count}: {msg}')
+        lu.cid_logger.info(f'{pd.name} / {ld.name} / {retry_count}: {msg}', extra=msg)
         return BaseWriter.MSG_OK
 
     def sigterm_handler(self, sig_no, stack_frame) -> None:
