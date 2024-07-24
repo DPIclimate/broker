@@ -53,6 +53,7 @@ async function doFetch(event) {
 	if ('Export'.localeCompare(dialog.returnValue) === 0) {
 		try {
 			showSpinner();
+
 			console.log('Exporting data');
 			const formElement = document.getElementById('single-ld-export');
 			const formData = new FormData(formElement);
@@ -62,40 +63,44 @@ async function doFetch(event) {
 				body: formData
 			})
 			.then(async response => {
+				if (response.status == 204) {
+					alert('No messages found in selected date range.');
+					return;
+				}
+				
 				if (!response.ok) {
 					throw new Error('Network response was not ok');
 				}
 				const blob = await response.blob();
 				const filename = response.headers.get('Content-Disposition')?.split('filename=')[1]?.replace(/['"]/g, '') || 'download.csv';
-			
+				
 				// Check if the showSaveFilePicker API is available
 				if ('showSaveFilePicker' in window) {
-				try {
+					try {
 					const handle = await window.showSaveFilePicker({
-					suggestedName: filename,
-					types: [{
+						suggestedName: filename,
+						types: [{
 						description: 'CSV File',
 						accept: {'text/csv': ['.csv']},
-					}],
+						}],
 					});
 					const writable = await handle.createWritable();
 					await writable.write(blob);
 					await writable.close();
-				} catch (err) {
+					} catch (err) {
 					if (err.name !== 'AbortError') {
-					console.error('Failed to save file:', err);
-					// Fallback to the older method
-					saveBlobAsFile(blob, filename);
+						console.error('Failed to save file:', err);
+						// Fallback to the older method
+						saveBlobAsFile(blob, filename);
 					}
-				}
+					}
 				} else {
-				// Fallback for browsers that don't support showSaveFilePicker
-				saveBlobAsFile(blob, filename);
+					// Fallback for browsers that don't support showSaveFilePicker
+					saveBlobAsFile(blob, filename);
 				}
 			})
 			.catch(error => {
 				console.error('Error:', error);
-				// Does this show up when the spinnder is active?
 				alert("Error occured on submission", error);
 			});
 
@@ -117,8 +122,7 @@ $(document).ready(function () {
 	dialog.addEventListener("close", doFetch);
 });
 
-function exportData(l_uid, name) {
-	console.log("exportData " + l_uid + " " + name);
+function exportData(l_uid) {
 	dialog.returnValue = "Cancel";
 	dialog.showModal();
 }
@@ -180,7 +184,7 @@ function hideSpinner() {
 <div class="command-bar">
 	<div class="form-buttons">
 		<ul>
-			<li><span class="btn" onclick="exportData('{{ ld_data.uid }}', '{{ ld_data.name}}')">Export Data</span></li>
+			<li><span class="btn" onclick="exportData('{{ ld_data.uid }}')">Export Data</span></li>
 			<li><span class="btn" onclick="handleSubmit('device-form', 'Are you sure you want to Save?')">Save</span></li>
 			<li><span class="btn" onclick="handleMapping('logical device')">Update Mapping</span></li>
 			<li><span class="btn" onclick="handleEndMapping('{{ ld_data.uid }}', 'LD')">End Mapping</span></li>
