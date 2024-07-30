@@ -36,6 +36,31 @@ services:
       interval: 30s
       start_period: 30s
 
+  qgis-server:
+    # Should use version with utf-8 locale support:
+    image: qgis-server:latest
+    logging:
+      driver: local
+      options:
+        max-file: "3"
+    restart: unless-stopped
+    ports:
+      - "5555:5555"
+    volumes:
+      - /home/dtaylor/broker/images/qgis-server/data:/data:ro
+      - /home/dtaylor/broker/images/qgis-server/data/STE_2021_AUST_SHP_GDA94:/Downloads/STE_2021_AUST_SHP_GDA94
+    environment:
+      - LANG=en_EN.UTF-8
+      - QGIS_PROJECT_FILE=/data/SP-devices.qgz
+      - QGIS_SERVER_LOG_LEVEL=0  # INFO (log all requests)
+#      - QGIS_SERVER_CACHE_DIRECTORY=/tmp
+#      - QGIS_SERVER_DISABLE_GETPRINT=true
+#      - QGIS_SERVER_IGNORE_BAD_LAYERS=true
+      - QGIS_SERVER_LOG_STDERR=true
+#      - QGIS_SERVER_PARALLEL_RENDERING=true
+      - QGIS_SERVER_PROJECT_CACHE_STRATEGY=filesystem
+      - DEBUG=1                  # display env before spawning QGIS Server
+
   restapi:
     image: broker/python-base
     logging:
