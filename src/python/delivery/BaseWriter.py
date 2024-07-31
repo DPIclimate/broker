@@ -1,4 +1,4 @@
-from threading import Thread
+from threading import Thread, Event
 from typing import Any
 
 from pdmodels.Models import LogicalDevice, PhysicalDevice
@@ -26,11 +26,15 @@ class BaseWriter:
     MSG_FAIL = 2
 
     def __init__(self, name) -> None:
-        #super().__init__()
         self.name: str = name
         self.connection = None
         self.channel = None
         self.keep_running = True
+
+        # The Event is used to signal the delivery thread that a new message has arrived or
+        # that it should stop.
+        self.evt = Event()
+
         signal.signal(signal.SIGTERM, self.sigterm_handler)
 
     def run(self) -> None:
@@ -43,16 +47,16 @@ class BaseWriter:
         logging.info(f'               STARTING {self.name.upper()} WRITER')
         logging.info('===============================================================')
 
-        use_delivery_table = True
-
         delivery_thread = None
         try:
             dao.create_delivery_table(self.name)
 
+            self.evt.clear()
             delivery_thread = Thread(target=self.delivery_thread_proc, name='delivery_thread')
             delivery_thread.start()
         except dao.DAOException as err:
-            use_delivery_table = False
+            logging.exception('Failed to find or create service table')
+            exit(1)
 
         while self.keep_running:
             try:
@@ -88,6 +92,7 @@ class BaseWriter:
                     lu.cid_logger.info('Adding message to delivery table', extra=msg)
                     dao.add_delivery_msg(self.name, msg)
                     self.channel.basic_ack(delivery_tag)
+                    self.evt.set()
 
             except pika.exceptions.ConnectionClosedByBroker:
                     logging.info('Connection closed by server.')
@@ -105,6 +110,7 @@ class BaseWriter:
 
         # Tell the delivery thread to stop if the main thread got an error.
         self.keep_running = False
+        self.evt.set()
         if self.connection is not None:
             logging.info('Closing connection')
             self.connection.close()
@@ -121,9 +127,13 @@ class BaseWriter:
         """
         logging.info('Delivery threat started')
         while self.keep_running:
+            self.evt.wait()
+            self.evt.clear()
+            if not self.keep_running:
+                break
+
             count = dao.get_delivery_msg_count(self.name)
             if count < 1:
-                time.sleep(30)
                 continue
 
             logging.info(f'Processing {count} messages')

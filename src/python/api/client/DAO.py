@@ -3,7 +3,7 @@ from datetime import datetime, timezone
 import logging, warnings
 import dateutil.parser
 import psycopg2
-from psycopg2 import pool, sql
+from psycopg2 import pool
 import psycopg2.errors
 from psycopg2.extensions import AsIs
 from psycopg2.extras import Json, register_uuid
@@ -13,9 +13,11 @@ import os
 
 import BrokerConstants
 from pdmodels.Models import BaseDevice, DeviceNote, LogicalDevice, PhysicalDevice, PhysicalToLogicalMapping, User
+from threading import Lock
 
 logging.captureWarnings(True)
 
+_lock = Lock()
 
 class DAOException(Exception):
     def __init__(self, msg: str = None, wrapped: Exception = None):
@@ -50,10 +52,19 @@ select uid, name, (select row_to_json(_) from (select ST_Y(location) as lat, ST_
 """
 
 
+_stopped = False
+
 def stop() -> None:
+    global _stopped
     logging.info('Closing connection pool.')
-    if conn_pool is not None:
-        conn_pool.closeall()
+    _lock.acquire()
+    try:
+        if not _stopped:
+            _stopped = True
+            if conn_pool is not None:
+                conn_pool.closeall()
+    finally:
+        _lock.release()
 
 
 @contextmanager
@@ -73,8 +84,8 @@ def _get_connection():
     # This throws an exception if the db hostname cannot be resolved, or
     # the database is not accepting connections.
     try:
-        # Try lazy initialisation the connection pool and Location/point
-        # converter to give the db as much time as possible to start.
+        # Try lazy initialisation the connection pool to give the db as
+        # much time as possible to start.
         if conn_pool is None:
             logging.info('Creating connection pool, registering type converters.')
             conn_pool = pool.ThreadedConnectionPool(1, 5)
@@ -792,7 +803,7 @@ def toggle_device_mapping(is_active: bool, pd: Optional[Union[PhysicalDevice, in
             _toggle_device_mapping(conn, is_active, pd, ld)
         return
     except Exception as err:
-        raise err if isinstance(err, DAOException) else DAOException('pause_current_device_mapping failed.', err)
+        raise err if isinstance(err, DAOException) else DAOException('toggle_device_mapping failed.', err)
     finally:
         if conn is not None:
             free_conn(conn)
