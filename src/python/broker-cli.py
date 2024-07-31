@@ -19,6 +19,7 @@ def str_to_logical_device(val) -> LogicalDevice:
 
 
 def str_to_dict(val) -> Dict:
+    print(val, type(val))
     return json.loads(val)
 
 
@@ -207,7 +208,7 @@ def plain_pd_list(devs: List[PhysicalDevice]):
 
 
 def dict_from_file_or_string() -> dict:
-    if (hasattr(args, 'pd') or hasattr(args, 'ld')) and (hasattr(args, 'in_filename') and args.in_filename is not None):
+    if ((hasattr(args, 'pd') and args.pd is not None) or (hasattr(args, 'ld') and args.ld is not None)) and (hasattr(args, 'in_filename') and args.in_filename is not None):
         raise RuntimeError('error: --json and --file are mutually exclusive.')
 
     json_obj = None
@@ -283,7 +284,7 @@ def main() -> None:
 
             dev = PhysicalDevice.parse_obj(dev)
             print(pretty_print_json(dao.update_physical_device(dev)))
-        
+
         elif args.cmd2 == 'rm':
             # Delete all physical_logical mappings to avoid foreign key violation
             mappings = dao.get_physical_device_mappings(pd=args.p_uid)
@@ -373,9 +374,9 @@ def main() -> None:
             current_mapping = dao.get_current_device_mapping(pd=args.p_uid, ld=args.l_uid)
             if current_mapping is None:
                 raise RuntimeError("No current mapping for the uid given")
-            
+
             dao.toggle_device_mapping(args.enable, args.p_uid, args.l_uid)
-    
+
     elif args.cmd1 == 'users':
         if args.cmd2 == 'add':
             dao.user_add(uname=args.uname, passwd=args.passwd, disabled=args.disabled)
@@ -391,13 +392,13 @@ def main() -> None:
 
             elif args.enable == True:
                 dao.token_enable(uname=args.uname)
-            
+
             if args.refresh == True:
                 dao.token_refresh(uname=args.uname)
 
         elif args.cmd2 == 'chng':
             dao.user_change_password(args.uname, args.passwd)
-        
+
         elif args.cmd2 == 'ls':
             print(dao.user_ls())
 
