@@ -19,8 +19,8 @@ from pdmodels.Models import LogicalDevice, PhysicalDevice
 import util.LoggingUtil as lu
 
 class UbidotsWriter(BaseWriter):
-    def __init__(self, name) -> None:
-        super().__init__(name)
+    def __init__(self) -> None:
+        super().__init__('ubidots')
 
     def on_message(self, pd: PhysicalDevice, ld: LogicalDevice, msg: dict[Any], retry_count: int) -> int:
         """
@@ -50,8 +50,6 @@ class UbidotsWriter(BaseWriter):
         """
 
         try:
-            lu.cid_logger.info(f'{pd.name} / {ld.name}', extra=msg)
-
             ts = 0.0
             try:
                 ts_float = dateutil.parser.isoparse(msg[BrokerConstants.TIMESTAMP_KEY]).timestamp()
@@ -190,5 +188,5 @@ class UbidotsWriter(BaseWriter):
 
 
 if __name__ == '__main__':
-    UbidotsWriter('ubidots').run()
+    UbidotsWriter().run()
     logging.info('Exiting.')

@@ -34,6 +34,11 @@ class BaseWriter:
         signal.signal(signal.SIGTERM, self.sigterm_handler)
 
     def run(self) -> None:
+        """
+        This method runs the blocking MQTT loop, waiting for messages from upstream
+        and writing them to the backing table. A separate thread reads them from
+        the backing table and attempts to deliver them.
+        """
         logging.info('===============================================================')
         logging.info(f'               STARTING {self.name.upper()} WRITER')
         logging.info('===============================================================')
@@ -92,7 +97,7 @@ class BaseWriter:
                 logging.exception(err)
                 break
 
-            except pika.exceptions.AMQPConnectionError:
+            except pika.exceptions.AMQPConnectionError as err:
                 logging.exception(err)
                 logging.warning('Connection was closed, retrying after a pause.')
                 time.sleep(10)
@@ -108,6 +113,12 @@ class BaseWriter:
         delivery_thread.join()
 
     def delivery_thread_proc(self) -> None:
+        """
+        This method runs in a separate thread and reads messages from the backing table,
+        calling the on_message handler for each one. It also removes messages from the
+        backing table when on_message returns MSG_OK or MSG_FAIL, and maintains the retry_count
+        attribute on MSG_RETRY returns.
+        """
         logging.info('Delivery threat started')
         while self.keep_running:
             count = dao.get_delivery_msg_count(self.name)
@@ -136,6 +147,8 @@ class BaseWriter:
                     lu.cid_logger.error(f'Could not find logical device, dropping message: {msg}', extra=msg)
                     dao.remove_delivery_msg(self.name, msg_uid)
 
+                lu.cid_logger.info(f'{pd.name} / {ld.name}', extra=msg)
+
                 rc = self.on_message(pd, ld, msg, retry_count)
                 if rc == BaseWriter.MSG_OK:
                     lu.cid_logger.info('Message processed ok.', extra=msg)
@@ -157,6 +170,22 @@ class BaseWriter:
         logging.info('Delivery threat stopped.')
 
     def on_message(self, pd: PhysicalDevice, ld: LogicalDevice, msg: dict[Any], retry_count: int) -> int:
+        """
+        Subclasses must override this method and perform all transformation and delivery during
+        its execution.
+
+        Implementations must decide what constitutes a temporary failure that can be retried, how
+        many times it is reasonable to retry, and when a message is undeliverable.
+
+        pd: The PhysicalDevice that sent the message.
+        ld: The LogicalDevice to deliver the message to.
+        msg: The message content, in IoTa format.
+        retry_count: How many times this method has returned MSG_RETRY so far.
+
+        return BaseWriter.MSG_OK to signal the message has been delivered and can be removed from the backing table.
+               BaseWriter.MSG_RETRY to signal a temporary delivery failure which is retryable.
+               BaseWriter.MSG_FAIL to signal the message cannot be delivered, or has failed too many times.
+        """
         lu.cid_logger.info(f'{pd.name} / {ld.name} / {retry_count}: {msg}', extra=msg)
         return BaseWriter.MSG_OK
 
