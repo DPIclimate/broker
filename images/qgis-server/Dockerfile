@@ -19,13 +19,16 @@ RUN apt-get update \
     && echo "deb [signed-by=/etc/apt/keyrings/qgis-archive-keyring.gpg] https://qgis.org/debian bookworm main" | tee /etc/apt/sources.list.d/qgis.list \
     && apt-get update \
     && apt-get install --no-install-recommends --no-install-suggests --allow-unauthenticated -y \
-        qgis-server \
+        qgis-server=1:3.38.1+17bookworm \
         spawn-fcgi \
         xauth \
         xvfb \
+        vim \
+        postgresql-client \
     && apt-get remove --purge -y \
         gnupg \
         wget \
+    && apt -y autoremove \
     && rm -rf /var/lib/apt/lists/*
 
 RUN useradd -m qgis
@@ -36,14 +39,16 @@ RUN chmod +x /tini
 
 ENV QGIS_PREFIX_PATH /usr
 ENV QGIS_SERVER_LOG_STDERR 1
-ENV QGIS_SERVER_LOG_LEVEL 2
+ENV QGIS_SERVER_LOG_LEVEL 1
 
 COPY cmd.sh /home/qgis/cmd.sh
 RUN chmod -R 777 /home/qgis/cmd.sh
 RUN chown qgis:qgis /home/qgis/cmd.sh
 
+# QGIS server seems to ignore the PGSERVICEFILE env var so the servivces file
+# must be in the default location.
 COPY data/pg_service.conf /home/qgis/.pg_service.conf
-RUN chmod -R 444 /home/qgis/.pg_service.conf
+RUN chmod -R 644 /home/qgis/.pg_service.conf
 RUN chown qgis:qgis /home/qgis/.pg_service.conf
 
 USER qgis
