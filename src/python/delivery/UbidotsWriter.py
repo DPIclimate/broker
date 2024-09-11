@@ -107,13 +107,8 @@ class UbidotsWriter(BaseWriter):
                 new_device = True
                 ld.properties['ubidots'] = {}
                 # TODO: Remove the device source specific code here and always use a random
-                # UUID for the Ubidots label. This cannot be done until the current TTN ubifunction
-                # is switched off because the broker must be able to determine the same device label
-                # used by the ubifunction when it creates Ubidots devices.
-                if pd.source_name == BrokerConstants.TTN:
-                    ld.properties['ubidots']['label'] = pd.source_ids['dev_eui']
-                    lu.cid_logger.info(f'Using physical device eui for label: {ld.properties["ubidots"]["label"]}', extra=msg)
-                elif pd.source_name == BrokerConstants.GREENBRAIN:
+                # UUID for the Ubidots label.
+                if pd.source_name == BrokerConstants.GREENBRAIN:
                     lu.cid_logger.info('Using system-station-sensor-group ids as label', extra=msg)
                     system_id = pd.source_ids['system_id']
                     station_id = pd.source_ids['station_id']
@@ -121,7 +116,6 @@ class UbidotsWriter(BaseWriter):
                     ubi_label = f'{system_id}-{station_id}-{sensor_group_id}'
                     ld.properties['ubidots']['label'] = ubi_label
                 else:
-                    lu.cid_logger.info('Using a UUID as Ubidots label', extra=msg)
                     ld.properties['ubidots']['label'] = uuid.uuid4()
 
             #
