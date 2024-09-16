@@ -28,7 +28,7 @@
                     <td>{{ physicalDevice.uid }}</td>
                     <td><a href="{{ url_for('physical_device_form', uid=physicalDevice.uid) }}">{{ physicalDevice.name }}</a></td>
                     <td>{{ physicalDevice.source_name }}</td>
-                    <td>{{ physicalDevice.last_seen }}</td>
+                    <td data-order="{{ physicalDevice.ts_sort }}">{{ physicalDevice.last_seen }}</td>
                     <td>
                         {% for mapping in dev_mappings %}
                             {% if mapping.pd == physicalDevice.uid %}

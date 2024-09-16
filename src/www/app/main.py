@@ -99,15 +99,14 @@ def time_since(date: datetime) -> Dict[str, int|str]:
         'minutes': minutes,
         'delta_seconds': delta.seconds + (delta.days * _seconds_per_day)
     }
-
     if days > 0:
-        ret_val['desc'] = f'{days} days ago'
+        ret_val['desc'] = f'{days} {"day" if days == 1 else "days"} ago'
     elif hours > 0:
-        ret_val['desc'] = f'{hours} hours ago'
+        ret_val['desc'] = f'{hours} {"hour" if hours == 1 else "hours"} ago'
     elif minutes > 0:
-        ret_val['desc'] = f'{minutes} minutes ago'
+        ret_val['desc'] = f'{minutes} {"minute" if minutes == 1 else "minutes"} ago'
     else:
-        ret_val['desc'] = f'{seconds} seconds ago'
+        ret_val['desc'] = f'{seconds} {"second" if seconds == 1 else "seconds"} ago'
 
     return ret_val
 
@@ -324,7 +323,7 @@ def wombats():
             setattr(dev, 'sn', sn)
 
             setattr(dev, 'ts_sort', dev.last_seen.timestamp())
-            dev.last_seen = time_since(dev.last_seen)
+            dev.last_seen = time_since(dev.last_seen)['desc']
 
             for mapping in mappings:
                 if dev.uid != mapping.pd:
@@ -362,6 +361,13 @@ def physical_device_table():
         mapping_obj: List[PhysicalToLogicalMapping] = []
 
         for dev in physical_devices:
+            if dev.last_seen is None:
+                setattr(dev, 'ts_sort', 0)
+            else:
+                last_seen: datetime = dev.last_seen
+                setattr(dev, 'ts_sort', last_seen.timestamp())
+                dev.last_seen = f"{last_seen.isoformat(' ', 'minutes')} ({time_since(last_seen)['desc']})"
+
             for mapping in mappings:
                 if dev.uid != mapping.pd:
                     continue
@@ -438,6 +444,14 @@ def logical_device_table():
 
         for dev in logical_devices:
             dev.location = format_location_string(dev.location)
+
+            if dev.last_seen is None:
+                setattr(dev, 'ts_sort', 0)
+            else:
+                last_seen: datetime = dev.last_seen
+                setattr(dev, 'ts_sort', last_seen.timestamp())
+                dev.last_seen = f"{last_seen.isoformat(' ', 'minutes')} ({time_since(last_seen)['desc']})"
+
             for mapping in mappings:
                 if dev.uid != mapping.ld:
                     continue
@@ -466,10 +480,10 @@ def logical_device_form(uid):
 
         for m in mappings:
             if m.start_time is not None:
-                m.start_time = m.start_time.isoformat(' ', 'seconds')
+                m.start_time = m.start_time.isoformat(' ', 'minutes')
 
             if m.end_time is not None:
-                m.end_time = m.end_time.isoformat(' ', 'seconds')
+                m.end_time = m.end_time.isoformat(' ', 'minutes')
 
         # The physical_devices list is used in the dialog shown when mapping a logical device.
         physical_devices = get_physical_devices(session.get('token'))
@@ -766,6 +780,8 @@ def ToggleDeviceMapping():
     """
         Toggle the mapping of a device to temporarily stop messages from being passed at the logical mapper
     """
+
+    logging.warning(request.args)
     dev_type = request.args['dev_type']
     uid = int(request.args['uid'])
     is_active = request.args['is_active']
@@ -812,7 +828,7 @@ def format_time_stamp(unformatted_time: datetime) -> str:
         return ''
 
     if isinstance(unformatted_time, datetime):
-        return unformatted_time.isoformat(sep=' ', timespec='seconds')
+        return unformatted_time.isoformat(sep=' ', timespec='minutes') + ' (' + time_since(unformatted_time)['desc'] + ')'
 
     return ''
 
@@ -869,7 +885,7 @@ if __name__ == '__main__':
 
     atexit.register(exit_handler)
 
-    #app.jinja_env.auto_reload = True
-    #app.config['TEMPLATES_AUTO_RELOAD'] = True
-    #app.run(port='5000', host='0.0.0.0', debug=True)
-    app.run(port='5000', host='0.0.0.0')
+    app.jinja_env.auto_reload = True
+    app.config['TEMPLATES_AUTO_RELOAD'] = True
+    app.run(port='5000', host='0.0.0.0', debug=True)
+    #app.run(port='5000', host='0.0.0.0')

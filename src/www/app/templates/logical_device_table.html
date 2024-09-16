@@ -31,7 +31,7 @@
 							<a href="{{ url_for('logical_device_form', uid=logicalDevice.uid) }}">{{ logicalDevice.name }}</a>
 						</td>
 						<td>{{ logicalDevice.location }}</td>
-						<td>{{ logicalDevice.last_seen }}</td>
+						<td data-order="{{ logicalDevice.ts_sort }}">{{ logicalDevice.last_seen }}</td>
 						<td>
 							{% for mapping in dev_mappings %}
 								{% if mapping.ld == logicalDevice.uid %}
