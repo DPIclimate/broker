@@ -59,13 +59,14 @@ async def publish_msg(msg_with_cid: JSONObject) -> None:
             # is down. Perhaps rename the file here to the delivery_tag
             # and then we don't need to track it.
             unacked_messages[delivery_tag] = filename
-
+    else:
+        lu.cid_logger.warning(f'Did not publish message {delivery_tag} to RabbitMQ', extra=msg_with_cid)
 
 async def process_msg_files() -> None:
     logging.info(f'Looking for message files in {_cache_dir}')
 
     if mq_client.state == mq.State.CLOSING or mq_client.state == mq.State.CLOSED:
-        logging.info('Cannot process message files when MQ connection is closed.')
+        logging.warning('Cannot process message files when MQ connection is closed.')
         return
 
     while mq_client.state != mq.State.OPEN:
@@ -144,6 +145,8 @@ async def webhook_endpoint(msg: JSONObject, background_tasks: BackgroundTasks) -
 
     if tx_channel.is_open:
         background_tasks.add_task(publish_msg, msg_with_cid)
+    else:
+        lu.cid_logger.warning(f'RabbitMQ channel not open.')
 
     # Doing an explicit return of a Response object with the 204 code to avoid
     # the default FastAPI behaviour of always sending a response body. Even if

@@ -12,4 +12,4 @@ if [ "$RUN_MODE" != test ]; then
     fi
 fi
 
-exec docker compose --profile wombat --profile ubidots --profile pollers -p $RUN_MODE -f ../docker-compose.yml -f ./$RUN_MODE.yml $*
+exec docker compose --profile wombat --profile ubidots --profile ttn --profile pollers -p $RUN_MODE -f ../docker-compose.yml -f ./$RUN_MODE.yml $*
