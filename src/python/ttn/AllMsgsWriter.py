@@ -1,6 +1,6 @@
 #
 # TODO:
-# 
+#
 # Test the behaviour when the DB is not available or fails.
 #
 
@@ -195,46 +195,8 @@ def on_message(channel, method, properties, body):
         uplink_message = msg['uplink_message'] if 'uplink_message' in msg else None
         if uplink_message is not None:
             decoded_payload = None
-            try:
-                def serialise_datetime(obj):
-                    if isinstance(obj, datetime.datetime):
-                        return obj.isoformat()
-                    lu.cid_logger.warning(f'Cannot serialise {type(obj)}, {obj}', extra=msg_with_cid)
-                    return "NO CONVERSION"
-
-                #pd.properties['decoder_name'] = 'temphumid-netvox-r718a'
-                data = json.dumps({'device':pd.dict(), 'message':msg}, default=serialise_datetime)
-                lu.cid_logger.debug(data, extra=msg_with_cid)
-                r = requests.post('http://ttn_decoder:3001/', headers=_decoder_req_headers, data=data)
-                if r.status_code != 200:
-                    lu.cid_logger.error(f'Decoding failed for {app_id}:{dev_id} {correlation_id}', extra=msg_with_cid)
-                else:
-                    decoded_payload = r.json()
-                    if 'data' in decoded_payload:
-                        decoded_payload = decoded_payload['data']
-                        lu.cid_logger.debug(f'Broker decoded payload: {decoded_payload}', extra=msg_with_cid)
-                    else:
-                        lu.cid_logger.warning(f'No data element in {decoded_payload}', extra=msg_with_cid)
-
-            except Exception as err:
-                lu.cid_logger.exception('Local decoding of message failed.', extra=msg_with_cid)
-
-            # Prefer decoded payloads from TTN because a device may have its own device-level
-            # decoder defined below the application level. In these cases we would have
-            # incorrect data if we ran that device payload through the application-level
-            # decoder.
-            if decoded_payload is not None and 'decoded_payload' in uplink_message:
-                uplink_decode = uplink_message['decoded_payload']
-                lu.cid_logger.debug(f'ttn decode: {uplink_decode}', extra=msg_with_cid)
-                if decoded_payload != uplink_decode:
-                    lu.cid_logger.warning(f'Local and TTN decoded payloads are different. {decoded_payload}, {uplink_decode}', extra=msg_with_cid)
-                    lu.cid_logger.warning(f'Using decoded payload from TTN.', extra=msg_with_cid)
-                    decoded_payload = uplink_decode
-            elif decoded_payload is None and 'decoded_payload' in uplink_message:
-                lu.cid_logger.warning('Using decoded_payload from uplink_message', extra=msg_with_cid)
+            if 'decoded_payload' in uplink_message:
                 decoded_payload = uplink_message['decoded_payload']
-
-            if decoded_payload is not None:
                 ts_vars = []
                 for k, v in decoded_payload.items():
                     ts_vars.append({'name': k, 'value': v})
@@ -260,7 +222,7 @@ def on_message(channel, method, properties, body):
         else:
             lu.cid_logger.warning(f'No uplink_message in: {body}', extra=msg_with_cid)
 
-        # This tells RabbitMQ the message is handled and can be deleted from the queue.    
+        # This tells RabbitMQ the message is handled and can be deleted from the queue.
         rx_channel._channel.basic_ack(delivery_tag)
         lu.cid_logger.debug('Acking message from ttn_raw.', extra=msg_with_cid)
     except dao.DAOException as e:

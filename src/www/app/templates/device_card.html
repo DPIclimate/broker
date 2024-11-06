@@ -1,0 +1,56 @@
+<div class="card text-bg-light" id="dev-card">
+    <div class="card-header row mx-0">
+        <div class="col-9 h4">Device Properties</div>
+        <div class="col-2">
+            {% if dev_type == 'LD' %}
+            <button type="button" class="btn btn-sm btn-outline-primary" style="float: inline-end;"
+                onclick="exportData('{{ dev.uid }}')">Export Data</button>
+            {% endif %}
+        </div>
+
+        <div class="col-1">
+            <button form="device-form"
+                    name="sub-btn"
+                    class="btn btn-sm btn-outline-primary">Save</button>
+        </div>
+    </div>
+
+    <div class="card-body">
+        <form id="device-form"
+              hx-post="{{ url_for('HxUpdateLogicalDevice') }}"
+              hx-target="#dev-card"
+              hx-swap="outerHTML">
+            <input type="hidden" name="form_uid" value="{{ dev.uid}}" />
+            <div class="row mb-3">
+                <label class="col-sm-2 col-form-label" for="form-name">Name</label>
+                <div class="col-sm-6">
+                    <input type="text" id="form-device-name" class="form-control" name="form_name"
+                        required value="{{ dev.name }}">
+                </div>
+            </div>
+            <div class="row mb-3">
+                <label id="form-location-label" class="col-sm-2 col-form-label"
+                    for="form-name">Location</label>
+                <div class="col-sm-6">
+                    <input type="text" id="form-location" class="form-control" name="form_location"
+                        value="{{ deviceLocation }}">
+                </div>
+            </div>
+            {% if dev_type == 'PD' %}
+            <div class="row mb-3">
+                <label class="col-sm-2 col-form-label" for="form-source">Source</label>
+                <div class="col-sm-6">
+                    <input type="text" id="form-device-source" class="form-control" name="form_source"
+                    disabled readonly value="{{ dev.source_name }}">
+                </div>
+            </div>
+            {% endif %}
+            <label class="form-label" for="dev-props">Properties</label>
+            <textarea class="form-control {{ 'is-invalid' if props_err }}" id="dev-props" name="form_props" rows="25"
+                style="font-size: smaller; font-family: Consolas, Monaco, 'Courier New', monospace;"
+                aria-describedby="dev-props-msg">
+{{ properties }}</textarea>
+            <div id="dev-props-msg" class="invalid-feedback">{{ props_err }}</div>
+        </form>
+    </div>
+</div>

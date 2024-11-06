@@ -1,104 +1,14 @@
-body {
-    font: 15px/1.5 Arial Helvetica, sans-serif;
-    padding: 0;
-    margin: 0;
-    background-color: #f4f4f4;
-}
-
-.container-fluid {
-    width: 98%;
-    margin: auto;
-    overflow: scroll;
-}
-
-.container h2 {
-    padding: 20px 0 20px 0;
-}
-
+/*
 .hidden {
     display: none;
 }
 
-.physical-device-white-icon {
-    display: inline-block;
-    width: 32px;
-    height: 32px;
-    background: url(white-physical-device.png) no-repeat;
-    background-size: contain;
+.header-container {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0 20px;
 }
-
-a:hover .physical-device-white-icon {
-    display: inline-block;
-    width: 32px;
-    height: 32px;
-    background: url(orange-physical-device.png) no-repeat;
-    background-size: contain;
-}
-
-.logical-device-white-icon {
-    display: inline-block;
-    width: 32px;
-    height: 32px;
-    background: url(white-algorithm.png) no-repeat;
-    background-size: contain;
-}
-
-.wombat-white-icon {
-    display: inline-block;
-    width: 32px;
-    height: 32px;
-    background: url(white-wombat.png) no-repeat;
-    background-size: contain;
-}
-
-.physical-device-black-icon {
-    display: inline-block;
-    width: 24px;
-    height: 24px;
-    background: url(black-physical-device.png) no-repeat;
-    background-size: contain;
-}
-
-.logical-device-black-icon {
-    display: inline-block;
-    width: 24px;
-    height: 24px;
-    background: url(black-algorithm.png) no-repeat;
-    background-size: contain;
-}
-
-.wombat-black-icon {
-    display: inline-block;
-    width: 24px;
-    height: 24px;
-    background: url(black-wombat.png) no-repeat;
-    background-size: contain;
-}
-
-.physical-device-orange-icon {
-    display: inline-block;
-    width: 64px;
-    height: 64px;
-    background: url(orange-physical-device.png) no-repeat;
-    background-size: contain;
-}
-
-.logical-device-orange-icon {
-    display: inline-block;
-    width: 64px;
-    height: 64px;
-    background: url(orange-algorithm.png) no-repeat;
-    background-size: contain;
-}
-
-.wombat-orange-icon {
-    display: inline-block;
-    width: 64px;
-    height: 64px;
-    background: url(orange-wombat.png) no-repeat;
-    background-size: contain;
-}
-
 
 header {
     background: #063f5c;
@@ -108,7 +18,6 @@ header {
 header a {
     color: #ffffff;
     text-decoration: none;
-    text-transform: uppercase;
     font-size: 20px;
 }
 
@@ -128,46 +37,6 @@ header #header-title {
 
 header #header-title h1 {
     margin: 0;
-}
-
-.white-map-icon {
-    display: inline-block;
-    width: 32px;
-    height: 32px;
-    background: url(white-maps.png) no-repeat;
-    background-size: contain;
-}
-
-header a:hover .white-map-icon {
-    display: inline-block;
-    width: 32px;
-    height: 32px;
-    background: url(orange-maps.png) no-repeat;
-    background-size: contain;
-}
-
-header a:hover .map-icon {
-    display: inline-block;
-    width: 32px;
-    height: 32px;
-    background: url(orange-physical-device.png) no-repeat;
-    background-size: contain;
-}
-
-header a:hover .wombat-white-icon {
-    display: inline-block;
-    width: 32px;
-    height: 32px;
-    background: url(orange-wombat.png) no-repeat;
-    background-size: contain;
-}
-
-header a:hover .logical-device-white-icon {
-    display: inline-block;
-    width: 32px;
-    height: 32px;
-    background: url(orange-algorithm.png) no-repeat;
-    background-size: contain;
 }
 
 .nav-bar {
@@ -209,8 +78,6 @@ header a:hover .logical-device-white-icon {
 .command-bar a {
     color: #ffffff;
     text-decoration: none;
-    text-transform: uppercase;
-    font-size: 16px;
 }
 
 .command-bar a:hover {
@@ -220,132 +87,43 @@ header a:hover .logical-device-white-icon {
 .command-bar .btn {
     color: #ffffff;
     text-decoration: none;
-    text-transform: uppercase;
-    font-size: 16px;
 }
 
 .command-bar .btn:hover {
     color:#fd7e14;
 }
+*/
+.navbar,
+.navbar-brand,
+.navbar-nav a {
+    background: #063f5c;
+    color: #ffffff;
+}
 
-.form-heading {
+header {
+    border-bottom: solid #fd7e14;
+}
+
+.navbar-nav a.nav-link.active, a.nav-link:hover {
     color: #fd7e14;
-    font-weight: bold;
 }
 
-.form-section {
-    margin: 20px 0 20px 0;
+#dev-hdr {
+    background-color: #f8f9fa;
+    box-shadow: -1px 10px 4px -1px rgba(0, 0, 0, 0.26);
+    -webkit-box-shadow: -1px 10px 4px -1px rgba(0, 0, 0, 0.26);
+    -moz-box-shadow: -1px 10px 4px -1px rgba(0, 0, 0, 0.26);
 }
 
-#device-form {
-    display: table;
+.dt-custom-btn {
+    background-color: transparent !important;
 }
 
-#device-form div {
-    display: table-row;
+.dt-custom-btn:hover {
+    background-color: var(--bs-primary) !important;
+    color: white !important;
 }
 
-#device-form label {
-    display: table-cell;
-    margin: 5px;
-}
-
-#device-form input {
-    display: table-cell;
-    margin: 5px;
-}
-
-form select {
-    display: table-cell;
-    width: 95%;
-    margin: 5px;
-}
-
-.row {
-    display: flex;
-}
-
-.column {
-    flex: 50%
-}
-
-.dialog-box {
-    z-index: 10;
-    width: 70%;
-}
-
-.dialog-box form{
-    width: 100%;
-}
-
-#note-input {
-    margin: 5px 5px 0 0;
-    width: 70%
-}
-
-.form-btn {
-    background-color: #17a2b8;
-    border: none;
-    color: white;
-    text-align: center;
-    text-decoration: none;
-    display: inline-block;
-    font-size: 16px;
-    margin: 5px;
-    cursor: pointer;
-}
-
-.form-btn:hover {
-    background-color: #fd7e14;
-    font-size: 17px;
-}
-
-.textAreaAlign {
-    display: inline-flex;
-    margin-top: 5px;
-    margin-bottom: 5px;
-}
-
-.note-dialog-box {
-    z-index: 1;
-    position: relative;
-    left: 16%;
-    top: -100%;
-    width: 30%;
-}
-
-.delete-btn {
-    background-color: #fd7e14;
-    border: none;
-    color: white;
-    text-align: center;
-    text-decoration: none;
-    display: inline-block;
-    font-size: 16px;
-    margin: 5px;
-    cursor: pointer;
-}
-
-.edit-note-container {
-    display: flex; 
-    justify-content: space-between;
-  }
-
-.edit-note-container span {
-flex: 1;
-text-align: center;
-}
-
-.selected {
-    background-color: #a8e9f4;
-}
-
-.pause_icon {
-    width: 30px;
-    height: 30px;
-    margin-left: 20px;
-}
-
-.mapping-header {
-    display: flex;
+.dt-custom-btn.btn-outline-secondary:hover {
+    background-color: var(--bs-secondary) !important;
 }

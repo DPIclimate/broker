@@ -1,45 +1,105 @@
 {% extends "base.html" %}
 {% block content%}
 
-<div class="command-bar">
-    <div class="form-buttons">
-        <ul id="physicalmappingbuttons">
-			<li><span class="btn" onclick="handleCreateMultipleMappings()">Create Multiple Mappings</span></li>
-        </ul>
+<script>
+	$(document).ready(function () {
+		tbl = new DataTable('#phy-dev-tbl', {
+			select: true,
+			layout: {
+				topEnd: {
+					buttons: [
+						{
+							text: 'Automap',
+							className: 'btn btn-sm btn-outline-primary me-2 dt-custom-btn disabled',
+							action: function ( e, dt, node, config ) {
+								// Custom button action
+								alert('Automap button clicked!');
+							},
+						},
+						{
+							text: 'Download data',
+							className: 'btn btn-sm btn-outline-primary dt-custom-btn disabled',
+							action: function ( e, dt, node, config ) {
+								// Custom button action
+								alert('Download clicked!');
+							}
+		
+						}
+					],
+					search: {}
+				}
+			},
+			responsive: true,
+			autoWidth: false,
+			language: {
+				search: "_INPUT_",
+				searchPlaceholder: "Search...",
+				lengthMenu: "_MENU_"
+			},
+		});
+
+		tbl.on('select', function(e, dt, type, indices) {
+			// A select event means at least one row is selected so the
+			// buttons should be enabled.
+			$('.dt-custom-btn').removeClass('disabled')
+		});
+
+		tbl.on('deselect', function(e, dt, type, indices) {
+			// A deselect may still leave other rows selected so
+			// check the count to decide whether to disable the
+			// buttons.
+			var count = dt.rows({ selected: true }).count();
+			if (count < 1) {
+				$('.dt-custom-btn').addClass('disabled')
+			} else {
+				$('.dt-custom-btn').removeClass('disabled')
+			}
+		});
+	});
+</script>
+
+<div class="row">
+    <div class="command-bar">
+        <div class="form-buttons">
+            <ul id="physicalmappingbuttons">
+                <li><span class="btn" onclick="handleCreateMultipleMappings()">Create Multiple Mappings</span></li>
+            </ul>
+        </div>
     </div>
 </div>
-
-<section id="device-table">
-    <div class="container">
-        <h2 class="form-heading"><span class='physical-device-orange-icon'></span> Physical Devices</h2>
-        <table class="table table-striped data-table-multi">
-            <thead>
-                <tr>
-                    <th>UID</th>
-                    <th>NAME</th>
-                    <th>SOURCE</th>
-                    <th>LAST SEEN</th>
-                    <th>CURRENT MAPPING</th>
-                </tr>
-            </thead>
-            <tbody id="device-table-body">
-                {% for physicalDevice in physicalDevices %}
-                <tr id="{{ physicalDevice.uid }}">
-                    <td>{{ physicalDevice.uid }}</td>
-                    <td><a href="{{ url_for('physical_device_form', uid=physicalDevice.uid) }}">{{ physicalDevice.name }}</a></td>
-                    <td>{{ physicalDevice.source_name }}</td>
-                    <td data-order="{{ physicalDevice.ts_sort }}">{{ physicalDevice.last_seen }}</td>
-                    <td>
-                        {% for mapping in dev_mappings %}
-                            {% if mapping.pd == physicalDevice.uid %}
-                                <a href="{{ url_for('logical_device_form', uid=mapping.ld.uid) }}">{{ mapping.ld.name }}</a>
-                            {% endif %}
-                        {% endfor %}
-                    </td>
-                </tr>
-                {% endfor %}
-            </tbody>
-        </table>
-    </div>
-</section>
+<div class="row">
+    <section> <!-- Why does this cause the max size to be set, centering the table? -->
+        <div class="container">
+            <h2>Physical Devices</h2>
+            <table id="phy-dev-tbl" class="table table-striped">
+                <thead>
+                    <tr>
+                        <th>Id</th>
+                        <th>Name</th>
+                        <th>Source</th>
+                        <th style="text-align: start">Last seen</th>
+                        <th>Mapped to</th>
+                    </tr>
+                </thead>
+                <tbody id="device-table-body">
+                    {% for physicalDevice in physicalDevices %}
+                    <tr id="{{ physicalDevice.uid }}">
+                        <td>{{ physicalDevice.uid }}</td>
+                        <td><a href="{{ url_for('physical_device_form', uid=physicalDevice.uid) }}">{{ physicalDevice.name }}</a></td>
+                        <td>{{ physicalDevice.source_name }}</td>
+                        <td style="text-align: start" data-order="{{ physicalDevice.ts_sort }}">{{ physicalDevice.last_seen }}</td>
+                        {% if physicalDevice.mapped_to %}
+                        <td>
+                            <a href="{{ url_for('logical_device_form', uid=physicalDevice.mapped_to.uid) }}">{{ physicalDevice.mapped_to.name }}</a>
+                        </td>
+                        {% else %}
+                        <td></td>
+                        {% endif %}
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </section>
+</div>
 {% endblock %}

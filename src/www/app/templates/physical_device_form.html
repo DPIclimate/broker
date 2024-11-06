@@ -1,150 +1,37 @@
 {% extends "base.html" %}
-{% block content%}
+{% block content %}
 
-<div class="command-bar">
-	<div class="form-buttons">
-		<ul>
-			<li><span class="btn" onclick="handleSubmit('device-form', 'Are you sure you want to Save?')">Save</span></li>
-			<li><span class="btn" onclick="handleMapping('physical device')">Update Mapping</span></li>
-			<li><span class="btn" onclick="handleCreateMapping('{{ pd_data.uid }}')">Create Mapping</span></li>
-			<li><span class="btn" onclick="handleEndMapping('{{ pd_data.uid }}', 'PD')">End Mapping</span></li>
-				{% if currentMappings | length > 0 %}
-					<li><span class="btn" onclick="handleToggleMapping('{{ currentMappings[0].pd.uid }}','{{ currentMappings[0].is_active }}', 'PD')">{{ "Pause Mapping" if currentMappings[0].is_active == True else "Resume Mapping" }}</span></li>
-				{% endif %}
-		</ul>
-	</div>
+<div class="px-4 pt-0 mt-0 mb-6" id="dev-hdr">
+    <h2 class="form-heading pt-3" id="dev-name-title">{{ title }}</h2>
+    <div class="row justify-content-between">
+        <div class="col small" id="dev-last-seen">
+            Last seen: {{ deviceLastSeen }}
+        </div>
+        {% if ubidots_link != "" %}
+        <div class="col">
+            <a style="float: inline-end;" href="{{ ubidots_link }}" target="_blank">Ubidots</a>
+        </div>
+        {% endif %}
+    </div>
 </div>
 
-<section class="container">
-	<h2 class="form-heading">{{ title }}</h2>
-	<div class="row">
-		<div class="column">
-			<div class="form-section">
-				<h3 id="form-heading">Form</h3>
-				<form id="device-form" action="{{ url_for('UpdatePhysicalDevice') }}" target="hidden-frame">
-					<div>
-						<label for="form-uid">UID</label>
-						<input type="text" id="form-uid" name="form_uid" value="{{ pd_data.uid }}" readonly>
-					</div>
-					<div>
-						<label for="form-name">Name</label>
-						<input type="text" id="form-device-name" name="form_name" value="{{ pd_data.name }}">
-					</div>
-					<div>
-						<label for="form-source">Source</label>
-						<input type="text" id="form-source" name="form_source" value="{{ pd_data.source_name }}" readonly>
-					</div>
-					<div>
-						<label id="form-location-label" for="form-name">Location</label>
-						<input type="text" id="form-location" name="form_location" value="{{ pd_data.location }}">
-					</div>
-					<label id="form-last-seen" for="device-last-seen">Device Last Seen</label>
-					<input type="text" id="device-last-seen" name="device_last_seen" value="{{ pd_data.last_seen }}" readonly>
-					{% if ttn_link != "" %}
-					<div>
-							<label id="form_link" for="form-link">TTN Link</label>
-							<a href="{{ ttn_link }}" target="_blank">Click here</a>
-					</div>
-					{% endif %}
-					<input type="text" id="device-properties" class="hidden" hidden name="device_properties" value="{{ pd_data.properties }}" readyonly>
-				</form>
-			</div>
-			<div class="form-section">
-				<h3 id="properties-heading">Properties</h3>
-				<textarea rows="10" cols="50" readonly>{{ properties }}</textarea>
-			</div>
-		</div>
-		<div class="column">
-			<div class="form-section">
-				<dialog id="mapping-dialog" class="dialog-box">
-					<button onclick="closeDialog()">&times</button>
-					<h3 id="mapping-dialog-heading">Select Logical Device to Map</h3>
-					<form id="mapping-form" action="{{ url_for('UpdateMappings') }}" method="PATCH" target="hidden-frame" enctype="application/x-www-form-urlencoded">
-						<table class="table table-striped data-table-single">
-							<thead>
-								<th>Select</th>
-								<th>Uid</th>
-								<th>Name</th>
-								<th>Location</th>
-								<th>Last Seen</th>
-							</thead>
-							<tbody>
-							{% for logicalDevice in ld_data %}
-								<tr id="{{ logicalDevice.uid }}">
-									<td><input type="radio" name="logicalDevice_mapping" value="{{ logicalDevice.uid }}"></td>
-									<td>{{logicalDevice.uid}}</td>
-									<td><a href="{{ url_for('logical_device_form', uid=logicalDevice.uid) }}">{{ logicalDevice.name }}</a></td>
-									<td>{{ logicalDevice.location }}</td>
-									<td>{{ logicalDevice.last_seen }}</td>
-								</tr>
-							{% endfor %}
-						</tbody>
-						</table>
-						<input type="text" id="mapping-id" name="physicalDevice_mapping" class="hidden" value="{{ pd_data.uid }}" readonly>
-						<input type="button" class="form-btn" value="Update Mapping" onClick="handleSubmit('mapping-form', 'Are you sure you want to map these?', event)">
-					</form>
-				</dialog>
-				<div class="mapping-header">
-					<h3 id="mapping-heading">Mapping</h3>
-					{% if currentMappings | length > 0 %}
-						{% if currentMappings[0].is_active == False %}
-							<img src="{{url_for('static',filename = 'pause.png')}}" class="pause_icon"/>
-						{% endif %}
-					{% endif %}
-				</div>
-				<table class="table table-striped">
-					<thead>
-						<th>Device ID</th>
-						<th>Device Name</th>
-						<th>Start Time</th>
-						<th>End Time</th>
-						<th>Is Active</th>
-					</thead>
-					<tbody>
-					{% for mapping in currentMappings %}
-						<tr>
-							<td>{{ mapping.ld.uid }}</td>
-							<td><a href="{{ url_for('logical_device_form', uid=mapping.ld.uid) }}">{{ mapping.ld.name }}</a></td>
-							<td>{{ mapping.start_time }}</td>
-							<td>{{ mapping.end_time }}</td>
-							<td>{{ mapping.is_active }}</td>
-						</tr>
-					{% endfor %}
-				</tbody>
-				</table>
-			</div>
+<div class="row mt-4">
+    <div class="col">
+        {% include 'device_card.html' %}
+    </div>
+    <div class="col">
+        {% include 'dev_mapping_card.html' %}
+    </div>
+</div>
+</div>
 
-			<div class="form-section">
-				<h3 id="notes-heading">Notes</h3>
-				<div class = "textAreaAlign">
-					<textarea rows="3" id="note-input" cols="35" placeholder="Enter note here"></textarea>
-					<input id="note-btn" class="form-btn" style="height:70px;width:83px" type="button" onclick="handleCreateNote()" value="Add Note">	
-					<input id="delete-note-btn" hidden='hidden' class="delete-btn" style="height:70px;width: 130px;" type="button" onclick="handleDeleteNote()" value="Delete Selected">	
-				</div>
-				<table class="table table-striped data-table">
-					<thead>
-						<tr>
-							<th></th>
-							<th>NAME</th>
-							<th>TIMESTAMP</th>
-							<th>EDIT</th>
-						</tr>
-					</thead>
-					<tbody>
-					{% for note in deviceNotes %}
-					<tr >
-						<td onclick="handleClickNote(this)"> <input type="checkbox" name ='note-uid' value="{{ note.uid }}">
-						<label for="note-uid">{{ note.uid }}</label></td>
-						<td name ='note'>{{ note.note }}</td>
-						<td>{{ note.ts }}</td>
-						<td><input id="edit-note-btn" class="form-btn" type="button" onclick="handleEditNote(this)" value="Edit"></td>
-					</tr>
-					{% endfor%}
-					</tbody>
-				</table>				
-			</div>
-		</div>
-	</div>
-</section>
-
+<dialog style="width: 20%" id="edit-note-dialog" class="dialog-box">
+    <h3 id="mapping-dialog-heading">Edit Note</h3>
+    <div class="edit-note-container">
+        <textarea rows='3' cols='35' id="edit-note-box" name="edit-note-text" class="close-edit-note"
+            value="Save"></textarea>
+        <input type="button" style="height:70px;width:83px" class="form-btn" value="Save" onClick="saveEditNote()">
+        <input type="button" class="form-btn" value="Close" onClick="closeEditNote()">
+    </div>
+</dialog>
 {% endblock %}

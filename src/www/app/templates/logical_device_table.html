@@ -1,49 +1,95 @@
 {% extends "base.html" %}
 {% block content%}
 
-	<div class="command-bar">
-		<div class="form-buttons">
-			<ul>
-				<li></li>
-			</ul>
-		</div>
-	</div>
-	
-	<section id="device-table">
-		<div class="container">
-			<h2 class="form-heading"><span class='logical-device-orange-icon'></span> Logical Devices</h2>
-			<table class="table table-striped data-table">
-				<thead>
-					<tr>
-						<th>UID</th>
-						<th>NAME</th>
-						<th>LOCATION</th>
-						<th>LAST SEEN</th>
-						<th>CURRENT MAPPING</th>
-					</tr>
-					</tr>
-				</thead>
-				<tbody>
-					{% for logicalDevice in logicalDevices %}
-					<tr id="{{ logicalDevice.uid }}">
-						<td>{{ logicalDevice.uid }}</td>
-						<td>
-							<a href="{{ url_for('logical_device_form', uid=logicalDevice.uid) }}">{{ logicalDevice.name }}</a>
-						</td>
-						<td>{{ logicalDevice.location }}</td>
-						<td data-order="{{ logicalDevice.ts_sort }}">{{ logicalDevice.last_seen }}</td>
-						<td>
-							{% for mapping in dev_mappings %}
-								{% if mapping.ld == logicalDevice.uid %}
-									<a href="{{ url_for('physical_device_form', uid=mapping.pd.uid) }}">{{ mapping.pd.name }}</a>
-								{% endif %}
-							{% endfor %}
-						</td>
-					</tr>
-					{% endfor %}
-				</tbody>
-			</table>
-		</div>
-	</section>
+<script>
+	$(document).ready(function () {
+		tbl = new DataTable('#log-dev-tbl', {
+			select: true,
+			layout: {
+				topEnd: {
+					buttons: [
+						{
+							text: 'Download data',
+							className: 'btn btn-sm btn-outline-primary dt-custom-btn disabled',
+							action: function ( e, dt, node, config ) {
+								// Custom button action
+								alert('Download clicked!');
+							}
+		
+						}
+					],
+					search: {}
+				}
+			},
+			responsive: true,
+			autoWidth: false,
+			language: {
+				search: "_INPUT_",
+				searchPlaceholder: "Search...",
+				lengthMenu: "_MENU_"
+			},
+		});
 
-	{% endblock %}
+		tbl.on('select', function(e, dt, type, indices) {
+			// A select event means at least one row is selected so the
+			// buttons should be enabled.
+			$('.dt-custom-btn').removeClass('disabled')
+		});
+
+		tbl.on('deselect', function(e, dt, type, indices) {
+			// A deselect may still leave other rows selected so
+			// check the count to decide whether to disable the
+			// buttons.
+			var count = dt.rows({ selected: true }).count();
+			if (count < 1) {
+				$('.dt-custom-btn').addClass('disabled')
+			} else {
+				$('.dt-custom-btn').removeClass('disabled')
+			}
+		});
+	});
+
+</script>
+<div class="px-4 pt-0 mt-0 mb-6" id="dev-hdr">
+    <h2 class="form-heading pt-3" id="dev-name-title">{{ title }}</h2>
+    <div class="row justify-content-between">
+        <div class="col small" id="dev-last-seen">
+        </div>
+    </div>
+</div>
+
+<section>
+	<div class="container mt-4">
+		<table id="log-dev-tbl" class="table table-striped">
+			<thead>
+				<tr>
+					<th>Id</th>
+					<th>Name</th>
+					<th style="text-align: start">Last seen</th>
+					<th>Mapped to</th>
+				</tr>
+			</thead>
+			<tbody>
+				{% for logicalDevice in logicalDevices %}
+				<tr id="{{ logicalDevice.uid }}">
+					<td>{{ logicalDevice.uid }}</td>
+					<td>
+						<a href="{{ url_for('logical_device_form', uid=logicalDevice.uid) }}">{{ logicalDevice.name
+							}}</a>
+					</td>
+					<td style="text-align: start" data-order="{{ logicalDevice.ts_sort }}">{{ logicalDevice.last_seen }}
+					</td>
+					{% if logicalDevice.mapped_to %}
+					<td>
+						<a href="{{ url_for('physical_device_form', uid=logicalDevice.mapped_to.uid) }}">{{ logicalDevice.mapped_to.name }}</a>
+					</td>
+					{% else %}
+					<td></td>
+					{% endif %}
+				</tr>
+				{% endfor %}
+			</tbody>
+		</table>
+	</div>
+</section>
+{% endblock %}

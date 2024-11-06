@@ -1,16 +1,22 @@
 <header>
-    <h1 style="padding: 8px">IoTa Device Manager</h1>
-    <nav class="nav-bar">
-        <ul>
-            <li>
-                <a id="physical-device-banner-heading" href="{{ url_for('physical_device_table') }}">
-                    <span class="nav-text">Physical Devices</span>
-                </a></li>
-            <li><a id="logical-device-banner-heading" href="{{ url_for('logical_device_table') }}">Logical Devices</a></li>
-            <li><a id="wombats-banner-heading" href="{{ url_for('wombats') }}">Wombats</a></li>
-            <li><a id="map-banner-heading" href="{{ url_for('show_map') }}" target="_blank">Map</a></li>
-            <li><a id="account-banner-heading" href="{{ url_for('account') }}">Account</a></li>
-            <li><a id="logout-banner-heading" href="{{ url_for('signout') }}">Signout</a></li>
-        </ul>
+    <nav class="navbar navbar-expand-lg">
+        <div class="container-fluid">
+            <span class="navbar-brand mb-0 h1">IoTa Device Management Platform</span>
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse"
+                data-bs-target="#navbarNavAltMarkup" aria-controls="navbarNavAltMarkup" aria-expanded="false"
+                aria-label="Toggle navigation">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <div class="collapse navbar-collapse" id="navbarNavAltMarkup">
+                <div class="navbar-nav">
+                    <a class="nav-link" href="/iota/physical-devices">Physical Devices</a>
+                    <a class="nav-link" href="/iota/logical-devices">Logical Devices</a>
+                    <a class="nav-link" href="/iota/wombats">Wombats</a>
+                    <a class="nav-link" href="/iota/map" target="_blank">Map</a>
+                    <a class="nav-link" href="/iota/account">Account</a>
+                    <a class="nav-link" href="/iota/signout">Signout</a>
+                </div>
+            </div>
+        </div>
     </nav>
 </header>

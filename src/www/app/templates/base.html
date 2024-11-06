@@ -1,195 +1,203 @@
 <!DOCTYPE html>
 <html>
-    <head>
-        <meta charset="utf-8">
-        <meta name="viewport" content="width=device-width">
-        <title>IoTa Device Manager | {{ title }}</title>
-        <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.0.1/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-+0n0xVW2eSR5OomGNYDnhzAbDsOXxcvSN1TPprVMTNDbiYZCxYbOOl7+AMvyTG2x" crossorigin="anonymous">
-        <link rel="stylesheet" type="text/css" href="https://cdn.datatables.net/1.10.25/css/dataTables.bootstrap5.min.css">
-        <link rel="stylesheet" href="{{ url_for('static', filename='main.css') }}">
-        <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
 
-        <script type="text/javascript" charset="utf8" src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
-        <script type="text/javascript" charset="utf8" src="https://cdn.datatables.net/1.10.25/js/jquery.dataTables.min.js"></script>
-        <script type="text/javascript" charset="utf8" src="https://cdn.datatables.net/1.10.25/js/dataTables.bootstrap5.min.js"></script>
-        <script type="text/javascript" charset="utf8" src="https://cdn.datatables.net/select/1.4.0/js/dataTables.select.min.js"></script>
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width">
+    <title>IoTa Device Manager | {{ title }}</title>
 
-        <script type="text/javascript">
-            var wombatTable;
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet"
+        integrity="sha384-QWTKZyjpPEjISv5WaRU9OFeRpok6YctnYmDr5pNlyT2bRjXh0JMhjY6hW+ALEwIH" crossorigin="anonymous">
+    <link rel="stylesheet" href="{{ url_for('static', filename='datatables.min.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='main.css') }}">
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"
+        integrity="sha384-YvpcrYf0tY3lHB60NNkmXc5s9fDVZLESaAA55NDzOxhy9GkcIdslK1eN7N6jIeHz"
+        crossorigin="anonymous"></script>
+    <script src="https://code.jquery.com/jquery-3.7.1.min.js" type="text/javascript" charset="utf8"></script>
+    <script src="{{ url_for('static', filename='datatables.min.js') }}"></script>
+    <script src="https://unpkg.com/htmx.org@2.0.2"
+        integrity="sha384-Y7hw+L/jvKeWIRRkqWYfPcvVxHzVzn5REgzbawhxAuQGwX1XWe70vji+VSeHOThJ"
+        crossorigin="anonymous"></script>
+
+    <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
+
+    <script type="text/javascript">
+        var wombatTable;
+
+        $(document).ready(function () {
+            // Good to know the user's timezone when accepting dates.
+            document.cookie = "timezone=" + Intl.DateTimeFormat().resolvedOptions().timeZone + "; path=/";
+            console.log('a');
+            /*
+                            $('.data-table-multi').DataTable({
+                                select: true,
+                                language: {
+                                    info:   "Showing _START_ to _END_ of _TOTAL_ entries "
+                                }
+                            });
             
-            $(document).ready(function () {
-                // Good to know the user's timezone when accepting dates.
-                document.cookie = "timezone=" + Intl.DateTimeFormat().resolvedOptions().timeZone + "; path=/";
+                            $('.data-table-single').DataTable({
+                                select: {
+                                    style: 'os'
+                                },
+                                language: {
+                                    info:   "Showing _START_ to _END_ of _TOTAL_ entries "
+                                }
+                            });
+            
+                            wombatTable = $('.data-table-wombats').DataTable({
+                                columnDefs: [
+                                    { orderable: false, targets: 7 }
+                                ],
+                                select: true,
+                                language: {
+                                    info:   "Showing _START_ to _END_ of _TOTAL_ entries "
+                                },
+                                pageLength: 25
+                            });
+            
+                            $('.data-table').DataTable();
+                        });
+            */
+        });
+/*
+        function handleSubmit(form_id, warning_message, event) {
+            if (!event === undefined) {
+                event.preventDefault()
+            }
 
-                $('.data-table-multi').DataTable({
-                    select: {
-                        style: 'multi+shift'
-                    },
-                    language: {
-                        info:   "Showing _START_ to _END_ of _TOTAL_ entries "
-                    }
-                });
+            if (confirm(warning_message)) {
+                const formElement = document.getElementById(form_id);
+                const formData = new FormData(formElement);
 
-                $('.data-table-single').DataTable({
-                    select: {
-                        style: 'os'
-                    },
-                    language: {
-                        info:   "Showing _START_ to _END_ of _TOTAL_ entries "
-                    }
-                });
-
-                wombatTable = $('.data-table-wombats').DataTable({
-                    columnDefs: [
-                        { orderable: false, targets: 7 }
-                    ],
-                    select: true,
-                    language: {
-                        info:   "Showing _START_ to _END_ of _TOTAL_ entries "
-                    },
-                    pageLength: 25
-                });
-
-                $('.data-table').DataTable();
-
-            });
-
-            function handleSubmit(form_id, warning_message, event) {
-                if ( ! event === undefined) {
-                    event.preventDefault()
-                }
-
-                if (confirm(warning_message)) {
-                    const formElement = document.getElementById(form_id);
-                    const formData = new FormData(formElement);
-                    
-                    fetch(formElement.action, {
-                        method: 'PATCH',
-                        body: formData
-                    })
+                fetch(formElement.action, {
+                    method: 'PATCH',
+                    body: formData
+                })
                     .then(data => {
-                         //Handle success, e.g., reload the page
-                         window.location.reload();
+                        //Handle success, e.g., reload the page
+                        window.location.reload();
                     })
                     .catch(error => {
                         console.error('Error:', error);
                         alert("Error occured on submission", error)
                     });
-                }
             }
+        }
 
-            var editNoteID = 0;
-            var isDialogHidden = true;
-            function handleMapping(deviceType){                
-                if(isDialogHidden){
-                    document.getElementById('mapping-dialog').show();
-                    isDialogHidden = false;
-                } else {
-                    document.getElementById('mapping-dialog').close();
-                    isDialogHidden = true;
-                }
-            }
-            
-            function closeDialog() {
-                var dialog = document.getElementById('mapping-dialog');
-                dialog.close();
+        var editNoteID = 0;
+        var isDialogHidden = true;
+        function handleMapping(deviceType) {
+            if (isDialogHidden) {
+                document.getElementById('mapping-dialog').show();
+                isDialogHidden = false;
+            } else {
+                document.getElementById('mapping-dialog').close();
                 isDialogHidden = true;
             }
+        }
 
-            function handleCreateMultipleMappings(){
-                var selected = $('.selected');
-                if(selected.length === 0){
-                    alert('Please select at least one device to update.')
-                }
-                else if(confirm('Are you sure you want to Create Mappings for ' + selected.length + ' devices?')){
-                    for (var index = 0; index < selected.length; index++){
-                        var url = "{{ url_for('CreateMapping') }}" + '?uid=' + selected[index]['id'];
-                        console.log('Create Mapping for Physical Device: ' + selected[index]['id'] + ': ' + httpGet(url));
-                    }
-                    alert('Success');
-                }
+        function closeDialog() {
+            var dialog = document.getElementById('mapping-dialog');
+            dialog.close();
+            isDialogHidden = true;
+        }
+
+        function handleCreateMultipleMappings() {
+            var selected = $('.selected');
+            if (selected.length === 0) {
+                alert('Please select at least one device to update.')
             }
-
-            function handleCreateMapping(uid) {
-                if(confirm('Are you sure you want to Create Mapping?')){
-                    var url = "{{ url_for('CreateMapping') }}" + '?uid=' + uid;
-                    alert(httpGet(url));
-                    location.reload();
-                } else {
-                    console.log("Did not Create Mapping");
+            else if (confirm('Are you sure you want to Create Mappings for ' + selected.length + ' devices?')) {
+                for (var index = 0; index < selected.length; index++) {
+                    var url = "{{ url_for('CreateMapping') }}" + '?uid=' + selected[index]['id'];
+                    console.log('Create Mapping for Physical Device: ' + selected[index]['id'] + ': ' + httpGet(url));
                 }
+                alert('Success');
             }
+        }
 
-            function handleEndMapping(uid, deviceType) {
-                if (confirm('Are you sure you would like to End Mapping?')) {
-                    var url = ''
-                    if (deviceType == 'PD') {
-                        url = "{{ url_for('EndPhysicalDeviceMapping') }}" + '?uid=' + uid;
-                    }
-                    else if (deviceType == 'LD') {
-                        url = "{{ url_for('EndLogicalDeviceMapping') }}" + '?uid=' + uid;
-                    }
-                    alert(httpGet(url));
-                    location.reload();
-                } else {
-                    console.log("Did not End Mapping");
+        function handleCreateMapping(uid) {
+            if (confirm('Are you sure you want to Create Mapping?')) {
+                var url = "{{ url_for('CreateMapping') }}" + '?uid=' + uid;
+                alert(httpGet(url));
+                location.reload();
+            } else {
+                console.log("Did not Create Mapping");
+            }
+        }
+
+        function handleEndMapping(uid, deviceType) {
+            if (confirm('Are you sure you would like to End Mapping?')) {
+                var url = ''
+                if (deviceType == 'PD') {
+                    url = "{{ url_for('EndPhysicalDeviceMapping') }}" + '?uid=' + uid;
                 }
+                else if (deviceType == 'LD') {
+                    url = "{{ url_for('EndLogicalDeviceMapping') }}" + '?uid=' + uid;
+                }
+                alert(httpGet(url));
+                location.reload();
+            } else {
+                console.log("Did not End Mapping");
             }
-            
-            function handleToggleMapping(uid, is_active, dev_type){
-                let isActiveBool = JSON.parse(is_active.toLowerCase());
+        }
 
-                console.log(isActiveBool, !isActiveBool)
-                let url = ''        
-                url=`{{ url_for('ToggleDeviceMapping') }}?uid=${uid}&dev_type=${dev_type}&is_active=${!isActiveBool}`;
-                httpPatch(url)
+        function handleToggleMapping(uid, is_active, dev_type) {
+            let isActiveBool = JSON.parse(is_active.toLowerCase());
+
+            console.log(isActiveBool, !isActiveBool)
+            let url = ''
+            url = `{{ url_for('ToggleDeviceMapping') }}?uid=${uid}&dev_type=${dev_type}&is_active=${!isActiveBool}`;
+            httpPatch(url)
+            location.reload();
+        }
+
+        function handleCreateNote() {
+            var text = document.getElementById('note-input').value;
+            if (text !== '') {
+                var deviceUID = document.getElementById('form-uid').value;
+                deviceUID = String(deviceUID)
+                var url = `{{ url_for('CreateNote', noteText='inputText', uid='deviceID') }}`.replace('inputText', text).replace('deviceID', deviceUID);
+                httpGet(url);
                 location.reload();
             }
-
-            function handleCreateNote(){
-                var text = document.getElementById('note-input').value;
-                if (text !== '') {
-                        var deviceUID = document.getElementById('form-uid').value;
-                        deviceUID = String(deviceUID)
-                        var url = `{{ url_for('CreateNote', noteText='inputText', uid='deviceID') }}`.replace('inputText', text).replace('deviceID', deviceUID);
-                        httpGet(url);
-                        location.reload();
-                    }
-                    else {
-                        alert('Note cannot be null');
-                    }
-                } 
-            
-
-            function saveEditNote(){
-                var text = document.getElementById('edit-note-box').value;
-                editNoteID = String(editNoteID)
-                var url = `{{ url_for('EditNote', noteText='inputText', uid='deviceID') }}`.replace('inputText', text).replace('deviceID', editNoteID);
-                httpPatch(url);
-                location.reload();
-                closeEditNote();
+            else {
+                alert('Note cannot be null');
             }
+        }
 
-            function handleDeleteNote(){
-                var checkboxes = document.getElementsByName('note-uid');
-                for (var i=0; i < checkboxes.length; i++){
-                    if (checkboxes[i].checked) {
-                        var noteID = checkboxes[i].value;
-                        var url = `{{ url_for('DeleteNote', noteUID='noteID') }}`.replace('noteID', noteID);
-                        httpDelete(url);
-                    }
-                }
-                location.reload();
-                }
-            
 
-            function handleClickNote(e){ 
-                var checkbox = document.getElementsByName('note-uid');
-                var anyChecked = false;
-                for (var i=0; i < checkbox.length; i++){
-                        if (checkbox[i].checked) {
-                            anyChecked = true
-                        }
+        function saveEditNote() {
+            var text = document.getElementById('edit-note-box').value;
+            editNoteID = String(editNoteID)
+            var url = `{{ url_for('EditNote', noteText='inputText', uid='deviceID') }}`.replace('inputText', text).replace('deviceID', editNoteID);
+            httpPatch(url);
+            location.reload();
+            closeEditNote();
+        }
+
+        function handleDeleteNote() {
+            var checkboxes = document.getElementsByName('note-uid');
+            for (var i = 0; i < checkboxes.length; i++) {
+                if (checkboxes[i].checked) {
+                    var noteID = checkboxes[i].value;
+                    var url = `{{ url_for('DeleteNote', noteUID='noteID') }}`.replace('noteID', noteID);
+                    httpDelete(url);
+                }
+            }
+            location.reload();
+        }
+
+
+        function handleClickNote(e) {
+            var checkbox = document.getElementsByName('note-uid');
+            var anyChecked = false;
+            for (var i = 0; i < checkbox.length; i++) {
+                if (checkbox[i].checked) {
+                    anyChecked = true
+                }
                 if (anyChecked) {
                     document.getElementById('delete-note-btn').removeAttribute("hidden");
                 }
@@ -199,69 +207,61 @@
             }
         }
 
-            function closeEditNote(e){ 
-                if(isDialogHidden){
-                    document.getElementById('edit-note-dialog').show();
-                    isDialogHidden = false;
-                } else {
-                    document.getElementById('edit-note-dialog').close();
-                    isDialogHidden = true;
-                }
+        function closeEditNote(e) {
+            if (isDialogHidden) {
+                document.getElementById('edit-note-dialog').show();
+                isDialogHidden = false;
+            } else {
+                document.getElementById('edit-note-dialog').close();
+                isDialogHidden = true;
             }
+        }
 
-            function handleEditNote(e){ 
-                if(isDialogHidden){
-                    document.getElementById('edit-note-dialog').showModal();
-                    isDialogHidden = false;
-                } else {
-                    document.getElementById('edit-note-dialog').close();
-                    isDialogHidden = true;
-                }
-                var note = document.getElementsByName("note")[getRow(e)-1];
-                var editNoteElem = document.getElementsByName("note-uid")[getRow(e)-1];
-                editNoteID = editNoteElem.value;
-                document.getElementById('edit-note-box').value = note.innerText;
+        function handleEditNote(e) {
+            if (isDialogHidden) {
+                document.getElementById('edit-note-dialog').showModal();
+                isDialogHidden = false;
+            } else {
+                document.getElementById('edit-note-dialog').close();
+                isDialogHidden = true;
             }
+            var note = document.getElementsByName("note")[getRow(e) - 1];
+            var editNoteElem = document.getElementsByName("note-uid")[getRow(e) - 1];
+            editNoteID = editNoteElem.value;
+            document.getElementById('edit-note-box').value = note.innerText;
+        }
 
-            function getRow(element) {
-                 return element.closest('tr').rowIndex;
-            }
+        function getRow(element) {
+            return element.closest('tr').rowIndex;
+        }
 
-            function httpGet(url) {
-                var xmlHttp = new XMLHttpRequest();
-                xmlHttp.open( "GET", url, false ); 
-                xmlHttp.send( null )
-                return xmlHttp.responseText;
-            }
+        function httpGet(url) {
+            var xmlHttp = new XMLHttpRequest();
+            xmlHttp.open("GET", url, false);
+            xmlHttp.send(null)
+            return xmlHttp.responseText;
+        }
 
-            function httpPatch(url) {
-                var xmlHttp = new XMLHttpRequest();
-                xmlHttp.open( "PATCH", url, false );
-                xmlHttp.send( null );
-                return xmlHttp.responseText;
-            }
+        function httpPatch(url) {
+            var xmlHttp = new XMLHttpRequest();
+            xmlHttp.open("PATCH", url, false);
+            xmlHttp.send(null);
+            return xmlHttp.responseText;
+        }
 
-            function httpDelete(url) {
-                var xmlHttp = new XMLHttpRequest();
-                xmlHttp.open( "DELETE", url); 
-                xmlHttp.send( null )
-                return xmlHttp.responseText;
-            }
-            
+        function httpDelete(url) {
+            var xmlHttp = new XMLHttpRequest();
+            xmlHttp.open("DELETE", url);
+            xmlHttp.send(null)
+            return xmlHttp.responseText;
+        }
+*/
+    </script>
+</head>
 
-        </script>
-    </head>
-    <body class="container-fluid">
-        {% include 'header.html' %}
-        {% block content %}{% endblock %}        
-    </body>
+<body class="container-fluid">
+    {% include 'header.html' %}
+    {% block content %}{% endblock %}
+</body>
 
-    <dialog style="width: 20%" id="edit-note-dialog" class="dialog-box">
-        <h3 id="mapping-dialog-heading">Edit Note</h3>
-        <div class="edit-note-container">
-            <textarea rows='3' cols='35' id="edit-note-box" name="edit-note-text" class="close-edit-note" value="Save"></textarea>
-            <input type="button" style="height:70px;width:83px" class="form-btn" value="Save" onClick="saveEditNote()">
-            <input type="button" class="form-btn" value="Close" onClick="closeEditNote()">
-        </div>
-    </dialog>
 </html>

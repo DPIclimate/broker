@@ -173,22 +173,33 @@ def update_physical_device(uid: int, name: str, location: Location | None, token
     return PhysicalDevice.parse_obj(response.json())
 
 
-def update_logical_device(uid: int, name: str, location: Location | None, token: str):
+def update_logical_device(uid: int, name: str, location: Location | None, properties: dict | None, token: str):
     headers = {"Authorization": f"Bearer {token}"}
 
     device = get_logical_device(uid, token)
     device.name = name
     device.location = location
+    if properties is not None:
+        device.properties = properties
     response = requests.patch(f'{end_point}/broker/api/logical/devices/', headers=headers, data=device.json())
     response.raise_for_status()
     return response.json()
 
 
-def end_logical_mapping(uid: str, token: str):
+def end_logical_mapping(uid: int, token: str):
     headers = {"Authorization": f"Bearer {token}"}
 
     url = f'{end_point}/broker/api/mappings/logical/end/{uid}'
     requests.patch(url, headers=headers)
+
+
+def get_latest_logical_mapping(uid: int, token: str):
+    headers = {"Authorization": f"Bearer {token}"}
+
+    url = f'{end_point}/broker/api/mappings/logical/latest/{uid}'
+    response = requests.get(url, headers=headers)
+    response.raise_for_status()
+    return PhysicalToLogicalMapping.parse_obj(response.json())
 
 
 def get_messages(token: str, l_uid: int, start_ts: Optional[datetime] = None, end_ts: Optional[datetime] = None) -> List[Any]:
@@ -207,7 +218,7 @@ def get_messages(token: str, l_uid: int, start_ts: Optional[datetime] = None, en
     return response.json()
 
 
-def end_physical_mapping(uid: str, token: str):
+def end_physical_mapping(uid: int, token: str):
     """
         End device mapping from a physical device (if any). If there was a mapping, the logical device also has no mapping after this call.
 

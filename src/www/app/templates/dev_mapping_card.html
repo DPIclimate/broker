@@ -1,0 +1,69 @@
+<div class="card text-bg-light mb-3" id="dev-mapping-card">
+    <div class="card-header row mx-0">
+        <div class="col-11 h4">Mappings</div>
+        <div class="col-1"><button type="button" class="btn btn-sm btn-outline-primary">New</button>
+        </div>
+    </div>
+    <div class="card-body">
+        <table class="table table-striped data-table" data-searching='false' data-ordering='false' id="mapping_table">
+            <thead>
+                <tr>
+                    <th>ID</th>
+                    <th>Name</th>
+                    <th>Start</th>
+                    <th>End</th>
+                    <th>Active</th>
+                </tr>
+            </thead>
+
+            <tbody>
+                {% for mapping in deviceMappings %}
+                <tr>
+                    {% if dev_type == 'LD' %}
+                    <td>{{ mapping.pd.uid }}</td>
+                    <td><a href="{{ url_for('physical_device_form', uid=mapping.pd.uid) }}">{{ mapping.pd.name }}</a></td>
+                    {% else %}
+                    <td>{{ mapping.pd.uid }}</td>
+                    <td><a href="{{ url_for('logical_device_form', uid=mapping.ld.uid) }}">{{ mapping.ld.name }}</a></td>
+                    {% endif %}
+                    <td>{{ mapping.start_time }}</td>
+                    {% if mapping.end_time is none() %}
+                    <td>
+                        <button type="button"
+                                class="btn btn-sm btn-outline-danger"
+                                {% if dev_type == 'LD' %}
+                                hx-get="{{ url_for('HxEndLogicalDeviceMapping') }}"
+                                {% else %}
+                                hx-get="{{ url_for('HxEndPhysicalDeviceMapping') }}"
+                                {% endif %}
+                                hx-vals='{"uid": {{ dev.uid }}, "dev_type": "{{ dev_type }}"}'
+                                hx-target="#dev-mapping-card"
+                                hx-swap="outerHTML"
+                        >End Mapping</button>
+                    </td>
+                    <td>
+                        <div class="form-check form-switch">
+                            <input class="form-check-input"
+                                type="checkbox"
+                                role="switch"
+                                name="is_active"
+                                {% if mapping.is_active %}checked{% endif %}
+                                hx-patch="{{ url_for('HxToggleDeviceMapping') }}"
+                                hx-vals='{"uid": {{ dev.uid }}, "dev_type": "{{ dev_type }}"}'
+                                >
+                        </div>
+                    </td>
+                    {% else %}
+                    <td>
+                        {{ mapping.end_time }}
+                    </td>
+                    <td>
+                    </td>
+                    {% endif %}
+                </tr>
+                {% endfor %}
+
+            </tbody>
+        </table>
+    </div>
+</div>

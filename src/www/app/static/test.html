@@ -1,0 +1,131 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <meta charset="utf-8">
+        <meta name="viewport" content="width=device-width">
+        <title>IoTa Device Manager | Logical Device 421 - Lapins cover</title>
+    </head>
+    <body class="container-fluid" style="overflow: auto;">
+        <header>
+    <div class="header-container">
+        <h1 style="padding: 8px">IoTa Device Manager</h1>
+        <a href="/iota/api/docs" target="_blank">API</a>
+    </div>
+    <nav class="nav-bar">
+        <ul>
+            <li><a id="physical-device-banner-heading" href="/iota/physical-devices"><span class="nav-text">Physical Devices</span></a></li>
+            <li><a id="logical-device-banner-heading" href="/iota/logical-devices">Logical Devices</a></li>
+            <li><a id="wombats-banner-heading" href="/iota/wombats">Wombats</a></li>
+            <li><a id="map-banner-heading" href="/iota/map" target="_blank">Map</a></li>
+            <li><a id="account-banner-heading" href="/iota/account">Account</a></li>
+            <li><a id="logout-banner-heading" href="/iota/signout">Signout</a></li>
+        </ul>
+    </nav>
+</header>
+
+<div class="command-bar">
+	<div class="form-buttons">
+		<ul>
+			<li><span class="btn" onclick="exportData('421')">Export Data</span></li>
+			<li><span class="btn" onclick="handleSubmit('device-form', 'Are you sure you want to Save?')">Save</span></li>
+			<li><span class="btn" onclick="handleMapping('logical device')">Update Mapping</span></li>
+			<li><span class="btn" onclick="handleEndMapping('421', 'LD')">End Mapping</span></li>
+			
+				<li><span class="btn" onclick="handleToggleMapping('462','True', 'PD')">Pause Mapping</span></li>
+			
+		</ul>
+	</div>
+</div>
+
+<section class="container-fluid" style="overflow: auto;">
+	<h2 class="form-heading">Logical Device 421 - Lapins cover</h2>
+	<div class="row">
+<!--
+		<div class="column">
+			<div class="form-section">
+-->
+				<h3>Form</h3>
+				<form id="device-form" action="/iota/update-logical-device" target="hidden-frame">
+					<section>
+					<div>
+						<label class="form-label" for="form-uid">UID</label>
+						<input type="text" id="form-uid" class="form-control-plaintext" name="form_uid" value="421">
+					</div>
+					<div>
+						<label class="form-label" for="form-name">Name</label>
+						<input type="text" id="form-device-name" class="form-control" name="form_name" value="Lapins cover">
+					</div>
+					<div>
+						<label id="form-location-label" class="form-label" for="form-name">Location</label>
+						<input type="text" id="form-location" class="form-control" name="form_location" value="">
+					</div>
+					<div>
+						<label for="device-last-seen" class="form-label">Device Last Seen</label>
+						<input type="text" id="device-last-seen" class="form-control-plaintext" name="device_last_seen" value="2024-09-12 09:29+10:00 (1 day ago)">
+					</div>
+					
+					<div>
+							<label class="form-label" id="form_link" for="form-link">Ubidots Link</label>
+							<a href="https://industrial.ubidots.com.au/app/devices/6556edcdf9f8f5000c03fb97" target="_blank">Click here</a>
+					</div>
+					
+				</section>
+				<section>
+						<textarea class="form-control" style="font-size: smaller; font-family: Consolas, Monaco, 'Courier New', monospace;" rows="25">{
+    &#34;last_msg&#34;: {
+        &#34;broker_correlation_id&#34;: &#34;5a7df1c5-02d7-4f5f-aaf4-dcf16fd4e4fc&#34;,
+        &#34;l_uid&#34;: 421,
+        &#34;p_uid&#34;: 462,
+        &#34;timeseries&#34;: [
+            {
+                &#34;name&#34;: &#34;Alarm&#34;,
+                &#34;value&#34;: &#34;FALSE&#34;
+            },
+            {
+                &#34;name&#34;: &#34;Calculate_flag&#34;,
+                &#34;value&#34;: 0
+            },
+            {
+                &#34;name&#34;: &#34;Data_time&#34;,
+                &#34;value&#34;: &#34;2024-09-11 23:29:22&#34;
+            },
+            {
+                &#34;name&#34;: &#34;Last_pulse&#34;,
+                &#34;value&#34;: 0
+            },
+            {
+                &#34;name&#34;: &#34;MOD&#34;,
+                &#34;value&#34;: 1
+            },
+            {
+                &#34;name&#34;: &#34;Water_flow_value&#34;,
+                &#34;value&#34;: 0
+            }
+        ],
+        &#34;timestamp&#34;: &#34;2024-09-11T23:29:54.313778017Z&#34;
+    },
+    &#34;ubidots&#34;: {
+        &#34;createdAt&#34;: &#34;2023-11-17T04:36:29.527076Z&#34;,
+        &#34;description&#34;: &#34;&#34;,
+        &#34;id&#34;: &#34;6556edcdf9f8f5000c03fb97&#34;,
+        &#34;isActive&#34;: true,
+        &#34;label&#34;: &#34;a84041a36185213e&#34;,
+        &#34;lastActivity&#34;: 1700195792511,
+        &#34;location&#34;: null,
+        &#34;name&#34;: &#34;Lapins cover&#34;,
+        &#34;organization&#34;: null,
+        &#34;properties&#34;: {},
+        &#34;tags&#34;: [],
+        &#34;url&#34;: &#34;https://industrial.api.ubidots.com.au/api/v2.0/devices/6556edcdf9f8f5000c03fb97&#34;,
+        &#34;variables&#34;: &#34;https://industrial.api.ubidots.com.au/api/v2.0/devices/6556edcdf9f8f5000c03fb97/variables&#34;,
+        &#34;variablesCount&#34;: 4
+    }
+}</textarea>
+				</section>
+				</form>
+	</div>
+</section>
+
+
+    </body>
+</html>
