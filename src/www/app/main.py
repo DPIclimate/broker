@@ -3,13 +3,15 @@ import io
 import logging
 import pandas as pd
 import time
-from typing import Tuple
+from typing import Dict, Tuple
 import uuid
 from zoneinfo import ZoneInfo
 
 from flask import Flask, render_template, request, redirect, url_for, session, send_from_directory, send_file
 
 import folium
+import folium.plugins
+
 import paho.mqtt.client as mqtt
 import os
 from datetime import timedelta, datetime, timezone
@@ -78,7 +80,11 @@ def parse_location(loc_str: str) -> Tuple[bool, Location | None]:
     return True, location
 
 
-def time_since(date: datetime) -> str:
+_warning_seconds = 3600 * 6 ### How many seconds ago a device was seen to show a warning.
+_error_seconds = 3600 * 12 ### How many seconds ago a device was seen to show an error.
+_seconds_per_day = 3600 * 24
+
+def time_since(date: datetime) -> Dict[str, int|str]:
     now = datetime.now(timezone.utc)
     date_utc = date.astimezone(timezone.utc)
     delta = now - date_utc
@@ -86,15 +92,24 @@ def time_since(date: datetime) -> str:
     hours = int(delta.seconds / 3600)
     minutes = int((delta.seconds % 3600) / 60)
     seconds = int(delta.seconds % 60)
+
+    ret_val = {
+        'days': days,
+        'hours': hours,
+        'minutes': minutes,
+        'delta_seconds': delta.seconds + (delta.days * _seconds_per_day)
+    }
+
     if days > 0:
-        return f'{days} days ago'
+        ret_val['desc'] = f'{days} days ago'
     elif hours > 0:
-        return f'{hours} hours ago'
+        ret_val['desc'] = f'{hours} hours ago'
     elif minutes > 0:
-        return f'{minutes} minutes ago'
+        ret_val['desc'] = f'{minutes} minutes ago'
+    else:
+        ret_val['desc'] = f'{seconds} seconds ago'
 
-    return f'{seconds} seconds ago'
-
+    return ret_val
 
 #-------------
 # MQTT section
@@ -308,7 +323,7 @@ def wombats():
             setattr(dev, 'sn', sn)
 
             setattr(dev, 'ts_sort', dev.last_seen.timestamp())
-            dev.last_seen = time_since(dev.last_seen)
+            dev.last_seen = time_since(dev.last_seen)['desc']
 
             for mapping in mappings:
                 if dev.uid != mapping.pd:
@@ -474,17 +489,46 @@ def logical_device_form(uid):
 @app.route('/map', methods=['GET'])
 def show_map():
     try:
-        center_map = folium.Map(location=[-32.2400951991083, 148.6324743348766], title='PhysicalDeviceMap', zoom_start=10)
-        # folium.Marker([-31.956194913619864, 115.85911692112582], popup="<i>Mt. Hood Meadows</i>", tooltip='click me').add_to(center_map)
+        # Map limits cover NSW.
+        center_map = folium.Map(
+            location=[-32.42, 147.5],
+            min_lat=-36.8, max_lat=-29.6, min_lon=141.7, max_lon=152.9,
+            max_bounds=True,
+            title='IoTa Logical Devices',
+            zoom_start=7)
+
+        live_nodes = folium.FeatureGroup(name='Live', show=False)
+        late_nodes = folium.FeatureGroup(name='Late')
+        dead_nodes = folium.FeatureGroup(name='Missing')
+
+        live_markers = []
+        late_markers = []
+        dead_markers = []
+
         data: List[LogicalDevice] = get_logical_devices(session.get('token'), include_properties=True)
         for dev in data:
             if dev.location is not None and dev.location.lat is not None and dev.location.long is not None:
-                color = 'blue'
+                color = 'green'
+                icon_name = 'circle'
+                marker_list = live_markers
 
+                last_seen = None
                 if dev.last_seen is None:
                     last_seen_desc = 'Never'
+                    icon_name = 'circle-question'
+                    color = 'red'
+                    marker_list = dead_markers
                 else:
-                    last_seen_desc = time_since(dev.last_seen)
+                    last_seen = time_since(dev.last_seen)
+                    last_seen_desc = last_seen['desc']
+                    if last_seen['delta_seconds'] > _error_seconds:
+                        color = 'red'
+                        icon_name = 'circle-xmark'
+                        marker_list = dead_markers
+                    elif last_seen['delta_seconds'] > _warning_seconds:
+                        color = 'orange'
+                        icon_name = 'circle-exclamation'
+                        marker_list = late_markers
 
                 popup_str = f'<span style="white-space: nowrap;">Device: {dev.uid} / {dev.name}<br>Last seen: {last_seen_desc}'
 
@@ -497,14 +541,41 @@ def show_map():
 
                 popup_str = popup_str + '</span>'
 
-                folium.Marker([dev.location.lat, dev.location.long],
+                marker = folium.Marker([dev.location.lat, dev.location.long],
                               popup=popup_str,
-                              icon=folium.Icon(color=color, icon='cloud'),
-                              tooltip=dev.name).add_to(center_map)
+                              icon=folium.Icon(color=color, icon=icon_name, prefix='fa'),
+                              tooltip=f'{dev.name}, last seen {last_seen_desc}')
 
-        return center_map._repr_html_()
-        # center_map
-        # return render_template('map.html')
+                marker_list.append(marker)
+
+        # This was an attempt to set the draw order of the markers. It did not work
+        # but the code has been kept in case having this structure is useful or a
+        # way to make it work is found.
+        for marker in live_markers:
+            live_nodes.add_child(marker)
+
+        for marker in late_markers:
+            late_nodes.add_child(marker)
+
+        for marker in dead_markers:
+            dead_nodes.add_child(marker)
+
+        center_map.add_child(live_nodes)
+        center_map.add_child(late_nodes)
+        center_map.add_child(dead_nodes)
+
+        # It seems to be important to add the LayerControl down here. Doing it before
+        # the FeatureGroups are defined doesn't work.
+        folium.LayerControl(collapsed=False).add_to(center_map)
+        folium.plugins.Fullscreen(
+            position="topleft",
+            title="Full  screen",
+            title_cancel="Exit full screen",
+            force_separate_button=True,
+        ).add_to(center_map)
+
+        return center_map.get_root().render()
+
     except requests.exceptions.HTTPError as e:
         return render_template('error_page.html', reason=e), e.response.status_code
 
@@ -798,6 +869,5 @@ if __name__ == '__main__':
     atexit.register(exit_handler)
 
     #app.jinja_env.auto_reload = True
-    #app.config['TEMPLATES_AUTO_RELOAD'] = True
-    #app.run(port='5000', host='0.0.0.0', debug=True)
+    app.config['TEMPLATES_AUTO_RELOAD'] = True
     app.run(port='5000', host='0.0.0.0')

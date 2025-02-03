@@ -207,7 +207,7 @@ def plain_pd_list(devs: List[PhysicalDevice]):
 
 
 def dict_from_file_or_string() -> dict:
-    if (hasattr(args, 'pd') or hasattr(args, 'ld')) and (hasattr(args, 'in_filename') and args.in_filename is not None):
+    if ((hasattr(args, 'pd') and args.pd is not None) or (hasattr(args, 'ld') and args.ld is not None)) and (hasattr(args, 'in_filename') and args.in_filename is not None):
         raise RuntimeError('error: --json and --file are mutually exclusive.')
 
     json_obj = None

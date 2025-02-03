@@ -106,6 +106,7 @@ def main():
     # This loops until _channel.cancel is called in the signal handler.
     for method, properties, body in _channel.consume(_q_name):
         on_message(_channel, method, properties, body)
+        #time.sleep(120)
 
     logging.info('Closing connection')
     connection.close()
@@ -176,7 +177,7 @@ def on_message(channel, method, properties, body):
 
         os.umask(old_umask)
 
-        # This tells RabbitMQ the message is handled and can be deleted from the queue.    
+        # This tells RabbitMQ the message is handled and can be deleted from the queue.
         _channel.basic_ack(delivery_tag)
 
     except BaseException:

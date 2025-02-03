@@ -100,7 +100,7 @@ def get_all_devices() -> List[LogicalDevice]:
 
         if response_obj['next'] is None:
             break
-            
+
         page += 1
 
     return devices
@@ -130,6 +130,7 @@ def post_device_data(label: str, body) -> None:
         'temperature': {'value': 37.17, 'timestamp': 1643934748392}
         }
     """
+    time.sleep(0.3)
     url = f'{BASE_1_6}/devices/{label}'
     hdrs = headers
     hdrs['Content-Type'] = 'application/json'
