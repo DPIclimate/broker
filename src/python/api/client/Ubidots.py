@@ -5,6 +5,8 @@ import datetime, json, logging, os, time
 
 from pdmodels.Models import Location, LogicalDevice
 
+import util.LoggingUtil as lu
+
 BASE_1_6 = "https://industrial.api.ubidots.com.au/api/v1.6"
 BASE_2_0 = "https://industrial.api.ubidots.com.au/api/v2.0"
 
@@ -107,19 +109,19 @@ def get_all_devices() -> List[LogicalDevice]:
     return devices
 
 
-def get_device(label: str) -> LogicalDevice:
+def get_device(label: str, logging_ctx: dict) -> LogicalDevice:
         url = f'{BASE_2_0}/devices/~{label}'
         time.sleep(0.3)
         r = requests.get(url, headers=headers)
         if r.status_code != 200:
-            logging.warn(f'devices/~{label} received response: {r.status_code}: {r.reason}')
+            lu.cid_logger.error(f'devices/~{label} received response: {r.status_code}: {r.reason}', extra=logging_ctx)
             return None
 
         response_obj = json.loads(r.content)
         return _dict_to_logical_device(response_obj)
 
 
-def post_device_data(label: str, body, cid=None) -> None:
+def post_device_data(label: str, body: dict, logging_ctx: dict) -> bool:
     """
     Post timeseries data to an Ubidots device.
 
@@ -147,16 +149,18 @@ def post_device_data(label: str, body, cid=None) -> None:
                 logging.error(f'[{cid}] POST timed out.')
 
     if r.status_code != 200:
-        logging.error(f'POST {url}: {r.status_code}: {r.reason}')
-        logging.info(body_str)
+        lu.cid_logger.info(f'POST {url}: {r.status_code}: {r.reason}', extra=logging_ctx)
+        return False
+
+    return True
 
 
-def update_device(label: str, patch_obj) -> None:
+def update_device(label: str, patch_obj: dict, logging_ctx: dict) -> None:
     url = f'{BASE_2_0}/devices/~{label}'
     time.sleep(0.3)
     response = requests.patch(url, headers=headers, json=patch_obj)
     if response.status_code != 200:
-        logging.warning(f'PATCH response: {response.status_code}: {response.reason}')
+        lu.cid_logger.error(f'PATCH response: {response.status_code}: {response.reason}', extra=logging_ctx)
 
 
 def main():

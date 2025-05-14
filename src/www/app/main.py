@@ -111,6 +111,7 @@ def time_since(date: datetime) -> Dict[str, int|str]:
 
     return ret_val
 
+
 #-------------
 # MQTT section
 #-------------
