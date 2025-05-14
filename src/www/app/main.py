@@ -324,7 +324,7 @@ def wombats():
             setattr(dev, 'sn', sn)
 
             setattr(dev, 'ts_sort', dev.last_seen.timestamp())
-            dev.last_seen = time_since(dev.last_seen)
+            dev.last_seen = time_since(dev.last_seen)['desc']
 
             for mapping in mappings:
                 if dev.uid != mapping.pd:
@@ -870,6 +870,5 @@ if __name__ == '__main__':
     atexit.register(exit_handler)
 
     #app.jinja_env.auto_reload = True
-    #app.config['TEMPLATES_AUTO_RELOAD'] = True
-    #app.run(port='5000', host='0.0.0.0', debug=True)
+    app.config['TEMPLATES_AUTO_RELOAD'] = True
     app.run(port='5000', host='0.0.0.0')

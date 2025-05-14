@@ -1,21 +1,20 @@
 {% extends "base.html" %}
-{% block content%}
-    <!--<p>under construction</p>-->
-<head>    
+{% block content %}
+<head>
     <meta http-equiv="content-type" content="text/html; charset=UTF-8" />
-    
+
         <script>
             L_NO_TOUCH = false;
             L_DISABLE_3D = false;
         </script>
-    
+
     <style>html, body {width: 100%;height: 100%;margin: 0;padding: 0;}</style>
     <style>#map {position:absolute;top:0;bottom:0;right:0;left:0;}</style>
-    <script src="https://cdn.jsdelivr.net/npm/leaflet@1.6.0/dist/leaflet.js"></script>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="" />
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
     <script src="https://code.jquery.com/jquery-1.12.4.min.js"></script>
     <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.2.0/js/bootstrap.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/Leaflet.awesome-markers/2.0.2/leaflet.awesome-markers.js"></script>
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/leaflet@1.6.0/dist/leaflet.css"/>
     <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.2.0/css/bootstrap.min.css"/>
     <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.2.0/css/bootstrap-theme.min.css"/>
     <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/font-awesome/4.6.3/css/font-awesome.min.css"/>
@@ -33,34 +32,27 @@
                     top: 0.0%;
                 }
             </style>
-        
 </head>
 <body>    
-    
             <div class="folium-map" id="map_27cd1923044b44b4dcc410141736cff3" ></div>
-        
 </body>
-<script>    
-    
+<script>
+
             var map_27cd1923044b44b4dcc410141736cff3 = L.map(
                 "map_27cd1923044b44b4dcc410141736cff3",
                 {
-                    center: [-33.85684058785515, 151.2151212776793],
-                    crs: L.CRS.EPSG3857,
-                    zoom: 12,
+                    center: [-32.44, 147.47],
+                    crs: L.CRS.EPSG4283,
+                    zoom: 14,
                     zoomControl: true,
                     preferCanvas: false,
+                    maxBounds: [[-37.94, 140.8], [-28.2, 153.8]]
                 }
             );
 
-            
-
-        
-    
             var tile_layer_ff4f8922bc4862da56d9aeb0b902d886 = L.tileLayer(
                 "https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png",
                 {"attribution": "Data by \u0026copy; \u003ca href=\"http://openstreetmap.org\"\u003eOpenStreetMap\u003c/a\u003e, under \u003ca href=\"http://www.openstreetmap.org/copyright\"\u003eODbL\u003c/a\u003e.", "detectRetina": false, "maxNativeZoom": 18, "maxZoom": 18, "minZoom": 0, "noWrap": false, "opacity": 1, "subdomains": "abc", "tms": false}
             ).addTo(map_27cd1923044b44b4dcc410141736cff3);
-        
 </script>
 {% endblock %}

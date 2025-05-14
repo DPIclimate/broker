@@ -1,5 +1,6 @@
 from typing import List
 import requests
+import requests.exceptions
 import datetime, json, logging, os, time
 
 from pdmodels.Models import Location, LogicalDevice
@@ -137,7 +138,16 @@ def post_device_data(label: str, body: dict, logging_ctx: dict) -> bool:
     hdrs = headers
     hdrs['Content-Type'] = 'application/json'
     body_str = json.dumps(body)
-    r = requests.post(url, headers=hdrs, data=body_str)
+    while True:
+        try:
+            r = requests.post(url, headers=hdrs, data=body_str, timeout=10)
+            break
+        except requests.exceptions.Timeout:
+            if cid is None:
+                logging.error('POST timed out.')
+            else:
+                logging.error(f'[{cid}] POST timed out.')
+
     if r.status_code != 200:
         lu.cid_logger.info(f'POST {url}: {r.status_code}: {r.reason}', extra=logging_ctx)
         return False
