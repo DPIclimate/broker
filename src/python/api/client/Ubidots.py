@@ -1,5 +1,6 @@
 from typing import List
 import requests
+import requests.exceptions
 import datetime, json, logging, os, time
 
 from pdmodels.Models import Location, LogicalDevice
@@ -118,7 +119,7 @@ def get_device(label: str) -> LogicalDevice:
         return _dict_to_logical_device(response_obj)
 
 
-def post_device_data(label: str, body) -> None:
+def post_device_data(label: str, body, cid=None) -> None:
     """
     Post timeseries data to an Ubidots device.
 
@@ -135,9 +136,18 @@ def post_device_data(label: str, body) -> None:
     hdrs = headers
     hdrs['Content-Type'] = 'application/json'
     body_str = json.dumps(body)
-    r = requests.post(url, headers=hdrs, data=body_str)
+    while True:
+        try:
+            r = requests.post(url, headers=hdrs, data=body_str, timeout=10)
+            break
+        except requests.exceptions.Timeout:
+            if cid is None:
+                logging.error('POST timed out.')
+            else:
+                logging.error(f'[{cid}] POST timed out.')
+
     if r.status_code != 200:
-        logging.info(f'POST {url}: {r.status_code}: {r.reason}')
+        logging.error(f'POST {url}: {r.status_code}: {r.reason}')
         logging.info(body_str)
 
 
