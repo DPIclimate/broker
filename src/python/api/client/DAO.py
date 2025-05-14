@@ -1040,22 +1040,11 @@ def get_physical_timeseries_message(start: datetime | None = None, end: datetime
     if not isinstance(end, datetime):
         raise TypeError
 
-    """
-    select date_trunc('second', ts at time zone 'UTC') as ts_utc,
-           date_trunc('second', received_at at time zone 'UTC') as recvd_utc,
-           json_msg
-    from physical_timeseries
-    where logical_uid = 413
-    and ts
-        > '1970-01-01T00:00:00Z'
-    and ts <= NOW()
-    order by ts desc
-    limit 65535;
-    """
-
-    column_names = ["date_trunc('second', ts at time zone 'UTC') as ts_utc"]
+    # NOTE: The value that comes out of date_trunc does not have a timezone attached, but is a timestamp of the correct
+    # value in the UTC timezone. So the outer timezone() call makes it back into a timestamptz, with a timezone of UTC.
+    column_names = ["timezone('UTC', date_trunc('second', ts at time zone 'UTC')) as ts_utc"]
     if include_received_at:
-        column_names.append("date_trunc('second', received_at at time zone 'UTC') as received_at_utc")
+        column_names.append("timezone('UTC', date_trunc('second', received_at at time zone 'UTC')) as received_at_utc")
 
     if not only_timestamp:
         column_names.append('json_msg')
@@ -1078,6 +1067,7 @@ def get_physical_timeseries_message(start: datetime | None = None, end: datetime
             args = (uid, start, end, count)
             cursor.execute(qry, args)
             return [_msg_tuple_to_obj(cursor.description, row) for row in cursor.fetchall()]
+
     except Exception as err:
         raise DAOException('get_physical_timeseries_message failed.', err)
     finally:
