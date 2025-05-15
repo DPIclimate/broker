@@ -105,29 +105,10 @@ services:
         condition: "service_healthy"
       mq:
         condition: "service_healthy"
-      ttn_decoder:
-        condition: "service_started"
     volumes:
       - ../src/python:/home/broker/python
     working_dir: "/home/broker/python/ttn"
     entrypoint: [ "python", "AllMsgsWriter.py" ]
-
-  ttn_decoder:
-    image: broker/ttn_decoder
-    logging:
-      driver: local
-      options:
-        max-file: "3"
-    restart: unless-stopped
-    env_file:
-      - .env
-    profiles:
-      - ttn
-    volumes:
-      - ../src/js/ttn_decoder/src:/usr/src/ttn_decoder/src
-      - ../../ttn-formatters/:/usr/src/ttn_formatters
-    working_dir: "/usr/src/ttn_decoder"
-    entrypoint: [ "node", "src" ]
 
   ydoc:
     image: broker/python-base
