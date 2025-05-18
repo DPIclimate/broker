@@ -1,9 +1,3 @@
-#
-# TODO:
-#
-# Test the behaviour when the DB is not available or fails.
-#
-
 import datetime
 import dateutil.parser
 
@@ -194,7 +188,6 @@ def on_message(channel, method, properties, body):
 
         uplink_message = msg['uplink_message'] if 'uplink_message' in msg else None
         if uplink_message is not None:
-            decoded_payload = None
             if 'decoded_payload' in uplink_message:
                 decoded_payload = uplink_message['decoded_payload']
                 ts_vars = []
@@ -208,15 +201,7 @@ def on_message(channel, method, properties, body):
                     BrokerConstants.TIMESERIES_KEY: ts_vars
                 }
 
-                if _enabled_apps is None or app_id in _enabled_apps:
-                    # Should the code try and remember the message until it is delivered to the queue?
-                    # I think that means we need to hold off the ack in this method and only ack the message
-                    # we got from ttn_raw when we get confirmation from the server that it has saved the message
-                    # written to the physical_timeseries queue.
-                    #lu.cid_logger.info(f'Publishing to physical messages exchange: {json.dumps(p_ts_msg)}', extra=msg_with_cid)
-                    msg_id = tx_channel.publish_message('physical_timeseries', p_ts_msg)
-                else:
-                    lu.cid_logger.debug(f'Not publishing from disabled app {app_id}.', extra=msg_with_cid)
+                tx_channel.publish_message('physical_timeseries', p_ts_msg)
             else:
                 lu.cid_logger.warning(f'No payload could be decoded from message {correlation_id}', extra=msg_with_cid)
         else:

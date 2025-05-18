@@ -1,6 +1,5 @@
 import atexit
 import io
-import json
 import logging
 import pandas as pd
 import time
@@ -100,14 +99,15 @@ def time_since(date: datetime) -> Dict[str, int|str]:
         'minutes': minutes,
         'delta_seconds': delta.seconds + (delta.days * _seconds_per_day)
     }
+
     if days > 0:
-        ret_val['desc'] = f'{days} {"day" if days == 1 else "days"} ago'
+        ret_val['desc'] = f'{days} days ago'
     elif hours > 0:
-        ret_val['desc'] = f'{hours} {"hour" if hours == 1 else "hours"} ago'
+        ret_val['desc'] = f'{hours} hours ago'
     elif minutes > 0:
-        ret_val['desc'] = f'{minutes} {"minute" if minutes == 1 else "minutes"} ago'
+        ret_val['desc'] = f'{minutes} minutes ago'
     else:
-        ret_val['desc'] = f'{seconds} {"second" if seconds == 1 else "seconds"} ago'
+        ret_val['desc'] = f'{seconds} seconds ago'
 
     return ret_val
 
@@ -184,19 +184,10 @@ def check_user_logged_in():
         Check user session is valid, if not redirect to /login
     """
     if not session.get('token'):
-        # Don't require a valid session for css or js files. The login page now uses the standard page
-        # templates which load css & js files, which also come through this method. If they're not allowed
-        # through the original URL in the session gets messed up and the user ends up seeing a js file
-        # rather than the page they were trying to navigate to.
-        is_css = request.path.lower().endswith('.css')
-        is_js = request.path.lower().endswith('.js')
-        if request.path != '/login' and request.path != '/static/main.css' and not is_css and not is_js:
-            logging.info(f'Login redirect for URL: {request.path}')
+        if request.path != '/login' and request.path != '/static/main.css':
             # Stores the url user tried to go to in session so when they log in, we take them back to it
             session['original_url'] = request.url
             return redirect(url_for('login'), code=302)
-
-    return None
 
 
 @app.route('/', methods=['GET'])
@@ -220,12 +211,11 @@ def login():
                 return redirect(session.pop('original_url'))
 
             return redirect(url_for('index'))
-
-        return render_template("login.html", title='Login')
+        return render_template("login.html")
 
     except requests.exceptions.HTTPError as e:
-        # get_user_token raises an HTTPError if the login fails.
-        return render_template('login.html', failed=True, title='Login')
+        # Probs not best way to detecting incorrect password
+        return render_template('login.html', failed=True)
 
 
 @app.route('/signout', methods=["GET"])
@@ -368,26 +358,20 @@ def physical_device_table():
             logical_devices = get_logical_devices(session.get('token'))
 
         mappings = get_current_mappings(session.get('token'))
-        logging.info(mappings)
+
+        mapping_obj: List[PhysicalToLogicalMapping] = []
 
         for dev in physical_devices:
-            if dev.last_seen is None:
-                setattr(dev, 'ts_sort', 0)
-            else:
-                last_seen: datetime = dev.last_seen
-                setattr(dev, 'ts_sort', last_seen.timestamp())
-                dev.last_seen = f"{last_seen.isoformat(' ', 'minutes')} ({time_since(last_seen)['desc']})"
-
             for mapping in mappings:
                 if dev.uid != mapping.pd:
                     continue
 
                 # Replace the logical device id in the mapping with the logical device object.
                 mapping.ld = next(filter(lambda ld: ld.uid == mapping.ld, logical_devices), None)
-                setattr(dev, 'mapped_to', mapping.ld)
+                mapping_obj.append(mapping)
                 break
 
-        return render_template('physical_device_table.html', title='Physical Devices', physicalDevices=physical_devices)
+        return render_template('physical_device_table.html', title='Physical Devices', physicalDevices=physical_devices, dev_mappings=mapping_obj)
 
     except requests.exceptions.HTTPError as e:
         return render_template('error_page.html', reason=e), e.response.status_code
@@ -399,25 +383,17 @@ def physical_device_form(uid):
     try:
         device: PhysicalDevice = get_physical_device(uid, session.get('token'))
 
-        device_location = format_location_string(device.location)
-        device_last_seen = format_time_stamp(device.last_seen)
+        device.location = format_location_string(device.location)
+        device.last_seen = format_time_stamp(device.last_seen)
         properties_formatted = format_json(device.properties)
         ttn_link = generate_link(device)
         sources = get_sources(session.get('token'))
-        title = f'Physical Device {device.uid} - {device.name}'
         mappings = get_all_mappings_for_physical_device(uid, session.get('token'))
-        for m in mappings:
-            if m.start_time is not None:
-                m.start_time = m.start_time.isoformat(' ', 'minutes')
-
-            if m.end_time is not None:
-                m.end_time = m.end_time.isoformat(' ', 'minutes')
 
         logical_devices = get_logical_devices(session.get('token'))
 
         notes = get_physical_notes(uid, session.get('token'))
 
-        """
         currentDeviceMapping = []
 
         if mappings is not None:
@@ -429,19 +405,16 @@ def physical_device_form(uid):
                     m.end_time = m.end_time.isoformat(' ', 'seconds')
 
                 currentDeviceMapping.append(m)
-        """
 
+        title = 'Physical Device ' + str(uid) + ' - ' + str(device.name)
         return render_template('physical_device_form.html',
                                title=title,
-                               dev=device,
+                               pd_data=device,
                                ld_data=logical_devices,
                                sources=sources,
                                properties=properties_formatted,
-                               dev_type='PD',
                                ttn_link=ttn_link,
-                               deviceLocation=device_location,
-                               deviceLastSeen=device_last_seen,
-                               deviceMappings=mappings,
+                               currentMappings=currentDeviceMapping,
                                deviceNotes=notes)
 
     except requests.exceptions.HTTPError as e:
@@ -461,26 +434,21 @@ def logical_device_table():
 
         mappings = get_current_mappings(session.get('token'))
 
+        mapping_obj: List[PhysicalToLogicalMapping] = []
+
         for dev in logical_devices:
             dev.location = format_location_string(dev.location)
-
-            if dev.last_seen is None:
-                setattr(dev, 'ts_sort', 0)
-            else:
-                last_seen: datetime = dev.last_seen
-                setattr(dev, 'ts_sort', last_seen.timestamp())
-                dev.last_seen = f"{last_seen.isoformat(' ', 'minutes')} ({time_since(last_seen)['desc']})"
-
             for mapping in mappings:
                 if dev.uid != mapping.ld:
                     continue
 
                 # Replace the physical device id in the mapping with the physical device object.
                 mapping.pd = next(filter(lambda pd: pd.uid == mapping.pd, physical_devices), None)
-                setattr(dev, 'mapped_to', mapping.pd)
+
+                mapping_obj.append(mapping)
                 break
 
-        return render_template('logical_device_table.html', title='Logical Devices', logicalDevices=logical_devices)
+        return render_template('logical_device_table.html', title='Logical Devices', logicalDevices=logical_devices, dev_mappings=mapping_obj)
     except requests.exceptions.HTTPError as e:
         return render_template('error_page.html', reason=e), e.response.status_code
 
@@ -494,22 +462,21 @@ def logical_device_form(uid):
         device_last_seen = format_time_stamp(device.last_seen)
         ubidots_link = generate_link(device)
         title = f'Logical Device {device.uid} - {device.name}'
-        mappings = get_all_mappings_for_physical_device(uid, session.get('token'))
+        mappings = get_all_mappings_for_logical_device(uid, session.get('token'))
 
         for m in mappings:
             if m.start_time is not None:
-                m.start_time = m.start_time.isoformat(' ', 'minutes')
+                m.start_time = m.start_time.isoformat(' ', 'seconds')
 
             if m.end_time is not None:
-                m.end_time = m.end_time.isoformat(' ', 'minutes')
+                m.end_time = m.end_time.isoformat(' ', 'seconds')
 
         # The physical_devices list is used in the dialog shown when mapping a logical device.
         physical_devices = get_physical_devices(session.get('token'))
 
         return render_template('logical_device_form.html',
                                title=title,
-                               dev=device,
-                               dev_type='LD',
+                               ld_data=device,
                                pd_data=physical_devices,
                                deviceLocation=device_location,
                                deviceLastSeen=device_last_seen,
@@ -782,37 +749,9 @@ def DownloadData():
 
 @app.route('/end-ld-mapping', methods=['GET'])
 def EndLogicalDeviceMapping():
-    uid = int(request.args['uid'])
+    uid = request.args['uid']
     end_logical_mapping(uid, session.get('token'))
     return 'Success', 200
-
-@app.route('/hx-end-ld-mapping', methods=['GET'])
-def HxEndLogicalDeviceMapping():
-    try:
-        uid = int(request.args['uid'])
-
-        end_logical_mapping(uid, session.get('token'))
-
-        device = get_logical_device(uid, session.get('token'))
-        mappings = get_all_mappings_for_logical_device(uid, session.get('token'))
-
-        for m in mappings:
-            if m.start_time is not None:
-                m.start_time = m.start_time.isoformat(' ', 'minutes')
-
-            if m.end_time is not None:
-                m.end_time = m.end_time.isoformat(' ', 'minutes')
-
-        return render_template('dev_mapping_card.html',
-                               dev=device,
-                               dev_type='LD',
-                               deviceMappings=mappings)
-    except requests.exceptions.HTTPError as e:
-        logging.exception(e)
-        return render_template('error_page.html', reason=e), e.response.status_code
-
-    logging.info(htmx)
-    return htmx
 
 
 @app.route('/end-pd-mapping', methods=['GET'])
@@ -822,34 +761,11 @@ def EndPhysicalDeviceMapping():
     return 'Success', 200
 
 
-@app.route('/hx-end-pd-mapping', methods=['GET'])
-def HxEndPhysicalDeviceMapping():
-    uid = int(request.args['uid'])
-    end_physical_mapping(uid, session.get('token'))
-    device = get_physical_device(uid, session.get('token'))
-    mappings = get_all_mappings_for_physical_device(uid, session.get('token'))
-
-    for m in mappings:
-        if m.start_time is not None:
-            m.start_time = m.start_time.isoformat(' ', 'minutes')
-
-        if m.end_time is not None:
-            m.end_time = m.end_time.isoformat(' ', 'minutes')
-
-    return render_template('dev_mapping_card.html',
-                            dev=device,
-                            dev_type='PD',
-                            deviceMappings=mappings)
-
-
 @app.route('/toggle-mapping', methods=['PATCH'])
 def ToggleDeviceMapping():
     """
         Toggle the mapping of a device to temporarily stop messages from being passed at the logical mapper
     """
-
-    logging.info('toggle-mapping')
-    logging.warning(request.args)
     dev_type = request.args['dev_type']
     uid = int(request.args['uid'])
     is_active = request.args['is_active']
@@ -857,22 +773,6 @@ def ToggleDeviceMapping():
     toggle_device_mapping(uid=uid, dev_type=dev_type, is_active=is_active, token=session.get('token'))
 
     return 'Success', 200
-
-@app.route('/hx-toggle-mapping', methods=['PATCH'])
-def HxToggleDeviceMapping():
-    """
-        Toggle the mapping of a device to temporarily stop messages from being passed at the logical mapper
-    """
-
-    dev_type = request.form.get('dev_type')
-    uid = int(request.form.get('uid'))
-    is_active = request.form.get('is_active') == 'on'
-
-    logging.warning(f'{dev_type}, {uid}, {is_active}')
-
-    toggle_device_mapping(uid=uid, dev_type=dev_type, is_active=is_active, token=session.get('token'))
-
-    return ""
 
 
 @app.route('/update-logical-device', methods=['PATCH'])
@@ -891,112 +791,9 @@ def UpdateLogicalDevice():
         if new_name is None or len(new_name.strip()) < 1:
             new_name = device.name
 
-        # A clunky method of checking for changed properties.
-        # The first two lines are not enough to check for equality because
-        # one of the strings gets an extra newline. However, otherwise
-        # they are the same because the format_json function is used when
-        # sending the properties to the form. So convert both formatted
-        # JSON strings to dictionaries and back to strings using the json
-        # package and check the result of that. Less code than doing a deep
-        # comparison on the dictionaries.
-        new_props: str = request.form.get("form_props")
-        old_props: str = format_json(device.properties)
-        new_json = json.loads(new_props)
-        old_json = json.loads(old_props)
-        new_props = json.dumps(new_json)
-        old_props = json.dumps(old_json)
-
-        if new_props == old_props:
-            # Setting new_props to None signals update_logical_device to not
-            # update the device properties.
-            new_props = None
-        else:
-            logging.info('updating props')
-
-        update_logical_device(uid, new_name, location, new_json, token)
+        update_logical_device(uid, new_name, location, token)
         return 'Success', 200
 
-    except requests.exceptions.HTTPError as e:
-        logging.exception(e)
-        if e.response.status_code == 403:
-            return f"You do not have sufficient permissions to make this change", e.response.status_code
-
-        return f"HTTP request with RestAPI failed with error {e.response.status_code}", e.response.status_code
-
-
-@app.route('/hx-update-logical-device', methods=['POST'])
-def HxUpdateLogicalDevice():
-    uid = request.form.get("form_uid")
-    token = session.get('token')
-
-    try:
-        device = get_logical_device(uid, token)
-        update_loc, location = parse_location(request.form.get('form_location'))
-
-        if not update_loc:
-            location = device.location
-
-        new_name: str = request.form.get("form_name")
-        if new_name is None or len(new_name.strip()) < 1:
-            new_name = device.name
-
-        # A clunky method of checking for changed properties.
-        # The first two lines are not enough to check for equality because
-        # one of the strings gets an extra newline. However, otherwise
-        # they are the same because the format_json function is used when
-        # sending the properties to the form. So convert both formatted
-        # JSON strings to dictionaries and back to strings using the json
-        # package and check the result of that. Less code than doing a deep
-        # comparison on the dictionaries.
-        new_props: str = request.form.get("form_props")
-        old_props: str = format_json(device.properties)
-        try:
-            new_json = json.loads(new_props)
-            props_err = False
-            old_json = json.loads(old_props)
-            new_props = json.dumps(new_json)
-            old_props = json.dumps(old_json)
-
-            if new_props == old_props:
-                # Setting new_props to None signals update_logical_device to not
-                # update the device properties.
-                new_props = None
-            else:
-                logging.info('updating props')
-
-            update_logical_device(uid, new_name, location, new_json, token)
-            device = get_logical_device(uid, token)
-        except:
-            props_err = 'Invalid JSON'
-            # Put the values from the form back onto the form by copying them
-            # into the device object so the code below will use them.
-            device.name = new_name
-            device.location = location
-
-        properties_formatted = format_json(device.properties) if not props_err else new_props
-        device_location = format_location_string(device.location)
-        device_last_seen = format_time_stamp(device.last_seen)
-        ubidots_link = generate_link(device)
-        title = f'Logical Device {device.uid} - {device.name}'
-
-        html = render_template('device_card.html',
-                               title=title,
-                               dev=device,
-                               dev_type='LD',
-                               deviceLocation=device_location,
-                               deviceLastSeen=device_last_seen,
-                               ubidots_link=ubidots_link,
-                               properties=properties_formatted,
-                               props_err=props_err)
-
-        # Update info in the title block using the HTMX OOB technique.
-        if not props_err:
-            html = html + f"""
-<h2 class="form-heading pt-3" id="dev-name-title" hx-swap-oob="true">{title}</h2>
-<div class="col small" id="dev-last-seen" hx-swap-oob="true">Last seen: {device_last_seen}</div>
-"""
-
-        return html
     except requests.exceptions.HTTPError as e:
         logging.exception(e)
         if e.response.status_code == 403:
@@ -1015,7 +812,7 @@ def format_time_stamp(unformatted_time: datetime) -> str:
         return ''
 
     if isinstance(unformatted_time, datetime):
-        return unformatted_time.isoformat(sep=' ', timespec='minutes') + ' (' + time_since(unformatted_time)['desc'] + ')'
+        return unformatted_time.isoformat(sep=' ', timespec='seconds')
 
     return ''
 
@@ -1072,7 +869,6 @@ if __name__ == '__main__':
 
     atexit.register(exit_handler)
 
-    app.jinja_env.auto_reload = True
+    #app.jinja_env.auto_reload = True
     app.config['TEMPLATES_AUTO_RELOAD'] = True
-    app.run(port='5000', host='0.0.0.0', debug=True)
-    #app.run(port='5000', host='0.0.0.0')
+    app.run(port='5000', host='0.0.0.0')
