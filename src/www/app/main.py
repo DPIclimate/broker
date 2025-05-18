@@ -101,13 +101,13 @@ def time_since(date: datetime) -> Dict[str, int|str]:
     }
 
     if days > 0:
-        ret_val['desc'] = f'{days} days ago'
+        ret_val['desc'] = f'{days} {"day" if days == 1 else "days"} ago'
     elif hours > 0:
-        ret_val['desc'] = f'{hours} hours ago'
+        ret_val['desc'] = f'{hours} {"hour" if hours == 1 else "hours"} ago'
     elif minutes > 0:
-        ret_val['desc'] = f'{minutes} minutes ago'
+        ret_val['desc'] = f'{minutes} {"minute" if minutes == 1 else "minutes"} ago'
     else:
-        ret_val['desc'] = f'{seconds} seconds ago'
+        ret_val['desc'] = f'{seconds} {"second" if seconds == 1 else "seconds"} ago'
 
     return ret_val
 
@@ -181,14 +181,22 @@ app.permanent_session_lifetime = timedelta(hours=2)
 @app.before_request
 def check_user_logged_in():
     """
-        Check user session is valid, if not redirect to /login
+    Check user session is valid, if not redirect to /login
     """
     if not session.get('token'):
-        if request.path != '/login' and request.path != '/static/main.css':
-            # Stores the url user tried to go to in session so when they log in, we take them back to it
+        # Don't require a valid session for css or js files. The login page now uses the standard page
+        # templates which load css & js files, which also come through this method. If they're not allowed
+        # through the original URL in the session gets messed up and the user ends up seeing a js file
+        # rather than the page they were trying to navigate to.
+        is_css = request.path.lower().endswith('.css')
+        is_js = request.path.lower().endswith('.js')
+
+        if request.path != '/login' and request.path != '/static/main.css' and not is_css and not is_js:
+            # Stores the url user tried to go to in session so when they log in, we take them back to it.
             session['original_url'] = request.url
             return redirect(url_for('login'), code=302)
 
+    return None
 
 @app.route('/', methods=['GET'])
 def index():
@@ -211,11 +219,11 @@ def login():
                 return redirect(session.pop('original_url'))
 
             return redirect(url_for('index'))
-        return render_template("login.html")
+        return render_template("login.html", title='Login')
 
     except requests.exceptions.HTTPError as e:
         # Probs not best way to detecting incorrect password
-        return render_template('login.html', failed=True)
+        return render_template('login.html', failed=True, title='Login')
 
 
 @app.route('/signout', methods=["GET"])
