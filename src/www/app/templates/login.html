@@ -1,98 +1,33 @@
-<html>
+{% extends "base.html" %}
+{% block content %}
 
-<head>
-	<title>Login</title>
-	<link rel="stylesheet" href="{{ url_for('static', filename='main.css') }}">
+<section>
+	<div class="container mt-5">
+        <form action="{{url_for('login')}}" method="POST">
+            <div class="rpw mb-5"/>
+            <div class="form-group row justify-content-md-center mb-4">
+                <label class="col-md-1 col-form-label" for="username">Username:</label>
+                <div class="col-md-4">
+                    <input class="form-control" type="text" id="username" name="username">
+                </div>
+            </div>
 
-	<style>
-		.card {
-			background-color: white;
-			width: max(40%, 500px);
-			align-self: center;
-			margin: auto;
-			margin-top: 20px;
-			text-align: center;
-			padding: 20;
-			border-radius: 30px;
-			box-shadow: 5px 10px #e8e8e8;
-			display: grid;
-			place-items: center;
-		}
+            <div class="form-group row justify-content-md-center mb-4">
+                <label class="col-md-1 col-form-label" for="password">Password:</label>
+                <div class="col-md-4">
+                    <input class="form-control" type="password" id="password" name="password">
+                </div>
+            </div>
 
-		.text_input {
-			height: 30;
-			width: 200;
-			border: none;
-			border-bottom: 1px solid rgb(0, 0, 0);
-		}
-
-		.sub_title {
-			font-weight: bold;
-			font-size: 20;
-		}
-
-		.login_form {
-			margin-top: 40;
-			margin-bottom: 40;
-		}
-
-		.submit_button {
-			border: none;
-			padding: 20;
-			padding-right: 40;
-			padding-left: 40;
-			font-weight: bold;
-			background-color: #063f5c;
-			color: white;
-
-		}
-
-		.submit_button:hover {
-			background-color: #17a2b8;
-
-		}
-	</style>
-</head>
-
-<body>
-	<header>
-		<iframe name="hidden-frame" class="hidden"></iframe>
-		<div class="container">
-			<div id="header-title">
-				<h1>DPI | Device Manager</h1>
-			</div>
-		</div>
-
-	</header>
-
-	<div class="command-bar">
-		<div class="form-buttons">
-		</div>
-	</div>
-
-	<div class="content">
-		<div class="card">
-			<h2 class="form-heading">Please sign in</h2>
-			<div class="login_form">
-				<form action="{{url_for('login')}}" method="POST">
-					<div>
-						<label style="display:block">Username:</label><br />
-						<input class="text_input" type="text" name="username"><br><br>
-					</div>
-					<div>
-
-						<label style="display:block">Password:</label><br />
-						<input class="text_input" type="password" name="password"><br><br>
-						<input class="submit_button" type="submit" name='login' value="login">
-					</div>
-					{% if failed == True %}
-					<div id="password_error">
-						<p style="color: red">Incorrect username or password</p>
-					</div>
-					{% endif %}
-				</form>
-			</div>
-		</div>
-	</div>
-</body>
-</html>
+            <div class="form-group row">
+                <input class="col-md-1 btn btn-primary" type="submit" name='login' value="Login">
+            </div>
+            {% if failed == True %}
+            <div id="password_error">
+                <p style="color: red">Incorrect username or password</p>
+            </div>
+            {% endif %}
+        </form>
+    </div>
+</section>
+{% endblock %}

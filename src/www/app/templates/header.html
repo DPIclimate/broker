@@ -7,6 +7,7 @@
                 aria-label="Toggle navigation">
                 <span class="navbar-toggler-icon"></span>
             </button>
+            {% if session.get('user') and session.get('token') %}
             <div class="collapse navbar-collapse" id="navbarNavAltMarkup">
                 <div class="navbar-nav">
                     <a class="nav-link" href="/iota/physical-devices">Physical Devices</a>
@@ -17,6 +18,7 @@
                     <a class="nav-link" href="/iota/signout">Signout</a>
                 </div>
             </div>
+            {% endif %}
         </div>
     </nav>
 </header>

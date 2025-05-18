@@ -184,10 +184,19 @@ def check_user_logged_in():
         Check user session is valid, if not redirect to /login
     """
     if not session.get('token'):
-        if request.path != '/login' and request.path != '/static/main.css':
+        # Don't require a valid session for css or js files. The login page now uses the standard page
+        # templates which load css & js files, which also come through this method. If they're not allowed
+        # through the original URL in the session gets messed up and the user ends up seeing a js file
+        # rather than the page they were trying to navigate to.
+        is_css = request.path.lower().endswith('.css')
+        is_js = request.path.lower().endswith('.js')
+        if request.path != '/login' and request.path != '/static/main.css' and not is_css and not is_js:
+            logging.info(f'Login redirect for URL: {request.path}')
             # Stores the url user tried to go to in session so when they log in, we take them back to it
             session['original_url'] = request.url
             return redirect(url_for('login'), code=302)
+
+    return None
 
 
 @app.route('/', methods=['GET'])
@@ -211,11 +220,12 @@ def login():
                 return redirect(session.pop('original_url'))
 
             return redirect(url_for('index'))
-        return render_template("login.html")
+
+        return render_template("login.html", title='Login')
 
     except requests.exceptions.HTTPError as e:
-        # Probs not best way to detecting incorrect password
-        return render_template('login.html', failed=True)
+        # get_user_token raises an HTTPError if the login fails.
+        return render_template('login.html', failed=True, title='Login')
 
 
 @app.route('/signout', methods=["GET"])
