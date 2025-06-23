@@ -521,6 +521,15 @@ def show_map():
             title='IoTa Logical Devices',
             zoom_start=7)
 
+
+        folium.TileLayer(
+        tiles='https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',
+        attr='Tiles © Esri',
+        name='Esri Satellite',
+        overlay=False,
+        control=True
+        ).add_to(center_map)
+
         live_nodes = folium.FeatureGroup(name='Live', show=False)
         late_nodes = folium.FeatureGroup(name='Late')
         dead_nodes = folium.FeatureGroup(name='Missing')
