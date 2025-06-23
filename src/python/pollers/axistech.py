@@ -75,7 +75,7 @@ def make_msg(row: pd.Series) -> Dict:
            BrokerConstants.TIMESERIES_KEY: [], BrokerConstants.CORRELATION_ID_KEY: correlation_id}
 
     for name, value in values.items():
-        msg['timeseries'].append({'name': name, 'value': value})
+        msg['timeseries'].append({'name': name, 'value': None if pd.isna(value) else value})
 
     return msg
 
