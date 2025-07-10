@@ -1,0 +1,20 @@
+# These env vars are recognised by Postgres and the psycopg2 driver
+# and they are used automatically.
+PGPORT=5432
+# The default username used by the docker image is 'postgres'
+PGUSER=postgres
+# This must be the same as POSTGRES_PASSWORD
+PGPASSWORD=CHANGEME
+# This must be the same as POSTGRES_DB
+PGDATABASE=postgres
+
+# These are container creation/db init env vars.
+POSTGRES_PASSWORD=CHANGEME
+POSTGRES_DB=postgres
+POSTGRES_PORT=5432
+
+# This gives log entries in local time. All epoch timestamp values
+# and timestamp db columns are in UTC, but this will make psql show
+# them in local time.
+TZ=Australia/Sydney
+

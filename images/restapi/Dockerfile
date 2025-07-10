@@ -2,7 +2,7 @@
 
 # 3.10 is important. There is a breaking change in 3.11 where some dependencies have not
 # been updated and cannot be built from source.
-FROM python:3.10
+FROM python:3.12
 
 # For debian-based images
 RUN groupadd broker && useradd -m -g broker broker

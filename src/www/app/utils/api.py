@@ -48,7 +48,7 @@ def get_physical_devices(token: str, **kwargs) -> List[PhysicalDevice]:
     response = requests.get(f"{end_point}/broker/api/physical/devices/", params=query_params, headers=headers)
     response.raise_for_status()
 
-    return list(map(lambda ld: PhysicalDevice.parse_obj(ld), response.json()))
+    return list(map(lambda ld: PhysicalDevice.model_validate(ld), response.json()))
 
 
 def get_physical_notes(uid: str, token: str) -> List[dict]:
@@ -64,7 +64,7 @@ def get_physical_notes(uid: str, token: str) -> List[dict]:
     response = requests.get(f"{end_point}/broker/api/physical/devices/notes/{uid}", headers=headers)
 
     response.raise_for_status()
-    return list(map(lambda note: DeviceNote.parse_obj(note), response.json()))
+    return list(map(lambda note: DeviceNote.model_validate(note), response.json()))
 
 
 def get_logical_devices(token: str, include_properties: bool = False):
@@ -74,7 +74,7 @@ def get_logical_devices(token: str, include_properties: bool = False):
         f'{end_point}/broker/api/logical/devices/?include_properties={include_properties}', headers=headers)
     response.raise_for_status()
 
-    return list(map(lambda ld: LogicalDevice.parse_obj(ld), response.json()))
+    return list(map(lambda ld: LogicalDevice.model_validate(ld), response.json()))
 
 
 def get_physical_unmapped(token: str):
@@ -99,7 +99,7 @@ def get_physical_device(uid: str, token: str) -> PhysicalDevice:
     headers = {"Authorization": f"Bearer {token}"}
     response = requests.get(f'{end_point}/broker/api/physical/devices/{uid}', headers=headers)
     response.raise_for_status()
-    return PhysicalDevice.parse_obj(response.json())
+    return PhysicalDevice.model_validate(response.json())
 
 
 def get_logical_device(uid: str, token: str) -> LogicalDevice:
@@ -117,7 +117,7 @@ def get_logical_device(uid: str, token: str) -> LogicalDevice:
     headers = {"Authorization": f"Bearer {token}"}
     response = requests.get(f'{end_point}/broker/api/logical/devices/{uid}', headers=headers)
     response.raise_for_status()
-    return LogicalDevice.parse_obj(response.json())
+    return LogicalDevice.model_validate(response.json())
 
 
 def get_current_mappings(token: str):
@@ -127,7 +127,7 @@ def get_current_mappings(token: str):
     headers = {"Authorization": f"Bearer {token}"}
     response = requests.get(f"{end_point}/broker/api/mappings/current/", headers=headers)
     response.raise_for_status()
-    return list(map(lambda mapping_obj: PhysicalToLogicalMapping.parse_obj(mapping_obj), response.json()))
+    return list(map(lambda mapping_obj: PhysicalToLogicalMapping.model_validate(mapping_obj), response.json()))
 
 
 def get_all_mappings_for_logical_device(uid: str, token: str):
@@ -135,7 +135,7 @@ def get_all_mappings_for_logical_device(uid: str, token: str):
 
     response = requests.get(f'{end_point}/broker/api/mappings/logical/all/{uid}', headers=headers)
     response.raise_for_status()
-    return list(map(lambda ld: PhysicalToLogicalMapping.parse_obj(ld), response.json()))
+    return list(map(lambda ld: PhysicalToLogicalMapping.model_validate(ld), response.json()))
 
 
 def get_current_mapping_from_physical_device(uid: str, token: str):
@@ -147,7 +147,7 @@ def get_current_mapping_from_physical_device(uid: str, token: str):
         return
 
     response.raise_for_status()
-    return list(map(lambda mapping_obj: PhysicalToLogicalMapping.parse_obj(mapping_obj), response.json()))
+    return list(map(lambda mapping_obj: PhysicalToLogicalMapping.model_validate(mapping_obj), response.json()))
 
 
 def get_all_mappings_for_physical_device(uid:str, token:str):
@@ -159,7 +159,7 @@ def get_all_mappings_for_physical_device(uid:str, token:str):
         return
 
     response.raise_for_status()
-    return list(map(lambda mapping_obj: PhysicalToLogicalMapping.parse_obj(mapping_obj), response.json()))
+    return list(map(lambda mapping_obj: PhysicalToLogicalMapping.model_validate(mapping_obj), response.json()))
 
 
 def update_physical_device(uid: int, name: str, location: Location | None, token: str):
@@ -170,7 +170,7 @@ def update_physical_device(uid: int, name: str, location: Location | None, token
     device.location = location
     response = requests.patch(f'{end_point}/broker/api/physical/devices/', headers=headers, data=device.json())
     response.raise_for_status()
-    return PhysicalDevice.parse_obj(response.json())
+    return PhysicalDevice.model_validate(response.json())
 
 
 def update_logical_device(uid: int, name: str, location: Location | None, token: str):
