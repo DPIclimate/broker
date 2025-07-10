@@ -1,5 +1,3 @@
-version: '3.1'
-
 services:
   db:
     image: postgis/postgis:14-3.4
@@ -19,6 +17,18 @@ services:
       interval: 10s
       retries: 10
 
+  timescaledb:
+    image: iota/timescaledb
+    logging:
+      driver: local
+      options:
+        max-file: "3"
+    restart: unless-stopped
+    env_file:
+      - timescaledb_env
+    volumes:
+      - ../db/ts_initdb.d:/docker-entrypoint-initdb.d
+
   mq:
     hostname: "mq"
     image: rabbitmq:3.9-management
@@ -37,7 +47,7 @@ services:
       start_period: 30s
 
   restapi:
-    image: broker/python-base
+    image: iota/python-base
     logging:
       driver: local
       options:
@@ -53,7 +63,7 @@ services:
     entrypoint: [ "/home/broker/.local/bin/uvicorn", "--proxy-headers", "--host", "0.0.0.0", "--port", "5687", "RestAPI:app" ]
 
   website:
-    image: broker/mgmt-app
+    image: iota/python-base
     logging:
       driver: local
       options:
@@ -65,13 +75,15 @@ services:
       - PYTHONPATH=/app:/iota
     depends_on:
       db:
-        condition: "service_healthy"
+        condition: service_healthy
+    working_dir: /app
     volumes:
       - ../src/www:/app
       - ../src/python:/iota
+    entrypoint: [ "python3", "./app/main.py"]
 
   ttn_webhook:
-    image: broker/python-base
+    image: iota/python-base
     logging:
       driver: local
       options:
@@ -90,7 +102,7 @@ services:
     entrypoint: [ "/home/broker/.local/bin/uvicorn", "--proxy-headers", "--host", "0.0.0.0", "--port", "5688", "WebHook:app" ]
 
   ttn_processor:
-    image: broker/python-base
+    image: iota/python-base
     logging:
       driver: local
       options:
@@ -111,7 +123,7 @@ services:
     entrypoint: [ "python", "AllMsgsWriter.py" ]
 
   ydoc:
-    image: broker/python-base
+    image: iota/python-base
     logging:
       driver: local
       options:
@@ -132,7 +144,7 @@ services:
     entrypoint: [ "python", "-m", "ydoc.YDOC" ]
 
   wombat:
-    image: broker/python-base
+    image: iota/python-base
     logging:
       driver: local
       options:
@@ -152,7 +164,7 @@ services:
     entrypoint: [ "python", "-m", "ydoc.Wombat" ]
 
   lm:
-    image: broker/python-base
+    image: iota/python-base
     logging:
       driver: local
       options:
@@ -171,7 +183,7 @@ services:
     entrypoint: [ "python", "-m", "logical_mapper.LogicalMapper" ]
 
   delivery:
-    image: broker/python-base
+    image: iota/python-base
     logging:
       driver: local
       options:
@@ -192,7 +204,7 @@ services:
     entrypoint: [ "python", "-m", "delivery.UbidotsWriter" ]
 
   pollers:
-    image: broker/python-base
+    image: iota/python-base
     logging:
       driver: local
       options:
@@ -213,7 +225,7 @@ services:
     entrypoint: [ "python", "-m", "pollers.ICT_EagleIO" ]
 
   frred:
-    image: broker/python-base
+    image: iota/python-base
     logging:
       driver: local
       options:
@@ -234,8 +246,27 @@ services:
     working_dir: "/home/broker/python"
     entrypoint: [ "python", "-m", "delivery.FRRED" ]
 
+  tswriter:
+    image: iota/python-base
+    logging:
+      driver: local
+      options:
+        max-file: "3"
+    restart: unless-stopped
+    env_file:
+      - .env
+    depends_on:
+      db:
+        condition: "service_healthy"
+      mq:
+        condition: "service_healthy"
+    volumes:
+      - ../src/python:/home/broker/python
+    working_dir: "/home/broker/python"
+    entrypoint: [ "python", "-m", "delivery.TimescaleDB" ]
+
   axistech:
-    image: broker/python-base
+    image: iota/python-base
     logging:
       driver: local
       options:

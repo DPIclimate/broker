@@ -37,6 +37,19 @@ create table if not exists physical_timeseries (
     json_msg jsonb not null
 );
 
+CREATE OR REPLACE FUNCTION update_physical_timeseries_ts_delta()
+RETURNS TRIGGER AS $$
+BEGIN
+  NEW.ts_delta = NEW.received_at - NEW.ts;
+  RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+CREATE OR REPLACE TRIGGER update_physical_timeseries_ts_delta_trigger
+BEFORE INSERT OR UPDATE ON physical_timeseries
+FOR EACH ROW
+EXECUTE FUNCTION update_physical_timeseries_ts_delta();
+
 create table if not exists raw_messages (
     uid integer generated always as identity primary key,
     source_name text not null references sources,
@@ -104,10 +117,10 @@ create table if not exists users (
 );
 
 create table if not exists version (
-    version integer not null
+    version integer primary key
 );
 
 create index if not exists pd_src_id_idx on physical_devices using GIN (source_ids);
 
-insert into sources values ('ttn'), ('greenbrain'), ('wombat'), ('ydoc'), ('ict_eagleio');
+insert into sources values ('ttn'), ('greenbrain'), ('wombat'), ('ydoc'), ('ict_eagleio'), ('axistech');
 insert into version values (2);

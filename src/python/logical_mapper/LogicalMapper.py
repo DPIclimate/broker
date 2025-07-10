@@ -109,7 +109,10 @@ def on_message(channel, method, properties, body):
 
         lu.cid_logger.info(f'Accepted message from {pd.name}', extra=msg)
 
-        mapping = dao.get_current_device_mapping(p_uid)
+        ts_str = msg[BrokerConstants.TIMESTAMP_KEY]
+        ts = dateutil.parser.isoparse(ts_str)
+
+        mapping = dao.get_physical_mapping_at_timestamp(p_uid, ts)
         if mapping is None or mapping.is_active is not True:
             # Add the message even though it has no logical device id in it.
             dao.insert_physical_timeseries_message(msg)
@@ -131,8 +134,6 @@ def on_message(channel, method, properties, body):
         ld = mapping.ld
 
         # Determine if the message has a future timestamp.
-        ts_str: datetime.datetime = msg[BrokerConstants.TIMESTAMP_KEY]
-        ts = dateutil.parser.isoparse(ts_str)
         utc_now = datetime.datetime.now(datetime.timezone.utc)
         ts_delta = utc_now - ts
 

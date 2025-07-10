@@ -1,6 +1,9 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
+export UID
+export GID=`id -g`
+
 RUN_MODE=$(basename $PWD)
 
 if [ "$RUN_MODE" != test ]; then
@@ -12,4 +15,4 @@ if [ "$RUN_MODE" != test ]; then
     fi
 fi
 
-exec docker-compose --profile wombat --profile ubidots --profile frred -p $RUN_MODE -f ../docker-compose.yml -f ./$RUN_MODE.yml $*
+exec docker compose --profile wombat --profile ubidots --profile frred -p $RUN_MODE -f ../docker-compose.yml -f ./$RUN_MODE.yml "$@"

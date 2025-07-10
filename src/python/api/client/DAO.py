@@ -122,6 +122,13 @@ def _dict_from_row(result_metadata, row) -> Dict[str, Any]:
     return obj
 
 
+def location_to_postgis_value(location):
+    if location is None or location.lat is None or location.long is None:
+        return None
+    else:
+        return AsIs(f"ST_GeomFromText('POINT({location.long} {location.lat})')")
+
+
 def _device_to_query_params(device: BaseDevice) -> dict:
     dev_fields = {}
     for k, v in vars(device).items():
@@ -129,10 +136,7 @@ def _device_to_query_params(device: BaseDevice) -> dict:
             case 'properties' | 'source_ids':
                 dev_fields[k] = Json(v)
             case 'location':
-                if device.location is None or device.location.lat is None or device.location.long is None:
-                    dev_fields[k] = None
-                else:
-                    dev_fields[k] = AsIs(f"ST_GeomFromText('POINT({device.location.long} {device.location.lat})')")
+                dev_fields[k] = location_to_postgis_value(device.location)
             case _:
                 dev_fields[k] = v
 
@@ -227,7 +231,7 @@ def _get_physical_device(conn, uid: int) -> PhysicalDevice:
         row = cursor.fetchone()
         if row is not None:
             dfr = _dict_from_row(cursor.description, row)
-            dev = PhysicalDevice.parse_obj(dfr)
+            dev = PhysicalDevice.model_validate(dfr)
 
     return dev
 
@@ -256,7 +260,7 @@ def get_pyhsical_devices_using_source_ids(source_name: str, source_ids: Dict[str
             cursor.execute(sql, args)
             for r in cursor:
                 dfr = _dict_from_row(cursor.description, r)
-                devs.append(PhysicalDevice.parse_obj(dfr))
+                devs.append(PhysicalDevice.model_validate(dfr))
 
         return devs
     except Exception as err:
@@ -277,7 +281,7 @@ def get_all_physical_devices() -> List[PhysicalDevice]:
             rows = cursor.fetchmany()
             while len(rows) > 0:
                 for r in rows:
-                    d = PhysicalDevice.parse_obj(_dict_from_row(cursor.description, r))
+                    d = PhysicalDevice.model_validate(_dict_from_row(cursor.description, r))
                     devs.append(d)
 
                 rows = cursor.fetchmany()
@@ -301,7 +305,7 @@ def get_physical_devices_from_source(source_name: str) -> List[PhysicalDevice]:
             rows = cursor.fetchmany()
             while len(rows) > 0:
                 for r in rows:
-                    d = PhysicalDevice.parse_obj(_dict_from_row(cursor.description, r))
+                    d = PhysicalDevice.model_validate(_dict_from_row(cursor.description, r))
                     devs.append(d)
 
                 rows = cursor.fetchmany()
@@ -362,7 +366,7 @@ def get_physical_devices(query_args=None) -> List[PhysicalDevice]:
             while len(rows) > 0:
                 #logging.info(f'processing {len(rows)} rows.')
                 for r in rows:
-                    d = PhysicalDevice.parse_obj(_dict_from_row(cursor.description, r))
+                    d = PhysicalDevice.model_validate(_dict_from_row(cursor.description, r))
                     devs.append(d)
 
                 rows = cursor.fetchmany()
@@ -554,7 +558,7 @@ def _get_logical_device(conn, uid: int) -> LogicalDevice:
         row = cursor.fetchone()
         if row is not None:
             dfr = _dict_from_row(cursor.description, row)
-            dev = LogicalDevice.parse_obj(dfr)
+            dev = LogicalDevice.model_validate(dfr)
 
     return dev
 
@@ -608,7 +612,7 @@ def get_logical_devices(query_args = {}) -> List[LogicalDevice]:
             rows = cursor.fetchmany()
             while len(rows) > 0:
                 for r in rows:
-                    d = LogicalDevice.parse_obj(_dict_from_row(cursor.description, r))
+                    d = LogicalDevice.model_validate(_dict_from_row(cursor.description, r))
                     devs.append(d)
 
                 rows = cursor.fetchmany()
@@ -844,7 +848,7 @@ def get_current_device_mapping(pd: Optional[Union[PhysicalDevice, int]] = None, 
             case DAOException() | ValueError():
                 raise err
             case _:
-                raise DAOException('insert_mapping failed.', err)
+                raise DAOException('get_current_device_mapping failed.', err)
 
     finally:
         if conn is not None:
@@ -900,7 +904,7 @@ def get_unmapped_physical_devices() -> List[PhysicalDevice]:
             cursor.execute(f'{_physical_device_select_all_cols} where uid not in (select physical_uid from physical_logical_map where end_time is null) order by uid asc')
             for r in cursor:
                 dfr = _dict_from_row(cursor.description, r)
-                devs.append(PhysicalDevice.parse_obj(dfr))
+                devs.append(PhysicalDevice.model_validate(dfr))
 
         return devs
     except Exception as err:
@@ -951,6 +955,35 @@ def get_physical_device_mappings(pd: Union[PhysicalDevice, int]) -> List[Physica
     finally:
         if conn is not None:
             free_conn(conn)
+
+
+def get_physical_mapping_at_timestamp(p_uid: int, ts: datetime) -> PhysicalToLogicalMapping | None:
+    """
+    Returns the device mapping for a physical device at a specific point in time. The logical mapper
+    can use this function because it will return either the current mapping or the mapping that was
+    in effect at the specified time. This will allow the logical mapper to reprocess old messages.
+    """
+    conn = None
+    try:
+        with _get_connection() as conn, conn.cursor() as cursor:
+            cursor.execute('select physical_uid, logical_uid, start_time, end_time, is_active from physical_logical_map where physical_uid = %s and start_time <= %s and (end_time > %s or end_time is null)', (p_uid, ts, ts))
+            if cursor.rowcount > 1:
+                raise DAOException(f'Found multiple mappings for physical device {p_uid} at time {ts.isoformat()}')
+
+            for p_uid, l_uid, start_time, end_time, is_active in cursor:
+                pd = _get_physical_device(conn, p_uid)
+                ld = _get_logical_device(conn, l_uid)
+                mapping = PhysicalToLogicalMapping(pd=pd, ld=ld, start_time=start_time, end_time=end_time, is_active=is_active)
+                return mapping
+
+        logging.warning(f'No mapping found for p_uid {p_uid} at time {ts}')
+
+    except Exception as err:
+        raise err if isinstance(err, DAOException) else DAOException('get_physical_mapping_at_timestamp failed.', err)
+    finally:
+        if conn is not None:
+            free_conn(conn)
+
 
 def get_all_current_mappings(return_uids: bool = True) -> List[PhysicalToLogicalMapping]:
     conn = None
@@ -1169,7 +1202,7 @@ def get_user(uid = None, username = None, auth_token = None) -> User:
                 row = cursor.fetchone()
                 if row is not None:
                     dfr = _dict_from_row(cursor.description, row)
-                    user = User.parse_obj(dfr)
+                    user = User.model_validate(dfr)
             return user
         except Exception as err:
             raise err if isinstance(err, DAOException) else DAOException('get_user failed.', err)
