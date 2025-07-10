@@ -125,10 +125,13 @@ class BaseWriter:
         backing table when on_message returns MSG_OK or MSG_FAIL, and maintains the retry_count
         attribute on MSG_RETRY returns.
         """
-        logging.info('Delivery threat started')
+        logging.info('Delivery thread started')
         while self.keep_running:
-            self.evt.wait()
-            self.evt.clear()
+            count = dao.get_delivery_msg_count(self.name)
+            if count < 1:
+                self.evt.wait()
+                self.evt.clear()
+
             if not self.keep_running:
                 break
 
@@ -177,7 +180,7 @@ class BaseWriter:
                     lu.cid_logger.error(f'Invalid message processing return value: {rc}', extra=msg)
 
         dao.stop()
-        logging.info('Delivery threat stopped.')
+        logging.info('Delivery thread stopped.')
 
     def on_message(self, pd: PhysicalDevice, ld: LogicalDevice, msg: dict[Any], retry_count: int) -> int:
         """

@@ -13,9 +13,8 @@ cd $BROKER_ROOT
 cd compose/$MODE
 ./dc.sh down
 cd $BROKER_ROOT
-docker build -q -t broker/python-base -f images/restapi/Dockerfile .
-#docker build -q -t broker/ttn_decoder -f images/ttn_decoder/Dockerfile .
-docker build -q -t broker/mgmt-app -f src/www/Dockerfile .
+docker build -t iota/python-base -f images/restapi/Dockerfile .
+docker build -t iota/timescaledb -f images/timescaledb/Dockerfile .
 cd compose/$MODE
 ./dc.sh up -d
 ./dc.sh logs -f

@@ -122,6 +122,13 @@ def _dict_from_row(result_metadata, row) -> Dict[str, Any]:
     return obj
 
 
+def location_to_postgis_value(location):
+    if location is None or location.lat is None or location.long is None:
+        return None
+    else:
+        return AsIs(f"ST_GeomFromText('POINT({location.long} {location.lat})')")
+
+
 def _device_to_query_params(device: BaseDevice) -> dict:
     dev_fields = {}
     for k, v in vars(device).items():
@@ -129,10 +136,7 @@ def _device_to_query_params(device: BaseDevice) -> dict:
             case 'properties' | 'source_ids':
                 dev_fields[k] = Json(v)
             case 'location':
-                if device.location is None or device.location.lat is None or device.location.long is None:
-                    dev_fields[k] = None
-                else:
-                    dev_fields[k] = AsIs(f"ST_GeomFromText('POINT({device.location.long} {device.location.lat})')")
+                dev_fields[k] = location_to_postgis_value(device.location)
             case _:
                 dev_fields[k] = v
 
