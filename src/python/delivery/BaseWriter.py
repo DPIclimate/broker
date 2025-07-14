@@ -154,11 +154,13 @@ class BaseWriter:
                 if pd is None:
                     lu.cid_logger.error(f'Could not find physical device, dropping message: {msg}', extra=msg)
                     dao.remove_delivery_msg(self.name, msg_uid)
+                    continue
 
                 ld = dao.get_logical_device(l_uid)
                 if ld is None:
                     lu.cid_logger.error(f'Could not find logical device, dropping message: {msg}', extra=msg)
                     dao.remove_delivery_msg(self.name, msg_uid)
+                    continue
 
                 lu.cid_logger.info(f'{pd.name} / {ld.name}', extra=msg)
 
@@ -171,6 +173,9 @@ class BaseWriter:
                     # private to the delivery service in question, so it can be retried later
                     # but not stuck at the head of the queue and immediately redelivered to
                     # here, possibly causing an endless loop.
+                    #
+                    # Alternatively, the retry count can be used to initially select new messages, then
+                    # messages that have failed at least once.
                     lu.cid_logger.warning('Message processing failed, retrying message.', extra=msg)
                     dao.retry_delivery_msg(self.name, msg_uid)
                 elif rc == BaseWriter.MSG_FAIL:

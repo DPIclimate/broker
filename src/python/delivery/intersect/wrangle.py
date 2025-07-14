@@ -16,14 +16,10 @@ import os, re
 import datetime
 import dateutil.parser as dup
 import logging
+import util.LoggingUtil as lu
 
 from pathlib import Path
 from psycopg2.extras import RealDictCursor
-
-"""
-SELECT location_id, calibration_position::integer as position, calibration_variable as variable, calibration_formula as adjustment_formula
-  FROM location.calibration WHERE location_id = 26 ORDER BY calibration_date
-"""
 
 _clear_cache_flag_file = Path(os.environ['CLEAR_CALIBRATION_CACHE_FILE'])
 
@@ -35,13 +31,13 @@ _cal_query = """SELECT location_id, calibration_position::integer as position, c
 _log_query = """SELECT location_id, position, variable_name as variable, adjustment_formula, minimum_logical_value, maximum_logical_value FROM main.mapping LEFT JOIN sensor.sensor_variable ON sensor_variable.sensor_model_id = mapping.sensor_model_id WHERE mapping.location_id = %s"""
 _empty_frame = pd.DataFrame(columns=['location_id', 'position', 'variable', 'adjustment_formula'])
 
-def get_variable_info(location_id, con_wrangle):
+def get_variable_info(location_id, con_wrangle, msg):
     """
     This function is for extracting information for the data quality assurance testing in wrangle.wrangle
     """
 
     if _clear_cache_flag_file.exists() and _clear_cache_flag_file.is_file():
-        logging.info('Clearing calibration values cache.')
+        lu.cid_logger.info('Clearing calibration values cache.', extra=msg)
         _var_info_cache.clear()
         _clear_cache_flag_file.unlink()
 
@@ -52,11 +48,9 @@ def get_variable_info(location_id, con_wrangle):
         df_cal = _empty_frame
 
         with con_wrangle.cursor(cursor_factory=RealDictCursor) as curs:
-            logging.info(curs.mogrify(_cal_query, (location_id,)))
             curs.execute(_cal_query, (location_id,))
             cal_rows = curs.fetchall()
 
-            logging.info(curs.mogrify(_log_query, (location_id,)))
             curs.execute(_log_query, (location_id,))
             log_rows = curs.fetchall()
 
@@ -64,6 +58,7 @@ def get_variable_info(location_id, con_wrangle):
             df_cal = pd.DataFrame(cal_rows)
 
         df_log = pd.DataFrame(log_rows)
+
         merged_df = df_log[['location_id', 'position', 'variable', 'adjustment_formula', 'minimum_logical_value', 'maximum_logical_value']].merge(
             df_cal[['location_id', 'position', 'variable', 'adjustment_formula']],
             on=['location_id', 'position', 'variable'],
@@ -78,7 +73,7 @@ def get_variable_info(location_id, con_wrangle):
 
         return merged_df
     except Exception as e:
-        logging.exception("Error in get_variable_info")
+        lu.cid_logger.exception("Error in get_variable_info", extra=msg)
         return None
 
 
@@ -118,7 +113,7 @@ def wrangle(msg_dict, conn):
         output = []
 
         # Get quality assurance dataframe.
-        df_lookup = get_variable_info(location_id, conn)
+        df_lookup = get_variable_info(location_id, conn, msg_dict)
         if df_lookup.shape[0] > 0:
             for timeseries_obj in msg_dict['timeseries']:
                 try:
@@ -164,13 +159,13 @@ def wrangle(msg_dict, conn):
 
                     output.append((timestamp, broker_correlation_id, location_id, sensor_serial_id, position, variable, value, err_data))
                 else:
-                    logging.error(f"Processing exception: inside wrangle.wrangle: - Variable ({variable}) not available in lookup tables for logical id ({location_id}) - JSON Data: {data} ")
+                    lu.cid_logger.error(f"Processing exception: inside wrangle.wrangle: - Variable ({variable}) not available in lookup tables for logical id ({location_id}) - JSON Data: {msg_dict}", extra=msg_dict)
 
             return output
         else:
-            logging.error(f"Processing exception: inside wrangle.wrangle: - No lookup table for logical id ({location_id}) - JSON Data: {msg_dict}")
+            lu.cid_logger.error(f"Processing exception: inside wrangle.wrangle: - No lookup table for logical id ({location_id}) - JSON Data: {msg_dict}", extra=msg_dict)
             return _empty_list
     except Exception as ex:
-        logging.exception(f"Error in wrangle.wrangle")
+        lu.cid_logger.exception(f"Error in wrangle.wrangle", extra=msg_dict)
         return _empty_list
 # end
