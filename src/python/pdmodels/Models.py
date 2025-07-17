@@ -4,8 +4,8 @@ from typing import Optional, Dict
 
 
 class Location(BaseModel):
-    lat: Optional[float]
-    long: Optional[float]
+    lat: Optional[float] = None
+    long: Optional[float] = None
 
     @staticmethod
     def from_ttn_device(ttn_dev: Dict):
@@ -22,24 +22,24 @@ class Location(BaseModel):
 
 # Allowing extra attributes in this class to make life easier for the webapp - it can pass extra info
 # to the templates in the device object rather than passing in lists of mappings etc.
-class BaseDevice(BaseModel, extra=Extra.allow):
-    uid: Optional[int]
+class BaseDevice(BaseModel, extra='allow'):
+    uid: Optional[int] = None
     name: str
-    location: Optional[Location]
-    last_seen: Optional[datetime]
+    location: Optional[Location] = None
+    last_seen: Optional[datetime] = None
     properties: Dict = {}
 
 
 # Allowing extra attributes in this class to make life easier for the webapp - it can pass extra info
 # to the templates in the device object rather than passing in lists of mappings etc.
-class PhysicalDevice(BaseDevice, extra=Extra.allow):
+class PhysicalDevice(BaseDevice, extra='allow'):
     source_name: str
     source_ids: Dict = {}
 
 
 # Allowing extra attributes in this class to make life easier for the webapp - it can pass extra info
 # to the templates in the device object rather than passing in lists of mappings etc.
-class LogicalDevice(BaseDevice, extra=Extra.allow):
+class LogicalDevice(BaseDevice, extra='allow'):
     pass
 
 
@@ -47,13 +47,13 @@ class PhysicalToLogicalMapping(BaseModel):
     pd: PhysicalDevice | int
     ld: LogicalDevice | int
     start_time: datetime
-    end_time: Optional[datetime]
+    end_time: Optional[datetime] = None
     is_active: bool = True
 
 
 class DeviceNote(BaseModel):
-    uid: Optional[int]
-    ts: Optional[datetime]
+    uid: Optional[int] = None
+    ts: Optional[datetime] = None
     note: str
 
 

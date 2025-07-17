@@ -398,6 +398,50 @@ class TestDAO(unittest.TestCase):
         mapping3 = dao.get_current_device_mapping(pd=mapping1.pd.uid, only_current_mapping=False)
         self.assertEqual(mapping1, mapping3)
 
+    def test_get_physical_mapping_at_timestamp(self):
+        """
+        This test requires at least 4 entries in the mapping table for a physical device:
+        1. A mapping to logical device LD_A between times A and B.
+        2. A mapping to logical device LD_B between times B and C.
+        3. A mapping to logical device LD_C from C onwards.
+        """
+        pdev, new_pdev = self._create_physical_device()
+        ldev1, new_ldev1 = self._create_default_logical_device()
+        ldev2, new_ldev2 = self._create_default_logical_device()
+        ldev3, new_ldev3 = self._create_default_logical_device()
+
+        with dao.get_connection() as conn:
+            with conn.cursor() as curs:
+                curs.execute(f"""insert into physical_logical_map (physical_uid, logical_uid, start_time, end_time, is_active)
+                                 values ({new_pdev.uid}, {new_ldev1.uid}, '2025-01-01'::timestamptz, '2025-01-05'::timestamptz, {True})""")
+                self.assertEqual(curs.rowcount, 1)
+
+                curs.execute(f"""insert into physical_logical_map (physical_uid, logical_uid, start_time, end_time, is_active)
+                                 values ({new_pdev.uid}, {new_ldev2.uid}, '2025-01-06'::timestamptz, '2025-01-15'::timestamptz, {True})""")
+                self.assertEqual(curs.rowcount, 1)
+
+                curs.execute(f"""insert into physical_logical_map (physical_uid, logical_uid, start_time, end_time, is_active)
+                                 values ({new_pdev.uid}, {new_ldev3.uid}, '2025-01-16'::timestamptz, '2025-01-17'::timestamptz, {True})""")
+                self.assertEqual(curs.rowcount, 1)
+
+                curs.execute(f"""insert into physical_logical_map (physical_uid, logical_uid, start_time, end_time, is_active)
+                                 values ({new_pdev.uid}, {new_ldev1.uid}, '2025-01-20'::timestamptz, NULL, {True})""")
+                self.assertEqual(curs.rowcount, 1)
+                # This is necessary so the dao calls below can see the mappings.
+                conn.commit()
+
+        m = dao.get_physical_mapping_at_timestamp(new_pdev.uid, datetime.datetime(2025, 1, 3, tzinfo=datetime.timezone.utc))
+        self.assertEqual(m.ld.uid, new_ldev1.uid)
+
+        m = dao.get_physical_mapping_at_timestamp(new_pdev.uid, datetime.datetime(2025, 1, 9, tzinfo=datetime.timezone.utc))
+        self.assertEqual(m.ld.uid, new_ldev2.uid)
+
+        m = dao.get_physical_mapping_at_timestamp(new_pdev.uid, datetime.datetime(2025, 1, 16, 11, tzinfo=datetime.timezone.utc))
+        self.assertEqual(m.ld.uid, new_ldev3.uid)
+
+        m = dao.get_physical_mapping_at_timestamp(new_pdev.uid, _now())
+        self.assertEqual(m.ld.uid, new_ldev1.uid)
+
     def test_end_mapping(self):
         pdev, new_pdev = self._create_physical_device()
         ldev, new_ldev = self._create_default_logical_device()
@@ -750,7 +794,7 @@ class TestDAO(unittest.TestCase):
         #Check that two users with the same username cannot be created
         uname = _create_test_user()
         self.assertRaises(dao.DAOUniqeConstraintException, dao.user_add, uname, 'password', False)
-    
+
     def test_get_user_token(self):
         uname = _create_test_user()
         self.assertIsNotNone(dao.user_get_token(username=uname, password='password'))
@@ -767,18 +811,18 @@ class TestDAO(unittest.TestCase):
     def test_user_token_disable(self):
         uname = _create_test_user()
         user_token = dao.user_get_token(username=uname, password='password')
-        
+
         dao.token_disable(uname)
         self.assertFalse(dao.token_is_valid(user_token))
-        
+
     def test_user_token_enable(self):
         uname = _create_test_user()
         user_token = dao.user_get_token(username=uname, password='password')
-        
+
         dao.token_disable(uname)
         dao.token_enable(uname)
         self.assertTrue(dao.token_is_valid(user_token))
-        
+
     def test_user_change_password(self):
         uname = _create_test_user()
         dao.user_change_password(uname, 'nuiscyeriygsreiuliu')

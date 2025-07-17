@@ -11,11 +11,11 @@ import hashlib
 
 
 def str_to_physical_device(val) -> PhysicalDevice:
-    return PhysicalDevice.parse_obj(json.loads(val))
+    return PhysicalDevice.model_validate(json.loads(val))
 
 
 def str_to_logical_device(val) -> LogicalDevice:
-    return LogicalDevice.parse_obj(json.loads(val))
+    return LogicalDevice.model_validate(json.loads(val))
 
 
 def str_to_dict(val) -> Dict:
@@ -266,7 +266,7 @@ def main() -> None:
                 plain_pd_list(devs)
 
         elif args.cmd2 == 'create':
-            dev = PhysicalDevice.parse_obj(dict_from_file_or_string())
+            dev = PhysicalDevice.model_validate(dict_from_file_or_string())
             print(pretty_print_json(dao.create_physical_device(dev)))
 
         elif args.cmd2 == 'up':
@@ -282,7 +282,7 @@ def main() -> None:
                 if dev[k] != v:
                     dev[k] = v
 
-            dev = PhysicalDevice.parse_obj(dev)
+            dev = PhysicalDevice.model_validate(dev)
             print(pretty_print_json(dao.update_physical_device(dev)))
 
         elif args.cmd2 == 'rm':
@@ -302,7 +302,7 @@ def main() -> None:
                 tmp_list = list(map(lambda dev: dev.dict(exclude={'properties'}), devs))
             print(pretty_print_json(tmp_list))
         elif args.cmd2 == 'create':
-            dev = LogicalDevice.parse_obj(dict_from_file_or_string())
+            dev = LogicalDevice.model_validate(dict_from_file_or_string())
             print(dao.create_logical_device(dev))
         elif args.cmd2 == 'get':
             dev = dao.get_logical_device(args.l_uid)
@@ -320,7 +320,7 @@ def main() -> None:
                 if dev_dict[k] != v:
                     dev_dict[k] = v
 
-            dev = LogicalDevice.parse_obj(dev_dict)
+            dev = LogicalDevice.model_validate(dev_dict)
             print(pretty_print_json(dao.update_logical_device(dev)))
         elif args.cmd2 == 'rm':
             # Delete all physical_logical mappings to avoid foreign key violation
@@ -335,7 +335,7 @@ def main() -> None:
             if pdev is None:
                 raise RuntimeError('Physical device not found.')
 
-            ldev = LogicalDevice.parse_obj(pdev.dict(exclude={'uid','source_name','source_ids','properties'}))
+            ldev = LogicalDevice.model_validate(pdev.dict(exclude={'uid','source_name','source_ids','properties'}))
             ldev = dao.create_logical_device(ldev)
             if args.do_mapping:
                 mapping = PhysicalToLogicalMapping(pd=pdev, ld=ldev, start_time=now())

@@ -1,6 +1,9 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
+export UID
+export GID=`id -g`
+
 RUN_MODE=$(basename $PWD)
 
 if [ "$RUN_MODE" != test ]; then
