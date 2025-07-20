@@ -1,6 +1,6 @@
 services:
   x:
-    image: broker/python-base
+    image: iota/python-base
     restart: "no"
     env_file:
       - .env
