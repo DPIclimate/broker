@@ -1,5 +1,7 @@
 # Repo-specific
 config/broker.env
+scmn_msgs/
+compose/timescaledb_env
 
 # Byte-compiled / optimized / DLL files
 __pycache__/

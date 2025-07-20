@@ -84,7 +84,7 @@ def on_message(channel, method, properties, body):
 
     try:
         correlation_id = str(uuid.uuid4())
-        lu.cid_logger.info(f'Message as received: {body}', extra={BrokerConstants.CORRELATION_ID_KEY: correlation_id})
+        #lu.cid_logger.info(f'Message as received: {body}', extra={BrokerConstants.CORRELATION_ID_KEY: correlation_id})
 
         msg = {}
         try:

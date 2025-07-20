@@ -132,12 +132,15 @@ class BaseWriter:
                 self.evt.wait()
                 self.evt.clear()
 
+                if not self.keep_running:
+                    break
+
+                count = dao.get_delivery_msg_count(self.name)
+                if count < 1:
+                    continue
+
             if not self.keep_running:
                 break
-
-            count = dao.get_delivery_msg_count(self.name)
-            if count < 1:
-                continue
 
             logging.info(f'Processing {count} messages')
             msg_rows = dao.get_delivery_msg_batch(self.name)
