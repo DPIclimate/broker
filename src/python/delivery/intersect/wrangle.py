@@ -86,7 +86,7 @@ def get_variable_info(location_id, con_wrangle, msg):
         return cal_info
 
     except Exception as e:
-        lu.cid_logger.exception("Error in get_variable_info", extra=msg)
+        lu.cid_logger.exception(f"Error in get_variable_info: {e}", extra=msg)
         return None
 
 

@@ -6,6 +6,7 @@ services:
       options:
         max-file: "3"
     restart: unless-stopped
+    user: "${UID}:${GID}"
     env_file:
       - .env
     volumes:
@@ -17,17 +18,19 @@ services:
       interval: 10s
       retries: 10
 
-  timescaledb:
-    image: iota/timescaledb
-    logging:
-      driver: local
-      options:
-        max-file: "3"
+  ts:
+    # This image is used because it matches the versions on the original VM that held the
+    # database. It does not include PostGIS.
+    #
+    # It does not run by default because Postgresql/TimescaleDB are running on the host VM in
+    # the inherited production environment.
+    image: timescale/timescaledb:2.9.2-pg14
     restart: unless-stopped
-    env_file:
-      - timescaledb_env
+    user: "${UID}:${GID}"
+    profiles:
+      - tsdb
     volumes:
-      - ../db/ts_initdb.d:/docker-entrypoint-initdb.d
+      - ../db/ts_initdb.d:/docker-entrypoint-initdb.d:ro
 
   mq:
     hostname: "mq"
@@ -224,7 +227,7 @@ services:
     working_dir: "/home/broker/python"
     entrypoint: [ "python", "-m", "pollers.ICT_EagleIO" ]
 
-  frred:
+  tswriter:
     image: iota/python-base
     logging:
       driver: local
@@ -235,26 +238,6 @@ services:
       - .env
     profiles:
       - frred
-    depends_on:
-      db:
-        condition: "service_healthy"
-      mq:
-        condition: "service_healthy"
-    volumes:
-      - ../src/python:/home/broker/python
-      - ${DATABOLT_SHARED_DIR}/nectar_raw_data:/raw_data
-    working_dir: "/home/broker/python"
-    entrypoint: [ "python", "-m", "delivery.FRRED" ]
-
-  tswriter:
-    image: iota/python-base
-    logging:
-      driver: local
-      options:
-        max-file: "3"
-    restart: unless-stopped
-    env_file:
-      - .env
     depends_on:
       db:
         condition: "service_healthy"
