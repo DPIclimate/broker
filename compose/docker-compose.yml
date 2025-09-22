@@ -151,6 +151,28 @@ services:
     working_dir: "/home/broker/python"
     entrypoint: [ "python", "-m", "ydoc.Wombat" ]
 
+  dragino_json:
+    image: broker/python-base
+    logging:
+      driver: local
+      options:
+        max-file: "3"
+    restart: unless-stopped
+    env_file:
+      - .env
+    profiles:
+      - dragino_json
+    depends_on:
+      db:
+        condition: "service_healthy"
+      mq:
+        condition: "service_healthy"
+    volumes:
+      - ../src/python:/home/broker/python
+    working_dir: "/home/broker/python"
+    entrypoint: [ "python", "-m", "ydoc.Dragino_JSON" ]
+
+
   lm:
     image: broker/python-base
     logging:

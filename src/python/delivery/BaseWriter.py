@@ -125,16 +125,22 @@ class BaseWriter:
         backing table when on_message returns MSG_OK or MSG_FAIL, and maintains the retry_count
         attribute on MSG_RETRY returns.
         """
-        logging.info('Delivery threat started')
+        logging.info('Delivery thread started')
         while self.keep_running:
-            self.evt.wait()
-            self.evt.clear()
-            if not self.keep_running:
-                break
-
             count = dao.get_delivery_msg_count(self.name)
             if count < 1:
-                continue
+                self.evt.wait()
+                self.evt.clear()
+
+                if not self.keep_running:
+                    break
+
+                count = dao.get_delivery_msg_count(self.name)
+                if count < 1:
+                    continue
+
+            if not self.keep_running:
+                break
 
             logging.info(f'Processing {count} messages')
             msg_rows = dao.get_delivery_msg_batch(self.name)
@@ -151,11 +157,13 @@ class BaseWriter:
                 if pd is None:
                     lu.cid_logger.error(f'Could not find physical device, dropping message: {msg}', extra=msg)
                     dao.remove_delivery_msg(self.name, msg_uid)
+                    continue
 
                 ld = dao.get_logical_device(l_uid)
                 if ld is None:
                     lu.cid_logger.error(f'Could not find logical device, dropping message: {msg}', extra=msg)
                     dao.remove_delivery_msg(self.name, msg_uid)
+                    continue
 
                 lu.cid_logger.info(f'{pd.name} / {ld.name}', extra=msg)
 
@@ -168,6 +176,9 @@ class BaseWriter:
                     # private to the delivery service in question, so it can be retried later
                     # but not stuck at the head of the queue and immediately redelivered to
                     # here, possibly causing an endless loop.
+                    #
+                    # Alternatively, the retry count can be used to initially select new messages, then
+                    # messages that have failed at least once.
                     lu.cid_logger.warning('Message processing failed, retrying message.', extra=msg)
                     dao.retry_delivery_msg(self.name, msg_uid)
                 elif rc == BaseWriter.MSG_FAIL:
@@ -177,7 +188,7 @@ class BaseWriter:
                     lu.cid_logger.error(f'Invalid message processing return value: {rc}', extra=msg)
 
         dao.stop()
-        logging.info('Delivery threat stopped.')
+        logging.info('Delivery thread stopped.')
 
     def on_message(self, pd: PhysicalDevice, ld: LogicalDevice, msg: dict[Any], retry_count: int) -> int:
         """
