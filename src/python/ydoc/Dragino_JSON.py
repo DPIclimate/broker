@@ -32,8 +32,9 @@ JSON_SPEC = {
     "system_vars_ts_name": "time",
     "system_vars": ["Model","IMEI","IMSI","battery","signal"],
     "timeseries_array": {
-      2: {"name": "pulse1","decumulate": True},
+      2: {"name": "pulse1","decumulate": True, "decumulate_system_var":"count time1"},
     },
+    "counter_limit": 16777215
   },
   "S31x-CB": {
     "system_vars_ts_name": "time",
@@ -46,22 +47,33 @@ JSON_SPEC = {
 }
 
 
+#
+# Decumulate 'y' by 'prev_y'.
+#
+def decumulate(y,prev_y,counter_limit):
+  if prev_y <= y:
+    return(y-prev_y)
+  else:
+    #return(y + counter_limit - prev_y)
+    return(y)
+
+
 def process_data(data):
 
   vars = JSON_SPEC[data["Model"]]
- 
+
   dots = []
 
   d_ts = dateutil.parser.isoparse(data[vars["system_vars_ts_name"]])
 
   # devices will uplink with ts equal to epoch if it hasn't synched time yet.
-  # drop messages with these timestamps. 
+  # drop messages with these timestamps.
   if d_ts.year <= 1970:
     return([])
-  
+
   system_dot = {BrokerConstants.TIMESTAMP_KEY: d_ts.isoformat(),BrokerConstants.TIMESERIES_KEY: []}
 
-  # Create timeseries for system variables 
+  # Create timeseries for system variables
   for i in vars["system_vars"]:
     d_name = i
     d_value = data[d_name]
@@ -69,11 +81,10 @@ def process_data(data):
     d = {"name": d_name,"value": d_value}
     system_dot[BrokerConstants.TIMESERIES_KEY].append(d)
 
-
   dots.append(system_dot)
 
 
- 
+
 
   last_t = None
 
@@ -81,15 +92,15 @@ def process_data(data):
   # Devices support max 32 buffered data sets.
   for t in [str(i) for i in range(32,0,-1)]:
     if t in data:
-      
+
       # timestampe is the last element of the array
       d_ts = dateutil.parser.isoparse(data[t][-1])
 
       # devices will uplink with ts equal to epoch if it hasn't synched time yet.
-      # drop messages with these timestamps. 
+      # drop messages with these timestamps.
       if d_ts.year <= 1970:
         continue
-      
+
       dot = {BrokerConstants.TIMESTAMP_KEY: d_ts.isoformat(),BrokerConstants.TIMESERIES_KEY: []}
 
       for i in vars["timeseries_array"].keys():
@@ -99,8 +110,11 @@ def process_data(data):
 
         if "decumulate" in vars["timeseries_array"][i] and vars["timeseries_array"][i]["decumulate"] is True:
           if last_t is not None:
-            if data[last_t][i] <= d_value:
-              d_value -= data[last_t][i]
+            d_value = decumulate(d_value,data[last_t][i],vars["counter_limit"])
+
+          else:
+            last_t = t
+            continue
 
 
         d = {"name":d_name,"value":d_value}
@@ -108,12 +122,21 @@ def process_data(data):
 
         last_t = t
 
-      dots.append(dot)
+      if len(dot[BrokerConstants.TIMESERIES_KEY])  > 0:
+        dots.append(dot)
+
+
+  for i in vars["timeseries_array"].keys():
+    if "decumulate_system_var" in vars["timeseries_array"][i]:
+      sys_var = vars["timeseries_array"][i]["decumulate_system_var"]
+
+      if "1" in data:
+        #dot = {"name": vars["timeseries_array"][i]["name"], "value": data[sys_var]-data['1'][i]}
+        dot = {"name": vars["timeseries_array"][i]["name"], "value": decumulate(data[sys_var],data['1'][i],vars["counter_limit"])}
+        dots[0][BrokerConstants.TIMESERIES_KEY].append(dot)
+
 
   return(dots)
-
-
-
 
 
 
