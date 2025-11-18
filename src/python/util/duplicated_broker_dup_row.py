@@ -1,5 +1,5 @@
 import dotenv
-import psycopg as pg
+import psycopg2 as pg
 
 dotenv.load_dotenv()
 
