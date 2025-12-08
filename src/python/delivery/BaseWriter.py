@@ -145,12 +145,24 @@ class BaseWriter:
             logging.info(f'Processing {count} messages')
             msg_rows = dao.get_delivery_msg_batch(self.name)
             for msg_uid, msg, retry_count in msg_rows:
-                lu.cid_logger.info(f'msg from table {msg_uid}, {retry_count}', extra=msg)
+                lu.cid_logger.info(f'msg from table {msg_uid}, retries {retry_count}', extra=msg)
                 if not self.keep_running:
                     break
 
+                if BrokerConstants.PHYSICAL_DEVICE_UID_KEY not in msg:
+                    lu.cid_logger.info(f'No physical device id, dropping message: {msg}', extra=msg)
+                    dao.remove_delivery_msg(self.name, msg_uid)
+                    continue
+                
                 p_uid = msg[BrokerConstants.PHYSICAL_DEVICE_UID_KEY]
+
+                if BrokerConstants.LOGICAL_DEVICE_UID_KEY not in msg:
+                    lu.cid_logger.info(f'No logical device id, dropping message: {msg}', extra=msg)
+                    dao.remove_delivery_msg(self.name, msg_uid)
+                    continue
+                
                 l_uid = msg[BrokerConstants.LOGICAL_DEVICE_UID_KEY]
+
                 lu.cid_logger.info(f'Accepted message from physical / logical device ids {p_uid} / {l_uid}', extra=msg)
 
                 pd = dao.get_physical_device(p_uid)

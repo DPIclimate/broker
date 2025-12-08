@@ -258,7 +258,7 @@ services:
     env_file:
       - .env
     profiles:
-      - frred
+      - frred-x
     depends_on:
       db:
         condition: "service_healthy"
