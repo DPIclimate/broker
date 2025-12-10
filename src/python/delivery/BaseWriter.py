@@ -79,14 +79,18 @@ class BaseWriter:
                 logging.info('Waiting for messages.')
                 # This loops until _channel.cancel is called in the signal handler.
                 for method, properties, body in self.channel.consume(f'{self.name}_logical_msg_queue'):
-                    delivery_tag = method.delivery_tag
+                    delivery_tag = None
+                    if method is not None:
+                        delivery_tag = method.delivery_tag
 
                     # If the finish flag is set, reject the message so RabbitMQ will re-queue it
                     # and return early.
                     if not self.keep_running:
-                        lu.cid_logger.info(f'NACK delivery tag {delivery_tag}, keep_running is False', extra=msg)
-                        self.channel.basic_reject(delivery_tag)
-                        continue    # This will break from loop without running all the logic within the loop below here.
+                        if delivery_tag is not None:
+                            lu.cid_logger.info(f'NACK delivery tag {delivery_tag}, keep_running is False', extra=msg)
+                            self.channel.basic_reject(delivery_tag)
+                        self.channel.cancel();
+                        break
 
                     msg = json.loads(body)
                     lu.cid_logger.info('Adding message to delivery table', extra=msg)
@@ -95,8 +99,8 @@ class BaseWriter:
                     self.evt.set()
 
             except pika.exceptions.ConnectionClosedByBroker:
-                    logging.info('Connection closed by server.')
-                    break
+                logging.info('Connection closed by server.')
+                break
 
             except pika.exceptions.AMQPChannelError as err:
                 logging.exception(err)
@@ -106,7 +110,6 @@ class BaseWriter:
                 logging.exception(err)
                 logging.warning('Connection was closed, retrying after a pause.')
                 time.sleep(10)
-                continue
 
         # Tell the delivery thread to stop if the main thread got an error.
         self.keep_running = False
@@ -153,14 +156,14 @@ class BaseWriter:
                     lu.cid_logger.info(f'No physical device id, dropping message: {msg}', extra=msg)
                     dao.remove_delivery_msg(self.name, msg_uid)
                     continue
-                
+
                 p_uid = msg[BrokerConstants.PHYSICAL_DEVICE_UID_KEY]
 
                 if BrokerConstants.LOGICAL_DEVICE_UID_KEY not in msg:
                     lu.cid_logger.info(f'No logical device id, dropping message: {msg}', extra=msg)
                     dao.remove_delivery_msg(self.name, msg_uid)
                     continue
-                
+
                 l_uid = msg[BrokerConstants.LOGICAL_DEVICE_UID_KEY]
 
                 lu.cid_logger.info(f'Accepted message from physical / logical device ids {p_uid} / {l_uid}', extra=msg)
