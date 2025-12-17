@@ -1,7 +1,5 @@
 # This image is used for all Python containers in the broker.
 
-# 3.10 is important. There is a breaking change in 3.11 where some dependencies have not
-# been updated and cannot be built from source.
 FROM python:3.12
 
 # For debian-based images
@@ -9,6 +7,10 @@ RUN groupadd broker && useradd -m -g broker broker
 
 # For alpine-based images
 #RUN addgroup -S broker && adduser -S broker -G broker
+
+RUN apt-get update -q
+# Pandoc and tex are for the quality reports.
+RUN apt-get install -yq --no-install-recommends --no-show-upgraded pandoc texlive-latex-recommended texlive-latex-extra texlive-fonts-recommended lmodern
 
 USER broker
 ENV PATH=/home/broker/.local/bin:${PATH}
