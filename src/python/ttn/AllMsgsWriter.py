@@ -24,6 +24,7 @@ _enabled_apps = os.getenv('TTN_ENABLED_APPS')
 if _enabled_apps is not None and len(_enabled_apps) > 0:
     _enabled_apps = _enabled_apps.split(',')
 
+
 def sigterm_handler(sig_no, stack_frame) -> None:
     """
     Handle SIGTERM from docker by closing the mq and db connections and setting a
@@ -161,7 +162,13 @@ def on_message(channel, method, properties, body):
             props = {
                 BrokerConstants.TTN: ttn_dev,
                 BrokerConstants.CREATION_CORRELATION_ID_KEY: correlation_id,
-                BrokerConstants.LAST_MSG: msg
+                BrokerConstants.LAST_MSG: {
+                    BrokerConstants.CORRELATION_ID_KEY: correlation_id,
+                    BrokerConstants.TIMESTAMP_KEY: received_at,
+                    BrokerConstants.PHYSICAL_DEVICE_UID_KEY: None,
+                    BrokerConstants.LOGICAL_DEVICE_UID_KEY: None,
+                    BrokerConstants.LAST_PTS_UID_KEY: None
+                }
             }
 
             pd = PhysicalDevice(source_name=BrokerConstants.TTN, name=dev_name, location=dev_loc, last_seen=last_seen, source_ids=source_ids, properties=props)
@@ -178,7 +185,13 @@ def on_message(channel, method, properties, body):
                 pd.last_seen = last_seen
                 # In case the device was moved to a different TTN application.
                 pd.source_ids = source_ids
-                pd.properties[BrokerConstants.LAST_MSG] = msg
+                pd.properties[BrokerConstants.LAST_MSG] = {
+                    BrokerConstants.CORRELATION_ID_KEY: correlation_id,
+                    BrokerConstants.TIMESTAMP_KEY: received_at,
+                    BrokerConstants.PHYSICAL_DEVICE_UID_KEY: pd.uid,
+                    BrokerConstants.LOGICAL_DEVICE_UID_KEY: None,
+                    BrokerConstants.LAST_PTS_UID_KEY: None
+                }
                 pd = dao.update_physical_device(pd)
 
         if pd is None:

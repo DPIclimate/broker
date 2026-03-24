@@ -96,8 +96,16 @@ def process_msg(msg: Dict) -> None:
     if len(pds) < 1:
         lu.cid_logger.info(f'Physical device not found for device {serial_no}, creating a new one.', extra=msg)
 
-        props = {BrokerConstants.CREATION_CORRELATION_ID_KEY: msg[BrokerConstants.CORRELATION_ID_KEY],
-            BrokerConstants.LAST_MSG: json.dumps(msg)}
+        props = {
+            BrokerConstants.CREATION_CORRELATION_ID_KEY: msg[BrokerConstants.CORRELATION_ID_KEY],
+            BrokerConstants.LAST_MSG: {
+                BrokerConstants.CORRELATION_ID_KEY: msg[BrokerConstants.CORRELATION_ID_KEY],
+                BrokerConstants.TIMESTAMP_KEY: msg[BrokerConstants.TIMESTAMP_KEY],
+                BrokerConstants.PHYSICAL_DEVICE_UID_KEY: None,
+                BrokerConstants.LOGICAL_DEVICE_UID_KEY: None,
+                BrokerConstants.LAST_PTS_UID_KEY: None
+            }
+        }
 
         pdev = PhysicalDevice(source_name=BrokerConstants.AXISTECH, name=serial_no, location=None,
                             source_ids=source_ids, properties=props)
@@ -105,7 +113,13 @@ def process_msg(msg: Dict) -> None:
     else:
         lu.cid_logger.info(f'Accepted message from {serial_no}, updating last seen time to {ts}.', extra=msg)
         pdev = pds[0]
-        pdev.properties[BrokerConstants.LAST_MSG] = json.dumps(msg)
+        pdev.properties[BrokerConstants.LAST_MSG] = {
+            BrokerConstants.CORRELATION_ID_KEY: msg[BrokerConstants.CORRELATION_ID_KEY],
+            BrokerConstants.TIMESTAMP_KEY: msg[BrokerConstants.TIMESTAMP_KEY],
+            BrokerConstants.PHYSICAL_DEVICE_UID_KEY: pdev.uid,
+            BrokerConstants.LOGICAL_DEVICE_UID_KEY: None,
+            BrokerConstants.LAST_PTS_UID_KEY: None
+        }
 
     msg[BrokerConstants.PHYSICAL_DEVICE_UID_KEY] = pdev.uid
     lu.cid_logger.info(f'Posting msg: {msg}', extra=msg)
@@ -283,4 +297,3 @@ def main() -> None:
 
 if __name__ == '__main__':
     main()
-

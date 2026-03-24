@@ -236,7 +236,13 @@ def on_message(channel, method, properties, body):
             props = {
                 BrokerConstants.DRAGINO_JSON: msg,
                 BrokerConstants.CREATION_CORRELATION_ID_KEY: correlation_id,
-                BrokerConstants.LAST_MSG: msg
+                BrokerConstants.LAST_MSG: {
+                    BrokerConstants.CORRELATION_ID_KEY: correlation_id,
+                    BrokerConstants.TIMESTAMP_KEY: msg["time"],
+                    BrokerConstants.PHYSICAL_DEVICE_UID_KEY: None,
+                    BrokerConstants.LOGICAL_DEVICE_UID_KEY: None,
+                    BrokerConstants.LAST_PTS_UID_KEY: None
+                }
             }
 
 
@@ -258,7 +264,13 @@ def on_message(channel, method, properties, body):
         else:
             pd = pds[0]
             pd.last_seen = msg_ts
-            pd.properties[BrokerConstants.LAST_MSG] = msg
+            pd.properties[BrokerConstants.LAST_MSG] = {
+                BrokerConstants.CORRELATION_ID_KEY: correlation_id,
+                BrokerConstants.TIMESTAMP_KEY: msg["time"],
+                BrokerConstants.PHYSICAL_DEVICE_UID_KEY: pd.uid,
+                BrokerConstants.LOGICAL_DEVICE_UID_KEY: None,
+                BrokerConstants.LAST_PTS_UID_KEY: None
+            }
             pd = dao.update_physical_device(pd)
 
         if pd is None:

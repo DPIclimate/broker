@@ -1,0 +1,51 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://farmdecisiontech.net.au/schemas/iota-message.schema.json",
+  "title": "IoTa Timeseries Message",
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "l_uid": {
+      "type": ["integer", "null"],
+      "minimum": 0
+    },
+    "p_uid": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "timestamp": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "timeseries": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "name": {
+            "type": "string",
+            "minLength": 1
+          },
+          "timestamp": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "value": {
+            "type": "number"
+          }
+        },
+        "required": ["name", "value"]
+      }
+    },
+    "source_ids": {
+      "type": "object",
+      "minProperties": 1
+    },
+    "broker_correlation_id": {
+      "type": "string",
+      "format": "uuid"
+    }
+  },
+  "required": ["p_uid", "timestamp", "timeseries", "broker_correlation_id"]
+}

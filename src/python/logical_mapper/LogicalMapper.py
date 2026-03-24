@@ -126,7 +126,7 @@ def on_message(channel, method, properties, body):
 
         msg[BrokerConstants.LOGICAL_DEVICE_UID_KEY] = mapping.ld.uid
 
-        dao.insert_physical_timeseries_message(msg)
+        pts_uid = dao.insert_physical_timeseries_message(msg)
 
         ld = mapping.ld
 
@@ -150,11 +150,19 @@ def on_message(channel, method, properties, body):
         else:
             ld.last_seen = ts
 
+        msg_ptr = {
+            BrokerConstants.CORRELATION_ID_KEY: msg[BrokerConstants.CORRELATION_ID_KEY],
+            BrokerConstants.TIMESTAMP_KEY: msg[BrokerConstants.TIMESTAMP_KEY],
+            BrokerConstants.PHYSICAL_DEVICE_UID_KEY: msg[BrokerConstants.PHYSICAL_DEVICE_UID_KEY],
+            BrokerConstants.LOGICAL_DEVICE_UID_KEY: msg[BrokerConstants.LOGICAL_DEVICE_UID_KEY],
+            BrokerConstants.PHYSICAL_TIMESERIES_UID_KEY: pts_uid
+        }
+
         lu.cid_logger.info(f'Timestamp from message for LD last seen update: {ld.last_seen}', extra=msg)
-        ld.properties[BrokerConstants.LAST_MSG] = msg
+        ld.properties[BrokerConstants.LAST_MSG] = msg_ptr
         dao.update_logical_device(ld)
 
-        _tx_channel.publish_message('logical_timeseries', msg)
+        _tx_channel.publish_message('logical_timeseries', msg_ptr)
 
         # This tells RabbitMQ the message is handled and can be deleted from the queue.
         _rx_channel._channel.basic_ack(delivery_tag)

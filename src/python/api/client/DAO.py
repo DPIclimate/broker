@@ -990,7 +990,7 @@ def add_raw_json_message(source_name: str, ts: datetime, correlation_uuid: str, 
             free_conn(conn)
 
 
-def insert_physical_timeseries_message(msg: Dict[str, Any]) -> None:
+def insert_physical_timeseries_message(msg: Dict[str, Any]) -> int:
     conn = None
     p_uid = msg[BrokerConstants.PHYSICAL_DEVICE_UID_KEY]
     l_uid = msg[BrokerConstants.LOGICAL_DEVICE_UID_KEY] if BrokerConstants.LOGICAL_DEVICE_UID_KEY in msg else None
@@ -998,7 +998,11 @@ def insert_physical_timeseries_message(msg: Dict[str, Any]) -> None:
 
     try:
         with _get_connection() as conn, conn.cursor() as cursor:
-            cursor.execute('insert into physical_timeseries (physical_uid, ts, logical_uid, json_msg) values (%s, %s, %s, %s)', (p_uid, ts, l_uid, Json(msg)))
+            cursor.execute(
+                'insert into physical_timeseries (physical_uid, ts, logical_uid, json_msg) values (%s, %s, %s, %s) returning uid',
+                (p_uid, ts, l_uid, Json(msg))
+            )
+            return cursor.fetchone()[0]
     except Exception as err:
         raise DAOException('insert_physical_timeseries_message failed.', err)
     finally:
@@ -1070,6 +1074,41 @@ def get_physical_timeseries_message(start: datetime | None = None, end: datetime
 
     except Exception as err:
         raise DAOException('get_physical_timeseries_message failed.', err)
+    finally:
+        if conn is not None:
+            free_conn(conn)
+
+
+def get_physical_timeseries_message_by_uid(pts_uid: int) -> Dict[str, Any] | None:
+    conn = None
+
+    if not isinstance(pts_uid, int):
+        raise TypeError
+
+    try:
+        with _get_connection() as conn, conn.cursor() as cursor:
+            cursor.execute(
+                'select physical_uid, logical_uid, json_msg from physical_timeseries where uid = %s',
+                (pts_uid, )
+            )
+            row = cursor.fetchone()
+            if row is None:
+                return None
+
+            p_uid, l_uid, msg = row
+            if msg is None:
+                return None
+
+            # Ensure these ids are present even if a legacy row has incomplete json_msg.
+            if BrokerConstants.PHYSICAL_DEVICE_UID_KEY not in msg:
+                msg[BrokerConstants.PHYSICAL_DEVICE_UID_KEY] = p_uid
+
+            if BrokerConstants.LOGICAL_DEVICE_UID_KEY not in msg:
+                msg[BrokerConstants.LOGICAL_DEVICE_UID_KEY] = l_uid
+
+            return msg
+    except Exception as err:
+        raise DAOException('get_physical_timeseries_message_by_uid failed.', err)
     finally:
         if conn is not None:
             free_conn(conn)
@@ -1335,7 +1374,11 @@ def create_delivery_table(name: str) -> None:
     try:
         qry = f"""create table if not exists {_get_delivery_table_id(name)} (
                     uid integer generated always as identity primary key,
-                    json_msg jsonb not null,
+                    pts_uid integer not null references physical_timeseries(uid),
+                    correlation_id uuid not null,
+                    physical_uid integer not null,
+                    logical_uid integer not null,
+                    ts timestamptz not null,
                     retry_count integer not null default 0)"""
 
         with _get_connection() as conn, conn.cursor() as cursor:
@@ -1347,6 +1390,7 @@ def create_delivery_table(name: str) -> None:
         if conn is not None:
             conn.commit()
             free_conn(conn)
+
 
 def get_delivery_msg_count(name: str) -> int:
     try:
@@ -1361,14 +1405,15 @@ def get_delivery_msg_count(name: str) -> int:
             conn.commit()
             free_conn(conn)
 
-def get_delivery_msg_batch(name: str, from_uid: int = 0, batch_size: int = 10) -> List[Tuple[int, list[dict[Any]]]]:
+
+def get_delivery_msg_batch(name: str, from_uid: int = 0, batch_size: int = 10) -> List[Tuple[int, int, str, int, int, datetime, int]]:
     try:
         with _get_connection() as conn, conn.cursor() as cursor:
             # Using order by asc in case time series databases need values inserted in timestamp order.
-            cursor.execute(f'select uid, json_msg, retry_count from {_get_delivery_table_id(name)} where uid > %s order by uid asc limit %s', (from_uid, batch_size))
-            if cursor.rowcount < 1:
-                return 0, []
-
+            cursor.execute(
+                f'select uid, pts_uid, correlation_id, physical_uid, logical_uid, ts, retry_count from {_get_delivery_table_id(name)} where uid > %s order by uid asc limit %s',
+                (from_uid, batch_size)
+            )
             return cursor.fetchall()
 
     except Exception as err:
@@ -1378,10 +1423,13 @@ def get_delivery_msg_batch(name: str, from_uid: int = 0, batch_size: int = 10) -
             conn.commit()
             free_conn(conn)
 
-def add_delivery_msg(name: str, msg: dict[Any]) -> None:
+def add_delivery_msg(name: str, pts_uid: int, correlation_id: str, p_uid: int, l_uid: int, ts: str) -> None:
     try:
         with _get_connection() as conn, conn.cursor() as cursor:
-            cursor.execute(f'insert into {_get_delivery_table_id(name)} (json_msg) values (%s)', (Json(msg), ))
+            cursor.execute(
+                f'insert into {_get_delivery_table_id(name)} (pts_uid, correlation_id, physical_uid, logical_uid, ts) values (%s, %s, %s, %s, %s)',
+                (pts_uid, correlation_id, p_uid, l_uid, ts)
+            )
 
     except Exception as err:
         raise err if isinstance(err, DAOException) else DAOException('add_delivery_msg failed.', err)

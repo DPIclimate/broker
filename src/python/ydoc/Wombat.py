@@ -22,6 +22,7 @@ tx_channel: mq.TxChannel = None
 mq_client: mq.RabbitMQConnection = None
 finish = False
 
+
 def sigterm_handler(sig_no, stack_frame) -> None:
     """
     Handle SIGTERM from docker by closing the mq and db connections and setting a
@@ -117,7 +118,13 @@ def on_message(channel, method, properties, body):
 
             props = {
                 BrokerConstants.CREATION_CORRELATION_ID_KEY: correlation_id,
-                BrokerConstants.LAST_MSG: msg
+                BrokerConstants.LAST_MSG: {
+                    BrokerConstants.CORRELATION_ID_KEY: correlation_id,
+                    BrokerConstants.TIMESTAMP_KEY: msg[BrokerConstants.TIMESTAMP_KEY],
+                    BrokerConstants.PHYSICAL_DEVICE_UID_KEY: None,
+                    BrokerConstants.LOGICAL_DEVICE_UID_KEY: None,
+                    BrokerConstants.LAST_PTS_UID_KEY: None
+                }
             }
 
             device_name = f'Wombat-{serial_no}'
@@ -130,7 +137,13 @@ def on_message(channel, method, properties, body):
             # Additionally, something like an AWS might get replaced so there will be a new SDI-12 ID for that.
             pd.source_ids = source_ids
             pd.last_seen = msg_ts
-            pd.properties[BrokerConstants.LAST_MSG] = msg
+            pd.properties[BrokerConstants.LAST_MSG] = {
+                BrokerConstants.CORRELATION_ID_KEY: correlation_id,
+                BrokerConstants.TIMESTAMP_KEY: msg[BrokerConstants.TIMESTAMP_KEY],
+                BrokerConstants.PHYSICAL_DEVICE_UID_KEY: pd.uid,
+                BrokerConstants.LOGICAL_DEVICE_UID_KEY: None,
+                BrokerConstants.LAST_PTS_UID_KEY: None
+            }
             pd = dao.update_physical_device(pd)
 
         if pd is None:

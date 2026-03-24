@@ -80,6 +80,7 @@ class BaseWriter:
                 # This loops until _channel.cancel is called in the signal handler.
                 for method, properties, body in self.channel.consume(f'{self.name}_logical_msg_queue'):
                     delivery_tag = method.delivery_tag
+                    msg = {BrokerConstants.CORRELATION_ID_KEY: ''}
 
                     # If the finish flag is set, reject the message so RabbitMQ will re-queue it
                     # and return early.
@@ -88,15 +89,43 @@ class BaseWriter:
                         self.channel.basic_reject(delivery_tag)
                         continue    # This will break from loop without running all the logic within the loop below here.
 
-                    msg = json.loads(body)
-                    lu.cid_logger.info('Adding message to delivery table', extra=msg)
-                    dao.add_delivery_msg(self.name, msg)
+                    pointer_msg = json.loads(body)
+                    if BrokerConstants.PHYSICAL_TIMESERIES_UID_KEY not in pointer_msg:
+                        lu.cid_logger.error('Dropping message without pts_uid key.', extra=pointer_msg)
+                        self.channel.basic_ack(delivery_tag)
+                        continue
+
+                    pts_uid = pointer_msg[BrokerConstants.PHYSICAL_TIMESERIES_UID_KEY]
+                    if not isinstance(pts_uid, int):
+                        lu.cid_logger.error('Dropping message with non-integer pts_uid.', extra=pointer_msg)
+                        self.channel.basic_ack(delivery_tag)
+                        continue
+
+                    if BrokerConstants.CORRELATION_ID_KEY not in pointer_msg \
+                        or BrokerConstants.PHYSICAL_DEVICE_UID_KEY not in pointer_msg \
+                        or BrokerConstants.LOGICAL_DEVICE_UID_KEY not in pointer_msg \
+                        or BrokerConstants.TIMESTAMP_KEY not in pointer_msg:
+                        lu.cid_logger.error('Dropping message missing required pointer fields.', extra=pointer_msg)
+                        self.channel.basic_ack(delivery_tag)
+                        continue
+
+                    correlation_id = pointer_msg[BrokerConstants.CORRELATION_ID_KEY]
+                    p_uid = pointer_msg[BrokerConstants.PHYSICAL_DEVICE_UID_KEY]
+                    l_uid = pointer_msg[BrokerConstants.LOGICAL_DEVICE_UID_KEY]
+                    ts = pointer_msg[BrokerConstants.TIMESTAMP_KEY]
+                    if not isinstance(correlation_id, str) or not isinstance(p_uid, int) or not isinstance(l_uid, int) or not isinstance(ts, str):
+                        lu.cid_logger.error('Dropping message with invalid pointer field types.', extra=pointer_msg)
+                        self.channel.basic_ack(delivery_tag)
+                        continue
+
+                    lu.cid_logger.info(f'Adding pts_uid {pts_uid} to delivery table', extra=pointer_msg)
+                    dao.add_delivery_msg(self.name, pts_uid, correlation_id, p_uid, l_uid, ts)
                     self.channel.basic_ack(delivery_tag)
                     self.evt.set()
 
             except pika.exceptions.ConnectionClosedByBroker:
-                    logging.info('Connection closed by server.')
-                    break
+                logging.info('Connection closed by server.')
+                break
 
             except pika.exceptions.AMQPChannelError as err:
                 logging.exception(err)
@@ -127,30 +156,43 @@ class BaseWriter:
         """
         logging.info('Delivery thread started')
         while self.keep_running:
-            count = dao.get_delivery_msg_count(self.name)
-            if count < 1:
-                self.evt.wait()
+            msg_rows = dao.get_delivery_msg_batch(self.name)
+            if not msg_rows:
+                # Clear stale event state, then check again before waiting to avoid
+                # blocking when rows arrived between checks.
                 self.evt.clear()
-
-                if not self.keep_running:
-                    break
-
-                count = dao.get_delivery_msg_count(self.name)
-                if count < 1:
+                msg_rows = dao.get_delivery_msg_batch(self.name)
+                if not msg_rows:
+                    self.evt.wait(timeout=5.0)
                     continue
 
             if not self.keep_running:
                 break
 
+            count = len(msg_rows)
             logging.info(f'Processing {count} messages')
-            msg_rows = dao.get_delivery_msg_batch(self.name)
-            for msg_uid, msg, retry_count in msg_rows:
-                lu.cid_logger.info(f'msg from table {msg_uid}, {retry_count}', extra=msg)
+            for msg_uid, pts_uid, correlation_id, p_uid, l_uid, ts, retry_count in msg_rows:
                 if not self.keep_running:
                     break
 
-                p_uid = msg[BrokerConstants.PHYSICAL_DEVICE_UID_KEY]
-                l_uid = msg[BrokerConstants.LOGICAL_DEVICE_UID_KEY]
+                msg = dao.get_physical_timeseries_message_by_uid(pts_uid)
+                if msg is None:
+                    extra_msg = {
+                        BrokerConstants.CORRELATION_ID_KEY: correlation_id,
+                        BrokerConstants.PHYSICAL_DEVICE_UID_KEY: p_uid,
+                        BrokerConstants.LOGICAL_DEVICE_UID_KEY: l_uid,
+                        BrokerConstants.TIMESTAMP_KEY: ts.isoformat() if hasattr(ts, 'isoformat') else str(ts)
+                    }
+                    lu.cid_logger.error(f'Could not find canonical message for pts_uid {pts_uid}, dropping.', extra=extra_msg)
+                    dao.remove_delivery_msg(self.name, msg_uid)
+                    continue
+
+                lu.cid_logger.info(f'msg from table {msg_uid}, {retry_count}', extra=msg)
+
+                if p_uid is None or l_uid is None:
+                    dao.remove_delivery_msg(self.name, msg_uid)
+                    continue
+
                 lu.cid_logger.info(f'Accepted message from physical / logical device ids {p_uid} / {l_uid}', extra=msg)
 
                 pd = dao.get_physical_device(p_uid)
