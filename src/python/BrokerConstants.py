@@ -12,6 +12,7 @@ TTN = 'ttn'
 GREENBRAIN = 'greenbrain'
 WOMBAT = 'wombat'
 YDOC = 'ydoc'
+ICT = 'ict'
 ICT_EAGLEIO = 'ict_eagleio'
 AXISTECH = 'axistech'
 
