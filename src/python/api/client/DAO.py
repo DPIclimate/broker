@@ -54,6 +54,11 @@ select uid, name, (select row_to_json(_) from (select ST_Y(location) as lat, ST_
 
 _stopped = False
 
+_PTS_MAP_STATE_PENDING = 0
+_PTS_MAP_STATE_CLAIMED = 1
+_PTS_MAP_STATE_PROCESSED = 2
+_PTS_MAP_STATE_FAILED = 3
+
 def stop() -> None:
     global _stopped
     logging.info('Closing connection pool.')
@@ -1109,6 +1114,142 @@ def get_physical_timeseries_message_by_uid(pts_uid: int) -> Dict[str, Any] | Non
             return msg
     except Exception as err:
         raise DAOException('get_physical_timeseries_message_by_uid failed.', err)
+    finally:
+        if conn is not None:
+            free_conn(conn)
+
+
+def claim_unmapped_physical_timeseries_batch(batch_size: int = 100) -> List[Tuple[int, Dict[str, Any]]]:
+    conn = None
+
+    if not isinstance(batch_size, int):
+        raise TypeError
+
+    if batch_size < 1:
+        batch_size = 1
+
+    try:
+        with _get_connection() as conn, conn.cursor() as cursor:
+            cursor.execute(
+                """
+                with claimed as (
+                    select uid
+                      from physical_timeseries
+                     where map_state = %s
+                     order by uid asc
+                     for update skip locked
+                     limit %s
+                )
+                update physical_timeseries p
+                   set map_state = %s
+                  from claimed
+                 where p.uid = claimed.uid
+                returning p.uid, p.physical_uid, p.json_msg
+                """,
+                (_PTS_MAP_STATE_PENDING, batch_size, _PTS_MAP_STATE_CLAIMED)
+            )
+
+            rows = []
+            for uid, p_uid, msg in cursor.fetchall():
+                if msg is None:
+                    msg = {}
+
+                # Ensure p_uid is present in the object.
+                if BrokerConstants.PHYSICAL_DEVICE_UID_KEY not in msg:
+                    msg[BrokerConstants.PHYSICAL_DEVICE_UID_KEY] = p_uid
+
+                rows.append((uid, msg))
+
+            rows.sort(key=lambda x: x[0])
+            return rows
+    except Exception as err:
+        raise DAOException('claim_unmapped_physical_timeseries_batch failed.', err)
+    finally:
+        if conn is not None:
+            free_conn(conn)
+
+
+def get_unmapped_physical_timeseries_batch(from_uid: int = 0, batch_size: int = 100) -> List[Tuple[int, Dict[str, Any]]]:
+    """
+    Backward-compatible wrapper for the mapper table poller.
+
+    The from_uid argument is ignored because claiming is driven by map_state.
+    """
+    if not isinstance(from_uid, int):
+        raise TypeError
+
+    return claim_unmapped_physical_timeseries_batch(batch_size=batch_size)
+
+
+def set_physical_timeseries_map_state(uid: int, map_state: int) -> None:
+    conn = None
+
+    if not isinstance(uid, int):
+        raise TypeError
+    if map_state not in (_PTS_MAP_STATE_PENDING, _PTS_MAP_STATE_CLAIMED, _PTS_MAP_STATE_PROCESSED, _PTS_MAP_STATE_FAILED):
+        raise ValueError('Invalid map_state value.')
+
+    try:
+        with _get_connection() as conn, conn.cursor() as cursor:
+            cursor.execute(
+                'update physical_timeseries set map_state = %s where uid = %s',
+                (map_state, uid)
+            )
+    except Exception as err:
+        raise DAOException('set_physical_timeseries_map_state failed.', err)
+    finally:
+        if conn is not None:
+            free_conn(conn)
+
+
+def reset_claimed_physical_timeseries_messages() -> None:
+    conn = None
+    try:
+        with _get_connection() as conn, conn.cursor() as cursor:
+            cursor.execute(
+                'update physical_timeseries set map_state = %s where map_state = %s',
+                (_PTS_MAP_STATE_PENDING, _PTS_MAP_STATE_CLAIMED)
+            )
+    except Exception as err:
+        raise DAOException('reset_claimed_physical_timeseries_messages failed.', err)
+    finally:
+        if conn is not None:
+            free_conn(conn)
+
+
+def mark_physical_timeseries_message_pending(uid: int) -> None:
+    set_physical_timeseries_map_state(uid, _PTS_MAP_STATE_PENDING)
+
+
+def mark_physical_timeseries_message_processed(uid: int) -> None:
+    set_physical_timeseries_map_state(uid, _PTS_MAP_STATE_PROCESSED)
+
+
+def mark_physical_timeseries_message_failed(uid: int) -> None:
+    set_physical_timeseries_map_state(uid, _PTS_MAP_STATE_FAILED)
+
+
+def map_physical_timeseries_message(uid: int, logical_uid: int, msg: Dict[str, Any]) -> None:
+    conn = None
+
+    if not isinstance(uid, int):
+        raise TypeError
+    if not isinstance(logical_uid, int):
+        raise TypeError
+
+    try:
+        with _get_connection() as conn, conn.cursor() as cursor:
+            cursor.execute(
+                """
+                update physical_timeseries
+                   set logical_uid = %s,
+                       json_msg = %s
+                 where uid = %s
+                """,
+                (logical_uid, Json(msg), uid)
+            )
+    except Exception as err:
+        raise DAOException('map_physical_timeseries_message failed.', err)
     finally:
         if conn is not None:
             free_conn(conn)

@@ -1,3 +1,5 @@
+from enum import IntEnum
+
 # Message field constants
 CORRELATION_ID_KEY = 'broker_correlation_id'
 RAW_MESSAGE_KEY = 'raw_msg'
@@ -26,3 +28,13 @@ PHYSICAL_TIMESERIES_EXCHANGE_NAME = 'pts_exchange'
 LOGICAL_TIMESERIES_EXCHANGE_NAME = 'lts_exchange'
 
 LOGGER_FORMAT='%(asctime)s|%(levelname)-7s|%(module)s|%(message)s'
+
+
+class VariableTypeEnum(IntEnum):
+    WATER_TEMPERATURE = 1
+    WATER_SALINITY = 2
+    AIR_TEMPERATURE = 3
+    AIR_RH = 4
+    WIND_SPEED = 5
+    WIND_DIRECTION = 6
+    PRECIPITATION = 7

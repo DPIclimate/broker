@@ -1,7 +1,7 @@
 import datetime
 import dateutil.parser
 
-import asyncio, json, logging, os, requests, signal
+import asyncio, json, logging, os, signal
 from typing import Optional
 
 import BrokerConstants
@@ -16,7 +16,6 @@ import api.client.DAO as dao
 import util.LoggingUtil as lu
 
 rx_channel: mq.RxChannel = None
-tx_channel: mq.TxChannel = None
 mq_client: mq.RabbitMQConnection = None
 finish = False
 
@@ -47,7 +46,7 @@ async def main():
 
     It would be good to find a better way to do nothing than the current loop.
     """
-    global mq_client, rx_channel, tx_channel, finish
+    global mq_client, rx_channel, finish
 
     logging.info('===============================================================')
     logging.info('               STARTING TTN PROCESSOR')
@@ -56,11 +55,10 @@ async def main():
     # Cannot put these assignments up the top because you cannot do a forward
     # declaration of a function in Python (in this case, on_message).
     rx_channel = mq.RxChannel('ttn_exchange', exchange_type=ExchangeType.direct, queue_name='ttn_raw', on_message=on_message, routing_key='ttn_raw')
-    tx_channel = mq.TxChannel(exchange_name=BrokerConstants.PHYSICAL_TIMESERIES_EXCHANGE_NAME, exchange_type=ExchangeType.fanout)
-    mq_client = mq.RabbitMQConnection(channels=[rx_channel, tx_channel])
+    mq_client = mq.RabbitMQConnection(channels=[rx_channel, ])
     asyncio.create_task(mq_client.connect())
 
-    while not (rx_channel.is_open and tx_channel.is_open):
+    while not rx_channel.is_open:
         await asyncio.sleep(0)
 
     while not finish:
@@ -105,7 +103,7 @@ def on_message(channel, method, properties, body):
     """
     This function is called when a message arrives from RabbitMQ.
     """
-    global rx_channel, tx_channel, finish
+    global rx_channel, finish
 
     delivery_tag = method.delivery_tag
 
@@ -128,7 +126,6 @@ def on_message(channel, method, properties, body):
 
         lu.cid_logger.info(f'Accepted message from {app_id}:{dev_id}', extra=msg_with_cid)
 
-        last_seen = None
         received_at = get_received_at(msg)
         # We should always get a value in the message for this, but default to 'now' just in case.
         if received_at is None:
@@ -180,19 +177,17 @@ def on_message(channel, method, properties, body):
             if source_ids['app_id'] != pd.source_ids['app_id'] or source_ids['dev_id'] != pd.source_ids['dev_id']:
                 lu.cid_logger.info(f'source_ids changed to {source_ids}', extra=msg_with_cid)
 
-            #logging.info(f'Updating last_seen for device {pd.name}')
-            if last_seen is not None:
-                pd.last_seen = last_seen
-                # In case the device was moved to a different TTN application.
-                pd.source_ids = source_ids
-                pd.properties[BrokerConstants.LAST_MSG] = {
-                    BrokerConstants.CORRELATION_ID_KEY: correlation_id,
-                    BrokerConstants.TIMESTAMP_KEY: received_at,
-                    BrokerConstants.PHYSICAL_DEVICE_UID_KEY: pd.uid,
-                    BrokerConstants.LOGICAL_DEVICE_UID_KEY: None,
-                    BrokerConstants.LAST_PTS_UID_KEY: None
-                }
-                pd = dao.update_physical_device(pd)
+            pd.last_seen = last_seen
+            # In case the device was moved to a different TTN application.
+            pd.source_ids = source_ids
+            pd.properties[BrokerConstants.LAST_MSG] = {
+                BrokerConstants.CORRELATION_ID_KEY: correlation_id,
+                BrokerConstants.TIMESTAMP_KEY: received_at,
+                BrokerConstants.PHYSICAL_DEVICE_UID_KEY: pd.uid,
+                BrokerConstants.LOGICAL_DEVICE_UID_KEY: None,
+                BrokerConstants.LAST_PTS_UID_KEY: None
+            }
+            pd = dao.update_physical_device(pd)
 
         if pd is None:
             lu.cid_logger.error(f'Physical device not found, message processing ends now. {correlation_id}', extra=msg_with_cid)
@@ -214,7 +209,7 @@ def on_message(channel, method, properties, body):
                     BrokerConstants.TIMESERIES_KEY: ts_vars
                 }
 
-                tx_channel.publish_message('physical_timeseries', p_ts_msg)
+                dao.insert_physical_timeseries_message(p_ts_msg)
             else:
                 lu.cid_logger.warning(f'No payload could be decoded from message {correlation_id}', extra=msg_with_cid)
         else:
@@ -222,10 +217,9 @@ def on_message(channel, method, properties, body):
 
         # This tells RabbitMQ the message is handled and can be deleted from the queue.
         rx_channel._channel.basic_ack(delivery_tag)
-        lu.cid_logger.debug('Acking message from ttn_raw.', extra=msg_with_cid)
     except dao.DAOException as e:
         logging.exception('Error while processing message.')
-        rx_channel._channel.basic_reject(delivery_tag)
+        rx_channel._channel.basic_reject(delivery_tag, requeue=False)
 
 
 if __name__ == '__main__':

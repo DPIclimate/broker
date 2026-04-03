@@ -1,182 +1,186 @@
 """
-The logical mapper receives messages from the physical_timeseries queue
+The logical mapper claims pending rows from the physical_timeseries table
 and determines which logical device they should be sent to.
 
-If no logical device is mapped to the physical device, a new logical device
-is created.
-
-The message has the logical device id added to it and published to the
-logical_timeseries queue where it can be picked up by delivery services.
-
-It is up to the delivery services to decide what to do when they receive
-a message for a newly created logical device.
-
-For example, delivery services for IoT platforms such as ThingsBoard or
-Ubidots should create corresponding devices in those services and add
-information to the logical device properties object allowing the logical
-device to be associated with the IoT platform device.
+When a mapping is active, the existing physical_timeseries row is updated
+with the logical uid.
 """
 
-import asyncio, json, logging, signal
 import datetime
+import logging
+import signal
+import sys
+import time
+from typing import Any, Dict
 
 import dateutil.parser
 
 import BrokerConstants
-from pika.exchange_type import ExchangeType
-import api.client.RabbitMQ as mq
 import api.client.DAO as dao
 import util.LoggingUtil as lu
 
-_rx_channel = None
-_tx_channel = None
-_mq_client = None
 _finish = False
 
+_sleep_time = 5
+_batch_size = 100
+
 _max_delta = datetime.timedelta(hours=-1)
+
+logger = logging.getLogger(__name__)
+
+
+def _fatal_db_exception(msg: str) -> int:
+    global _finish
+
+    logger.exception(msg)
+    _finish = True
+    try:
+        dao.stop()
+    except BaseException:
+        logger.exception('Failed to stop DAO after database exception.')
+    return 1
 
 
 def sigterm_handler(sig_no, stack_frame) -> None:
     """
-    Handle SIGTERM from docker by closing the mq and db connections and setting a
+    Handle SIGTERM from docker by closing DB resources and setting a
     flag to tell the main loop to exit.
     """
-    global _finish, _mq_client
+    global _finish
 
-    logging.info(f'{signal.strsignal(sig_no)}, setting _finish to True')
+    logger.info(f'{signal.strsignal(sig_no)}, setting _finish to True')
     _finish = True
     dao.stop()
-    _mq_client.stop()
 
 
-async def main():
-    """
-    Initiate the connection to RabbitMQ and then idle until asked to stop.
-
-    Because the messages from RabbitMQ arrive via async processing this function
-    has nothing to do after starting connection.
-
-    It would be good to find a better way to do nothing than the current loop.
-    """
-    global _mq_client, _rx_channel, _tx_channel, _finish
-
-    logging.info('===============================================================')
-    logging.info('               STARTING LOGICAL MAPPER')
-    logging.info('===============================================================')
-
-    _rx_channel = mq.RxChannel(exchange_name=BrokerConstants.PHYSICAL_TIMESERIES_EXCHANGE_NAME, exchange_type=ExchangeType.fanout, queue_name='lm_physical_timeseries', on_message=on_message)
-    _tx_channel = mq.TxChannel(exchange_name=BrokerConstants.LOGICAL_TIMESERIES_EXCHANGE_NAME, exchange_type=ExchangeType.fanout)
-    _mq_client = mq.RabbitMQConnection(channels=[_rx_channel, _tx_channel])
-
-    asyncio.create_task(_mq_client.connect())
-
-    while not (_rx_channel.is_open and _tx_channel.is_open):
-        await asyncio.sleep(0)
-
-    while not _finish:
-        await asyncio.sleep(2)
-
-    while not _mq_client.stopped:
-        await asyncio.sleep(1)
+def _drop_row(pts_uid: int, msg: Dict[str, Any], reason: str) -> None:
+    lu.cid_logger.error(reason, extra=msg)
+    dao.mark_physical_timeseries_message_failed(pts_uid)
 
 
-def on_message(channel, method, properties, body):
-    """
-    This function is called when a message arrives from RabbitMQ.
-    """
-
-    global _rx_channel, _tx_channel, _finish
-
-    delivery_tag = method.delivery_tag
-
-    # If the _finish flag is set, reject the message so RabbitMQ will re-queue it
-    # and return early.
-    if _finish:
-        _rx_channel._channel.basic_reject(delivery_tag)
+def process_row(pts_uid: int, msg: Dict[str, Any]) -> None:
+    p_uid = msg.get(BrokerConstants.PHYSICAL_DEVICE_UID_KEY)
+    if not isinstance(p_uid, int):
+        _drop_row(pts_uid, msg, 'Physical uid not found in message, dropping row.')
         return
 
-    try:
-        msg = json.loads(body)
+    pd = dao.get_physical_device(p_uid)
+    if pd is None:
+        _drop_row(pts_uid, msg, 'Physical device not found, dropping row.')
+        return
 
-        p_uid = msg[BrokerConstants.PHYSICAL_DEVICE_UID_KEY]
-        pd = dao.get_physical_device(p_uid)
-        if pd is None:
-            lu.cid_logger.error(f'Physical device not found, cannot continue. Dropping message.', extra=msg)
-            # Ack the message, even though we cannot process it. We don't want it redelivered.
-            # We can change this to a Nack if that would provide extra context somewhere.
-            _rx_channel._channel.basic_ack(delivery_tag)
-            return
+    lu.cid_logger.info(f'Accepted message from {p_uid}, {pd.name}', extra=msg)
 
-        lu.cid_logger.info(f'Accepted message from {pd.name}', extra=msg)
-
-        mapping = dao.get_current_device_mapping(p_uid)
-        if mapping is None or mapping.is_active is not True:
-            # Add the message even though it has no logical device id in it.
-            dao.insert_physical_timeseries_message(msg)
-
-            if mapping is None:
-                lu.cid_logger.warning(f'No device mapping found for {pd.source_ids}, cannot continue. Dropping message.', extra=msg)
-            else:
-                lu.cid_logger.warning(f'Mapping for {pd.source_ids} is paused, cannot continue. Dropping message.', extra=msg)
-
-            # Ack the message, even though we cannot process it. We don't want it redelivered.
-            # We can change this to a Nack if that would provide extra context somewhere.
-            _rx_channel._channel.basic_ack(delivery_tag)
-            return
-
-        msg[BrokerConstants.LOGICAL_DEVICE_UID_KEY] = mapping.ld.uid
-
-        pts_uid = dao.insert_physical_timeseries_message(msg)
-
-        ld = mapping.ld
-
-        # Determine if the message has a future timestamp.
-        ts_str: datetime.datetime = msg[BrokerConstants.TIMESTAMP_KEY]
-        ts = dateutil.parser.isoparse(ts_str)
-        utc_now = datetime.datetime.now(datetime.timezone.utc)
-        ts_delta = utc_now - ts
-
-        # Drop messages with a timestamp more than 1 hour in the future.
-        if ts_delta < _max_delta:
-            lu.cid_logger.warning(f'Message with future timestamp. Dropping message.', extra=msg)
-            # Ack the message, even though we cannot process it. We don't want it redelivered.
-            # We can change this to a Nack if that would provide extra context somewhere.
-            _rx_channel._channel.basic_ack(delivery_tag)
-            return
-
-        if ts > utc_now:
-            # If the timestamp is a bit in the future then make the last seen time 'now'.
-            ld.last_seen = utc_now
+    mapping = dao.get_current_device_mapping(p_uid)
+    if mapping is None or mapping.is_active is not True:
+        if mapping is None:
+            lu.cid_logger.info(f'No device mapping found for {pd.source_ids}, cannot continue. Dropping message.', extra=msg)
         else:
-            ld.last_seen = ts
+            lu.cid_logger.info(f'Mapping for {pd.source_ids} is paused, cannot continue. Dropping message.', extra=msg)
+        # This row was intentionally dropped and should not be retried.
+        dao.mark_physical_timeseries_message_processed(pts_uid)
+        return
 
-        msg_ptr = {
-            BrokerConstants.CORRELATION_ID_KEY: msg[BrokerConstants.CORRELATION_ID_KEY],
-            BrokerConstants.TIMESTAMP_KEY: msg[BrokerConstants.TIMESTAMP_KEY],
-            BrokerConstants.PHYSICAL_DEVICE_UID_KEY: msg[BrokerConstants.PHYSICAL_DEVICE_UID_KEY],
-            BrokerConstants.LOGICAL_DEVICE_UID_KEY: msg[BrokerConstants.LOGICAL_DEVICE_UID_KEY],
-            BrokerConstants.PHYSICAL_TIMESERIES_UID_KEY: pts_uid
-        }
+    l_uid = mapping.ld.uid
+    msg[BrokerConstants.LOGICAL_DEVICE_UID_KEY] = l_uid
 
-        lu.cid_logger.info(f'Timestamp from message for LD last seen update: {ld.last_seen}', extra=msg)
-        ld.properties[BrokerConstants.LAST_MSG] = msg_ptr
-        dao.update_logical_device(ld)
+    # Determine if the message has a future timestamp.
+    ts_str = msg.get(BrokerConstants.TIMESTAMP_KEY)
+    try:
+        ts = dateutil.parser.isoparse(ts_str)
+    except Exception:
+        _drop_row(pts_uid, msg, 'Message with invalid timestamp. Dropping message.')
+        return
 
-        _tx_channel.publish_message('logical_timeseries', msg_ptr)
+    utc_now = datetime.datetime.now(datetime.timezone.utc)
+    ts_delta = utc_now - ts
 
-        # This tells RabbitMQ the message is handled and can be deleted from the queue.
-        _rx_channel._channel.basic_ack(delivery_tag)
+    # Drop messages with a timestamp more than 1 hour in the future.
+    if ts_delta < _max_delta:
+        _drop_row(pts_uid, msg, 'Message with future timestamp. Dropping message.')
+        return
 
-    except BaseException as e:
-        logging.exception('Error while processing message')
-        _rx_channel._channel.basic_ack(delivery_tag)
+    # Update the existing row now that the mapping decision is known.
+    dao.map_physical_timeseries_message(pts_uid, l_uid, msg)
+
+    ld = mapping.ld
+    if ts > utc_now:
+        # If the timestamp is a bit in the future then make the last seen time 'now'.
+        ld.last_seen = utc_now
+    else:
+        ld.last_seen = ts
+
+    msg_ptr = {
+        BrokerConstants.CORRELATION_ID_KEY: msg[BrokerConstants.CORRELATION_ID_KEY],
+        BrokerConstants.TIMESTAMP_KEY: msg[BrokerConstants.TIMESTAMP_KEY],
+        BrokerConstants.PHYSICAL_DEVICE_UID_KEY: p_uid,
+        BrokerConstants.LOGICAL_DEVICE_UID_KEY: l_uid,
+        BrokerConstants.PHYSICAL_TIMESERIES_UID_KEY: pts_uid
+    }
+
+    lu.cid_logger.info(f'Timestamp from message for LD last seen update: {ld.last_seen}', extra=msg)
+    ld.properties[BrokerConstants.LAST_MSG] = msg_ptr
+    dao.update_logical_device(ld)
+
+    dao.mark_physical_timeseries_message_processed(pts_uid)
+
+
+def main():
+    """
+    Poll physical_timeseries for claimed batches.
+    """
+    global _finish
+
+    logger.info('===============================================================')
+    logger.info('               STARTING LOGICAL MAPPER')
+    logger.info('===============================================================')
+
+    # TODO: Remove this startup reset before enabling multi-mapper mode.
+    # Any rows left in a claimed state after a crash should be retried.
+    try:
+        dao.reset_claimed_physical_timeseries_messages()
+    except dao.DAOException:
+        return _fatal_db_exception('Database exception while resetting claimed physical_timeseries rows.')
+
+    while not _finish:
+        try:
+            rows = dao.claim_unmapped_physical_timeseries_batch(_batch_size)
+            if len(rows) < 1:
+                time.sleep(_sleep_time)
+                continue
+
+            for pts_uid, msg in rows:
+                if _finish:
+                    break
+
+                try:
+                    process_row(pts_uid, msg)
+                except dao.DAOException:
+                    return _fatal_db_exception(f'Database exception while processing physical_timeseries uid {pts_uid}.')
+                except Exception:
+                    logger.exception(f'Error processing physical_timeseries uid {pts_uid}. Re-queueing row.')
+                    try:
+                        dao.mark_physical_timeseries_message_pending(pts_uid)
+                    except dao.DAOException:
+                        return _fatal_db_exception(f'Database exception while marking physical_timeseries uid {pts_uid} pending.')
+                    except Exception:
+                        logger.exception(f'Failed to mark physical_timeseries uid {pts_uid} as pending.')
+        except dao.DAOException:
+            return _fatal_db_exception('Database exception while polling physical_timeseries.')
+        except Exception:
+            logger.exception('Error while polling physical_timeseries.')
+            time.sleep(_sleep_time)
+
+    return 0
 
 
 if __name__ == '__main__':
     # Docker sends SIGTERM to tell the process the container is stopping so set
     # a handler to catch the signal and initiate an orderly shutdown.
     signal.signal(signal.SIGTERM, sigterm_handler)
+    signal.signal(signal.SIGINT, sigterm_handler)
 
     # Does not return until SIGTERM is received.
-    asyncio.run(main())
-    logging.info('Exiting.')
+    exit_code = main()
+    logger.info('Exiting.')
+    sys.exit(exit_code)

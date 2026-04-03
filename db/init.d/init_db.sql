@@ -30,11 +30,14 @@ create table if not exists physical_timeseries (
     physical_uid integer not null references physical_devices(uid),
     -- The logical_uid will be null for messages from unmapped devices. This is ok.
     logical_uid integer,
+    -- Mapper processing state: 0 pending, 1 claimed, 2 processed, 3 failed_permanent.
+    map_state smallint not null default 0,
     received_at timestamptz not null default now(),
     ts timestamptz not null,
     ts_delta interval,
     -- The message is stored in the brokers format as a JSONB object.
-    json_msg jsonb not null
+    json_msg jsonb not null,
+    constraint pts_map_state_valid_ck check (map_state in (0, 1, 2, 3))
 );
 
 create table if not exists raw_messages (
@@ -127,6 +130,10 @@ create index if not exists pts_physical_uid_ts_desc_idx
 create index if not exists pts_logical_uid_ts_desc_idx
     on physical_timeseries (logical_uid, ts desc)
     where logical_uid is not null;
+
+create index if not exists pts_pending_uid_idx
+    on physical_timeseries (uid)
+    where map_state = 0;
 
 insert into sources values ('ttn'), ('greenbrain'), ('wombat'), ('ydoc'), ('ict_eagleio');
 insert into version values (3);
