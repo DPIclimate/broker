@@ -30,14 +30,24 @@ create table if not exists physical_timeseries (
     physical_uid integer not null references physical_devices(uid),
     -- The logical_uid will be null for messages from unmapped devices. This is ok.
     logical_uid integer,
-    -- Mapper processing state: 0 pending, 1 claimed, 2 processed, 3 failed_permanent.
+    -- Mapper processing state: 0 pending, 1 claimed, 2 success, 3 failed_permanent, 4 skipped.
     map_state smallint not null default 0,
     received_at timestamptz not null default now(),
     ts timestamptz not null,
     ts_delta interval,
     -- The message is stored in the brokers format as a JSONB object.
     json_msg jsonb not null,
-    constraint pts_map_state_valid_ck check (map_state in (0, 1, 2, 3))
+    constraint pts_map_state_valid_ck check (map_state in (0, 1, 2, 3, 4))
+);
+
+create table if not exists logical_timeseries (
+    uid integer generated always as identity primary key,
+    physical_uid integer not null references physical_devices(uid),
+    logical_uid integer,
+    received_at timestamptz not null default now(),
+    ts timestamptz not null,
+    ts_delta interval,
+    json_msg jsonb not null
 );
 
 create table if not exists raw_messages (
@@ -110,6 +120,28 @@ create table if not exists version (
     version integer not null
 );
 
+create or replace function update_timeseries_ts_delta()
+returns trigger as $$
+begin
+    NEW.ts_delta = NEW.received_at - NEW.ts;
+    return NEW;
+end;
+$$ language plpgsql;
+
+drop trigger if exists update_physical_timeseries_ts_delta_trigger on physical_timeseries;
+
+create trigger update_physical_timeseries_ts_delta_trigger
+before insert or update on physical_timeseries
+for each row
+execute function update_timeseries_ts_delta();
+
+drop trigger if exists update_logical_timeseries_ts_delta_trigger on logical_timeseries;
+
+create trigger update_logical_timeseries_ts_delta_trigger
+before insert or update on logical_timeseries
+for each row
+execute function update_timeseries_ts_delta();
+
 create index if not exists pd_src_id_idx on physical_devices using GIN (source_ids);
 
 -- Optimise current mapping lookups in DAO.get_current_device_mapping() and
@@ -134,6 +166,13 @@ create index if not exists pts_logical_uid_ts_desc_idx
 create index if not exists pts_pending_uid_idx
     on physical_timeseries (uid)
     where map_state = 0;
+
+create index if not exists lts_physical_uid_ts_desc_idx
+    on logical_timeseries (physical_uid, ts desc);
+
+create index if not exists lts_logical_uid_ts_desc_idx
+    on logical_timeseries (logical_uid, ts desc)
+    where logical_uid is not null;
 
 insert into sources values ('ttn'), ('greenbrain'), ('wombat'), ('ydoc'), ('ict_eagleio');
 insert into version values (3);

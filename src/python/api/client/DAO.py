@@ -54,11 +54,6 @@ select uid, name, (select row_to_json(_) from (select ST_Y(location) as lat, ST_
 
 _stopped = False
 
-_PTS_MAP_STATE_PENDING = 0
-_PTS_MAP_STATE_CLAIMED = 1
-_PTS_MAP_STATE_PROCESSED = 2
-_PTS_MAP_STATE_FAILED = 3
-
 def stop() -> None:
     global _stopped
     logging.info('Closing connection pool.')
@@ -1015,6 +1010,31 @@ def insert_physical_timeseries_message(msg: Dict[str, Any]) -> int:
             free_conn(conn)
 
 
+def insert_logical_timeseries_message(msg: Dict[str, Any]) -> int:
+    conn = None
+    p_uid = msg[BrokerConstants.PHYSICAL_DEVICE_UID_KEY]
+    l_uid = msg[BrokerConstants.LOGICAL_DEVICE_UID_KEY]
+    ts = msg[BrokerConstants.TIMESTAMP_KEY]
+
+    if not isinstance(p_uid, int):
+        raise TypeError
+    if not isinstance(l_uid, int):
+        raise TypeError
+
+    try:
+        with _get_connection() as conn, conn.cursor() as cursor:
+            cursor.execute(
+                'insert into logical_timeseries (physical_uid, ts, logical_uid, json_msg) values (%s, %s, %s, %s) returning uid',
+                (p_uid, ts, l_uid, Json(msg))
+            )
+            return cursor.fetchone()[0]
+    except Exception as err:
+        raise DAOException('insert_logical_timeseries_message failed.', err)
+    finally:
+        if conn is not None:
+            free_conn(conn)
+
+
 def get_physical_timeseries_message(start: datetime | None = None, end: datetime | None = None, count: int | None = None, only_timestamp: bool = False, include_received_at: bool = False, p_uid: int = None, l_uid: int = None) -> List[Dict]:
     conn = None
 
@@ -1146,7 +1166,11 @@ def claim_unmapped_physical_timeseries_batch(batch_size: int = 100) -> List[Tupl
                  where p.uid = claimed.uid
                 returning p.uid, p.physical_uid, p.json_msg
                 """,
-                (_PTS_MAP_STATE_PENDING, batch_size, _PTS_MAP_STATE_CLAIMED)
+                (
+                    BrokerConstants.PhysicalTimeseriesMapStateEnum.PENDING.value,
+                    batch_size,
+                    BrokerConstants.PhysicalTimeseriesMapStateEnum.CLAIMED.value
+                )
             )
 
             rows = []
@@ -1186,7 +1210,8 @@ def set_physical_timeseries_map_state(uid: int, map_state: int) -> None:
 
     if not isinstance(uid, int):
         raise TypeError
-    if map_state not in (_PTS_MAP_STATE_PENDING, _PTS_MAP_STATE_CLAIMED, _PTS_MAP_STATE_PROCESSED, _PTS_MAP_STATE_FAILED):
+    valid_states = {state.value for state in BrokerConstants.PhysicalTimeseriesMapStateEnum}
+    if map_state not in valid_states:
         raise ValueError('Invalid map_state value.')
 
     try:
@@ -1208,7 +1233,10 @@ def reset_claimed_physical_timeseries_messages() -> None:
         with _get_connection() as conn, conn.cursor() as cursor:
             cursor.execute(
                 'update physical_timeseries set map_state = %s where map_state = %s',
-                (_PTS_MAP_STATE_PENDING, _PTS_MAP_STATE_CLAIMED)
+                (
+                    BrokerConstants.PhysicalTimeseriesMapStateEnum.PENDING.value,
+                    BrokerConstants.PhysicalTimeseriesMapStateEnum.CLAIMED.value
+                )
             )
     except Exception as err:
         raise DAOException('reset_claimed_physical_timeseries_messages failed.', err)
@@ -1218,15 +1246,19 @@ def reset_claimed_physical_timeseries_messages() -> None:
 
 
 def mark_physical_timeseries_message_pending(uid: int) -> None:
-    set_physical_timeseries_map_state(uid, _PTS_MAP_STATE_PENDING)
+    set_physical_timeseries_map_state(uid, BrokerConstants.PhysicalTimeseriesMapStateEnum.PENDING.value)
 
 
-def mark_physical_timeseries_message_processed(uid: int) -> None:
-    set_physical_timeseries_map_state(uid, _PTS_MAP_STATE_PROCESSED)
+def mark_physical_timeseries_message_success(uid: int) -> None:
+    set_physical_timeseries_map_state(uid, BrokerConstants.PhysicalTimeseriesMapStateEnum.SUCCESS.value)
 
 
 def mark_physical_timeseries_message_failed(uid: int) -> None:
-    set_physical_timeseries_map_state(uid, _PTS_MAP_STATE_FAILED)
+    set_physical_timeseries_map_state(uid, BrokerConstants.PhysicalTimeseriesMapStateEnum.FAILED.value)
+
+
+def mark_physical_timeseries_message_skipped(uid: int) -> None:
+    set_physical_timeseries_map_state(uid, BrokerConstants.PhysicalTimeseriesMapStateEnum.SKIPPED.value)
 
 
 def map_physical_timeseries_message(uid: int, logical_uid: int, msg: Dict[str, Any]) -> None:

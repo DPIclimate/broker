@@ -1,0 +1,195 @@
+{
+  "templates": {
+    "physical_categorsation": [
+      {
+        "iota_instance": "fdt",
+        "physical_devices": [
+          32,
+          46,
+          46,
+          49,
+          51,
+          57,
+          74,
+          84,
+          196,
+          201
+        ],
+        "variables": [
+          {
+            "battery": "BATTERY_VOLTAGE"
+          },
+          {
+            "solar": "SOLAR_VOLTAGE"
+          },
+          {
+            "salinity": "WATER_SALINITY"
+          },
+          {
+            "temperature": "WATER_TEMPERATURE"
+          }
+        ]
+      }
+    ],
+    "_": "These are used to transform the values coming from physical devices.",
+    "_": "This is done at the physical level because a later device mapped to the same",
+    "_": "logical device variable may need a different transform, or not need one.",
+    "physical_device_templates": [
+      {
+        "name": "Wombat ATM41",
+        "variables": {
+          "8_rh": {
+            "transform": "value * 100.0"
+          }
+        }
+      }
+    ],
+    "_": "This may be redundant. It is meant to be a template describing the variables for a type of device",
+    "_": "But it may be just as easy to put the variable types in the variable mappings, which is all this",
+    "_": "template does ATM.",
+    "logical_device_templates": [
+      {
+        "name": "Salinity Buoy",
+        "variables": [
+          {
+            "name": "Water Salinity",
+            "type": "WATER_SALINITY"
+          },
+          {
+            "name": "Water Temperature",
+            "type": "WATER_TEMPERATURE"
+          },
+          {
+            "name": "Battery Voltage",
+            "type": "BATTERY_VOLTAGE"
+          },
+          {
+            "name": "Solar Voltage",
+            "type": "SOLAR_VOLTAGE"
+          }
+        ]
+      }
+    ],
+    "_": "These are used to map physical device vars to logical device vars. Variables from",
+    "_": "a physical device may map to multiple logical devices or visa-versa.",
+    "_": "The variable objects define the output name of the variable and its type.",
+    "physical_to_logical_variable_maps": {
+      "_": "Top level keys are physical device ids.",
+      "1": [
+        {
+          "l_uid": 31,
+          "variables": {
+            "battery": {
+              "logical_name": "Battery Voltage",
+              "type": "BATTERY_VOLTAGE"
+            },
+            "solar": {
+              "logical_name": "Solar Voltage",
+              "type": "SOLAR_VOLTAGE"
+            },
+            "salinity": {
+              "logical_name": "Water Salinity",
+              "type": "WATER_SALINITY"
+            },
+            "temperature": {
+              "logical_name": "Water Temperature",
+              "type": "WATER_TEMPERATURE"
+            }
+          }
+        }
+      ],
+      "2": [
+        {
+          "l_uid": 41,
+          "variables": {
+            "battery": {
+              "logical_name": "Battery Voltage",
+              "type": "BATTERY_VOLTAGE"
+            },
+            "solar": {
+              "logical_name": "Solar Voltage",
+              "type": "SOLAR_VOLTAGE"
+            },
+            "salinity": {
+              "logical_name": "Water Salinity",
+              "type": "WATER_SALINITY"
+            },
+            "temperature": {
+              "logical_name": "Water Temperature",
+              "type": "WATER_TEMPERATURE"
+            }
+          }
+        }
+      ],
+      "3": [
+        {
+          "l_uid": 44,
+          "variables": {
+            "battery": {
+              "logical_name": "Battery Voltage",
+              "type": "BATTERY_VOLTAGE"
+            },
+            "solar": {
+              "logical_name": "Solar Voltage",
+              "type": "SOLAR_VOLTAGE"
+            },
+            "salinity": {
+              "logical_name": "Water Salinity",
+              "type": "WATER_SALINITY"
+            },
+            "temperature": {
+              "logical_name": "Water Temperature",
+              "type": "WATER_TEMPERATURE"
+            }
+          }
+        }
+      ],
+      "4": [
+        {
+          "l_uid": 47,
+          "variables": {
+            "battery": {
+              "logical_name": "Battery Voltage",
+              "type": "BATTERY_VOLTAGE"
+            },
+            "solar": {
+              "logical_name": "Solar Voltage",
+              "type": "SOLAR_VOLTAGE"
+            },
+            "salinity": {
+              "logical_name": "Water Salinity",
+              "type": "WATER_SALINITY"
+            },
+            "temperature": {
+              "logical_name": "Water Temperature",
+              "type": "WATER_TEMPERATURE"
+            }
+          }
+        }
+      ],
+      "10": [
+        {
+          "l_uid": 11,
+          "variables": {
+            "battV": {
+              "logical_name": "Battery Voltage",
+              "type": "BATTERY_VOLTAGE"
+            },
+            "solV": {
+              "logical_name": "Solar Voltage",
+              "type": "SOLAR_VOLTAGE"
+            },
+            "c4e Salinity": {
+              "logical_name": "Water Salinity",
+              "type": "WATER_SALINITY"
+            },
+            "c4e water temp": {
+              "logical_name": "Water Temperature",
+              "type": "WATER_TEMPERATURE"
+            }
+          }
+        }
+      ]
+    }
+  }
+}

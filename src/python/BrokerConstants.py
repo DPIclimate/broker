@@ -30,6 +30,14 @@ LOGICAL_TIMESERIES_EXCHANGE_NAME = 'lts_exchange'
 LOGGER_FORMAT='%(asctime)s|%(levelname)-7s|%(module)s|%(message)s'
 
 
+class PhysicalTimeseriesMapStateEnum(IntEnum):
+    PENDING = 0
+    CLAIMED = 1
+    SUCCESS = 2
+    FAILED = 3
+    SKIPPED = 4
+
+
 class VariableTypeEnum(IntEnum):
     WATER_TEMPERATURE = 1
     WATER_SALINITY = 2
