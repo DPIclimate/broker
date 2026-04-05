@@ -18,8 +18,8 @@ alter table physical_timeseries
 create table if not exists logical_timeseries (
     uid integer generated always as identity primary key,
     physical_uid integer not null references physical_devices(uid),
-    logical_uid integer,
-    received_at timestamptz not null default now(),
+    logical_uid integer not null references logical_devices(uid),
+    received_at timestamptz,
     ts timestamptz not null,
     ts_delta interval,
     json_msg jsonb not null

@@ -77,7 +77,7 @@
       "_": "Top level keys are physical device ids.",
       "1": [
         {
-          "l_uid": 31,
+          "l_uid": 1,
           "variables": {
             "battery": {
               "logical_name": "Battery Voltage",
@@ -100,7 +100,7 @@
       ],
       "2": [
         {
-          "l_uid": 41,
+          "l_uid": 2,
           "variables": {
             "battery": {
               "logical_name": "Battery Voltage",
@@ -123,7 +123,7 @@
       ],
       "3": [
         {
-          "l_uid": 44,
+          "l_uid": 3,
           "variables": {
             "battery": {
               "logical_name": "Battery Voltage",
@@ -146,7 +146,7 @@
       ],
       "4": [
         {
-          "l_uid": 47,
+          "l_uid": 4,
           "variables": {
             "battery": {
               "logical_name": "Battery Voltage",
