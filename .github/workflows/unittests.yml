@@ -54,7 +54,7 @@ jobs:
           docker tag ghcr.io/${{ steps.image_tag.outputs.owner }}/broker-python-base:${{ steps.image_tag.outputs.tag }} broker/python-base:latest
           docker tag ghcr.io/${{ steps.image_tag.outputs.owner }}/timescaledb:${{ steps.image_tag.outputs.tag }} timescaledb:latest
 
-      - name: Start test dependencies and test runner
+      - name: Start test dependencies and test container
         run: |
           docker compose -p test -f compose/docker-compose.yml --profile test up -d db mq restapi test
 
