@@ -1,8 +1,6 @@
-version: '3.1'
-
 services:
   db:
-    image: postgis/postgis:14-3.4
+    image: timescaledb
     logging:
       driver: local
       options:
@@ -276,3 +274,19 @@ services:
       - ../src/python:/home/broker/python
     working_dir: "/home/broker/python"
     entrypoint: [ "python", "-m", "pollers.axistech" ]
+
+
+  x:
+    image: broker/python-base
+    restart: "no"
+    env_file:
+      - .env
+    environment:
+      - PYTHONPATH=/home/broker/broker/src/python:/home/broker/broker/test/python
+    depends_on:
+      - "db"
+      - "mq"
+    volumes:
+      - ..:/home/broker/broker
+    working_dir: "/home/broker/broker"
+    entrypoint: [ "./forever.sh" ]
