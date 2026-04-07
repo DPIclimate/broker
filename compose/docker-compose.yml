@@ -276,8 +276,10 @@ services:
     entrypoint: [ "python", "-m", "pollers.axistech" ]
 
 
-  x:
+  test:
     image: broker/python-base
+    profiles:
+      - test
     restart: "no"
     env_file:
       - .env

@@ -1,17 +1,68 @@
-name: Docker Compose Actions Workflow
-on: push
+name: Unit Tests
+
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+    inputs:
+      image_tag:
+        description: 'Image tag to test (for example: main, branch-my-feature, sha-abc123)'
+        required: false
+        default: 'main'
+
+permissions:
+  contents: read
+  packages: read
+
+concurrency:
+  group: unittests-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   test:
     runs-on: ubuntu-latest
+
     steps:
-      - uses: actions/checkout@v2
-      - name: Create python-base image
-        run: docker build -q -t broker/python-base -f images/restapi/Dockerfile .
-      - name: Create timescaledb
-        run: docker build -q -t timescaledb -f images/timescaledb/Dockerfile images/timescaledb
-      - name: Create webapp image
-        run: docker build -q -t broker/mgmt-app -f src/www/Dockerfile .
-      - name: Build the stack
-        run: docker compose -f compose/docker-compose.yml up -d
-      - name: Unit tests
-        run: docker exec compose-x-1 pytest
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Resolve image tag
+        id: image_tag
+        run: |
+          OWNER_LC=$(echo '${{ github.repository_owner }}' | tr '[:upper:]' '[:lower:]')
+          echo "owner=${OWNER_LC}" >> "${GITHUB_OUTPUT}"
+          if [ '${{ github.event_name }}' = 'workflow_dispatch' ] && [ -n '${{ inputs.image_tag }}' ]; then
+            echo "tag=${{ inputs.image_tag }}" >> "${GITHUB_OUTPUT}"
+          else
+            echo "tag=main" >> "${GITHUB_OUTPUT}"
+          fi
+
+      - name: Log in to GHCR
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Pull prebuilt images
+        run: |
+          docker pull ghcr.io/${{ steps.image_tag.outputs.owner }}/broker-python-base:${{ steps.image_tag.outputs.tag }}
+          docker pull ghcr.io/${{ steps.image_tag.outputs.owner }}/timescaledb:${{ steps.image_tag.outputs.tag }}
+
+      - name: Tag images for compose
+        run: |
+          docker tag ghcr.io/${{ steps.image_tag.outputs.owner }}/broker-python-base:${{ steps.image_tag.outputs.tag }} broker/python-base:latest
+          docker tag ghcr.io/${{ steps.image_tag.outputs.owner }}/timescaledb:${{ steps.image_tag.outputs.tag }} timescaledb:latest
+
+      - name: Start test dependencies and test runner
+        run: |
+          docker compose -p test -f compose/docker-compose.yml --profile test up -d db mq restapi test
+
+      - name: Run unit tests
+        run: |
+          docker compose -p test -f compose/docker-compose.yml --profile test exec -T test pytest
+
+      - name: Tear down
+        if: always()
+        run: |
+          docker compose -p test -f compose/docker-compose.yml --profile test down -v
