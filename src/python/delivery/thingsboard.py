@@ -20,7 +20,13 @@ except ModuleNotFoundError:  # pragma: no cover - used when imported as a packag
     from .async_db_reader import AsyncDbReader, PhysicalTimeseriesRow
 
 
-TB_GATEWAY_TELEMETRY_TOPIC = "v1/gateway/telemetry"
+TB_GATEWAY_ATTRIBUTES_TOPIC = 'v1/gateway/attributes'
+TB_GATEWAY_TELEMETRY_TOPIC = 'v1/gateway/telemetry'
+TB_ATTRIBUTE_TYPES = {
+    'BATTERY_VOLTAGE': 'Battery Voltage',
+    'SOLAR_VOLTAGE': 'Solar Voltage',
+}
+
 logger = logging.getLogger(__name__)
 
 
@@ -370,27 +376,27 @@ class ThingsBoardDelivery(AsyncDbReader):
         return None
 
     @staticmethod
-    def _build_tb_gateway_payload_from_row(
+    def _build_tb_gateway_payloads_from_row(
         device_name: str,
         row: PhysicalTimeseriesRow,
-    ) -> Optional[Dict[str, Any]]:
-        """Build ThingsBoard gateway telemetry payload from one DB row.
+    ) -> Tuple[Optional[Dict[str, Any]], Optional[Dict[str, Any]]]:
+        """Build ThingsBoard gateway telemetry and attribute payloads from one DB row.
 
         Args:
             device_name: ThingsBoard device name.
             row: Source physical_timeseries row.
 
         Returns:
-            Payload dict `{device_name: [{ts, values}, ...]}` or None if no valid points.
+            Tuple of telemetry payload and attribute payload.
         """
         if not isinstance(row.json_msg, dict):
             logger.info("[db-skip] uid=%s json_msg is not an object.", row.uid)
-            return None
+            return None, None
 
         timeseries = row.json_msg.get("timeseries")
         if not isinstance(timeseries, list):
             logger.info("[db-skip] uid=%s json_msg.timeseries is not an array.", row.uid)
-            return None
+            return None, None
 
         now_ms = int(datetime.datetime.now(datetime.timezone.utc).timestamp() * 1000)
         msg_ts_ms = ThingsBoardDelivery._to_epoch_ms(row.json_msg.get("timestamp"))
@@ -400,17 +406,18 @@ class ThingsBoardDelivery(AsyncDbReader):
                 row.uid,
                 row.json_msg.get("timestamp"),
             )
-            return None
+            return None, None
 
         default_ts_ms = msg_ts_ms if msg_ts_ms is not None else ThingsBoardDelivery._to_epoch_ms(row.ts)
         if default_ts_ms is None:
             logger.info("[db-skip] uid=%s no valid default timestamp.", row.uid)
-            return None
+            return None, None
         if default_ts_ms >= now_ms:
             logger.info("[db-skip] uid=%s default timestamp is in the future.", row.uid)
-            return None
+            return None, None
 
         grouped: Dict[int, Dict[str, float]] = {}
+        latest_attributes: Dict[str, Tuple[int, float]] = {}
         for idx, item in enumerate(timeseries):
             if not isinstance(item, dict):
                 logger.info("[db-skip] uid=%s dot[%s] is not an object.", row.uid, idx)
@@ -459,12 +466,24 @@ class ThingsBoardDelivery(AsyncDbReader):
 
             grouped.setdefault(ts_ms, {})[dot_name] = dot_value
 
+            dot_type = item.get('type')
+            attribute_name = TB_ATTRIBUTE_TYPES.get(dot_type.strip())
+            if attribute_name is not None:
+                current_attribute = latest_attributes.get(attribute_name)
+                if current_attribute is None or ts_ms >= current_attribute[0]:
+                    latest_attributes[attribute_name] = (ts_ms, dot_value)
+
         if not grouped:
             logger.info("[db-skip] uid=%s no valid telemetry values after validation.", row.uid)
-            return None
+            return None, None
 
         telemetry = [{"ts": ts_ms, "values": values} for ts_ms, values in sorted(grouped.items())]
-        return {device_name: telemetry}
+        attribute_values = {
+            attribute_name: value
+            for attribute_name, (_, value) in sorted(latest_attributes.items())
+        }
+        attribute_payload = {device_name: attribute_values} if attribute_values else None
+        return {device_name: telemetry}, attribute_payload
 
     def parser_description(self) -> str:
         """Return parser description text.
@@ -597,17 +616,30 @@ class ThingsBoardDelivery(AsyncDbReader):
         """
         if self._mqtt is None:
             raise RuntimeError("Transport is not configured. apply_runtime_args must run first.")
-        payload = self._build_tb_gateway_payload_from_row(logical_device_name, row)
-        if payload is None:
+        telemetry_payload, attribute_payload = self._build_tb_gateway_payloads_from_row(logical_device_name, row)
+        if telemetry_payload is None and attribute_payload is None:
             return
 
-        self._mqtt.send_json(TB_GATEWAY_TELEMETRY_TOPIC, payload)
+        if attribute_payload is not None:
+            self._mqtt.send_json(TB_GATEWAY_ATTRIBUTES_TOPIC, attribute_payload)
+            logger.info(
+                "[tb-sent-attributes] uid=%s logical_uid=%s device=%r attributes=%s",
+                row.uid,
+                row.logical_uid,
+                logical_device_name,
+                sorted(attribute_payload[logical_device_name].keys()),
+            )
+
+        if telemetry_payload is None:
+            return
+
+        self._mqtt.send_json(TB_GATEWAY_TELEMETRY_TOPIC, telemetry_payload)
         logger.info(
             "[tb-sent] uid=%s logical_uid=%s device=%r points=%s",
             row.uid,
             row.logical_uid,
             logical_device_name,
-            sum(len(entry["values"]) for entry in payload[logical_device_name]),
+            sum(len(entry['values']) for entry in telemetry_payload[logical_device_name]),
         )
 
 
