@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""ThingsBoard delivery implementation using AsyncDbReader + MQTT transport."""
+"""ThingsBoard delivery implementation using DeliveryDbReader + MQTT transport."""
 
 import datetime
 import json
@@ -15,9 +15,9 @@ except ModuleNotFoundError as exc:
     raise SystemExit("Missing dependency: paho-mqtt. Install with: pip install paho-mqtt") from exc
 
 try:
-    from async_db_reader import AsyncDbReader, PhysicalTimeseriesRow
+    from db_reader import DeliveryDbReader, PhysicalTimeseriesRow
 except ModuleNotFoundError:  # pragma: no cover - used when imported as a package module
-    from .async_db_reader import AsyncDbReader, PhysicalTimeseriesRow
+    from .db_reader import DeliveryDbReader, PhysicalTimeseriesRow
 
 
 TB_GATEWAY_ATTRIBUTES_TOPIC = 'v1/gateway/attributes'
@@ -293,8 +293,8 @@ class SyncTlsMqttClient:
         )
 
 
-class ThingsBoardDelivery(AsyncDbReader):
-    """Concrete AsyncDbReader implementation for ThingsBoard via MQTT."""
+class ThingsBoardDelivery(DeliveryDbReader):
+    """Concrete DeliveryDbReader implementation for ThingsBoard via MQTT."""
 
     def __init__(self):
         """Initialise ThingsBoard delivery implementation.
@@ -467,11 +467,12 @@ class ThingsBoardDelivery(AsyncDbReader):
             grouped.setdefault(ts_ms, {})[dot_name] = dot_value
 
             dot_type = item.get('type')
-            attribute_name = TB_ATTRIBUTE_TYPES.get(dot_type.strip())
-            if attribute_name is not None:
-                current_attribute = latest_attributes.get(attribute_name)
-                if current_attribute is None or ts_ms >= current_attribute[0]:
-                    latest_attributes[attribute_name] = (ts_ms, dot_value)
+            if dot_type:
+                attribute_name = TB_ATTRIBUTE_TYPES.get(dot_type.strip())
+                if attribute_name is not None:
+                    current_attribute = latest_attributes.get(attribute_name)
+                    if current_attribute is None or ts_ms >= current_attribute[0]:
+                        latest_attributes[attribute_name] = (ts_ms, dot_value)
 
         if not grouped:
             logger.info("[db-skip] uid=%s no valid telemetry values after validation.", row.uid)

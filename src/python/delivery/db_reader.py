@@ -33,7 +33,7 @@ class PhysicalTimeseriesRow:
     json_msg: Any
 
 
-class AsyncDbReader(ABC):
+class DeliveryDbReader(ABC):
     """Base class for DB-backed delivery implementations.
 
     This class owns all Postgres interaction and run-loop orchestration.
@@ -188,8 +188,7 @@ class AsyncDbReader(ABC):
         """
         query = """
             SELECT uid
-            FROM physical_timeseries
-            WHERE logical_uid IS NOT NULL
+            FROM logical_timeseries
             ORDER BY uid DESC
             LIMIT 1
         """
@@ -212,9 +211,8 @@ class AsyncDbReader(ABC):
         """
         query = """
             SELECT uid, physical_uid, logical_uid, ts, received_at, json_msg
-            FROM physical_timeseries
-            WHERE logical_uid IS NOT NULL
-              AND uid > %s
+            FROM logical_timeseries
+            WHERE uid > %s
             ORDER BY uid ASC
         """
         with psycopg2.connect() as conn, conn.cursor() as curs:
@@ -247,9 +245,8 @@ class AsyncDbReader(ABC):
         """
         query = """
             SELECT uid, physical_uid, logical_uid, ts, received_at, json_msg
-            FROM physical_timeseries
-            WHERE logical_uid IS NOT NULL
-              AND ts >= %s
+            FROM logical_timeseries
+            WHERE ts >= %s
               AND ts < %s
             ORDER BY ts ASC, uid ASC
         """
