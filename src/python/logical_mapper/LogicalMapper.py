@@ -53,6 +53,14 @@ def _load_variable_maps() -> Dict[int, List[Dict[str, Any]]]:
         logger.warning(f'Variable-map config has invalid templates object: {cfg_path}. Starting with empty maps.')
         return {}
 
+    physical_device_templates = templates.get('physical_device_templates', [])
+    template_by_name: Dict[str, Dict[str, Any]] = {}
+    for template in physical_device_templates:
+        try:
+            template_by_name[template['name']] = template['variables']
+        except Exception:
+            logger.warning(f'Ignoring invalid physical_device_template entry in {cfg_path}: {template}')
+
     maps = templates.get('physical_to_logical_variable_maps', {})
     if not isinstance(maps, dict):
         logger.warning(f'physical_to_logical_variable_maps is missing/invalid in {cfg_path}. Starting with empty maps.')
@@ -71,7 +79,26 @@ def _load_variable_maps() -> Dict[int, List[Dict[str, Any]]]:
             continue
 
         if isinstance(entries, list):
-            out[p_uid] = entries
+            resolved_entries = []
+            for entry in entries:
+                template_name = entry.get('physical_device_template')
+                if template_name is None:
+                    resolved_entries.append(entry)
+                    continue
+
+                template_variables = template_by_name.get(template_name)
+                if template_variables is None:
+                    logger.warning(
+                        f'physical_to_logical_variable_maps for p_uid {p_uid} references unknown '
+                        f'physical_device_template {template_name}.'
+                    )
+                    continue
+
+                resolved_entry = dict(entry)
+                resolved_entry['variables'] = template_variables
+                resolved_entries.append(resolved_entry)
+
+            out[p_uid] = resolved_entries
 
     logger.info(f'Loaded physical_to_logical_variable_maps for {len(out)} physical devices.')
     return out

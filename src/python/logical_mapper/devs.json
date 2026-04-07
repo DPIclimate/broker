@@ -42,6 +42,132 @@
             "transform": "value * 100.0"
           }
         }
+      },
+      {
+        "name": "salinity_buoy_A",
+        "variables": {
+          "battV": {
+            "logical_name": "Battery Voltage",
+            "type": "BATTERY_VOLTAGE"
+          },
+          "solV": {
+            "logical_name": "Solar Voltage",
+            "type": "SOLAR_VOLTAGE"
+          },
+          "c4e Salinity": {
+            "logical_name": "Water Salinity",
+            "type": "WATER_SALINITY"
+          },
+          "c4e water temp": {
+            "logical_name": "Water Temperature",
+            "type": "WATER_TEMPERATURE"
+          }
+        }
+      },
+      {
+        "name": "salinity_buoy_B",
+        "variables": {
+          "battery": {
+            "logical_name": "Battery Voltage",
+            "type": "BATTERY_VOLTAGE"
+          },
+          "solar": {
+            "logical_name": "Solar Voltage",
+            "type": "SOLAR_VOLTAGE"
+          },
+          "salinity": {
+            "logical_name": "Water Salinity",
+            "type": "WATER_SALINITY"
+          },
+          "temperature": {
+            "logical_name": "Water Temperature",
+            "type": "WATER_TEMPERATURE"
+          }
+        }
+      },
+      {
+        "name": "salinity_buoy_C",
+        "variables": {
+          "battV": {
+            "logical_name": "Battery Voltage",
+            "type": "BATTERY_VOLTAGE"
+          },
+          "solV": {
+            "logical_name": "Solar Voltage",
+            "type": "SOLAR_VOLTAGE"
+          },
+          "c4e salinity": {
+            "logical_name": "Water Salinity",
+            "type": "WATER_SALINITY"
+          },
+          "c4e temperature": {
+            "logical_name": "Water Temperature",
+            "type": "WATER_TEMPERATURE"
+          }
+        }
+      },
+      {
+        "name": "salinity_buoy_D",
+        "variables": {
+          "Battery": {
+            "logical_name": "Battery Voltage",
+            "type": "BATTERY_VOLTAGE"
+          },
+          "Solar": {
+            "logical_name": "Solar Voltage",
+            "type": "SOLAR_VOLTAGE"
+          },
+          "C4E Salinity": {
+            "logical_name": "Water Salinity",
+            "type": "WATER_SALINITY"
+          },
+          "C4E Temperature": {
+            "logical_name": "Water Temperature",
+            "type": "WATER_TEMPERATURE"
+          }
+        }
+      },
+      {
+        "name": "salinity_buoy_E",
+        "variables": {
+          "battV": {
+            "logical_name": "Battery Voltage",
+            "type": "BATTERY_VOLTAGE"
+          },
+          "solV": {
+            "logical_name": "Solar Voltage",
+            "type": "SOLAR_VOLTAGE"
+          },
+          "AWQ-C4E salinity": {
+            "logical_name": "Water Salinity",
+            "type": "WATER_SALINITY"
+          },
+          "AWQ-C4E temperature": {
+            "logical_name": "Water Temperature",
+            "type": "WATER_TEMPERATURE"
+          }
+        }
+      },
+      {
+        "name": "salinity_buoy_F",
+        "variables": {
+          "battV": {
+            "logical_name": "Battery Voltage",
+            "type": "BATTERY_VOLTAGE"
+          },
+          "solV": {
+            "logical_name": "Solar Voltage",
+            "type": "SOLAR_VOLTAGE"
+          },
+          "awq-c4e salinity": {
+            "logical_name": "Water Salinity",
+            "type": "WATER_SALINITY"
+          },
+          "awq-c4e temperature": {
+            "logical_name": "Water Temperature",
+            "type": "WATER_TEMPERATURE"
+          }
+        }
       }
     ],
     "_": "This may be redundant. It is meant to be a template describing the variables for a type of device",
@@ -78,277 +204,73 @@
       "32": [
         {
           "l_uid": 31,
-          "variables": {
-            "battery": {
-              "logical_name": "Battery Voltage",
-              "type": "BATTERY_VOLTAGE"
-            },
-            "solar": {
-              "logical_name": "Solar Voltage",
-              "type": "SOLAR_VOLTAGE"
-            },
-            "salinity": {
-              "logical_name": "Water Salinity",
-              "type": "WATER_SALINITY"
-            },
-            "temperature": {
-              "logical_name": "Water Temperature",
-              "type": "WATER_TEMPERATURE"
-            }
-          }
+          "physical_device_template": "salinity_buoy_B"
         }
       ],
       "42": [
         {
           "l_uid": 41,
-          "variables": {
-            "battery": {
-              "logical_name": "Battery Voltage",
-              "type": "BATTERY_VOLTAGE"
-            },
-            "solar": {
-              "logical_name": "Solar Voltage",
-              "type": "SOLAR_VOLTAGE"
-            },
-            "salinity": {
-              "logical_name": "Water Salinity",
-              "type": "WATER_SALINITY"
-            },
-            "temperature": {
-              "logical_name": "Water Temperature",
-              "type": "WATER_TEMPERATURE"
-            }
-          }
+          "physical_device_template": "salinity_buoy_B"
         }
       ],
       "46": [
         {
           "l_uid": 44,
-          "variables": {
-            "battery": {
-              "logical_name": "Battery Voltage",
-              "type": "BATTERY_VOLTAGE"
-            },
-            "solar": {
-              "logical_name": "Solar Voltage",
-              "type": "SOLAR_VOLTAGE"
-            },
-            "salinity": {
-              "logical_name": "Water Salinity",
-              "type": "WATER_SALINITY"
-            },
-            "temperature": {
-              "logical_name": "Water Temperature",
-              "type": "WATER_TEMPERATURE"
-            }
-          }
+          "physical_device_template": "salinity_buoy_B"
         }
       ],
       "49": [
         {
           "l_uid": 47,
-          "variables": {
-            "battery": {
-              "logical_name": "Battery Voltage",
-              "type": "BATTERY_VOLTAGE"
-            },
-            "solar": {
-              "logical_name": "Solar Voltage",
-              "type": "SOLAR_VOLTAGE"
-            },
-            "salinity": {
-              "logical_name": "Water Salinity",
-              "type": "WATER_SALINITY"
-            },
-            "temperature": {
-              "logical_name": "Water Temperature",
-              "type": "WATER_TEMPERATURE"
-            }
-          }
+          "physical_device_template": "salinity_buoy_B"
         }
       ],
       "51": [
         {
           "l_uid": 49,
-          "variables": {
-            "battery": {
-              "logical_name": "Battery Voltage",
-              "type": "BATTERY_VOLTAGE"
-            },
-            "solar": {
-              "logical_name": "Solar Voltage",
-              "type": "SOLAR_VOLTAGE"
-            },
-            "salinity": {
-              "logical_name": "Water Salinity",
-              "type": "WATER_SALINITY"
-            },
-            "temperature": {
-              "logical_name": "Water Temperature",
-              "type": "WATER_TEMPERATURE"
-            }
-          }
+          "physical_device_template": "salinity_buoy_B"
         }
       ],
       "57": [
         {
           "l_uid": 55,
-          "variables": {
-            "battery": {
-              "logical_name": "Battery Voltage",
-              "type": "BATTERY_VOLTAGE"
-            },
-            "solar": {
-              "logical_name": "Solar Voltage",
-              "type": "SOLAR_VOLTAGE"
-            },
-            "salinity": {
-              "logical_name": "Water Salinity",
-              "type": "WATER_SALINITY"
-            },
-            "temperature": {
-              "logical_name": "Water Temperature",
-              "type": "WATER_TEMPERATURE"
-            }
-          }
+          "physical_device_template": "salinity_buoy_B"
         }
       ],
       "74": [
         {
           "l_uid": 70,
-          "variables": {
-            "battery": {
-              "logical_name": "Battery Voltage",
-              "type": "BATTERY_VOLTAGE"
-            },
-            "solar": {
-              "logical_name": "Solar Voltage",
-              "type": "SOLAR_VOLTAGE"
-            },
-            "salinity": {
-              "logical_name": "Water Salinity",
-              "type": "WATER_SALINITY"
-            },
-            "temperature": {
-              "logical_name": "Water Temperature",
-              "type": "WATER_TEMPERATURE"
-            }
-          }
+          "physical_device_template": "salinity_buoy_B"
         }
       ],
       "84": [
         {
           "l_uid": 80,
-          "variables": {
-            "battery": {
-              "logical_name": "Battery Voltage",
-              "type": "BATTERY_VOLTAGE"
-            },
-            "solar": {
-              "logical_name": "Solar Voltage",
-              "type": "SOLAR_VOLTAGE"
-            },
-            "salinity": {
-              "logical_name": "Water Salinity",
-              "type": "WATER_SALINITY"
-            },
-            "temperature": {
-              "logical_name": "Water Temperature",
-              "type": "WATER_TEMPERATURE"
-            }
-          }
+          "physical_device_template": "salinity_buoy_B"
         }
       ],
       "196": [
         {
           "l_uid": 191,
-          "variables": {
-            "battery": {
-              "logical_name": "Battery Voltage",
-              "type": "BATTERY_VOLTAGE"
-            },
-            "solar": {
-              "logical_name": "Solar Voltage",
-              "type": "SOLAR_VOLTAGE"
-            },
-            "salinity": {
-              "logical_name": "Water Salinity",
-              "type": "WATER_SALINITY"
-            },
-            "temperature": {
-              "logical_name": "Water Temperature",
-              "type": "WATER_TEMPERATURE"
-            }
-          }
+          "physical_device_template": "salinity_buoy_B"
         }
       ],
       "201": [
         {
           "l_uid": 190,
-          "variables": {
-            "battery": {
-              "logical_name": "Battery Voltage",
-              "type": "BATTERY_VOLTAGE"
-            },
-            "solar": {
-              "logical_name": "Solar Voltage",
-              "type": "SOLAR_VOLTAGE"
-            },
-            "salinity": {
-              "logical_name": "Water Salinity",
-              "type": "WATER_SALINITY"
-            },
-            "temperature": {
-              "logical_name": "Water Temperature",
-              "type": "WATER_TEMPERATURE"
-            }
-          }
+          "physical_device_template": "salinity_buoy_B"
         }
       ],
       "317": [
         {
           "l_uid": 283,
-          "variables": {
-            "battV": {
-              "logical_name": "Battery Voltage",
-              "type": "BATTERY_VOLTAGE"
-            },
-            "solV": {
-              "logical_name": "Solar Voltage",
-              "type": "SOLAR_VOLTAGE"
-            },
-            "c4e Salinity": {
-              "logical_name": "Water Salinity",
-              "type": "WATER_SALINITY"
-            },
-            "c4e water temp": {
-              "logical_name": "Water Temperature",
-              "type": "WATER_TEMPERATURE"
-            }
-          }
+          "physical_device_template": "salinity_buoy_A"
         }
       ],
       "318": [
         {
           "l_uid": 284,
-          "variables": {
-            "battV": {
-              "logical_name": "Battery Voltage",
-              "type": "BATTERY_VOLTAGE"
-            },
-            "solV": {
-              "logical_name": "Solar Voltage",
-              "type": "SOLAR_VOLTAGE"
-            },
-            "c4e Salinity": {
-              "logical_name": "Water Salinity",
-              "type": "WATER_SALINITY"
-            },
-            "c4e water temp": {
-              "logical_name": "Water Temperature",
-              "type": "WATER_TEMPERATURE"
-            }
-          }
+          "physical_device_template": "salinity_buoy_A"
         }
       ],
       "319": [
@@ -377,508 +299,134 @@
       "320": [
         {
           "l_uid": 286,
-          "variables": {
-            "battV": {
-              "logical_name": "Battery Voltage",
-              "type": "BATTERY_VOLTAGE"
-            },
-            "solV": {
-              "logical_name": "Solar Voltage",
-              "type": "SOLAR_VOLTAGE"
-            },
-            "c4e salinity": {
-              "logical_name": "Water Salinity",
-              "type": "WATER_SALINITY"
-            },
-            "c4e temperature": {
-              "logical_name": "Water Temperature",
-              "type": "WATER_TEMPERATURE"
-            }
-          }
+          "physical_device_template": "salinity_buoy_C"
         }
       ],
       "321": [
         {
           "l_uid": 287,
-          "variables": {
-            "battV": {
-              "logical_name": "Battery Voltage",
-              "type": "BATTERY_VOLTAGE"
-            },
-            "solV": {
-              "logical_name": "Solar Voltage",
-              "type": "SOLAR_VOLTAGE"
-            },
-            "c4e salinity": {
-              "logical_name": "Water Salinity",
-              "type": "WATER_SALINITY"
-            },
-            "c4e temperature": {
-              "logical_name": "Water Temperature",
-              "type": "WATER_TEMPERATURE"
-            }
-          }
+          "physical_device_template": "salinity_buoy_C"
         }
       ],
       "323": [
         {
           "l_uid": 289,
-          "variables": {
-            "battV": {
-              "logical_name": "Battery Voltage",
-              "type": "BATTERY_VOLTAGE"
-            },
-            "solV": {
-              "logical_name": "Solar Voltage",
-              "type": "SOLAR_VOLTAGE"
-            },
-            "c4e salinity": {
-              "logical_name": "Water Salinity",
-              "type": "WATER_SALINITY"
-            },
-            "c4e temperature": {
-              "logical_name": "Water Temperature",
-              "type": "WATER_TEMPERATURE"
-            }
-          }
+          "physical_device_template": "salinity_buoy_C"
         }
       ],
       "325": [
         {
           "l_uid": 291,
-          "variables": {
-            "Solar": {
-              "logical_name": "Battery Voltage",
-              "type": "BATTERY_VOLTAGE"
-            },
-            "Battery": {
-              "logical_name": "Solar Voltage",
-              "type": "SOLAR_VOLTAGE"
-            },
-            "C4E Salinity": {
-              "logical_name": "Water Salinity",
-              "type": "WATER_SALINITY"
-            },
-            "C4E Temperature": {
-              "logical_name": "Water Temperature",
-              "type": "WATER_TEMPERATURE"
-            }
-          }
+          "physical_device_template": "salinity_buoy_D"
         }
       ],
       "326": [
         {
           "l_uid": 292,
-          "variables": {
-            "Battery": {
-              "logical_name": "Battery Voltage",
-              "type": "BATTERY_VOLTAGE"
-            },
-            "Solar": {
-              "logical_name": "Solar Voltage",
-              "type": "SOLAR_VOLTAGE"
-            },
-            "C4E Salinity": {
-              "logical_name": "Water Salinity",
-              "type": "WATER_SALINITY"
-            },
-            "C4E Temperature": {
-              "logical_name": "Water Temperature",
-              "type": "WATER_TEMPERATURE"
-            }
-          }
+          "physical_device_template": "salinity_buoy_D"
         }
       ],
       "327": [
         {
           "l_uid": 293,
-          "variables": {
-            "Battery": {
-              "logical_name": "Battery Voltage",
-              "type": "BATTERY_VOLTAGE"
-            },
-            "Solar": {
-              "logical_name": "Solar Voltage",
-              "type": "SOLAR_VOLTAGE"
-            },
-            "C4E Salinity": {
-              "logical_name": "Water Salinity",
-              "type": "WATER_SALINITY"
-            },
-            "C4E Temperature": {
-              "logical_name": "Water Temperature",
-              "type": "WATER_TEMPERATURE"
-            }
-          }
+          "physical_device_template": "salinity_buoy_D"
         }
       ],
       "328": [
         {
           "l_uid": 294,
-          "variables": {
-            "Battery": {
-              "logical_name": "Battery Voltage",
-              "type": "BATTERY_VOLTAGE"
-            },
-            "Solar": {
-              "logical_name": "Solar Voltage",
-              "type": "SOLAR_VOLTAGE"
-            },
-            "C4E Salinity": {
-              "logical_name": "Water Salinity",
-              "type": "WATER_SALINITY"
-            },
-            "C4E Temperature": {
-              "logical_name": "Water Temperature",
-              "type": "WATER_TEMPERATURE"
-            }
-          }
+          "physical_device_template": "salinity_buoy_D"
         }
       ],
       "329": [
         {
           "_": "This has an ATM41 connected!",
           "l_uid": 295,
-          "variables": {
-            "battV": {
-              "logical_name": "Battery Voltage",
-              "type": "BATTERY_VOLTAGE"
-            },
-            "solV": {
-              "logical_name": "Solar Voltage",
-              "type": "SOLAR_VOLTAGE"
-            },
-            "AWQ-C4E salinity": {
-              "logical_name": "Water Salinity",
-              "type": "WATER_SALINITY"
-            },
-            "AWQ-C4E temperature": {
-              "logical_name": "Water Temperature",
-              "type": "WATER_TEMPERATURE"
-            }
-          }
+          "physical_device_template": "salinity_buoy_E"
         }
       ],
       "330": [
         {
           "l_uid": 296,
-          "variables": {
-            "battV": {
-              "logical_name": "Battery Voltage",
-              "type": "BATTERY_VOLTAGE"
-            },
-            "solV": {
-              "logical_name": "Solar Voltage",
-              "type": "SOLAR_VOLTAGE"
-            },
-            "AWQ-C4E salinity": {
-              "logical_name": "Water Salinity",
-              "type": "WATER_SALINITY"
-            },
-            "AWQ-C4E temperature": {
-              "logical_name": "Water Temperature",
-              "type": "WATER_TEMPERATURE"
-            }
-          }
+          "physical_device_template": "salinity_buoy_E"
         }
       ],
       "331": [
         {
           "l_uid": 297,
-          "variables": {
-            "battV": {
-              "logical_name": "Battery Voltage",
-              "type": "BATTERY_VOLTAGE"
-            },
-            "solV": {
-              "logical_name": "Solar Voltage",
-              "type": "SOLAR_VOLTAGE"
-            },
-            "AWQ-C4E salinity": {
-              "logical_name": "Water Salinity",
-              "type": "WATER_SALINITY"
-            },
-            "AWQ-C4E temperature": {
-              "logical_name": "Water Temperature",
-              "type": "WATER_TEMPERATURE"
-            }
-          }
+          "physical_device_template": "salinity_buoy_E"
         }
       ],
       "332": [
         {
           "l_uid": 298,
-          "variables": {
-            "battV": {
-              "logical_name": "Battery Voltage",
-              "type": "BATTERY_VOLTAGE"
-            },
-            "solV": {
-              "logical_name": "Solar Voltage",
-              "type": "SOLAR_VOLTAGE"
-            },
-            "c4e salinity": {
-              "logical_name": "Water Salinity",
-              "type": "WATER_SALINITY"
-            },
-            "c4e temperature": {
-              "logical_name": "Water Temperature",
-              "type": "WATER_TEMPERATURE"
-            }
-          }
+          "physical_device_template": "salinity_buoy_C"
         }
       ],
       "333": [
         {
           "l_uid": 299,
-          "variables": {
-            "battV": {
-              "logical_name": "Battery Voltage",
-              "type": "BATTERY_VOLTAGE"
-            },
-            "solV": {
-              "logical_name": "Solar Voltage",
-              "type": "SOLAR_VOLTAGE"
-            },
-            "c4e salinity": {
-              "logical_name": "Water Salinity",
-              "type": "WATER_SALINITY"
-            },
-            "c4e temperature": {
-              "logical_name": "Water Temperature",
-              "type": "WATER_TEMPERATURE"
-            }
-          }
+          "physical_device_template": "salinity_buoy_C"
         }
       ],
       "334": [
         {
           "l_uid": 300,
-          "variables": {
-            "battV": {
-              "logical_name": "Battery Voltage",
-              "type": "BATTERY_VOLTAGE"
-            },
-            "solV": {
-              "logical_name": "Solar Voltage",
-              "type": "SOLAR_VOLTAGE"
-            },
-            "c4e salinity": {
-              "logical_name": "Water Salinity",
-              "type": "WATER_SALINITY"
-            },
-            "c4e temperature": {
-              "logical_name": "Water Temperature",
-              "type": "WATER_TEMPERATURE"
-            }
-          }
+          "physical_device_template": "salinity_buoy_C"
         }
       ],
       "335": [
         {
           "l_uid": 301,
-          "variables": {
-            "battV": {
-              "logical_name": "Battery Voltage",
-              "type": "BATTERY_VOLTAGE"
-            },
-            "solV": {
-              "logical_name": "Solar Voltage",
-              "type": "SOLAR_VOLTAGE"
-            },
-            "c4e salinity": {
-              "logical_name": "Water Salinity",
-              "type": "WATER_SALINITY"
-            },
-            "c4e temperature": {
-              "logical_name": "Water Temperature",
-              "type": "WATER_TEMPERATURE"
-            }
-          }
+          "physical_device_template": "salinity_buoy_C"
         }
       ],
       "336": [
         {
           "l_uid": 302,
-          "variables": {
-            "battV": {
-              "logical_name": "Battery Voltage",
-              "type": "BATTERY_VOLTAGE"
-            },
-            "solV": {
-              "logical_name": "Solar Voltage",
-              "type": "SOLAR_VOLTAGE"
-            },
-            "awq-c4e salinity": {
-              "logical_name": "Water Salinity",
-              "type": "WATER_SALINITY"
-            },
-            "awq-c4e temperature": {
-              "logical_name": "Water Temperature",
-              "type": "WATER_TEMPERATURE"
-            }
-          }
+          "physical_device_template": "salinity_buoy_F"
         }
       ],
       "337": [
         {
           "l_uid": 303,
-          "variables": {
-            "battV": {
-              "logical_name": "Battery Voltage",
-              "type": "BATTERY_VOLTAGE"
-            },
-            "solV": {
-              "logical_name": "Solar Voltage",
-              "type": "SOLAR_VOLTAGE"
-            },
-            "awq-c4e salinity": {
-              "logical_name": "Water Salinity",
-              "type": "WATER_SALINITY"
-            },
-            "awq-c4e temperature": {
-              "logical_name": "Water Temperature",
-              "type": "WATER_TEMPERATURE"
-            }
-          }
+          "physical_device_template": "salinity_buoy_F"
         }
       ],
       "338": [
         {
           "l_uid": 304,
-          "variables": {
-            "battV": {
-              "logical_name": "Battery Voltage",
-              "type": "BATTERY_VOLTAGE"
-            },
-            "solV": {
-              "logical_name": "Solar Voltage",
-              "type": "SOLAR_VOLTAGE"
-            },
-            "c4e salinity": {
-              "logical_name": "Water Salinity",
-              "type": "WATER_SALINITY"
-            },
-            "c4e temperature": {
-              "logical_name": "Water Temperature",
-              "type": "WATER_TEMPERATURE"
-            }
-          }
+          "physical_device_template": "salinity_buoy_C"
         }
       ],
       "339": [
         {
           "l_uid": 305,
-          "variables": {
-            "battV": {
-              "logical_name": "Battery Voltage",
-              "type": "BATTERY_VOLTAGE"
-            },
-            "solV": {
-              "logical_name": "Solar Voltage",
-              "type": "SOLAR_VOLTAGE"
-            },
-            "c4e salinity": {
-              "logical_name": "Water Salinity",
-              "type": "WATER_SALINITY"
-            },
-            "c4e temperature": {
-              "logical_name": "Water Temperature",
-              "type": "WATER_TEMPERATURE"
-            }
-          }
+          "physical_device_template": "salinity_buoy_C"
         }
       ],
       "340": [
         {
           "l_uid": 306,
-          "variables": {
-            "battV": {
-              "logical_name": "Battery Voltage",
-              "type": "BATTERY_VOLTAGE"
-            },
-            "solV": {
-              "logical_name": "Solar Voltage",
-              "type": "SOLAR_VOLTAGE"
-            },
-            "c4e salinity": {
-              "logical_name": "Water Salinity",
-              "type": "WATER_SALINITY"
-            },
-            "c4e temperature": {
-              "logical_name": "Water Temperature",
-              "type": "WATER_TEMPERATURE"
-            }
-          }
+          "physical_device_template": "salinity_buoy_C"
         }
       ],
       "341": [
         {
           "l_uid": 307,
-          "variables": {
-            "battV": {
-              "logical_name": "Battery Voltage",
-              "type": "BATTERY_VOLTAGE"
-            },
-            "solV": {
-              "logical_name": "Solar Voltage",
-              "type": "SOLAR_VOLTAGE"
-            },
-            "c4e salinity": {
-              "logical_name": "Water Salinity",
-              "type": "WATER_SALINITY"
-            },
-            "c4e temperature": {
-              "logical_name": "Water Temperature",
-              "type": "WATER_TEMPERATURE"
-            }
-          }
+          "physical_device_template": "salinity_buoy_C"
         }
       ],
       "523": [
         {
           "l_uid": 579,
-          "variables": {
-            "battV": {
-              "logical_name": "Battery Voltage",
-              "type": "BATTERY_VOLTAGE"
-            },
-            "solV": {
-              "logical_name": "Solar Voltage",
-              "type": "SOLAR_VOLTAGE"
-            },
-            "awq-c4e salinity": {
-              "logical_name": "Water Salinity",
-              "type": "WATER_SALINITY"
-            },
-            "awq-c4e temperature": {
-              "logical_name": "Water Temperature",
-              "type": "WATER_TEMPERATURE"
-            }
-          }
+          "physical_device_template": "salinity_buoy_F"
         }
       ],
       "527": [
         {
           "l_uid": 580,
-          "variables": {
-            "battV": {
-              "logical_name": "Battery Voltage",
-              "type": "BATTERY_VOLTAGE"
-            },
-            "solV": {
-              "logical_name": "Solar Voltage",
-              "type": "SOLAR_VOLTAGE"
-            },
-            "c4e salinity": {
-              "logical_name": "Water Salinity",
-              "type": "WATER_SALINITY"
-            },
-            "c4e temperature": {
-              "logical_name": "Water Temperature",
-              "type": "WATER_TEMPERATURE"
-            }
-          }
+          "physical_device_template": "salinity_buoy_C"
         }
       ]
     }
