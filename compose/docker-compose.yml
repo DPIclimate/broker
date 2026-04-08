@@ -14,8 +14,10 @@ services:
     healthcheck:
       test: [ "CMD", "pg_isready", "-q", "-d", "${PGDATABASE}", "-U", "${PGUSER}" ]
       timeout: 45s
-      interval: 10s
+      interval: 120s
       retries: 10
+      start_period: 30s
+      start_interval: 1s
 
   mq:
     hostname: "mq"
@@ -31,8 +33,9 @@ services:
       - ../config/rabbitmq:/etc/rabbitmq
     healthcheck:
       test: rabbitmq-diagnostics check_port_connectivity || exit 1
-      interval: 30s
+      interval: 120s
       start_period: 30s
+      start_interval: 1s
 
   restapi:
     image: broker/python-base

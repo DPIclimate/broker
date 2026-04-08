@@ -150,14 +150,7 @@ def on_message(channel, method, properties, body):
 
         if len(pds) < 1:
             lu.cid_logger.info('Device not found, creating physical device.', extra=msg_with_cid)
-            ttn_dev = ttn.get_device_details(app_id, dev_id)
-            lu.cid_logger.info(f'Device info from TTN: {ttn_dev}', extra=msg_with_cid)
-
-            dev_name = ttn_dev['name'] if 'name' in ttn_dev else dev_id
-            dev_loc = Location.from_ttn_device(ttn_dev)
-
             props = {
-                BrokerConstants.TTN: ttn_dev,
                 BrokerConstants.CREATION_CORRELATION_ID_KEY: correlation_id,
                 BrokerConstants.LAST_MSG: {
                     BrokerConstants.CORRELATION_ID_KEY: correlation_id,
@@ -167,6 +160,19 @@ def on_message(channel, method, properties, body):
                     BrokerConstants.LAST_PTS_UID_KEY: None
                 }
             }
+            dev_name = dev_id
+            dev_loc = None
+            try:
+                ttn_dev = ttn.get_device_details(app_id, dev_id)
+                lu.cid_logger.info(f'Device info from TTN: {ttn_dev}', extra=msg_with_cid)
+
+                if 'name' in ttn_dev:
+                    dev_name = ttn_dev['name']
+
+                dev_loc = Location.from_ttn_device(ttn_dev)
+                props[BrokerContstants.TTN] = ttn_dev
+             except BaseException as e:
+                 lu.cid_logger.exception(f'Call to TTN failed', extra=msg_with_cid)
 
             pd = PhysicalDevice(source_name=BrokerConstants.TTN, name=dev_name, location=dev_loc, last_seen=last_seen, source_ids=source_ids, properties=props)
             pd = dao.create_physical_device(pd)

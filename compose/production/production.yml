@@ -24,10 +24,16 @@ services:
   ttn_webhook:
     ports:
       - "127.0.0.1:5688:5688"
-  
+    networks:
+      - npm_proxy
+      - default
+
   website:
     ports:
       - "127.0.0.1:5000:5000"
+    networks:
+      - npm_proxy
+      - default
 
 volumes:
   broker_db:
@@ -37,6 +43,10 @@ volumes:
     external: true
 
 networks:
+  npm-proxy:
+    external: true
+    name: nginx-proxy-manager_default
+
   default:
     external: true
-    name: iota-network
+    name: iota-private
