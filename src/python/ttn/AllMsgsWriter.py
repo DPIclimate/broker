@@ -171,7 +171,7 @@ def on_message(channel, method, properties, body):
 
                 dev_loc = Location.from_ttn_device(ttn_dev)
                 props[BrokerContstants.TTN] = ttn_dev
-             except BaseException as e:
+            except BaseException as e:
                  lu.cid_logger.exception(f'Call to TTN failed', extra=msg_with_cid)
 
             pd = PhysicalDevice(source_name=BrokerConstants.TTN, name=dev_name, location=dev_loc, last_seen=last_seen, source_ids=source_ids, properties=props)
