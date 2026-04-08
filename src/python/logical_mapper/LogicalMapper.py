@@ -237,6 +237,7 @@ def process_row(pts_uid: int, msg: Dict[str, Any]) -> None:
 
     lu.cid_logger.info(f'Accepted message from {p_uid}, {pd.name}', extra=msg)
 
+    # DAO resolves the current mapping from the open-ended [start, end) mapping range.
     mapping = dao.get_current_device_mapping(p_uid)
     map_entries = _variable_maps.get(p_uid, [])
 

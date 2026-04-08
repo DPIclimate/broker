@@ -694,8 +694,7 @@ Physical to logical device mapping operations
 create table if not exists physical_logical_map (
     physical_uid integer not null,
     logcial_uid integer not null,
-    start_time timestamptz not null default now(),
-    end_time timestamptz
+    active_range tstzrange not null default tstzrange(now(), null, '[)')
 );
 
 """
@@ -714,7 +713,10 @@ def insert_mapping(mapping: PhysicalToLogicalMapping) -> None:
             if current_mapping is not None:
                 _end_mapping(conn, ld=mapping.ld.uid)
 
-            cursor.execute('insert into physical_logical_map (physical_uid, logical_uid, start_time) values (%s, %s, %s)', (mapping.pd.uid, mapping.ld.uid, mapping.start_time))
+            cursor.execute(
+                'insert into physical_logical_map (physical_uid, logical_uid, active_range) values (%s, %s, tstzrange(%s, null, \'[)\'))',
+                (mapping.pd.uid, mapping.ld.uid, mapping.start_time)
+            )
     except psycopg2.errors.ForeignKeyViolation as fkerr:
         raise DAODeviceNotFound(f'insert_mapping foreign key error with mapping {mapping.pd.uid} {mapping.pd.name} -> {mapping.ld.uid} {mapping.ld.name}.', fkerr)
     except psycopg2.errors.UniqueViolation as err:
@@ -768,9 +770,15 @@ def _end_mapping(conn, pd: Optional[Union[PhysicalDevice, int]] = None, ld: Opti
             l_uid = ld.uid if isinstance(ld, LogicalDevice) else ld
 
         if p_uid is not None:
-            cursor.execute('update physical_logical_map set end_time = now() where physical_uid = %s and end_time is null', (p_uid, ))
+            cursor.execute(
+                'update physical_logical_map set active_range = tstzrange(lower(active_range), now(), \'[)\') where physical_uid = %s and upper(active_range) is null',
+                (p_uid, )
+            )
         else:
-            cursor.execute('update physical_logical_map set end_time = now() where logical_uid = %s and end_time is null', (l_uid, ))
+            cursor.execute(
+                'update physical_logical_map set active_range = tstzrange(lower(active_range), now(), \'[)\') where logical_uid = %s and upper(active_range) is null',
+                (l_uid, )
+            )
 
         if cursor.rowcount != 1:
             logging.warning(f'No mapping was updated during end_mapping for {pd.uid} {pd.name} -> {ld.uid} {ld.name}')
@@ -868,11 +876,11 @@ def _get_current_device_mapping(conn, pd: Optional[Union[PhysicalDevice, int]] =
     if ld is not None:
         l_uid = ld.uid if isinstance(ld, LogicalDevice) else ld
 
-    end_time_clause = 'and end_time is null' if only_current_mapping else ''
+    current_mapping_clause = 'and upper(active_range) is null' if only_current_mapping else ''
 
     with conn.cursor() as cursor:
         column_name = 'physical_uid' if p_uid is not None else 'logical_uid'
-        sql = f'select physical_uid, logical_uid, start_time, end_time, is_active from physical_logical_map where {column_name} = %s {end_time_clause} order by start_time desc'
+        sql = f'select physical_uid, logical_uid, lower(active_range), upper(active_range), is_active from physical_logical_map where {column_name} = %s {current_mapping_clause} order by lower(active_range) desc'
         cursor.execute(sql, (p_uid if p_uid is not None else l_uid, ))
 
         mappings = []
@@ -897,7 +905,7 @@ def get_unmapped_physical_devices() -> List[PhysicalDevice]:
     try:
         devs = []
         with _get_connection() as conn, conn.cursor() as cursor:
-            cursor.execute(f'{_physical_device_select_all_cols} where uid not in (select physical_uid from physical_logical_map where end_time is null) order by uid asc')
+            cursor.execute(f'{_physical_device_select_all_cols} where uid not in (select physical_uid from physical_logical_map where upper(active_range) is null) order by uid asc')
             for r in cursor:
                 dfr = _dict_from_row(cursor.description, r)
                 devs.append(PhysicalDevice.parse_obj(dfr))
@@ -916,7 +924,7 @@ def get_logical_device_mappings(ld: Union[LogicalDevice, int]) -> List[PhysicalT
         mappings = []
         with _get_connection() as conn, conn.cursor() as cursor:
             l_uid = ld.uid if isinstance(ld, LogicalDevice) else ld
-            cursor.execute('select physical_uid, logical_uid, start_time, end_time, is_active from physical_logical_map where logical_uid = %s order by start_time desc', (l_uid, ))
+            cursor.execute('select physical_uid, logical_uid, lower(active_range), upper(active_range), is_active from physical_logical_map where logical_uid = %s order by lower(active_range) desc', (l_uid, ))
             for p_uid, l_uid, start_time, end_time, is_active in cursor:
                 pd = _get_physical_device(conn, p_uid)
                 ld = _get_logical_device(conn, l_uid)
@@ -937,7 +945,7 @@ def get_physical_device_mappings(pd: Union[PhysicalDevice, int]) -> List[Physica
         mappings = []
         with _get_connection() as conn, conn.cursor() as cursor:
             p_uid = pd.uid if isinstance(pd, PhysicalDevice) else pd
-            cursor.execute('select physical_uid, logical_uid, start_time, end_time, is_active from physical_logical_map where physical_uid = %s order by start_time desc', (p_uid, ))
+            cursor.execute('select physical_uid, logical_uid, lower(active_range), upper(active_range), is_active from physical_logical_map where physical_uid = %s order by lower(active_range) desc', (p_uid, ))
 
             for p_uid, l_uid, start_time, end_time, is_active in cursor:
                 pd = _get_physical_device(conn, p_uid)
@@ -957,7 +965,7 @@ def get_all_current_mappings(return_uids: bool = True) -> List[PhysicalToLogical
     try:
         mappings = []
         with _get_connection() as conn, conn.cursor() as cursor:
-            cursor.execute('select physical_uid, logical_uid, start_time, end_time, is_active from physical_logical_map where end_time is null order by logical_uid asc')
+            cursor.execute('select physical_uid, logical_uid, lower(active_range), upper(active_range), is_active from physical_logical_map where upper(active_range) is null order by logical_uid asc')
             for p_uid, l_uid, start_time, end_time, is_active in cursor:
                 if return_uids:
                     pd = p_uid

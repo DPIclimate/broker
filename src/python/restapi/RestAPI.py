@@ -296,9 +296,9 @@ async def insert_mapping(mapping: PhysicalToLogicalMapping) -> None:
 @router.get("/mappings/current/", tags=['device mapping'], response_model=List[PhysicalToLogicalMapping], dependencies=[Depends(token_auth_scheme)])
 async def get_current_mappings(return_uids: bool = True) -> PhysicalToLogicalMapping:
     """
-    Returns the _current_ mapping for all physical devices. A current mapping is one with no
-    end time set, meaning messages from the physical device will be forwarded to the logical
-    device.
+    Returns the _current_ mapping for all physical devices. A current mapping is one with an
+    open upper bound in its active datetime range (`[lower, upper)`), meaning messages from the
+    physical device will be forwarded to the logical device.
     """
     try:
         mappings = dao.get_all_current_mappings(return_uids=return_uids)
@@ -331,9 +331,9 @@ async def toggle_device_mapping(is_active:bool, puid: int = None, luid:int = Non
 @router.get("/mappings/physical/current/{uid}", tags=['device mapping'], response_model=PhysicalToLogicalMapping, dependencies=[Depends(token_auth_scheme)])
 async def get_current_mapping_from_physical_uid(uid: int) -> PhysicalToLogicalMapping:
     """
-    Returns the _current_ mapping for the given physical device. A current mapping is one with no
-    end time set, meaning messages from the physical device will be forwarded to the logical
-    device.
+    Returns the _current_ mapping for the given physical device. A current mapping is one with an
+    open upper bound in its active datetime range (`[lower, upper)`), meaning messages from the
+    physical device will be forwarded to the logical device.
     """
     try:
         mapping = dao.get_current_device_mapping(pd=uid)
@@ -394,9 +394,9 @@ async def end_mapping_of_physical_uid(uid: int) -> None:
 @router.get("/mappings/logical/current/{uid}", tags=['device mapping'], response_model=PhysicalToLogicalMapping, dependencies=[Depends(token_auth_scheme)])
 async def get_current_mapping_to_logical_uid(uid: int) -> PhysicalToLogicalMapping:
     """
-    Returns the _current_ mapping for the given logical device. A current mapping is one with no
-    end time set, meaning messages from the physical device will be forwarded to the logical
-    device.
+    Returns the _current_ mapping for the given logical device. A current mapping is one with an
+    open upper bound in its active datetime range (`[lower, upper)`), meaning messages from the
+    physical device will be forwarded to the logical device.
     """
     try:
         mapping = dao.get_current_device_mapping(ld=uid)

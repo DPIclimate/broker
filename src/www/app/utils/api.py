@@ -122,7 +122,9 @@ def get_logical_device(uid: str, token: str) -> LogicalDevice:
 
 def get_current_mappings(token: str):
     """
-        Returns the current mapping for all physical devices. A current mapping is one with no end time set, meaning messages from the physical device will be forwarded to the logical device.
+        Returns the current mapping for all physical devices. A current mapping is one with an open
+        upper bound in its active datetime range (`[lower, upper)`), meaning messages from the
+        physical device will be forwarded to the logical device.
     """
     headers = {"Authorization": f"Bearer {token}"}
     response = requests.get(f"{end_point}/broker/api/mappings/current/", headers=headers)
@@ -310,6 +312,7 @@ def insert_device_mapping(p_uid: int, l_uid: int, token: str):
     now = datetime.now(tz=timezone.utc)
     end_physical_mapping(p_uid, token=token)
 
+    # The backend stores this as the lower bound of an active datetime range [start, end).
     mapping = PhysicalToLogicalMapping(pd=p_dev, ld=l_dev, start_time=now)
 
     response = requests.post(f'{end_point}/broker/api/mappings/', data=mapping.json(), headers=headers)

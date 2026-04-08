@@ -44,11 +44,56 @@ alter table physical_logical_map
     add column if not exists uid integer generated always as identity;
 
 alter table physical_logical_map
+    add column if not exists active_range tstzrange;
+
+do $$
+begin
+    if exists (
+        select 1
+        from pg_attribute
+        where attrelid = 'physical_logical_map'::regclass
+          and attname = 'start_time'
+          and not attisdropped
+    ) then
+        execute '
+            update physical_logical_map
+               set active_range = tstzrange(start_time, end_time, ''[)'')
+             where active_range is null
+        ';
+    end if;
+end;
+$$;
+
+alter table physical_logical_map
+    alter column active_range set default tstzrange(now(), null, '[)');
+
+alter table physical_logical_map
+    alter column active_range set not null;
+
+alter table physical_logical_map
+    drop constraint if exists end_gt_start;
+
+alter table physical_logical_map
+    drop constraint if exists physical_logical_map_logical_uid_start_time_key;
+
+alter table physical_logical_map
     drop constraint if exists physical_logical_map_physical_uid_logical_uid_start_time_key;
 
 alter table physical_logical_map
-    add constraint physical_logical_map_physical_uid_logical_uid_start_time_key
-    unique (physical_uid, logical_uid, start_time);
+    drop constraint if exists plm_active_range_bounds_ck;
+
+alter table physical_logical_map
+    add constraint plm_active_range_bounds_ck check (
+        lower_inc(active_range)
+        and not upper_inc(active_range)
+        and not isempty(active_range)
+    );
+
+alter table physical_logical_map
+    drop column if exists start_time;
+
+alter table physical_logical_map
+    drop column if exists end_time;
 
 alter table physical_logical_map
     drop constraint if exists physical_logical_map_pkey;
@@ -56,13 +101,31 @@ alter table physical_logical_map
 alter table physical_logical_map
     add constraint physical_logical_map_pkey primary key (uid);
 
-create index if not exists plm_current_physical_start_idx
-    on physical_logical_map (physical_uid, start_time desc)
-    where end_time is null;
+drop index if exists plm_current_physical_start_idx;
 
-create index if not exists plm_current_logical_start_idx
-    on physical_logical_map (logical_uid, start_time desc)
-    where end_time is null;
+drop index if exists plm_current_logical_start_idx;
+
+drop index if exists plm_logical_lower_uidx;
+
+drop index if exists plm_physical_logical_lower_uidx;
+
+drop index if exists plm_current_physical_lower_idx;
+
+drop index if exists plm_current_logical_lower_idx;
+
+create unique index if not exists plm_logical_lower_uidx
+    on physical_logical_map (logical_uid, lower(active_range));
+
+create unique index if not exists plm_physical_logical_lower_uidx
+    on physical_logical_map (physical_uid, logical_uid, lower(active_range));
+
+create index if not exists plm_current_physical_lower_idx
+    on physical_logical_map (physical_uid, lower(active_range) desc)
+    where upper(active_range) is null;
+
+create index if not exists plm_current_logical_lower_idx
+    on physical_logical_map (logical_uid, lower(active_range) desc)
+    where upper(active_range) is null;
 
 create index if not exists pts_physical_uid_ts_desc_idx
     on physical_timeseries (physical_uid, ts desc);

@@ -398,6 +398,7 @@ def physical_device_form(uid):
 
         if mappings is not None:
             for m in mappings:
+                # start_time/end_time are lower/upper bounds from the backend's [start, end) range.
                 if m.start_time is not None:
                     m.start_time = m.start_time.isoformat(' ', 'seconds')
 

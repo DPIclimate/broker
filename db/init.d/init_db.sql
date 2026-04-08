@@ -95,16 +95,17 @@ create table if not exists logical_devices (
 
 create table if not exists physical_logical_map (
     uid integer generated always as identity primary key,
-    -- Keep the original mapping identity unique so there cannot be two
-    -- mapping rows for the same devices at the same time.
+    -- Keep mapping identity anchored by physical/logical device ids and an
+    -- active datetime range.
     physical_uid integer not null references physical_devices(uid),
     logical_uid integer not null references logical_devices(uid),
-    start_time timestamptz not null default now(),
-    end_time timestamptz,
+    active_range tstzrange not null default tstzrange(now(), null, '[)'),
     is_active boolean NOT NULL DEFAULT true,
-    constraint end_gt_start check (end_time > start_time),
-    unique (logical_uid, start_time),
-    unique (physical_uid, logical_uid, start_time)
+    constraint plm_active_range_bounds_ck check (
+        lower_inc(active_range)
+        and not upper_inc(active_range)
+        and not isempty(active_range)
+    )
 );
 
 create table if not exists users (
@@ -145,15 +146,21 @@ execute function update_timeseries_ts_delta();
 
 create index if not exists pd_src_id_idx on physical_devices using GIN (source_ids);
 
--- Optimise current mapping lookups in DAO.get_current_device_mapping() and
--- update/end-mapping operations that filter on end_time is null.
-create index if not exists plm_current_physical_start_idx
-    on physical_logical_map (physical_uid, start_time desc)
-    where end_time is null;
+create unique index if not exists plm_logical_lower_uidx
+    on physical_logical_map (logical_uid, lower(active_range));
 
-create index if not exists plm_current_logical_start_idx
-    on physical_logical_map (logical_uid, start_time desc)
-    where end_time is null;
+create unique index if not exists plm_physical_logical_lower_uidx
+    on physical_logical_map (physical_uid, logical_uid, lower(active_range));
+
+-- Optimise current mapping lookups in DAO.get_current_device_mapping() and
+-- update/end-mapping operations that filter on an open upper bound.
+create index if not exists plm_current_physical_lower_idx
+    on physical_logical_map (physical_uid, lower(active_range) desc)
+    where upper(active_range) is null;
+
+create index if not exists plm_current_logical_lower_idx
+    on physical_logical_map (logical_uid, lower(active_range) desc)
+    where upper(active_range) is null;
 
 -- Optimise historical timeseries reads used by the REST API when filtering
 -- by device uid and timestamp range with order by ts desc.
