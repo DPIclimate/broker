@@ -276,6 +276,24 @@ services:
     entrypoint: [ "python", "-m", "pollers.axistech" ]
 
 
+  thingsboard:
+      image: broker/python-base
+      logging:
+        driver: local
+        options:
+          max-file: "3"
+      restart: unless-stopped
+      env_file:
+        - .env
+      depends_on:
+        db:
+          condition: "service_healthy"
+      volumes:
+        - ../src/python:/home/broker/python
+      working_dir: "/home/broker/python"
+      entrypoint: [ "python", "-m", "delivery.thingsboard", "--host", "tb.farmdecisiontech.net.au", "--port", "8883" ]
+
+
   test:
     image: broker/python-base
     profiles:

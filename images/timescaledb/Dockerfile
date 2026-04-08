@@ -118,4 +118,3 @@ RUN set -ex \
         musl-locales
 
 COPY exts.sql /docker-entrypoint-initdb.d/
-USER postgres:postgres

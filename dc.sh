@@ -1,15 +1,11 @@
 #!/usr/bin/env bash
-set -euo pipefail
+set -euxo pipefail
 
-RUN_MODE=$(basename $PWD)
+OVERRIDE_YML=$(basename $PWD).yml
 
-if [ "$RUN_MODE" != test ]; then
-    if [ "$RUN_MODE" != production ]; then
-        echo "Invalid run mode [$RUN_MODE]"
-        exit 1
-    else
-        RUN_MODE=prod
-    fi
+if [ ! -f "$OVERRIDE_YML" ]; then
+    echo "File not found: ${$OVERRIDE_YML}"
+    exit 1
 fi
 
-exec docker compose --profile wombat --profile ubidots --profile ttn --profile pollers -p $RUN_MODE -f ../docker-compose.yml -f ./$RUN_MODE.yml $*
+exec docker compose --profile wombat --profile ttn -f ../docker-compose.yml -f ./$OVERRIDE_YML $*

@@ -1,11 +1,9 @@
-version: '3.1'
-
 services:
   db:
     ports:
       - "127.0.0.1:5432:5432"
     volumes:
-      - broker_db:/var/lib/postgresql/data
+      - broker_db:/var/lib/postgresql/18/docker
 
   mq:
     ports:
@@ -37,3 +35,8 @@ volumes:
 
   mq_data:
     external: true
+
+networks:
+  default:
+    external: true
+    name: iota-network

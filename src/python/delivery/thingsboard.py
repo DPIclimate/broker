@@ -5,6 +5,7 @@ import datetime
 import json
 import logging
 import math
+import os
 import ssl
 import threading
 from typing import Any, Dict, List, Optional, Tuple
@@ -511,7 +512,10 @@ class ThingsBoardDelivery(DeliveryDbReader):
         parser.add_argument("--topic", action="append", default=[], help="Optional topic filter to monitor.")
         parser.add_argument("--topic-qos", type=int, default=1, choices=(0, 1, 2), help="QoS used for subscriptions.")
         parser.add_argument("--client-id", default="", help="MQTT client id.")
-        parser.add_argument("--username", help="MQTT username.")
+        parser.add_argument(
+            "--username",
+            help="MQTT username. Defaults to TB_MQTT_USER_ID when omitted.",
+        )
         parser.add_argument("--password", help="MQTT password.")
         parser.add_argument("--ca-cert", help="Path to CA certificate PEM. Defaults to system trust store.")
         parser.add_argument("--cert-file", help="Path to client certificate PEM.")
@@ -542,12 +546,15 @@ class ThingsBoardDelivery(DeliveryDbReader):
         self.poll_interval_seconds = args.db_poll_interval_seconds
         self._startup_publish = args.publish
         topics = [(topic, args.topic_qos) for topic in args.topic]
+        username = args.username if args.username is not None else os.getenv('TB_MQTT_USER_ID')
+        if not username:
+            raise SystemExit('MQTT username is required. Set --username or TB_MQTT_USER_ID.')
         self._mqtt = SyncTlsMqttClient(
             host=args.host,
             port=args.port,
             topics=topics,
             client_id=args.client_id,
-            username=args.username,
+            username=username,
             password=args.password,
             ca_cert=args.ca_cert,
             cert_file=args.cert_file,
