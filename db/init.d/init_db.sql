@@ -94,7 +94,8 @@ create table if not exists logical_devices (
 );
 
 create table if not exists physical_logical_map (
-    -- Having all columns in the primary key means there cannot be two
+    uid integer generated always as identity primary key,
+    -- Keep the original mapping identity unique so there cannot be two
     -- mapping rows for the same devices at the same time.
     physical_uid integer not null references physical_devices(uid),
     logical_uid integer not null references logical_devices(uid),
@@ -103,7 +104,7 @@ create table if not exists physical_logical_map (
     is_active boolean NOT NULL DEFAULT true,
     constraint end_gt_start check (end_time > start_time),
     unique (logical_uid, start_time),
-    primary key(physical_uid, logical_uid, start_time)
+    unique (physical_uid, logical_uid, start_time)
 );
 
 create table if not exists users (

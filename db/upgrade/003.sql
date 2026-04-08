@@ -40,6 +40,22 @@ before insert or update on logical_timeseries
 for each row
 execute function update_timeseries_ts_delta();
 
+alter table physical_logical_map
+    add column if not exists uid integer generated always as identity;
+
+alter table physical_logical_map
+    drop constraint if exists physical_logical_map_physical_uid_logical_uid_start_time_key;
+
+alter table physical_logical_map
+    add constraint physical_logical_map_physical_uid_logical_uid_start_time_key
+    unique (physical_uid, logical_uid, start_time);
+
+alter table physical_logical_map
+    drop constraint if exists physical_logical_map_pkey;
+
+alter table physical_logical_map
+    add constraint physical_logical_map_pkey primary key (uid);
+
 create index if not exists plm_current_physical_start_idx
     on physical_logical_map (physical_uid, start_time desc)
     where end_time is null;
