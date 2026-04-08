@@ -34,7 +34,12 @@ jobs:
           if [ '${{ github.event_name }}' = 'workflow_dispatch' ] && [ -n '${{ inputs.image_tag }}' ]; then
             echo "tag=${{ inputs.image_tag }}" >> "${GITHUB_OUTPUT}"
           else
-            echo "tag=main" >> "${GITHUB_OUTPUT}"
+            REF_NAME='${{ github.ref_name }}'
+            if [ '${{ github.event_name }}' = 'pull_request' ]; then
+              REF_NAME='${{ github.head_ref }}'
+            fi
+            SAFE_REF=$(echo "${REF_NAME}" | tr '[:upper:]' '[:lower:]' | sed 's/[^a-z0-9._-]/-/g')
+            echo "tag=branch-${SAFE_REF}" >> "${GITHUB_OUTPUT}"
           fi
 
       - name: Log in to GHCR
