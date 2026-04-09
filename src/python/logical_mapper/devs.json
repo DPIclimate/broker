@@ -173,24 +173,24 @@
         "name": "GG-V",
         "variables": {
           "temperature": {
-            "name": "Air Temperature",
+            "logical_name": "Air Temperature",
             "type": "AIR_TEMPERATURE"
           },
           "humidity": {
-            "name": "Relative Humidity",
+            "logical_name": "Relative Humidity",
             "type": "AIR_RH"
           },
           "vdd": {
-            "name": "Battery Voltage",
+            "logical_name": "Battery Voltage",
             "type": "BATTERY_VOLTAGE"
           },
           "pressure": {
-            "name": "Air Pressure",
+            "logical_name": "Air Pressure",
             "type": "AIR_PRESSURE"
           },
           "pulse1": {
-            "translation": "((( value /(300)) * 2.6) * 1.60934)",
-            "name": "Wind Speed",
+            "transform": "((( value /(300)) * 2.6) * 1.60934)",
+            "logical_name": "Wind Speed",
             "type": "WIND_SPEED"
           }
         }
@@ -199,24 +199,24 @@
         "name": "GG-R",
         "variables": {
           "temperature": {
-            "name": "Air Temperature",
+            "logical_name": "Air Temperature",
             "type": "AIR_TEMPERATURE"
           },
           "humidity": {
-            "name": "Relative Humidity",
+            "logical_name": "Relative Humidity",
             "type": "AIR_RH"
           },
           "vdd": {
-            "name": "Battery Voltage",
+            "logical_name": "Battery Voltage",
             "type": "BATTERY_VOLTAGE"
           },
           "pressure": {
-            "name": "Air Pressure",
+            "logical_name": "Air Pressure",
             "type": "AIR_PRESSURE"
           },
           "pulse1": {
-            "translation": "value * 0.2",
-            "name": "Precipitation",
+            "transform": "value * 0.2",
+            "logical_name": "Precipitation",
             "type": "PRECIPITATION"
           }
         }
@@ -225,15 +225,15 @@
         "name": "GG-N",
         "variables": {
           "temperature": {
-            "name": "Air Temperature",
+            "logical_name": "Air Temperature",
             "type": "AIR_TEMPERATURE"
           },
           "humidity": {
-            "name": "Relative Humidity",
+            "logical_name": "Relative Humidity",
             "type": "AIR_RH"
           },
           "battery": {
-            "name": "Battery Voltage",
+            "logical_name": "Battery Voltage",
             "type": "BATTERY_VOLTAGE"
           }
         }
@@ -242,25 +242,25 @@
         "name": "GG-T",
         "variables": {
           "temp_0": {
-            "name": "Soil Temperature 30cm",
+            "logical_name": "Soil Temperature 30cm",
             "type": "SOIL_TEMPERATURE"
           },
           "temp_1": {
-            "name": "Soil Temperature 50cm",
+            "logical_name": "Soil Temperature 50cm",
             "type": "SOIL_TEMPERATURE"
           },
           "Raw 30cm": {
-            "translation": "-73.24038 + (0.04224 * value)",
-            "name": "Soil Moisture 30cm",
+            "transform": "-73.24038 + (0.04224 * value)",
+            "logical_name": "Soil Moisture 30cm",
             "type": "SOIL_MOISTURE"
           },
           "Raw 50cm": {
-            "translation": "-88.28820 + (0.04908 * value)",
-            "name": "Soil Moisture 50cm",
+            "transform": "-88.28820 + (0.04908 * value)",
+            "logical_name": "Soil Moisture 50cm",
             "type": "SOIL_MOISTURE"
           },
           "batt_v": {
-            "name": "Battery Voltage",
+            "logical_name": "Battery Voltage",
             "type": "BATTERY_VOLTAGE"
           }
         }

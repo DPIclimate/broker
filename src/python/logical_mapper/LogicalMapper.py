@@ -161,11 +161,23 @@ def _build_transformed_messages(msg: Dict[str, Any], map_entries: List[Dict[str,
                 continue
 
             for src_dot in src_dots:
+                transformed = False
+                dot_value = src_dot['value']
+                transformation = variable_def.get('transform')
+
+                if transformation is not None:
+                    transformed = True
+                    value = float(dot_value)
+                    dot_value = eval(transformation)
+
                 out_dot = {
                     'name': variable_def['logical_name'],
-                    'value': src_dot['value'],
+                    'value': dot_value,
                     'type': variable_def['type']
                 }
+
+                if transformed is True:
+                    out_dot['raw_value'] = src_dot['value']
 
                 if BrokerConstants.TIMESTAMP_KEY in src_dot:
                     out_dot[BrokerConstants.TIMESTAMP_KEY] = src_dot[BrokerConstants.TIMESTAMP_KEY]
