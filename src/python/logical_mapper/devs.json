@@ -194,6 +194,102 @@
             "type": "SOLAR_VOLTAGE"
           }
         ]
+      },
+      {
+        "name": "GG-V",
+        "variables": [
+          {
+            "name": "Air Temperature",
+            "type": "AIR_TEMPERATURE"
+          },
+          {
+            "name": "Relative Humidity",
+            "type": "AIR_RH"
+          },
+          {
+            "name": "Battery Voltage",
+            "type": "BATTERY_VOLTAGE"
+          },
+          {
+            "name": "Air Pressure",
+            "type": "AIR_PRESSURE"
+          },
+          {
+            "translation": "((( value /(300)) * 2.6) * 1.60934)",
+            "name": "Wind Speed",
+            "type": "WIND_SPEED"
+          }
+        ]
+      },
+      {
+        "name": "GG-R",
+        "variables": [
+          {
+            "name": "Air Temperature",
+            "type": "AIR_TEMPERATURE"
+          },
+          {
+            "name": "Relative Humidity",
+            "type": "AIR_RH"
+          },
+          {
+            "name": "Battery Voltage",
+            "type": "BATTERY_VOLTAGE"
+          },
+          {
+            "name": "Air Pressure",
+            "type": "AIR_PRESSURE"
+          },
+          {
+            "translation": "value * 0.2",
+            "name": "Precipitation",
+            "type": "PRECIPITATION"
+          }
+        ]
+      },
+      {
+        "name": "GG-N",
+        "variables": [
+          {
+            "name": "Air Temperature",
+            "type": "AIR_TEMPERATURE"
+          },
+          {
+            "name": "Relative Humidity",
+            "type": "AIR_RH"
+          },
+          {
+            "name": "Battery Voltage",
+            "type": "BATTERY_VOLTAGE"
+          }
+        ]
+      },
+      {
+        "name": "GG-T",
+        "variables": [
+          {
+            "name": "Soil Temperature 30cm",
+            "type": "SOIL_TEMPERATURE"
+          },
+          {
+            "name": "Soil Temperature 50cm",
+            "type": "SOIL_TEMPERATURE"
+          },
+          {
+            "translation": "-73.24038 + (0.04224 * value)",
+            "name": "Soil Moisture 30cm",
+            "type": "SOIL_MOISTURE"
+          },
+          {
+            "translation": "-73.24038 + (0.04224 * value)",
+            "name": "Soil Moisture 50cm",
+            "type": "SOIL_MOISTURE"
+          },
+          {
+            "name": "Battery Voltage",
+            "type": "BATTERY_VOLTAGE"
+          }
+        ]
       }
     ],
     "_": "These are used to map physical device vars to logical device vars. Variables from",
@@ -427,6 +523,174 @@
         {
           "l_uid": 580,
           "physical_device_template": "salinity_buoy_C"
+        }
+      ],
+      "439": [
+        {
+          "l_uid": 408,
+          "physical_device_template": "GG-V"
+        }
+      ],
+      "460": [
+        {
+          "l_uid": 417,
+          "physical_device_template": "GG-V"
+        }
+      ],
+      "465": [
+        {
+          "l_uid": 425,
+          "physical_device_template": "GG-V"
+        }
+      ],
+      "449": [
+        {
+          "l_uid": 419,
+          "physical_device_template": "GG-V"
+        }
+      ],
+      "429": [
+        {
+          "l_uid": 374,
+          "physical_device_template": "GG-T"
+        }
+      ],
+      "446": [
+        {
+          "l_uid": 418,
+          "physical_device_template": "GG-V"
+        }
+      ],
+      "466": [
+        {
+          "l_uid": 426,
+          "physical_device_template": "GG-V"
+        }
+      ],
+      "409": [
+        {
+          "l_uid": 342,
+          "physical_device_template": "GG-N"
+        }
+      ],
+      "447": [
+        {
+          "l_uid": 394,
+          "physical_device_template": "GG-V"
+        }
+      ],
+      "452": [
+        {
+          "l_uid": 413,
+          "physical_device_template": "GG-R"
+        }
+      ],
+      "410": [
+        {
+          "l_uid": 429,
+          "physical_device_template": "GG-N"
+        }
+      ],
+      "431": [
+        {
+          "l_uid": 395,
+          "physical_device_template": "GG-V"
+        }
+      ],
+      "436": [
+        {
+          "l_uid": 410,
+          "physical_device_template": "GG-V"
+        }
+      ],
+      "454": [
+        {
+          "l_uid": 409,
+          "physical_device_template": "GG-V"
+        }
+      ],
+      "444": [
+        {
+          "l_uid": 397,
+          "physical_device_template": "GG-V"
+        }
+      ],
+      "435": [
+        {
+          "l_uid": 398,
+          "physical_device_template": "GG-V"
+        }
+      ],
+      "296": [
+        {
+          "l_uid": 412,
+          "physical_device_template": "GG-R"
+        }
+      ],
+      "419": [
+        {
+          "l_uid": 376,
+          "physical_device_template": "GG-T"
+        }
+      ],
+      "380": [
+        {
+          "l_uid": 422,
+          "physical_device_template": "GG-T"
+        }
+      ],
+      "460": [
+        {
+          "l_uid": 403,
+          "physical_device_template": "GG-T"
+        }
+      ],
+      "455": [
+        {
+          "l_uid": 401,
+          "physical_device_template": "GG-T"
+        }
+      ],
+      "416": [
+        {
+          "l_uid": 375,
+          "physical_device_template": "GG-T"
+        }
+      ],
+      "456": [
+        {
+          "l_uid": 402,
+          "physical_device_template": "GG-T"
+        }
+      ],
+      "401": [
+        {
+          "l_uid": 379,
+          "physical_device_template": "GG-T"
+        }
+      ],
+      "451": [
+        {
+          "l_uid": 404,
+          "physical_device_template": "GG-T"
+        }
+      ],
+      "421": [
+        {
+          "l_uid": 378,
+          "physical_device_template": "GG-T"
+        }
+      ],
+      "420": [
+        {
+          "l_uid": 377,
+          "physical_device_template": "GG-T"
+        }
+      ],
+      "453": [
+        {
+          "l_uid": 400,
+          "physical_device_template": "GG-T"
         }
       ]
     }

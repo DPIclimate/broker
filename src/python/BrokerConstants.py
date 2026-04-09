@@ -46,3 +46,6 @@ class VariableTypeEnum(IntEnum):
     WIND_SPEED = 5
     WIND_DIRECTION = 6
     PRECIPITATION = 7
+    AIR_PRESSURE = 8
+    SOIL_TEMPERATURE = 9
+    SOIL_MOISTURE = 10
