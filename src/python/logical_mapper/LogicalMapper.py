@@ -259,7 +259,8 @@ def process_row(pts_uid: int, msg: Dict[str, Any]) -> None:
             logical_msgs = _build_transformed_messages(msg, map_entries)
         except Exception:
             _drop_row(pts_uid, msg, 'Message does not match variable-map structure. Dropping message.')
-            return
+            lu.cid_logger.info('Message processing error.', extra=msg)
+            sys.exit(1)
 
         # If no transformed rows were produced, create a fallback row only when
         # there is an active physical->logical mapping.

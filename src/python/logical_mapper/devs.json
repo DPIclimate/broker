@@ -181,6 +181,7 @@
             "type": "AIR_RH"
           },
           "vdd": {
+            "transform": "value / 1000.0",
             "logical_name": "Battery Voltage",
             "type": "BATTERY_VOLTAGE"
           },
@@ -189,7 +190,7 @@
             "type": "AIR_PRESSURE"
           },
           "pulse1": {
-            "transform": "((( value /(300)) * 2.6) * 1.60934)",
+            "transform": "((( value / 300) * 2.6) * 1.60934)",
             "logical_name": "Wind Speed",
             "type": "WIND_SPEED"
           }
@@ -207,6 +208,7 @@
             "type": "AIR_RH"
           },
           "vdd": {
+            "transform": "value / 1000.0",
             "logical_name": "Battery Voltage",
             "type": "BATTERY_VOLTAGE"
           },
