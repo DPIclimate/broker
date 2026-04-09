@@ -168,32 +168,6 @@
             "type": "WATER_TEMPERATURE"
           }
         }
-      }
-    ],
-    "_": "This may be redundant. It is meant to be a template describing the variables for a type of device",
-    "_": "But it may be just as easy to put the variable types in the variable mappings, which is all this",
-    "_": "template does ATM.",
-    "logical_device_templates": [
-      {
-        "name": "Salinity Buoy",
-        "variables": [
-          {
-            "name": "Water Salinity",
-            "type": "WATER_SALINITY"
-          },
-          {
-            "name": "Water Temperature",
-            "type": "WATER_TEMPERATURE"
-          },
-          {
-            "name": "Battery Voltage",
-            "type": "BATTERY_VOLTAGE"
-          },
-          {
-            "name": "Solar Voltage",
-            "type": "SOLAR_VOLTAGE"
-          }
-        ]
       },
       {
         "name": "GG-V",
@@ -281,13 +255,39 @@
             "type": "SOIL_MOISTURE"
           },
           {
-            "translation": "-73.24038 + (0.04224 * value)",
+            "translation": "-88.28820 + (0.04908 * value)",
             "name": "Soil Moisture 50cm",
             "type": "SOIL_MOISTURE"
           },
           {
             "name": "Battery Voltage",
             "type": "BATTERY_VOLTAGE"
+          }
+        ]
+      }
+    ],
+    "_": "This may be redundant. It is meant to be a template describing the variables for a type of device",
+    "_": "But it may be just as easy to put the variable types in the variable mappings, which is all this",
+    "_": "template does ATM.",
+    "logical_device_templates": [
+      {
+        "name": "Salinity Buoy",
+        "variables": [
+          {
+            "name": "Water Salinity",
+            "type": "WATER_SALINITY"
+          },
+          {
+            "name": "Water Temperature",
+            "type": "WATER_TEMPERATURE"
+          },
+          {
+            "name": "Battery Voltage",
+            "type": "BATTERY_VOLTAGE"
+          },
+          {
+            "name": "Solar Voltage",
+            "type": "SOLAR_VOLTAGE"
           }
         ]
       }
