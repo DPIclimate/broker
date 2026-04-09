@@ -171,99 +171,99 @@
       },
       {
         "name": "GG-V",
-        "variables": [
-          {
+        "variables": {
+          "temperature": {
             "name": "Air Temperature",
             "type": "AIR_TEMPERATURE"
           },
-          {
+          "humidity": {
             "name": "Relative Humidity",
             "type": "AIR_RH"
           },
-          {
+          "vdd": {
             "name": "Battery Voltage",
             "type": "BATTERY_VOLTAGE"
           },
-          {
+          "pressure": {
             "name": "Air Pressure",
             "type": "AIR_PRESSURE"
           },
-          {
+          "pulse1": {
             "translation": "((( value /(300)) * 2.6) * 1.60934)",
             "name": "Wind Speed",
             "type": "WIND_SPEED"
           }
-        ]
+        }
       },
       {
         "name": "GG-R",
-        "variables": [
-          {
+        "variables": {
+          "temperature": {
             "name": "Air Temperature",
             "type": "AIR_TEMPERATURE"
           },
-          {
+          "humidity": {
             "name": "Relative Humidity",
             "type": "AIR_RH"
           },
-          {
+          "vdd": {
             "name": "Battery Voltage",
             "type": "BATTERY_VOLTAGE"
           },
-          {
+          "pressure": {
             "name": "Air Pressure",
             "type": "AIR_PRESSURE"
           },
-          {
+          "pulse1": {
             "translation": "value * 0.2",
             "name": "Precipitation",
             "type": "PRECIPITATION"
           }
-        ]
+        }
       },
       {
         "name": "GG-N",
-        "variables": [
-          {
+        "variables": {
+          "temperature": {
             "name": "Air Temperature",
             "type": "AIR_TEMPERATURE"
           },
-          {
+          "humidity": {
             "name": "Relative Humidity",
             "type": "AIR_RH"
           },
-          {
+          "battery": {
             "name": "Battery Voltage",
             "type": "BATTERY_VOLTAGE"
           }
-        ]
+        }
       },
       {
         "name": "GG-T",
-        "variables": [
-          {
+        "variables": {
+          "temp_0": {
             "name": "Soil Temperature 30cm",
             "type": "SOIL_TEMPERATURE"
           },
-          {
+          "temp_1": {
             "name": "Soil Temperature 50cm",
             "type": "SOIL_TEMPERATURE"
           },
-          {
+          "Raw 30cm": {
             "translation": "-73.24038 + (0.04224 * value)",
             "name": "Soil Moisture 30cm",
             "type": "SOIL_MOISTURE"
           },
-          {
+          "Raw 50cm": {
             "translation": "-88.28820 + (0.04908 * value)",
             "name": "Soil Moisture 50cm",
             "type": "SOIL_MOISTURE"
           },
-          {
+          "batt_v": {
             "name": "Battery Voltage",
             "type": "BATTERY_VOLTAGE"
           }
-        ]
+        }
       }
     ],
     "_": "This may be redundant. It is meant to be a template describing the variables for a type of device",
