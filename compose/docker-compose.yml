@@ -18,6 +18,10 @@ services:
       retries: 10
       start_period: 30s
       start_interval: 1s
+    networks:
+      default:
+        aliases:
+          - ghg.local
 
   mq:
     hostname: "mq"
@@ -70,6 +74,23 @@ services:
     volumes:
       - ../src/www:/app
       - ../src/python:/iota
+
+  django:
+    image: broker/python-base
+    logging:
+      driver: local
+      options:
+        max-file: "3"
+    restart: unless-stopped
+    env_file:
+      - .env
+    depends_on:
+      db:
+        condition: "service_healthy"
+    volumes:
+      - ../src/python:/home/broker/python
+    working_dir: "/home/broker/python/mgmtapp"
+    entrypoint: [ "python", "manage.py", "runserver", "0.0.0.0:8000" ]
 
   ttn_webhook:
     image: broker/python-base

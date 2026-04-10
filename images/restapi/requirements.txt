@@ -4,6 +4,7 @@ backoff~=2.1
 certifi
 charset-normalizer~=2.1
 click~=8.1
+Django~=6.0
 dnspython~=2.2
 email-validator~=1.2
 exceptiongroup~=1.1

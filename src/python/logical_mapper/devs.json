@@ -533,12 +533,6 @@
           "physical_device_template": "GG-V"
         }
       ],
-      "460": [
-        {
-          "l_uid": 417,
-          "physical_device_template": "GG-V"
-        }
-      ],
       "465": [
         {
           "l_uid": 425,
@@ -569,12 +563,6 @@
           "physical_device_template": "GG-V"
         }
       ],
-      "409": [
-        {
-          "l_uid": 342,
-          "physical_device_template": "GG-N"
-        }
-      ],
       "447": [
         {
           "l_uid": 394,
@@ -585,12 +573,6 @@
         {
           "l_uid": 413,
           "physical_device_template": "GG-R"
-        }
-      ],
-      "410": [
-        {
-          "l_uid": 429,
-          "physical_device_template": "GG-N"
         }
       ],
       "431": [
@@ -653,12 +635,6 @@
           "physical_device_template": "GG-T"
         }
       ],
-      "416": [
-        {
-          "l_uid": 375,
-          "physical_device_template": "GG-T"
-        }
-      ],
       "456": [
         {
           "l_uid": 402,
@@ -693,6 +669,102 @@
         {
           "l_uid": 400,
           "physical_device_template": "GG-T"
+        }
+      ],
+      "418": [
+        {
+          "l_uid": 399,
+          "physical_device_template": "GG-N"
+        }
+      ],
+      "398": [
+        {
+          "l_uid": 349,
+          "physical_device_template": "GG-N"
+        }
+      ],
+      "505": [
+        {
+          "l_uid": 345,
+          "physical_device_template": "GG-N"
+        }
+      ],
+      "416": [
+        {
+          "l_uid": 375,
+          "physical_device_template": "GG-T"
+        }
+      ],
+      "241": [
+        {
+          "l_uid": 378,
+          "physical_device_template": "GG-T"
+        }
+      ],
+      "422": [
+        {
+          "l_uid": 380,
+          "physical_device_template": "GG-T"
+        }
+      ],
+      "450": [
+        {
+          "l_uid": 403,
+          "physical_device_template": "GG-T"
+        }
+      ],
+      "397": [
+        {
+          "l_uid": 350,
+          "physical_device_template": "GG-N"
+        }
+      ],
+      "399": [
+        {
+          "l_uid": 348,
+          "physical_device_template": "GG-N"
+        }
+      ],
+      "389": [
+        {
+          "l_uid": 346,
+          "physical_device_template": "GG-N"
+        }
+      ],
+      "390": [
+        {
+          "l_uid": 347,
+          "physical_device_template": "GG-N"
+        }
+      ],
+      "411": [
+        {
+          "l_uid": 341,
+          "physical_device_template": "GG-N"
+        }
+      ],
+      "410": [
+        {
+          "l_uid": 429,
+          "physical_device_template": "GG-N"
+        }
+      ],
+      "408": [
+        {
+          "l_uid": 343,
+          "physical_device_template": "GG-N"
+        }
+      ],
+      "409": [
+        {
+          "l_uid": 342,
+          "physical_device_template": "GG-N"
+        }
+      ],
+      "388": [
+        {
+          "l_uid": 344,
+          "physical_device_template": "GG-N"
         }
       ]
     }
