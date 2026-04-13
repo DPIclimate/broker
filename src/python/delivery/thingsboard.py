@@ -484,6 +484,9 @@ class ThingsBoardDelivery(DeliveryDbReader):
             attribute_name: value
             for attribute_name, (_, value) in sorted(latest_attributes.items())
         }
+        attribute_values['IoTa Id'] = row.logical_uid
+        attribute_values['IoTa Name'] = device_name
+
         attribute_payload = {device_name: attribute_values} if attribute_values else None
         return {device_name: telemetry}, attribute_payload
 
@@ -630,13 +633,6 @@ class ThingsBoardDelivery(DeliveryDbReader):
 
         if attribute_payload is not None:
             self._mqtt.send_json(TB_GATEWAY_ATTRIBUTES_TOPIC, attribute_payload)
-            logger.info(
-                "[tb-sent-attributes] uid=%s logical_uid=%s device=%r attributes=%s",
-                row.uid,
-                row.logical_uid,
-                logical_device_name,
-                sorted(attribute_payload[logical_device_name].keys()),
-            )
 
         if telemetry_payload is None:
             return

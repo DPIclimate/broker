@@ -334,7 +334,6 @@ class DeliveryDbReader(ABC):
         """
         for row in rows:
             logical_name = self.fetch_logical_device_name(row.logical_uid)
-            logger.info(f'Delivering row for {row.logical_uid} / {logical_name}: {json.dumps(row.json_msg)}')
             if logical_name is None:
                 logger.info(
                     "[db-skip] uid=%s logical_uid=%s not found in logical_devices.",
