@@ -16,9 +16,9 @@ except ModuleNotFoundError as exc:
     raise SystemExit("Missing dependency: paho-mqtt. Install with: pip install paho-mqtt") from exc
 
 try:
-    from db_reader import DeliveryDbReader, PhysicalTimeseriesRow
+    from db_reader import DeliveryDbReader, LogicalTimeseriesRow
 except ModuleNotFoundError:  # pragma: no cover - used when imported as a package module
-    from .db_reader import DeliveryDbReader, PhysicalTimeseriesRow
+    from .db_reader import DeliveryDbReader, LogicalTimeseriesRow
 
 
 TB_GATEWAY_ATTRIBUTES_TOPIC = 'v1/gateway/attributes'
@@ -379,7 +379,7 @@ class ThingsBoardDelivery(DeliveryDbReader):
     @staticmethod
     def _build_tb_gateway_payloads_from_row(
         device_name: str,
-        row: PhysicalTimeseriesRow,
+        row: LogicalTimeseriesRow,
     ) -> Tuple[Optional[Dict[str, Any]], Optional[Dict[str, Any]]]:
         """Build ThingsBoard gateway telemetry and attribute payloads from one DB row.
 
@@ -612,7 +612,7 @@ class ThingsBoardDelivery(DeliveryDbReader):
             raise RuntimeError("Transport is not configured. apply_runtime_args must run first.")
         self._mqtt.assert_healthy()
 
-    def deliver_row(self, row: PhysicalTimeseriesRow, logical_device_name: str) -> None:
+    def deliver_row(self, row: LogicalTimeseriesRow, logical_device_name: str) -> None:
         """Transform DB row to TB gateway payload and publish.
 
         Args:

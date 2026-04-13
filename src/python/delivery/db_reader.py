@@ -3,6 +3,7 @@
 
 import argparse
 import datetime
+import json
 import logging
 import signal
 import time
@@ -12,7 +13,7 @@ from functools import cache
 from typing import Any, Callable, List, Optional, Tuple
 
 try:
-    import psycopg2
+    from psycopg2.pool import SimpleConnectionPool
 except ModuleNotFoundError as exc:
     raise SystemExit("Missing dependency: psycopg2. Install with: pip install psycopg2") from exc
 
@@ -22,8 +23,8 @@ logger = logging.getLogger(__name__)
 
 
 @dataclass(frozen=True)
-class PhysicalTimeseriesRow:
-    """Database row model for physical_timeseries delivery processing."""
+class LogicalTimeseriesRow:
+    """Database row model for logical_timeseries delivery processing."""
 
     uid: int
     physical_uid: int
@@ -51,6 +52,8 @@ class DeliveryDbReader(ABC):
         self.poll_interval_seconds = poll_interval_seconds
         self._last_uid: int = 0
         self._checkpoint_initialised = False
+
+    _db_pool: Optional[SimpleConnectionPool] = None
 
     def _parse_iso_date(self, value: str) -> datetime.date:
         """argparse date parser for YYYY-MM-DD.
@@ -83,12 +86,12 @@ class DeliveryDbReader(ABC):
         parser.add_argument(
             "--from-date",
             type=self._parse_iso_date,
-            help="Process physical_timeseries rows from this date (YYYY-MM-DD).",
+            help="Process logical_timeseries rows from this date (YYYY-MM-DD).",
         )
         parser.add_argument(
             "--to-date",
             type=self._parse_iso_date,
-            help="Process physical_timeseries rows through this date (YYYY-MM-DD).",
+            help="Process logical_timeseries rows through this date (YYYY-MM-DD).",
         )
         return parser
 
@@ -117,44 +120,11 @@ class DeliveryDbReader(ABC):
             raise ValueError("--to-date must be on or after --from-date.")
         return from_date, to_date
 
-    def initialise_checkpoint(self) -> None:
-        """Initialise checkpoint to latest eligible row.
-
-        Args:
-            None.
-
-        Returns:
-            None.
-        """
-        last_uid = self._fetch_latest_row()
-        self._last_uid = 0 if last_uid is None else last_uid
-        self._checkpoint_initialised = True
-
-    def poll_new_rows(self) -> List[PhysicalTimeseriesRow]:
-        """Fetch new rows after the current `uid` checkpoint.
-
-        Args:
-            None.
-
-        Returns:
-            New rows ordered by `uid`.
-
-        Raises:
-            RuntimeError: If checkpoint has not been initialised.
-        """
-        if not self._checkpoint_initialised:
-            raise RuntimeError("Database monitor not initialised.")
-
-        rows = self._fetch_new_rows(self._last_uid)
-        if rows:
-            self._last_uid = rows[-1].uid
-        return rows
-
     def fetch_rows_in_date_range(
         self,
         from_date: datetime.date,
         to_date: datetime.date,
-    ) -> List[PhysicalTimeseriesRow]:
+    ) -> List[LogicalTimeseriesRow]:
         """Fetch mapped rows between two local calendar dates.
 
         Args:
@@ -184,7 +154,7 @@ class DeliveryDbReader(ABC):
             None.
 
         Returns:
-            Latest physical_timeseries UID, or None if no rows.
+            Latest logical_timeseries UID, or None if no rows.
         """
         query = """
             SELECT uid
@@ -192,15 +162,67 @@ class DeliveryDbReader(ABC):
             ORDER BY uid DESC
             LIMIT 1
         """
-        with psycopg2.connect() as conn, conn.cursor() as curs:
-            curs.execute(query)
-            row = curs.fetchone()
-            if row is None:
-                return None
-            return row[0]
+        pool = DeliveryDbReader._get_db_pool()
+        conn = pool.getconn()
+        try:
+            conn.autocommit = True
+            with conn.cursor() as curs:
+                curs.execute(query)
+                row = curs.fetchone()
+                if row is None:
+                    return None
+                return row[0]
+        finally:
+            pool.putconn(conn)
+
+    @classmethod
+    def _get_db_pool(cls) -> SimpleConnectionPool:
+        """Get or create the shared Postgres connection pool.
+
+        Args:
+            None.
+
+        Returns:
+            Shared process-local connection pool.
+
+        Raises:
+            Exception: If the DB is unavailable.
+        """
+        if cls._db_pool is None:
+            pool = SimpleConnectionPool(1, 5, connect_timeout=5)
+            conn = None
+            try:
+                conn = pool.getconn()
+                conn.autocommit = True
+                with conn.cursor() as curs:
+                    curs.execute('SELECT 1')
+            except Exception:
+                pool.closeall()
+                raise
+            finally:
+                if conn is not None:
+                    pool.putconn(conn)
+            cls._db_pool = pool
+        if cls._db_pool is None:
+            raise RuntimeError('Database pool initialisation failed.')
+        return cls._db_pool
+
+    @classmethod
+    def close_db_pool(cls) -> None:
+        """Close and clear the shared Postgres connection pool.
+
+        Args:
+            None.
+
+        Returns:
+            None.
+        """
+        if cls._db_pool is not None:
+            cls._db_pool.closeall()
+            cls._db_pool = None
 
     @staticmethod
-    def _fetch_new_rows(last_uid: int) -> List[PhysicalTimeseriesRow]:
+    def _fetch_new_rows(last_uid: int) -> List[LogicalTimeseriesRow]:
         """Read rows newer than checkpoint.
 
         Args:
@@ -215,25 +237,31 @@ class DeliveryDbReader(ABC):
             WHERE uid > %s
             ORDER BY uid ASC
         """
-        with psycopg2.connect() as conn, conn.cursor() as curs:
-            curs.execute(query, (last_uid,))
-            return [
-                PhysicalTimeseriesRow(
-                    uid=row[0],
-                    physical_uid=row[1],
-                    logical_uid=row[2],
-                    ts=row[3],
-                    received_at=row[4],
-                    json_msg=row[5],
-                )
-                for row in curs.fetchall()
-            ]
+        pool = DeliveryDbReader._get_db_pool()
+        conn = pool.getconn()
+        try:
+            conn.autocommit = True
+            with conn.cursor() as curs:
+                curs.execute(query, (last_uid,))
+                return [
+                    LogicalTimeseriesRow(
+                        uid=row[0],
+                        physical_uid=row[1],
+                        logical_uid=row[2],
+                        ts=row[3],
+                        received_at=row[4],
+                        json_msg=row[5],
+                    )
+                    for row in curs.fetchall()
+                ]
+        finally:
+            pool.putconn(conn)
 
     @staticmethod
     def _fetch_rows_in_date_range(
         from_start: datetime.datetime,
         to_end_exclusive: datetime.datetime,
-    ) -> List[PhysicalTimeseriesRow]:
+    ) -> List[LogicalTimeseriesRow]:
         """Read rows in a timestamp window.
 
         Args:
@@ -250,19 +278,25 @@ class DeliveryDbReader(ABC):
               AND ts < %s
             ORDER BY ts ASC, uid ASC
         """
-        with psycopg2.connect() as conn, conn.cursor() as curs:
-            curs.execute(query, (from_start, to_end_exclusive))
-            return [
-                PhysicalTimeseriesRow(
-                    uid=row[0],
-                    physical_uid=row[1],
-                    logical_uid=row[2],
-                    ts=row[3],
-                    received_at=row[4],
-                    json_msg=row[5],
-                )
-                for row in curs.fetchall()
-            ]
+        pool = DeliveryDbReader._get_db_pool()
+        conn = pool.getconn()
+        try:
+            conn.autocommit = True
+            with conn.cursor() as curs:
+                curs.execute(query, (from_start, to_end_exclusive))
+                return [
+                    LogicalTimeseriesRow(
+                        uid=row[0],
+                        physical_uid=row[1],
+                        logical_uid=row[2],
+                        ts=row[3],
+                        received_at=row[4],
+                        json_msg=row[5],
+                    )
+                    for row in curs.fetchall()
+                ]
+        finally:
+            pool.putconn(conn)
 
     @staticmethod
     @cache
@@ -276,14 +310,20 @@ class DeliveryDbReader(ABC):
             Logical device name, or None if no row exists.
         """
         query = "SELECT name FROM logical_devices WHERE uid = %s"
-        with psycopg2.connect() as conn, conn.cursor() as curs:
-            curs.execute(query, (logical_uid,))
-            row = curs.fetchone()
-            if row is None:
-                return None
-            return row[0]
+        pool = DeliveryDbReader._get_db_pool()
+        conn = pool.getconn()
+        try:
+            conn.autocommit = True
+            with conn.cursor() as curs:
+                curs.execute(query, (logical_uid,))
+                row = curs.fetchone()
+                if row is None:
+                    return None
+                return row[0]
+        finally:
+            pool.putconn(conn)
 
-    def _process_rows(self, rows: List[PhysicalTimeseriesRow]) -> None:
+    def _process_rows(self, rows: List[LogicalTimeseriesRow]) -> None:
         """Resolve logical names and delegate each row for delivery.
 
         Args:
@@ -294,6 +334,7 @@ class DeliveryDbReader(ABC):
         """
         for row in rows:
             logical_name = self.fetch_logical_device_name(row.logical_uid)
+            logger.info(f'Delivering row for {row.logical_uid} / {logical_name}: {json.dumps(row.json_msg)}')
             if logical_name is None:
                 logger.info(
                     "[db-skip] uid=%s logical_uid=%s not found in logical_devices.",
@@ -303,7 +344,7 @@ class DeliveryDbReader(ABC):
                 continue
             self.deliver_row(row, logical_name)
 
-    def _monitor_physical_timeseries(self, stop_requested: Callable[[], bool]) -> None:
+    def _monitor_logical_timeseries(self, stop_requested: Callable[[], bool]) -> None:
         """Continuously poll DB and deliver rows.
 
         Args:
@@ -312,15 +353,25 @@ class DeliveryDbReader(ABC):
         Returns:
             None.
         """
-        self.initialise_checkpoint()
+        last_uid = self._fetch_latest_row()
+        self._last_uid = 0 if last_uid is None else last_uid
+        self._checkpoint_initialised = True
+
         logger.info(
-            "Postgres monitor started for physical_timeseries where logical_uid is not null (poll=%.1fs).",
+            "Postgres monitor started for logical_timeseries where logical_uid is not null (poll=%.1fs).",
             self.poll_interval_seconds,
         )
 
         while not stop_requested():
             self.check_transport_health()
-            rows = self.poll_new_rows()
+
+            if not self._checkpoint_initialised:
+                raise RuntimeError("Database monitor not initialised.")
+
+            rows = self._fetch_new_rows(self._last_uid)
+            if rows:
+                self._last_uid = rows[-1].uid
+
             self._process_rows(rows)
             self.check_transport_health()
 
@@ -362,7 +413,7 @@ class DeliveryDbReader(ABC):
         try:
             if from_date is not None:
                 logger.info(
-                    "Processing physical_timeseries rows for date range %s to %s.",
+                    "Processing logical_timeseries rows for date range %s to %s.",
                     from_date.isoformat(),
                     to_date.isoformat(),
                 )
@@ -384,10 +435,11 @@ class DeliveryDbReader(ABC):
                 previous_handlers[sig] = signal.getsignal(sig)
                 signal.signal(sig, _handle_signal)
 
-            self._monitor_physical_timeseries(_stop_requested)
+            self._monitor_logical_timeseries(_stop_requested)
         finally:
             for sig, handler in previous_handlers.items():
                 signal.signal(sig, handler)
+            self.close_db_pool()
             self.close_transport()
             logger.info("Disconnected.")
 
@@ -457,7 +509,7 @@ class DeliveryDbReader(ABC):
         """
 
     @abstractmethod
-    def deliver_row(self, row: PhysicalTimeseriesRow, logical_device_name: str) -> None:
+    def deliver_row(self, row: LogicalTimeseriesRow, logical_device_name: str) -> None:
         """Transform and deliver one DB row to destination transport.
 
         Args:

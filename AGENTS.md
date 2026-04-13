@@ -15,3 +15,4 @@
 - Avoid excessive type checking on function and method input values.
 - When writing Javascript, write it so a human can understand it. Avoid destructuring etc. Make it obvious.
 - Always add function and method comments, including argument and return details when adding function and methods.
+- Use `python3` not `python`.
