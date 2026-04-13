@@ -20,6 +20,8 @@ try:
 except ModuleNotFoundError:  # pragma: no cover - used when imported as a package module
     from .db_reader import DeliveryDbReader, LogicalTimeseriesRow
 
+import util.LoggingUtil as lu
+
 
 TB_GATEWAY_ATTRIBUTES_TOPIC = 'v1/gateway/attributes'
 TB_GATEWAY_TELEMETRY_TOPIC = 'v1/gateway/telemetry'
@@ -286,11 +288,7 @@ class SyncTlsMqttClient:
         except UnicodeDecodeError:
             payload_view = repr(msg.payload)
         logger.info(
-            "[recv] topic=%s qos=%s retain=%s payload=%s",
-            msg.topic,
-            msg.qos,
-            msg.retain,
-            payload_view,
+            f'[recv] topic={msg.topic} qos={msg.qos} retain={msg.retain} payload={payload_view}'
         )
 
 
@@ -391,75 +389,68 @@ class ThingsBoardDelivery(DeliveryDbReader):
             Tuple of telemetry payload and attribute payload.
         """
         if not isinstance(row.json_msg, dict):
-            logger.info("[db-skip] uid=%s json_msg is not an object.", row.uid)
+            lu.cid_logger.error(f'[db-skip] uid={row.uid} json_msg is not an object.', extra=row.json_msg)
             return None, None
 
-        timeseries = row.json_msg.get("timeseries")
+        timeseries = row.json_msg.get('timeseries')
         if not isinstance(timeseries, list):
-            logger.info("[db-skip] uid=%s json_msg.timeseries is not an array.", row.uid)
+            lu.cid_logger.error(f'[db-skip] uid={row.uid} json_msg.timeseries is not an array.', extra=row.json_msg)
             return None, None
 
         now_ms = int(datetime.datetime.now(datetime.timezone.utc).timestamp() * 1000)
-        msg_ts_ms = ThingsBoardDelivery._to_epoch_ms(row.json_msg.get("timestamp"))
+        msg_ts_ms = ThingsBoardDelivery._to_epoch_ms(row.json_msg.get('timestamp'))
         if msg_ts_ms is not None and msg_ts_ms >= now_ms:
-            logger.info(
-                "[db-skip] uid=%s message timestamp is in the future: %r",
-                row.uid,
-                row.json_msg.get("timestamp"),
+            lu.cid_logger.error(
+                f'[db-skip] uid={row.uid} message timestamp is in the future: {row.json_msg.get("timestamp")!r}',
+                extra=row.json_msg,
             )
             return None, None
 
         default_ts_ms = msg_ts_ms if msg_ts_ms is not None else ThingsBoardDelivery._to_epoch_ms(row.ts)
         if default_ts_ms is None:
-            logger.info("[db-skip] uid=%s no valid default timestamp.", row.uid)
+            lu.cid_logger.error(f'[db-skip] uid={row.uid} no valid default timestamp.', extra=row.json_msg)
             return None, None
         if default_ts_ms >= now_ms:
-            logger.info("[db-skip] uid=%s default timestamp is in the future.", row.uid)
+            lu.cid_logger.error(f'[db-skip] uid={row.uid} default timestamp is in the future.', extra=row.json_msg)
             return None, None
 
         grouped: Dict[int, Dict[str, float]] = {}
         latest_attributes: Dict[str, Tuple[int, float]] = {}
         for idx, item in enumerate(timeseries):
             if not isinstance(item, dict):
-                logger.info("[db-skip] uid=%s dot[%s] is not an object.", row.uid, idx)
+                lu.cid_logger.error(f'[db-skip] uid={row.uid} dot[{idx}] is not an object.', extra=row.json_msg)
                 continue
 
-            dot_name = item.get("name")
+            dot_name = item.get('name')
             if not isinstance(dot_name, str) or not dot_name:
-                logger.info("[db-skip] uid=%s dot[%s] invalid name: %r", row.uid, idx, dot_name)
+                lu.cid_logger.error(f'[db-skip] uid={row.uid} dot[{idx}] invalid name: {dot_name!r}', extra=row.json_msg)
                 continue
             try:
                 json.dumps({dot_name: 0.0})
             except (TypeError, ValueError):
-                logger.info("[db-skip] uid=%s dot[%s] invalid name: %r", row.uid, idx, dot_name)
+                lu.cid_logger.error(f'[db-skip] uid={row.uid} dot[{idx}] invalid name: {dot_name!r}', extra=row.json_msg)
                 continue
 
-            dot_value = ThingsBoardDelivery._coerce_float(item.get("value"))
+            dot_value = ThingsBoardDelivery._coerce_float(item.get('value'))
             if dot_value is None:
-                logger.info(
-                    "[db-skip] uid=%s dot[%s] invalid float value: %r",
-                    row.uid,
-                    idx,
-                    item.get("value"),
+                lu.cid_logger.error(
+                    f'[db-skip] uid={row.uid} dot[{idx}] invalid float value: {item.get("value")!r}',
+                    extra=row.json_msg,
                 )
                 continue
 
-            if "timestamp" in item:
-                ts_ms = ThingsBoardDelivery._to_epoch_ms(item.get("timestamp"))
+            if 'timestamp' in item:
+                ts_ms = ThingsBoardDelivery._to_epoch_ms(item.get('timestamp'))
                 if ts_ms is None:
-                    logger.info(
-                        "[db-skip] uid=%s dot[%s] invalid timestamp: %r",
-                        row.uid,
-                        idx,
-                        item.get("timestamp"),
+                    lu.cid_logger.error(
+                        f'[db-skip] uid={row.uid} dot[{idx}] invalid timestamp: {item.get("timestamp")!r}',
+                        extra=row.json_msg,
                     )
                     continue
                 if ts_ms >= now_ms:
-                    logger.info(
-                        "[db-skip] uid=%s dot[%s] timestamp is in the future: %r",
-                        row.uid,
-                        idx,
-                        item.get("timestamp"),
+                    lu.cid_logger.error(
+                        f'[db-skip] uid={row.uid} dot[{idx}] timestamp is in the future: {item.get("timestamp")!r}',
+                        extra=row.json_msg,
                     )
                     continue
             else:
@@ -476,7 +467,7 @@ class ThingsBoardDelivery(DeliveryDbReader):
                         latest_attributes[attribute_name] = (ts_ms, dot_value)
 
         if not grouped:
-            logger.info("[db-skip] uid=%s no valid telemetry values after validation.", row.uid)
+            lu.cid_logger.info(f'[db-skip] uid={row.uid} no valid telemetry values after validation.', extra=row.json_msg)
             return None, None
 
         telemetry = [{"ts": ts_ms, "values": values} for ts_ms, values in sorted(grouped.items())]
@@ -577,17 +568,17 @@ class ThingsBoardDelivery(DeliveryDbReader):
         if self._mqtt is None:
             raise RuntimeError("Transport is not configured. apply_runtime_args must run first.")
         self._mqtt.connect()
-        logger.info("Connected to mqtts://%s:%s", self._mqtt.host, self._mqtt.port)
+        logger.info(f'Connected to mqtts://{self._mqtt.host}:{self._mqtt.port}')
         if self._mqtt.has_topic_subscriptions():
-            logger.info("Subscribed to:")
+            logger.info('Subscribed to:')
             for topic, qos in self._mqtt.topics:
-                logger.info("  - %s (qos=%s)", topic, qos)
+                logger.info(f'  - {topic} (qos={qos})')
 
         if self._startup_publish is not None:
             publish_topic, json_text = self._startup_publish
             payload = json.loads(json_text)
             self._mqtt.send_json(publish_topic, payload)
-            logger.info("[sent] topic=%s payload=%s", publish_topic, json.dumps(payload))
+            logger.info(f'[sent] topic={publish_topic} payload={json.dumps(payload)}')
 
     def close_transport(self) -> None:
         """Close MQTT transport.
@@ -638,12 +629,11 @@ class ThingsBoardDelivery(DeliveryDbReader):
             return
 
         self._mqtt.send_json(TB_GATEWAY_TELEMETRY_TOPIC, telemetry_payload)
-        logger.info(
-            "[tb-sent] uid=%s logical_uid=%s device=%r points=%s",
-            row.uid,
-            row.logical_uid,
-            logical_device_name,
-            sum(len(entry['values']) for entry in telemetry_payload[logical_device_name]),
+        lu.cid_logger.info(
+            f'[tb-sent] uid={row.uid} logical_uid={row.logical_uid} '
+            f'device={logical_device_name!r} '
+            f'points={sum(len(entry["values"]) for entry in telemetry_payload[logical_device_name])}',
+            extra=row.json_msg,
         )
 
 

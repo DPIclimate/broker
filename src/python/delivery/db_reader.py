@@ -3,7 +3,6 @@
 
 import argparse
 import datetime
-import json
 import logging
 import signal
 import time
@@ -17,8 +16,9 @@ try:
 except ModuleNotFoundError as exc:
     raise SystemExit("Missing dependency: psycopg2. Install with: pip install psycopg2") from exc
 
+import util.LoggingUtil as lu
 
-logging.basicConfig(level=logging.INFO, format="%(asctime)s|%(levelname)s|%(message)s")
+
 logger = logging.getLogger(__name__)
 
 
@@ -335,11 +335,7 @@ class DeliveryDbReader(ABC):
         for row in rows:
             logical_name = self.fetch_logical_device_name(row.logical_uid)
             if logical_name is None:
-                logger.info(
-                    "[db-skip] uid=%s logical_uid=%s not found in logical_devices.",
-                    row.uid,
-                    row.logical_uid,
-                )
+                lu.cid_logger.error(f'[db-skip] uid={row.uid} logical_uid={row.logical_uid} not found in logical_devices.', extra=row.json_msg)
                 continue
             self.deliver_row(row, logical_name)
 
