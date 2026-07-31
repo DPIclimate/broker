@@ -1,12 +1,11 @@
 from datetime import datetime
-from pydantic.v1 import BaseModel, Extra
-#from pydantic import BaseModel, Extra
+from pydantic import BaseModel, ConfigDict, Field
 from typing import Optional, Dict
 
 
 class Location(BaseModel):
-    lat: Optional[float]
-    long: Optional[float]
+    lat: Optional[float] = None
+    long: Optional[float] = None
 
     @staticmethod
     def from_ttn_device(ttn_dev: Dict):
@@ -23,24 +22,26 @@ class Location(BaseModel):
 
 # Allowing extra attributes in this class to make life easier for the webapp - it can pass extra info
 # to the templates in the device object rather than passing in lists of mappings etc.
-class BaseDevice(BaseModel, extra=Extra.allow):
-    uid: Optional[int]
+class BaseDevice(BaseModel):
+    model_config = ConfigDict(extra='allow')
+
+    uid: Optional[int] = None
     name: str
-    location: Optional[Location]
-    last_seen: Optional[datetime]
-    properties: Dict = {}
+    location: Optional[Location] = None
+    last_seen: Optional[datetime] = None
+    properties: Dict = Field(default_factory=dict)
 
 
 # Allowing extra attributes in this class to make life easier for the webapp - it can pass extra info
 # to the templates in the device object rather than passing in lists of mappings etc.
-class PhysicalDevice(BaseDevice, extra=Extra.allow):
+class PhysicalDevice(BaseDevice):
     source_name: str
-    source_ids: Dict = {}
+    source_ids: Dict = Field(default_factory=dict)
 
 
 # Allowing extra attributes in this class to make life easier for the webapp - it can pass extra info
 # to the templates in the device object rather than passing in lists of mappings etc.
-class LogicalDevice(BaseDevice, extra=Extra.allow):
+class LogicalDevice(BaseDevice):
     pass
 
 
@@ -48,13 +49,13 @@ class PhysicalToLogicalMapping(BaseModel):
     pd: PhysicalDevice | int
     ld: LogicalDevice | int
     start_time: datetime
-    end_time: Optional[datetime]
+    end_time: Optional[datetime] = None
     is_active: bool = True
 
 
 class DeviceNote(BaseModel):
-    uid: Optional[int]
-    ts: Optional[datetime]
+    uid: Optional[int] = None
+    ts: Optional[datetime] = None
     note: str
 
 

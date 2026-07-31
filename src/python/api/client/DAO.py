@@ -692,6 +692,7 @@ def delete_logical_device(uid: int) -> LogicalDevice:
 Physical to logical device mapping operations
 
 create table if not exists physical_logical_map (
+    admin_id bigserial not null,
     physical_uid integer not null,
     logcial_uid integer not null,
     start_time timestamptz not null default now(),

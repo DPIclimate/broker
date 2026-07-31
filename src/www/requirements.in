@@ -1,0 +1,9 @@
+Flask
+folium
+jsonschema
+paho-mqtt
+pandas
+pydantic
+requests
+selenium
+Werkzeug

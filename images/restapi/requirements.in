@@ -1,0 +1,10 @@
+fastapi
+httpx
+pandas
+pika
+psycopg2-binary
+pydantic
+pytest
+python-dateutil
+requests
+uvicorn
