@@ -158,7 +158,7 @@ def main() -> None:
     args = parser.parse_args()
 
     if args.output is None:
-        export_physical_timeseries_csv(args.logical_uid, args.start_date, args.end_date)
+        export_physical_timeseries_csv(args.l_uid, args.start_date, args.end_date)
         return
 
     with open(args.output, 'w', newline='', encoding='utf-8') as output_file:

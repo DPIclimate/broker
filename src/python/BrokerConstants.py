@@ -14,6 +14,7 @@ WOMBAT = 'wombat'
 YDOC = 'ydoc'
 ICT_EAGLEIO = 'ict_eagleio'
 AXISTECH = 'axistech'
+TAGO = 'tago'
 DRAGINO_JSON = 'dragino_json'
 
 CREATION_CORRELATION_ID_KEY = 'creation_correlation_id'

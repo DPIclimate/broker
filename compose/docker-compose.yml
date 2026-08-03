@@ -276,3 +276,26 @@ services:
       - ../src/python:/home/broker/python
     working_dir: "/home/broker/python"
     entrypoint: [ "python", "-m", "pollers.axistech" ]
+
+  tago:
+    user: "${UID}:${GID}"
+    image: broker/python-base
+    logging:
+      driver: local
+      options:
+        max-file: "3"
+    restart: unless-stopped
+    env_file:
+      - .env
+    profiles:
+      - tago
+    depends_on:
+      db:
+        condition: "service_healthy"
+      mq:
+        condition: "service_healthy"
+    volumes:
+      - ../src/python:/home/broker/python
+      - ${TAGO_SPOOL_HOST_DIR:-../data/tago-spool}:/var/spool/tago
+    working_dir: "/home/broker/python"
+    entrypoint: [ "python", "-m", "pollers.tago" ]
