@@ -153,12 +153,16 @@ class CachedMessage:
     def timestamp(self) -> dt.datetime:
         return dateutil.parser.isoparse(self.values[0])
 
-    def as_csv(self) -> str:
+    def raw_message(self) -> dict[str, Any]:
+        """Return the JSON object stored for the unconverted MQTT message."""
         stream = io.StringIO(newline="")
-        csv.writer(stream, lineterminator="").writerow(
-            (self.correlation_id, self.device_name, *self.values)
-        )
-        return stream.getvalue()
+        csv.writer(stream, lineterminator="").writerow(self.values)
+
+        return {
+            BrokerConstants.TIMESTAMP_KEY: self.values[0],
+            BrokerConstants.CORRELATION_ID_KEY: self.correlation_id,
+            BrokerConstants.RAW_MESSAGE_KEY: stream.getvalue(),
+        }
 
 
 class DiskCache:
@@ -260,6 +264,16 @@ class ConfirmingPublisher:
             durable=True,
         )
         self.channel.confirm_delivery()
+
+    def process_data_events(self) -> None:
+        """Service heartbeats and other events on an open publisher connection."""
+        if self.connection is None or self.connection.is_closed:
+            return
+        try:
+            self.connection.process_data_events(time_limit=0)
+        except (OSError, pika.exceptions.AMQPError):
+            self.close()
+            raise
 
     def publish(self, message: Mapping[str, Any]) -> None:
         if self.channel is None or self.channel.is_closed:
@@ -468,12 +482,20 @@ class ICTMQTTReceiver:
             raise RuntimeError("the RabbitMQ publisher is not configured")
         device = self._device(cached)
         message[BrokerConstants.PHYSICAL_DEVICE_UID_KEY] = device.uid
+        raw_message = cached.raw_message()
+        dao.add_raw_json_message(
+            SOURCE,
+            cached.timestamp,
+            cached.correlation_id,
+            raw_message,
+            device.uid,
+        )
         self.publisher.publish(message)
 
         if device.last_seen is None or cached.timestamp > device.last_seen:
             device.last_seen = cached.timestamp
         device.properties[LAST_CORRELATION_ID] = cached.correlation_id
-        device.properties[BrokerConstants.LAST_MSG] = cached.as_csv()
+        device.properties[BrokerConstants.LAST_MSG] = raw_message
         self.devices[cached.device_name] = dao.update_physical_device(device)
         path.unlink()
 
@@ -492,14 +514,20 @@ class ICTMQTTReceiver:
             except (OSError, dao.DAOException):
                 failures += 1
                 delay = retry_delay(failures)
-                dao.stop()
                 logging.exception("Database initialization failed; retry in %.1f seconds", delay)
                 self.stop_event.wait(delay)
 
         while not self.stop_event.is_set():
             files = self.cache.files()
             if not files:
-                self.stop_event.wait(1)
+                try:
+                    self.publisher.process_data_events()
+                except (OSError, pika.exceptions.AMQPError):
+                    logging.exception(
+                        "RabbitMQ connection failed while waiting for a cache file; "
+                        "the next publish will reconnect"
+                    )
+                self.stop_event.wait(10)
                 continue
             path = files[0]
             try:
@@ -515,7 +543,6 @@ class ICTMQTTReceiver:
             except (OSError, dao.DAOException, pika.exceptions.AMQPError, RuntimeError):
                 failures += 1
                 self.publisher.close()
-                dao.stop()
                 self.database_ready = False
                 delay = retry_delay(failures)
                 logging.exception("Database or RabbitMQ processing failed; retry in %.1f seconds", delay)

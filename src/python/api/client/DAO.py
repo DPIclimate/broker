@@ -54,8 +54,9 @@ select uid, name, (select row_to_json(_) from (select ST_Y(location) as lat, ST_
 
 _stopped = False
 
+
 def stop() -> None:
-    global _stopped
+    global conn_pool, _stopped
     logging.info('Closing connection pool.')
     _lock.acquire()
     try:
@@ -63,6 +64,7 @@ def stop() -> None:
             _stopped = True
             if conn_pool is not None:
                 conn_pool.closeall()
+                conn_pool = None
     finally:
         _lock.release()
 
@@ -111,7 +113,8 @@ def free_conn(conn) -> None:
     if conn.closed == 0 and conn.autocommit:
         conn.autocommit = False
 
-    conn_pool.putconn(conn)
+    if conn_pool is not None:
+        conn_pool.putconn(conn)
 
 
 def _dict_from_row(result_metadata, row) -> Dict[str, Any]:
@@ -181,7 +184,8 @@ def add_physical_source(name: str) -> None:
                     logging.error(f'Failed to add physical device source {name}')
                     conn.rollback()
     except Exception as err:
-        conn.rollback()
+        if conn is not None:
+            conn.rollback()
         raise err if isinstance(err, DAOException) else DAOException('add_physical_source failed.', err)
     finally:
         if conn is not None:
