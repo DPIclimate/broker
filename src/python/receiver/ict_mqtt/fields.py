@@ -30,8 +30,15 @@ FIELD_MAPPINGS: dict[str, dict[str, Field]] = {
         BrokerConstants.TIMESTAMP_KEY: Field(2, str),
         "battV": Field(3, lambda value: int(value) / 1000),
         "solV": Field(4, lambda value: int(value) / 1000),
-        "c4e-temperature": Field(14, float),
-        "c4e-salinity": Field(16, float),
+        "awq-c4e temperature": Field(14, float),
+        "awq-c4e salinity": Field(16, float),
+    },
+    "mncm2l_B": {
+        BrokerConstants.TIMESTAMP_KEY: Field(2, str),
+        "battV": Field(3, lambda value: int(value) / 1000),
+        "solV": Field(4, lambda value: int(value) / 1000),
+        "c4e temperature": Field(14, float),
+        "c4e salinity": Field(16, float),
     },
     "mncm3p_A": {
         BrokerConstants.TIMESTAMP_KEY: Field(2, str),
@@ -46,18 +53,14 @@ FIELD_MAPPINGS: dict[str, dict[str, Field]] = {
 DEVICE_LAYOUT_MAP: dict[str, str] = {
     "mncm2l301": "mncm2l_A",
     "mncm2l302": "mncm2l_A",
-    "mncm2l303": "mncm2l_A",
-    "mncm2l304": "mncm2l_A",
-    "mncm2l305": "mncm2l_A",
-    "mncm2l306": "mncm2l_A",
-    "mncm2l307": "mncm2l_A",
-    "mncm2l308": "mncm2l_A",
-    "mncm2l309": "mncm2l_A",
-    "mncm3lb0d": "mncm2l_A",
-    "mncm3lb0f": "mncm2l_A",
-
-    "mncm3p101": "mncm3p_A",
-    "mncm4p101": "mncm3p_A",
+    "mncm2l303": "mncm2l_B",
+    "mncm2l304": "mncm2l_B",
+    "mncm2l305": "mncm2l_B",
+    "mncm2l306": "mncm2l_B",
+    "mncm2l307": "mncm2l_B",
+    "mncm2l308": "mncm2l_B",
+    "mncm2l309": "mncm2l_B",
+    "mncm2l30a": "mncm2l_B",
 }
 
 
