@@ -213,7 +213,7 @@ services:
     working_dir: "/home/broker/python"
     entrypoint: [ "python", "-m", "delivery.UbidotsWriter" ]
 
-  pollers:
+  ict_eagleio:
     image: broker/python-base
     logging:
       driver: local
@@ -223,7 +223,7 @@ services:
     env_file:
       - .env
     profiles:
-      - pollers
+      - ict
     depends_on:
       db:
         condition: "service_healthy"
@@ -299,3 +299,26 @@ services:
       - ${TAGO_SPOOL_HOST_DIR:-../data/tago-spool}:/var/spool/tago
     working_dir: "/home/broker/python"
     entrypoint: [ "python", "-m", "pollers.tago" ]
+
+  ict_mqtt:
+    user: "${UID}:${GID}"
+    image: broker/python-base
+    logging:
+      driver: local
+      options:
+        max-file: "3"
+    restart: unless-stopped
+    env_file:
+      - .env
+    profiles:
+      - ict
+    depends_on:
+      db:
+        condition: "service_healthy"
+      mq:
+        condition: "service_healthy"
+    volumes:
+      - ../src/python:/home/broker/python
+      - ${ICT_MQTT_DISK_CACHE_HOST_DIR:-../data/ict-cache}:/var/spool/ict-mqtt
+    working_dir: "/home/broker/python"
+    entrypoint: [ "python", "-m", "receiver.ict_mqtt.main" ]

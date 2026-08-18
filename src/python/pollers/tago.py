@@ -40,9 +40,9 @@ UUID_NAMESPACE = uuid.UUID("79482d73-724b-4d9d-9957-cf7bdcd077d1")
 # The two active_output entries are present in the supplied specification.
 # Unknown fields are retained until their meanings are confirmed.
 CSV_FIELDS = (
-    "device_timestamp", "voltage", "temp", "cond", "pH", "turb", "TDS",
+    "device_timestamp", "voltage", "temperature", "specific_conductivity", "pH", "turbidity", "TDS",
     "do_sat", "do", "fdom", "chl", "BGA", "salinity", "wiper_pos",
-    "wiper_volt", "active_output", "active_output_2", "fill_time",
+    "wiper_mA", "active_output", "active_output_2", "fill_time",
     "unknown_1", "unknown_2", "unknown_3", "unknown_4", "drain_time",
 )
 
