@@ -12,4 +12,6 @@ if [ "$RUN_MODE" != test ]; then
     fi
 fi
 
-exec docker compose --profile wombat --profile ubidots --profile ttn --profile pollers -p $RUN_MODE -f ../docker-compose.yml -f ./$RUN_MODE.yml $*
+export UID
+export GID=`id -g`
+exec docker compose --profile wombat --profile ubidots --profile ttn --profile ict -p $RUN_MODE -f ../docker-compose.yml -f ./$RUN_MODE.yml $*

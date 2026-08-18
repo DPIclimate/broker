@@ -40,7 +40,7 @@ class TestDAO(unittest.TestCase):
 
     def test_get_all_physical_sources(self):
         sources = dao.get_all_physical_sources()
-        self.assertEqual(sources, ['greenbrain', 'ict_eagleio', 'ttn', 'wombat', 'ydoc'])
+        self.assertCountEqual(sources, ['greenbrain', 'ict_eagleio', 'ttn', 'wombat', 'ydoc', 'dragino_json', 'ict_mqtt'])
 
     def test_add_physical_source(self):
         sources = dao.get_all_physical_sources()
