@@ -453,6 +453,7 @@ class ICTMQTTReceiver:
         cached = self.cache.load(path)
         mapping = field_mapping_for_device(cached.device_name)
         if mapping is None:
+            self.cache.reject(path, "No field mapping.")
             return
         message = translate(cached, mapping)
         if self.config.test_mode:
@@ -540,9 +541,6 @@ class ICTMQTTReceiver:
                 if self.stop_event.is_set():
                     break
                 try:
-                    cached = self.cache.load(path)
-                    if field_mapping_for_device(cached.device_name) is None:
-                        continue
                     self._process_file(path)
                     processed = True
                 except InvalidMessage as error:
