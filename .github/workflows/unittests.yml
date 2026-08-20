@@ -5,13 +5,43 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v2
+
+      - name: Create test environment file
+        run: cp compose/.env.template compose/.env
+
       - name: Create python-base image
         run: docker build -q -t broker/python-base -f images/restapi/Dockerfile .
-      - name: Create ttn-decoder image
-        run: docker build -q -t broker/ttn_decoder -f images/ttn_decoder/Dockerfile .
-      - name: Create webapp image
-        run: docker build -q -t broker/mgmt-app -f src/www/Dockerfile .
-      - name: Build the stack
-        run: docker compose -p test -f compose/docker-compose.yml -f compose/test/test.yml up -d
-      - name: Unit tests
-        run: docker exec test-x-1 pytest
+
+      - name: Bring up the stack
+        run: docker compose -p test -f compose/docker-compose.yml -f compose/test/test.yml up -d --wait db mq restapi
+
+      - name: Run tests
+        run: |
+          docker run --rm \
+            --name test-pytest \
+            --network test_default \
+            --env-file compose/.env \
+            --env PYTHONPATH=/home/broker/broker/src/python:/home/broker/broker/test/python \
+            --volume "$PWD:/home/broker/broker" \
+            --workdir /home/broker/broker \
+            --entrypoint python \
+            broker/python-base \
+            -m pytest -q test/python
+
+      - name: Show service logs after failure
+        if: failure()
+        run: |
+          docker compose \
+            -p test \
+            -f compose/docker-compose.yml \
+            -f compose/test/test.yml \
+            logs --no-color db mq restapi
+
+      - name: Stop test dependencies
+        if: always()
+        run: |
+          docker compose \
+            -p test \
+            -f compose/docker-compose.yml \
+            -f compose/test/test.yml \
+            down --volumes
