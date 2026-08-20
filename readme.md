@@ -455,12 +455,12 @@ curl -X 'GET' \
 There are unit tests for the database interface and the REST API. To run these, use the following commands while a set of test containers are running (via `run.sh test`):
 
 ```
-docker exec test-x-1 python -m unittest TestDAO
-docker exec test-x-1 python -m unittest TestRESTAPI
+cd compose/test
+./dc.sh exec x pytest -v test/python
 ```
 
 To run a single test, use this style of command:
 
 ```
-docker exec test-x-1 python -m unittest TestRESTAPI.TestRESTAPI.test_get_all_physical_sources
+./dc.sh exec x python -m pytest -q test/python/test_ict_mqtt.py::test_translate_applies_known_conversions
 ```

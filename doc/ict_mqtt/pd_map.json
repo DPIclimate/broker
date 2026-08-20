@@ -1,0 +1,3056 @@
+[
+    {
+        "logical_uid": 283,
+        "logical_name": "Wallis Lake - The Big Lease",
+        "physical_uid": 317,
+        "physical_name": "mncm1k701",
+        "logical_last_msg": {
+            "l_uid": 283,
+            "p_uid": 317,
+            "timestamp": "2020-12-04T14:11:59+00:00",
+            "timeseries": [
+                {
+                    "name": "adc ch1",
+                    "value": 178512.0
+                },
+                {
+                    "name": "adc ch2",
+                    "value": 157548.0
+                },
+                {
+                    "name": "adc ch3",
+                    "value": 20072.0
+                },
+                {
+                    "name": "adc ch4",
+                    "value": 1.0
+                },
+                {
+                    "name": "battV",
+                    "value": 4.165
+                },
+                {
+                    "name": "counter ch 1",
+                    "value": 0.0
+                },
+                {
+                    "name": "counter ch 2",
+                    "value": 0.0
+                },
+                {
+                    "name": "counter ch 3",
+                    "value": 0.0
+                },
+                {
+                    "name": "counter ch 4",
+                    "value": 0.0
+                },
+                {
+                    "name": "solV",
+                    "value": 0.008
+                }
+            ],
+            "broker_correlation_id": "003ca6a3-44c3-4111-8489-05318bddd79c"
+        },
+        "physical_location": null,
+        "mapping_start_time": "2023-04-12T11:26:25.506763+10:00",
+        "physical_last_seen": "2025-04-07T14:22:29+10:00",
+        "physical_source_ids": {
+            "sensor_group_id": "mncm1k701"
+        },
+        "logical_reading_names": [
+            "adc ch1",
+            "adc ch2",
+            "adc ch3",
+            "adc ch4",
+            "battV",
+            "counter ch 1",
+            "counter ch 2",
+            "counter ch 3",
+            "counter ch 4",
+            "solV"
+        ]
+    },
+    {
+        "logical_uid": 288,
+        "logical_name": "Wallis Lake - Wreck Lease Bandicoot",
+        "physical_uid": 322,
+        "physical_name": "mncm1k702",
+        "logical_last_msg": {
+            "l_uid": 288,
+            "p_uid": 322,
+            "timestamp": "2020-12-20T00:16:43+00:00",
+            "timeseries": [
+                {
+                    "name": "ATMOS-41 air temperature",
+                    "value": 22.8
+                },
+                {
+                    "name": "ATMOS-41 atmospheric pressure",
+                    "value": 101.33
+                },
+                {
+                    "name": "ATMOS-41 avg strike distance",
+                    "value": 0.0
+                },
+                {
+                    "name": "ATMOS-41 gust wind speed",
+                    "value": 3.86
+                },
+                {
+                    "name": "ATMOS-41 precipitation",
+                    "value": 0.0
+                },
+                {
+                    "name": "ATMOS-41 relative humidity",
+                    "value": 93.8
+                },
+                {
+                    "name": "ATMOS-41 solar irradiance",
+                    "value": 144.0
+                },
+                {
+                    "name": "ATMOS-41 strikes",
+                    "value": 0.0
+                },
+                {
+                    "name": "ATMOS-41 vapour pressure",
+                    "value": 2.6
+                },
+                {
+                    "name": "ATMOS-41 wind direction",
+                    "value": 243.2
+                },
+                {
+                    "name": "ATMOS-41 wind speed",
+                    "value": 2.09
+                },
+                {
+                    "name": "ATMOS-41 x orientation",
+                    "value": -1.6
+                },
+                {
+                    "name": "ATMOS-41 y orientation",
+                    "value": 0.1
+                },
+                {
+                    "name": "adc ch1",
+                    "value": 157373.0
+                },
+                {
+                    "name": "adc ch2",
+                    "value": 148190.0
+                },
+                {
+                    "name": "adc ch3",
+                    "value": 1217.0
+                },
+                {
+                    "name": "adc ch4",
+                    "value": 25.0
+                },
+                {
+                    "name": "battV",
+                    "value": 4.193
+                },
+                {
+                    "name": "counter ch 1",
+                    "value": 0.0
+                },
+                {
+                    "name": "counter ch 2",
+                    "value": 0.0
+                },
+                {
+                    "name": "counter ch 3",
+                    "value": 0.0
+                },
+                {
+                    "name": "counter ch 4",
+                    "value": 0.0
+                },
+                {
+                    "name": "solV",
+                    "value": 19.574
+                }
+            ],
+            "broker_correlation_id": "b620a7b0-167d-417e-aab7-fef9a3c0072b"
+        },
+        "physical_location": null,
+        "mapping_start_time": "2023-04-12T11:26:26.18301+10:00",
+        "physical_last_seen": "2025-11-05T01:50:12+11:00",
+        "physical_source_ids": {
+            "sensor_group_id": "mncm1k702"
+        },
+        "logical_reading_names": [
+            "ATMOS-41 air temperature",
+            "ATMOS-41 atmospheric pressure",
+            "ATMOS-41 avg strike distance",
+            "ATMOS-41 gust wind speed",
+            "ATMOS-41 precipitation",
+            "ATMOS-41 relative humidity",
+            "ATMOS-41 solar irradiance",
+            "ATMOS-41 strikes",
+            "ATMOS-41 vapour pressure",
+            "ATMOS-41 wind direction",
+            "ATMOS-41 wind speed",
+            "ATMOS-41 x orientation",
+            "ATMOS-41 y orientation",
+            "adc ch1",
+            "adc ch2",
+            "adc ch3",
+            "adc ch4",
+            "battV",
+            "counter ch 1",
+            "counter ch 2",
+            "counter ch 3",
+            "counter ch 4",
+            "solV"
+        ]
+    },
+    {
+        "logical_uid": 286,
+        "logical_name": "Wallis Lake - Wallamba",
+        "physical_uid": 320,
+        "physical_name": "mncm1k703",
+        "logical_last_msg": {
+            "l_uid": 286,
+            "p_uid": 320,
+            "timestamp": "2026-08-17T02:04:07+00:00",
+            "timeseries": [
+                {
+                    "name": "battV",
+                    "value": 4.196
+                },
+                {
+                    "name": "adc ch1",
+                    "value": 197383
+                },
+                {
+                    "name": "adc ch2",
+                    "value": 200614
+                },
+                {
+                    "name": "solV",
+                    "value": 22.265
+                },
+                {
+                    "name": "counter ch 1",
+                    "value": 0,
+                    "timestamp": "2022-05-11T09:07:43+00:00"
+                },
+                {
+                    "name": "counter ch 2",
+                    "value": 0,
+                    "timestamp": "2022-05-11T09:07:43+00:00"
+                },
+                {
+                    "name": "adc ch3",
+                    "value": 25932
+                },
+                {
+                    "name": "adc ch4",
+                    "value": 160
+                },
+                {
+                    "name": "counter ch 3",
+                    "value": 0,
+                    "timestamp": "2022-05-11T09:07:43+00:00"
+                },
+                {
+                    "name": "counter ch 4",
+                    "value": 0,
+                    "timestamp": "2022-05-11T09:07:43+00:00"
+                },
+                {
+                    "name": "c4e temperature",
+                    "value": 17.127001
+                },
+                {
+                    "name": "c4e conductivity",
+                    "value": 55064
+                },
+                {
+                    "name": "c4e salinity",
+                    "value": 36.582001
+                },
+                {
+                    "name": "c4e TDS-Kcl",
+                    "value": 35907
+                }
+            ],
+            "broker_correlation_id": "ef043d8d-447c-4f28-bc55-2d9248049a14"
+        },
+        "physical_location": null,
+        "mapping_start_time": "2023-04-12T11:26:25.936892+10:00",
+        "physical_last_seen": "2026-08-17T12:04:07+10:00",
+        "physical_source_ids": {
+            "sensor_group_id": "mncm1k703"
+        },
+        "logical_reading_names": [
+            "battV",
+            "adc ch1",
+            "adc ch2",
+            "solV",
+            "counter ch 1",
+            "counter ch 2",
+            "adc ch3",
+            "adc ch4",
+            "counter ch 3",
+            "counter ch 4",
+            "c4e temperature",
+            "c4e conductivity",
+            "c4e salinity",
+            "c4e TDS-Kcl"
+        ]
+    },
+    {
+        "logical_uid": 285,
+        "logical_name": "Wallis Lake - Tony's Point",
+        "physical_uid": 319,
+        "physical_name": "mncm1k704",
+        "logical_last_msg": {
+            "l_uid": 285,
+            "p_uid": 319,
+            "timestamp": "2026-08-17T02:08:07+00:00",
+            "timeseries": [
+                {
+                    "name": "adc ch1",
+                    "value": 198601
+                },
+                {
+                    "name": "counter ch 4",
+                    "value": 0,
+                    "timestamp": "2022-05-11T09:02:17+00:00"
+                },
+                {
+                    "name": "solV",
+                    "value": 22.306
+                },
+                {
+                    "name": "adc ch3",
+                    "value": 25128
+                },
+                {
+                    "name": "counter ch 1",
+                    "value": 0,
+                    "timestamp": "2022-05-11T09:02:17+00:00"
+                },
+                {
+                    "name": "adc ch4",
+                    "value": 522354
+                },
+                {
+                    "name": "counter ch 3",
+                    "value": 0,
+                    "timestamp": "2022-05-11T09:02:17+00:00"
+                },
+                {
+                    "name": "adc ch2",
+                    "value": 200184
+                },
+                {
+                    "name": "battV",
+                    "value": 4.228
+                },
+                {
+                    "name": "counter ch 2",
+                    "value": 0,
+                    "timestamp": "2022-05-11T09:02:17+00:00"
+                },
+                {
+                    "name": "c4e water temp",
+                    "value": 17.15
+                },
+                {
+                    "name": "c4e salinity",
+                    "value": 17.223
+                },
+                {
+                    "name": "c4e tds-kcl",
+                    "value": 18265
+                },
+                {
+                    "name": "c4e EC",
+                    "value": 28009
+                }
+            ],
+            "broker_correlation_id": "0fa93484-d5b8-4e7a-8465-2c048e372a36"
+        },
+        "physical_location": null,
+        "mapping_start_time": "2023-04-12T11:26:25.837518+10:00",
+        "physical_last_seen": "2026-08-17T12:08:07+10:00",
+        "physical_source_ids": {
+            "sensor_group_id": "mncm1k704"
+        },
+        "logical_reading_names": [
+            "adc ch1",
+            "counter ch 4",
+            "solV",
+            "adc ch3",
+            "counter ch 1",
+            "adc ch4",
+            "counter ch 3",
+            "adc ch2",
+            "battV",
+            "counter ch 2",
+            "c4e water temp",
+            "c4e salinity",
+            "c4e tds-kcl",
+            "c4e EC"
+        ]
+    },
+    {
+        "logical_uid": 284,
+        "logical_name": "Wallis Lake - The Paddock",
+        "physical_uid": 318,
+        "physical_name": "mncm1k705",
+        "logical_last_msg": {
+            "l_uid": 284,
+            "p_uid": 318,
+            "timestamp": "2026-08-17T01:56:24+00:00",
+            "timeseries": [
+                {
+                    "name": "battV",
+                    "value": 4.212
+                },
+                {
+                    "name": "adc ch4",
+                    "value": 4071
+                },
+                {
+                    "name": "solV",
+                    "value": 22.04
+                },
+                {
+                    "name": "adc ch1",
+                    "value": 194604
+                },
+                {
+                    "name": "counter ch 2",
+                    "value": 0,
+                    "timestamp": "2022-05-11T09:13:46+00:00"
+                },
+                {
+                    "name": "adc ch3",
+                    "value": 2798
+                },
+                {
+                    "name": "counter ch 3",
+                    "value": 0,
+                    "timestamp": "2022-05-11T09:13:46+00:00"
+                },
+                {
+                    "name": "adc ch2",
+                    "value": 321217
+                },
+                {
+                    "name": "counter ch 4",
+                    "value": 0,
+                    "timestamp": "2022-05-11T09:13:46+00:00"
+                },
+                {
+                    "name": "counter ch 1",
+                    "value": 0,
+                    "timestamp": "2022-05-11T09:13:46+00:00"
+                },
+                {
+                    "name": "c4e water temp",
+                    "value": 17.743
+                },
+                {
+                    "name": "c4e EC",
+                    "value": 49382
+                },
+                {
+                    "name": "c4e Salinity",
+                    "value": 32.284
+                },
+                {
+                    "name": "c4e tds-kcl",
+                    "value": 32202
+                }
+            ],
+            "broker_correlation_id": "430ae7ef-3f6b-41b9-b55b-d984d4e532ee"
+        },
+        "physical_location": null,
+        "mapping_start_time": "2023-04-12T11:26:25.737139+10:00",
+        "physical_last_seen": "2026-08-17T11:56:24+10:00",
+        "physical_source_ids": {
+            "sensor_group_id": "mncm1k705"
+        },
+        "logical_reading_names": [
+            "battV",
+            "adc ch4",
+            "solV",
+            "adc ch1",
+            "counter ch 2",
+            "adc ch3",
+            "counter ch 3",
+            "adc ch2",
+            "counter ch 4",
+            "counter ch 1",
+            "c4e water temp",
+            "c4e EC",
+            "c4e Salinity",
+            "c4e tds-kcl"
+        ]
+    },
+    {
+        "logical_uid": 287,
+        "logical_name": "Wallis Lake - Rolph's Lease",
+        "physical_uid": 321,
+        "physical_name": "mncm1k706",
+        "logical_last_msg": {
+            "l_uid": 287,
+            "p_uid": 321,
+            "timestamp": "2026-08-17T02:05:53+00:00",
+            "timeseries": [
+                {
+                    "name": "battV",
+                    "value": 4.208
+                },
+                {
+                    "name": "adc ch3",
+                    "value": 183
+                },
+                {
+                    "name": "adc ch2",
+                    "value": 218579
+                },
+                {
+                    "name": "counter ch 2",
+                    "value": 0,
+                    "timestamp": "2022-05-11T09:14:11+00:00"
+                },
+                {
+                    "name": "counter ch 4",
+                    "value": 20.813,
+                    "timestamp": "2022-05-10T00:57:24+00:00"
+                },
+                {
+                    "name": "counter ch 3",
+                    "value": 0,
+                    "timestamp": "2022-05-11T09:14:11+00:00"
+                },
+                {
+                    "name": "adc ch4",
+                    "value": 50
+                },
+                {
+                    "name": "solV",
+                    "value": 21.403
+                },
+                {
+                    "name": "adc ch1",
+                    "value": 192151
+                },
+                {
+                    "name": "counter ch 1",
+                    "value": 0,
+                    "timestamp": "2022-05-11T09:14:11+00:00"
+                },
+                {
+                    "name": "c4e temperature",
+                    "value": 17.917999
+                },
+                {
+                    "name": "c4e salinity",
+                    "value": 30.204
+                },
+                {
+                    "name": "c4e TDS-Kcl",
+                    "value": 30342
+                },
+                {
+                    "name": "c4e conductivity",
+                    "value": 46530
+                }
+            ],
+            "broker_correlation_id": "9cdc0f4c-b201-449f-a928-06874dd8f95b"
+        },
+        "physical_location": null,
+        "mapping_start_time": "2023-04-12T11:26:26.039503+10:00",
+        "physical_last_seen": "2026-08-17T12:05:53+10:00",
+        "physical_source_ids": {
+            "sensor_group_id": "mncm1k706"
+        },
+        "logical_reading_names": [
+            "battV",
+            "adc ch3",
+            "adc ch2",
+            "counter ch 2",
+            "counter ch 4",
+            "counter ch 3",
+            "adc ch4",
+            "solV",
+            "adc ch1",
+            "counter ch 1",
+            "c4e temperature",
+            "c4e salinity",
+            "c4e TDS-Kcl",
+            "c4e conductivity"
+        ]
+    },
+    {
+        "logical_uid": 290,
+        "logical_name": "mncm1k707",
+        "physical_uid": 324,
+        "physical_name": "mncm1k707",
+        "logical_last_msg": {
+            "l_uid": 290,
+            "p_uid": 324,
+            "timestamp": "2026-08-17T01:59:39+00:00",
+            "timeseries": [
+                {
+                    "name": "c4e TDS-Kcl",
+                    "value": 31935,
+                    "timestamp": "2021-11-23T18:41:39+00:00"
+                },
+                {
+                    "name": "solV",
+                    "value": 20.895,
+                    "timestamp": "2022-02-08T23:51:32+00:00"
+                },
+                {
+                    "name": "adc ch2",
+                    "value": 144814,
+                    "timestamp": "2022-02-08T23:51:32+00:00"
+                },
+                {
+                    "name": "adc ch4",
+                    "value": 219831,
+                    "timestamp": "2022-02-08T23:51:32+00:00"
+                },
+                {
+                    "name": "adc ch3",
+                    "value": 282950,
+                    "timestamp": "2022-02-08T23:51:32+00:00"
+                },
+                {
+                    "name": "counter ch 3",
+                    "value": 0,
+                    "timestamp": "2022-02-08T23:51:32+00:00"
+                },
+                {
+                    "name": "counter ch 1",
+                    "value": 0,
+                    "timestamp": "2022-02-08T23:51:32+00:00"
+                },
+                {
+                    "name": "adc ch1",
+                    "value": 147952,
+                    "timestamp": "2022-02-08T23:51:32+00:00"
+                },
+                {
+                    "name": "c4e salinity",
+                    "value": 31.983999,
+                    "timestamp": "2021-11-23T18:41:39+00:00"
+                },
+                {
+                    "name": "battV",
+                    "value": 4.247,
+                    "timestamp": "2022-02-08T23:51:32+00:00"
+                },
+                {
+                    "name": "counter ch 2",
+                    "value": 0,
+                    "timestamp": "2022-02-08T23:51:32+00:00"
+                },
+                {
+                    "name": "c4e temperature",
+                    "value": 23.235001,
+                    "timestamp": "2021-11-23T18:41:39+00:00"
+                },
+                {
+                    "name": "c4e conductivity",
+                    "value": 48972,
+                    "timestamp": "2021-11-23T18:41:39+00:00"
+                },
+                {
+                    "name": " solV",
+                    "value": 21452
+                },
+                {
+                    "name": "adc ch3",
+                    "value": 124646
+                },
+                {
+                    "name": "adc ch4",
+                    "value": 124058
+                },
+                {
+                    "name": "adc ch2",
+                    "value": 232188
+                },
+                {
+                    "name": "adc ch1",
+                    "value": 198866
+                },
+                {
+                    "name": "c4e salinity",
+                    "value": 9998,
+                    "timestamp": "2026-08-16T20:14:06+00:00"
+                },
+                {
+                    "name": "counter ch1",
+                    "value": 0
+                },
+                {
+                    "name": "c4e temperature",
+                    "value": 9998,
+                    "timestamp": "2026-08-16T20:14:06+00:00"
+                },
+                {
+                    "name": "c4e conductivity",
+                    "value": 9998,
+                    "timestamp": "2026-08-16T20:14:06+00:00"
+                },
+                {
+                    "name": "counter ch4",
+                    "value": 0
+                },
+                {
+                    "name": "counter ch2",
+                    "value": 0
+                },
+                {
+                    "name": "counter ch3",
+                    "value": 0
+                },
+                {
+                    "name": "c4e tds-kcl",
+                    "value": 9998,
+                    "timestamp": "2026-08-16T20:14:06+00:00"
+                },
+                {
+                    "name": " battV",
+                    "value": 4224
+                }
+            ],
+            "broker_correlation_id": "44c0c19d-63d1-402d-bee2-9b660c1f7496"
+        },
+        "physical_location": null,
+        "mapping_start_time": "2023-04-12T11:26:26.44229+10:00",
+        "physical_last_seen": "2026-08-17T11:59:39+10:00",
+        "physical_source_ids": {
+            "sensor_group_id": "mncm1k707"
+        },
+        "logical_reading_names": [
+            "c4e TDS-Kcl",
+            "solV",
+            "adc ch2",
+            "adc ch4",
+            "adc ch3",
+            "counter ch 3",
+            "counter ch 1",
+            "adc ch1",
+            "c4e salinity",
+            "battV",
+            "counter ch 2",
+            "c4e temperature",
+            "c4e conductivity",
+            " solV",
+            "adc ch3",
+            "adc ch4",
+            "adc ch2",
+            "adc ch1",
+            "c4e salinity",
+            "counter ch1",
+            "c4e temperature",
+            "c4e conductivity",
+            "counter ch4",
+            "counter ch2",
+            "counter ch3",
+            "c4e tds-kcl",
+            " battV"
+        ]
+    },
+    {
+        "logical_uid": 289,
+        "logical_name": "Port Stephens - Cromarty's Bay",
+        "physical_uid": 323,
+        "physical_name": "mncm1k708",
+        "logical_last_msg": {
+            "l_uid": 289,
+            "p_uid": 323,
+            "timestamp": "2026-08-17T02:00:47+00:00",
+            "timeseries": [
+                {
+                    "name": "solV",
+                    "value": 21.887
+                },
+                {
+                    "name": "battV",
+                    "value": 4.1770000000000005
+                },
+                {
+                    "name": "c4e temperature",
+                    "value": 16.184999,
+                    "timestamp": "2025-08-15T16:12:48+00:00"
+                },
+                {
+                    "name": "c4e conductivity",
+                    "value": 33582,
+                    "timestamp": "2025-08-15T16:12:48+00:00"
+                },
+                {
+                    "name": "c4e salinity",
+                    "value": 21.031,
+                    "timestamp": "2025-08-15T16:12:48+00:00"
+                },
+                {
+                    "name": "c4e TDS-Kcl",
+                    "value": 21899,
+                    "timestamp": "2025-08-15T16:12:48+00:00"
+                },
+                {
+                    "name": "adc ch1",
+                    "value": 896
+                },
+                {
+                    "name": "adc ch2",
+                    "value": 111
+                },
+                {
+                    "name": "counter ch 2",
+                    "value": 0,
+                    "timestamp": "2022-05-11T09:13:23+00:00"
+                },
+                {
+                    "name": "counter ch 3",
+                    "value": 0,
+                    "timestamp": "2022-05-11T09:13:23+00:00"
+                },
+                {
+                    "name": "adc ch3 4-20mA",
+                    "value": 0.0018800000000000002
+                },
+                {
+                    "name": "counter ch 1",
+                    "value": 0,
+                    "timestamp": "2022-05-11T09:13:23+00:00"
+                },
+                {
+                    "name": "counter ch 4",
+                    "value": 0,
+                    "timestamp": "2022-05-11T09:13:23+00:00"
+                },
+                {
+                    "name": "adc ch4 4- 20mA",
+                    "value": 1.00079
+                },
+                {
+                    "name": "- counter 1  -PRP-02 RAW",
+                    "value": 733.8000000000001
+                }
+            ],
+            "broker_correlation_id": "089f898e-682c-416d-bdbf-013641fed89b"
+        },
+        "physical_location": null,
+        "mapping_start_time": "2023-04-12T11:26:26.292976+10:00",
+        "physical_last_seen": "2026-08-17T12:00:47+10:00",
+        "physical_source_ids": {
+            "sensor_group_id": "mncm1k708"
+        },
+        "logical_reading_names": [
+            "solV",
+            "battV",
+            "c4e temperature",
+            "c4e conductivity",
+            "c4e salinity",
+            "c4e TDS-Kcl",
+            "adc ch1",
+            "adc ch2",
+            "counter ch 2",
+            "counter ch 3",
+            "adc ch3 4-20mA",
+            "counter ch 1",
+            "counter ch 4",
+            "adc ch4 4- 20mA",
+            "- counter 1  -PRP-02 RAW"
+        ]
+    },
+    {
+        "logical_uid": 302,
+        "logical_name": "Macleay River - mncm2l301",
+        "physical_uid": 336,
+        "physical_name": "mncm2l301",
+        "logical_last_msg": {
+            "l_uid": 302,
+            "p_uid": 336,
+            "timestamp": "2021-06-04T01:11:18+00:00",
+            "timeseries": [
+                {
+                    "name": "adc ch2 THERM-EP RAW",
+                    "value": 176143.0
+                },
+                {
+                    "name": "adc ch3 4-20mA",
+                    "value": 0.716
+                },
+                {
+                    "name": "adc ch4",
+                    "value": 141099.0
+                },
+                {
+                    "name": "awq-DOT oxygen mgL",
+                    "value": 4.655
+                },
+                {
+                    "name": "awq-DOT oxygen percent",
+                    "value": 48.494
+                },
+                {
+                    "name": "awq-DOT oxygen ppm",
+                    "value": 4.655
+                },
+                {
+                    "name": "awq-DOT temperature",
+                    "value": 17.496
+                },
+                {
+                    "name": "awq-c4e TDS-Kcl",
+                    "value": 29468.0
+                },
+                {
+                    "name": "awq-c4e conductivity",
+                    "value": 45190.0
+                },
+                {
+                    "name": "awq-c4e salinity",
+                    "value": 29.234
+                },
+                {
+                    "name": "awq-c4e temperature",
+                    "value": 17.455
+                },
+                {
+                    "name": "awq-pH pH",
+                    "value": 8.048
+                },
+                {
+                    "name": "awq-pH pH mV",
+                    "value": -49.639
+                },
+                {
+                    "name": "awq-pH redox",
+                    "value": 167.05
+                },
+                {
+                    "name": "awq-pH temperature",
+                    "value": 17.255
+                },
+                {
+                    "name": "battV",
+                    "value": 4.174
+                },
+                {
+                    "name": "counter ch 1 PRP-02 RAW",
+                    "value": 487.0
+                },
+                {
+                    "name": "counter ch 2",
+                    "value": 0.0
+                },
+                {
+                    "name": "counter ch 3",
+                    "value": 0.0
+                },
+                {
+                    "name": "counter ch 4",
+                    "value": 0.0
+                },
+                {
+                    "name": "solV",
+                    "value": 22.016
+                }
+            ],
+            "broker_correlation_id": "7e6ce075-e63a-464a-8447-868cf3df5454"
+        },
+        "physical_location": null,
+        "mapping_start_time": "2023-04-12T11:26:27.903028+10:00",
+        "physical_last_seen": "2066-04-12T17:34:47+10:00",
+        "physical_source_ids": {
+            "sensor_group_id": "mncm2l301"
+        },
+        "logical_reading_names": [
+            "adc ch2 THERM-EP RAW",
+            "adc ch3 4-20mA",
+            "adc ch4",
+            "awq-DOT oxygen mgL",
+            "awq-DOT oxygen percent",
+            "awq-DOT oxygen ppm",
+            "awq-DOT temperature",
+            "awq-c4e TDS-Kcl",
+            "awq-c4e conductivity",
+            "awq-c4e salinity",
+            "awq-c4e temperature",
+            "awq-pH pH",
+            "awq-pH pH mV",
+            "awq-pH redox",
+            "awq-pH temperature",
+            "battV",
+            "counter ch 1 PRP-02 RAW",
+            "counter ch 2",
+            "counter ch 3",
+            "counter ch 4",
+            "solV"
+        ]
+    },
+    {
+        "logical_uid": 303,
+        "logical_name": "Hastings River - mncm2l302",
+        "physical_uid": 337,
+        "physical_name": "mncm2l302",
+        "logical_last_msg": {
+            "l_uid": 303,
+            "p_uid": 337,
+            "timestamp": "2024-07-11T20:08:00+00:00",
+            "timeseries": [
+                {
+                    "name": "awq-c4e TDS-Kcl",
+                    "value": 26145.0
+                },
+                {
+                    "name": "adc ch3",
+                    "value": 86333.0
+                },
+                {
+                    "name": "adc ch4",
+                    "value": 222717.0
+                },
+                {
+                    "name": "counter ch 1",
+                    "value": 0.0
+                },
+                {
+                    "name": "adc ch1 old 4-20mA",
+                    "value": 4.991
+                },
+                {
+                    "name": "counter ch 2",
+                    "value": 0.0
+                },
+                {
+                    "name": "battV",
+                    "value": 4.164
+                },
+                {
+                    "name": "solV",
+                    "value": 0.048
+                },
+                {
+                    "name": "counter ch 3",
+                    "value": 0.0
+                },
+                {
+                    "name": "awq-c4e conductivity",
+                    "value": 40093.0
+                },
+                {
+                    "name": "adc ch2 4-20mA",
+                    "value": 50294.0
+                },
+                {
+                    "name": "awq-c4e salinity",
+                    "value": 25.588
+                },
+                {
+                    "name": "counter ch 4",
+                    "value": 0.0
+                },
+                {
+                    "name": "awq-c4e temperature",
+                    "value": 16.59
+                }
+            ],
+            "broker_correlation_id": "0bedab6c-d510-47dc-82e7-7f97036dcc5a"
+        },
+        "physical_location": null,
+        "mapping_start_time": "2023-04-12T11:26:28.051309+10:00",
+        "physical_last_seen": "2063-12-08T02:18:25+11:00",
+        "physical_source_ids": {
+            "sensor_group_id": "mncm2l302"
+        },
+        "logical_reading_names": [
+            "awq-c4e TDS-Kcl",
+            "adc ch3",
+            "adc ch4",
+            "counter ch 1",
+            "adc ch1 old 4-20mA",
+            "counter ch 2",
+            "battV",
+            "solV",
+            "counter ch 3",
+            "awq-c4e conductivity",
+            "adc ch2 4-20mA",
+            "awq-c4e salinity",
+            "counter ch 4",
+            "awq-c4e temperature"
+        ]
+    },
+    {
+        "logical_uid": 298,
+        "logical_name": "Camden Haven - Gogleys Lagoon - mncm2l303",
+        "physical_uid": 332,
+        "physical_name": "mncm2l303",
+        "logical_last_msg": {
+            "l_uid": 298,
+            "p_uid": 332,
+            "timestamp": "2026-08-17T01:52:44+00:00",
+            "timeseries": [
+                {
+                    "name": "counter ch 2",
+                    "value": 0
+                },
+                {
+                    "name": "solV",
+                    "value": 22.104
+                },
+                {
+                    "name": "c4e TDS-Kcl",
+                    "value": 30078
+                },
+                {
+                    "name": "battV",
+                    "value": 4.202
+                },
+                {
+                    "name": "c4e salinity",
+                    "value": 29.91
+                },
+                {
+                    "name": "adc ch2 4-20mA",
+                    "value": 6.93393
+                },
+                {
+                    "name": "c4e temperature",
+                    "value": 17.212999
+                },
+                {
+                    "name": "c4e conductivity",
+                    "value": 46125
+                },
+                {
+                    "name": "counter ch 1",
+                    "value": 0
+                },
+                {
+                    "name": "adc ch3",
+                    "value": 75505
+                },
+                {
+                    "name": "counter ch 4",
+                    "value": 0
+                },
+                {
+                    "name": "counter ch 3",
+                    "value": 0
+                },
+                {
+                    "name": "adc ch1",
+                    "value": 0.0021300000000000004
+                },
+                {
+                    "name": "adc ch4",
+                    "value": 279221
+                }
+            ],
+            "broker_correlation_id": "663c549b-c4d8-4bbe-99d7-bdcca9c43d21"
+        },
+        "physical_location": null,
+        "mapping_start_time": "2023-04-12T11:26:27.432907+10:00",
+        "physical_last_seen": "2026-08-17T11:52:44+10:00",
+        "physical_source_ids": {
+            "sensor_group_id": "mncm2l303"
+        },
+        "logical_reading_names": [
+            "counter ch 2",
+            "solV",
+            "c4e TDS-Kcl",
+            "battV",
+            "c4e salinity",
+            "adc ch2 4-20mA",
+            "c4e temperature",
+            "c4e conductivity",
+            "counter ch 1",
+            "adc ch3",
+            "counter ch 4",
+            "counter ch 3",
+            "adc ch1",
+            "adc ch4"
+        ]
+    },
+    {
+        "logical_uid": 299,
+        "logical_name": "Manning River - Pelican Bay",
+        "physical_uid": 333,
+        "physical_name": "mncm2l304",
+        "logical_last_msg": {
+            "l_uid": 299,
+            "p_uid": 333,
+            "timestamp": "2024-07-20T17:30:35+00:00",
+            "timeseries": [
+                {
+                    "name": "c4e temperaure",
+                    "value": 15.848,
+                    "timestamp": "2024-07-20T03:45:04+00:00"
+                },
+                {
+                    "name": "c4e conductivity",
+                    "value": 38455,
+                    "timestamp": "2024-07-20T03:45:04+00:00"
+                },
+                {
+                    "name": "counter ch 1",
+                    "value": 0
+                },
+                {
+                    "name": "counter ch 3",
+                    "value": 0
+                },
+                {
+                    "name": "solV",
+                    "value": 0
+                },
+                {
+                    "name": "adc ch4",
+                    "value": 2368831
+                },
+                {
+                    "name": "c4e TDS-Kcl",
+                    "value": 25076,
+                    "timestamp": "2024-07-20T03:45:04+00:00"
+                },
+                {
+                    "name": "c4e salinity",
+                    "value": 24.43,
+                    "timestamp": "2024-07-20T03:45:04+00:00"
+                },
+                {
+                    "name": "counter ch 4",
+                    "value": 0
+                },
+                {
+                    "name": "battV",
+                    "value": 4.155
+                },
+                {
+                    "name": "adc ch1",
+                    "value": 0.0017000000000000001
+                },
+                {
+                    "name": "counter ch 2",
+                    "value": 0
+                },
+                {
+                    "name": "adc ch2 4-20mA",
+                    "value": 9.9311
+                },
+                {
+                    "name": "adc ch3",
+                    "value": 1758721
+                }
+            ],
+            "broker_correlation_id": "af482718-eba7-4a1f-842b-70b50b829674"
+        },
+        "physical_location": null,
+        "mapping_start_time": "2023-04-12T11:26:27.541679+10:00",
+        "physical_last_seen": "2024-07-21T03:30:35+10:00",
+        "physical_source_ids": {
+            "sensor_group_id": "mncm2l304"
+        },
+        "logical_reading_names": [
+            "c4e temperaure",
+            "c4e conductivity",
+            "counter ch 1",
+            "counter ch 3",
+            "solV",
+            "adc ch4",
+            "c4e TDS-Kcl",
+            "c4e salinity",
+            "counter ch 4",
+            "battV",
+            "adc ch1",
+            "counter ch 2",
+            "adc ch2 4-20mA",
+            "adc ch3"
+        ]
+    },
+    {
+        "logical_uid": 304,
+        "logical_name": "Port Stephens - Corrie Island",
+        "physical_uid": 338,
+        "physical_name": "mncm2l305",
+        "logical_last_msg": {
+            "l_uid": 304,
+            "p_uid": 338,
+            "timestamp": "2024-06-19T22:38:51+00:00",
+            "timeseries": [
+                {
+                    "name": "adc ch1 old 4-20mA",
+                    "value": 3.569
+                },
+                {
+                    "name": "c4e salinity",
+                    "value": 29.009
+                },
+                {
+                    "name": "adc ch3 4-20mA",
+                    "value": 19.375
+                },
+                {
+                    "name": "c4e TDS-Kcl",
+                    "value": 29265.0
+                },
+                {
+                    "name": "adc ch4",
+                    "value": 185738.0
+                },
+                {
+                    "name": "counter ch 4",
+                    "value": 0.0
+                },
+                {
+                    "name": "c4e temperature",
+                    "value": 15.749
+                },
+                {
+                    "name": "counter ch 1 PRP-02 RAW",
+                    "value": 18975.0
+                },
+                {
+                    "name": "counter ch 2",
+                    "value": 0.0
+                },
+                {
+                    "name": "c4e conductivity",
+                    "value": 44879.0
+                },
+                {
+                    "name": "battV",
+                    "value": 4.203
+                },
+                {
+                    "name": "solV",
+                    "value": 22.547
+                },
+                {
+                    "name": "adc ch2 THERM-EP RAW",
+                    "value": 1107186.0
+                },
+                {
+                    "name": "counter ch 3",
+                    "value": 0.0
+                }
+            ],
+            "broker_correlation_id": "506206b0-3213-43d5-bb34-620e723c663d"
+        },
+        "physical_location": null,
+        "mapping_start_time": "2023-04-12T11:26:28.16459+10:00",
+        "physical_last_seen": "2065-02-10T04:10:22+11:00",
+        "physical_source_ids": {
+            "sensor_group_id": "mncm2l305"
+        },
+        "logical_reading_names": [
+            "adc ch1 old 4-20mA",
+            "c4e salinity",
+            "adc ch3 4-20mA",
+            "c4e TDS-Kcl",
+            "adc ch4",
+            "counter ch 4",
+            "c4e temperature",
+            "counter ch 1 PRP-02 RAW",
+            "counter ch 2",
+            "c4e conductivity",
+            "battV",
+            "solV",
+            "adc ch2 THERM-EP RAW",
+            "counter ch 3"
+        ]
+    },
+    {
+        "logical_uid": 300,
+        "logical_name": "Georges River - Quibray Bay - mncm2l306",
+        "physical_uid": 334,
+        "physical_name": "mncm2l306",
+        "logical_last_msg": {
+            "l_uid": 300,
+            "p_uid": 334,
+            "timestamp": "2026-07-15T01:15:35+00:00",
+            "timeseries": [
+                {
+                    "name": "battV",
+                    "value": 4.2090000000000005
+                },
+                {
+                    "name": "adc ch4",
+                    "value": 252570
+                },
+                {
+                    "name": "c4e salinity",
+                    "value": 32.615002
+                },
+                {
+                    "name": "counter ch 3",
+                    "value": 0
+                },
+                {
+                    "name": "c4e conductivity",
+                    "value": 49834
+                },
+                {
+                    "name": "c4e TDS-Kcl",
+                    "value": 32497
+                },
+                {
+                    "name": "c4e temperature",
+                    "value": 13.488
+                },
+                {
+                    "name": "solV",
+                    "value": 22.572
+                },
+                {
+                    "name": "adc ch2 4-20mA",
+                    "value": 8.43782
+                },
+                {
+                    "name": "counter ch 2",
+                    "value": 0
+                },
+                {
+                    "name": "adc ch1 old 4-20mA",
+                    "value": 0.00219
+                },
+                {
+                    "name": "counter ch 1",
+                    "value": 0
+                },
+                {
+                    "name": "adc ch3",
+                    "value": 86589
+                },
+                {
+                    "name": "counter ch 4",
+                    "value": 0
+                }
+            ],
+            "broker_correlation_id": "4b04b5e3-f158-4e94-af0e-0558120f8f40"
+        },
+        "physical_location": null,
+        "mapping_start_time": "2023-04-12T11:26:27.656049+10:00",
+        "physical_last_seen": "2026-07-15T11:15:35+10:00",
+        "physical_source_ids": {
+            "sensor_group_id": "mncm2l306"
+        },
+        "logical_reading_names": [
+            "battV",
+            "adc ch4",
+            "c4e salinity",
+            "counter ch 3",
+            "c4e conductivity",
+            "c4e TDS-Kcl",
+            "c4e temperature",
+            "solV",
+            "adc ch2 4-20mA",
+            "counter ch 2",
+            "adc ch1 old 4-20mA",
+            "counter ch 1",
+            "adc ch3",
+            "counter ch 4"
+        ]
+    },
+    {
+        "logical_uid": 301,
+        "logical_name": "Shoalhaven Goodnight Island - mncm2l307",
+        "physical_uid": 335,
+        "physical_name": "mncm2l307",
+        "logical_last_msg": {
+            "l_uid": 301,
+            "p_uid": 335,
+            "timestamp": "2026-08-17T01:45:04+00:00",
+            "timeseries": [
+                {
+                    "name": "counter ch 1",
+                    "value": 0
+                },
+                {
+                    "name": "c4e TDS-Kcl",
+                    "value": 34875
+                },
+                {
+                    "name": "counter ch 3",
+                    "value": 0
+                },
+                {
+                    "name": "battV",
+                    "value": 4.189
+                },
+                {
+                    "name": "adc ch1 old 4-20mA",
+                    "value": 0.0016400000000000002
+                },
+                {
+                    "name": "solV",
+                    "value": 21.871000000000002
+                },
+                {
+                    "name": "c4e salinity",
+                    "value": 35.328999
+                },
+                {
+                    "name": "counter ch 2",
+                    "value": 0
+                },
+                {
+                    "name": "c4e temperature",
+                    "value": 16.709999
+                },
+                {
+                    "name": "adc ch4",
+                    "value": 239040
+                },
+                {
+                    "name": "adc ch3",
+                    "value": 94440
+                },
+                {
+                    "name": "adc ch2 4-20mA",
+                    "value": 8.008930000000001
+                },
+                {
+                    "name": "counter ch 4",
+                    "value": 0
+                },
+                {
+                    "name": "c4e conductivity",
+                    "value": 53481
+                }
+            ],
+            "broker_correlation_id": "9abfddd2-44de-42bf-b69e-7946a14d2bf9"
+        },
+        "physical_location": null,
+        "mapping_start_time": "2023-04-12T11:26:27.77218+10:00",
+        "physical_last_seen": "2026-08-17T11:45:04+10:00",
+        "physical_source_ids": {
+            "sensor_group_id": "mncm2l307"
+        },
+        "logical_reading_names": [
+            "counter ch 1",
+            "c4e TDS-Kcl",
+            "counter ch 3",
+            "battV",
+            "adc ch1 old 4-20mA",
+            "solV",
+            "c4e salinity",
+            "counter ch 2",
+            "c4e temperature",
+            "adc ch4",
+            "adc ch3",
+            "adc ch2 4-20mA",
+            "counter ch 4",
+            "c4e conductivity"
+        ]
+    },
+    {
+        "logical_uid": 305,
+        "logical_name": "Wagonga Inlet - mncm2l308",
+        "physical_uid": 339,
+        "physical_name": "mncm2l308",
+        "logical_last_msg": {
+            "l_uid": 305,
+            "p_uid": 339,
+            "timestamp": "2024-06-21T22:21:43+00:00",
+            "timeseries": [
+                {
+                    "name": "c4e conductivity",
+                    "value": 52632.0
+                },
+                {
+                    "name": "counter ch 2",
+                    "value": 0.0
+                },
+                {
+                    "name": "c4e temperature",
+                    "value": 12.876
+                },
+                {
+                    "name": "adc ch4",
+                    "value": 309660.0
+                },
+                {
+                    "name": "counter ch 3",
+                    "value": 0.0
+                },
+                {
+                    "name": "adc ch3",
+                    "value": 256523.0
+                },
+                {
+                    "name": "counter ch 4",
+                    "value": 0.0
+                },
+                {
+                    "name": "c4e TDS-Kcl",
+                    "value": 34321.0
+                },
+                {
+                    "name": "solV",
+                    "value": 11.612
+                },
+                {
+                    "name": "adc ch1 old 4-20mA",
+                    "value": 0.002
+                },
+                {
+                    "name": "c4e salinity",
+                    "value": 34.679
+                },
+                {
+                    "name": "counter ch 1",
+                    "value": 0.0
+                },
+                {
+                    "name": "adc ch2 4-20mA",
+                    "value": 7.255
+                },
+                {
+                    "name": "battV",
+                    "value": 4.162
+                }
+            ],
+            "broker_correlation_id": "425e4bb7-f4a6-4616-a228-dbaeec7d5487"
+        },
+        "physical_location": null,
+        "mapping_start_time": "2023-04-12T11:26:28.325238+10:00",
+        "physical_last_seen": "2066-07-03T00:10:28+10:00",
+        "physical_source_ids": {
+            "sensor_group_id": "mncm2l308"
+        },
+        "logical_reading_names": [
+            "c4e conductivity",
+            "counter ch 2",
+            "c4e temperature",
+            "adc ch4",
+            "counter ch 3",
+            "adc ch3",
+            "counter ch 4",
+            "c4e TDS-Kcl",
+            "solV",
+            "adc ch1 old 4-20mA",
+            "c4e salinity",
+            "counter ch 1",
+            "adc ch2 4-20mA",
+            "battV"
+        ]
+    },
+    {
+        "logical_uid": 306,
+        "logical_name": "Wapengo Lake - mncm2l309",
+        "physical_uid": 340,
+        "physical_name": "mncm2l309",
+        "logical_last_msg": {
+            "l_uid": 306,
+            "p_uid": 340,
+            "timestamp": "2026-08-17T01:38:16+00:00",
+            "timeseries": [
+                {
+                    "name": "solV",
+                    "value": 22.217
+                },
+                {
+                    "name": "battV",
+                    "value": 4.199
+                },
+                {
+                    "name": "adc ch1 old 4-20mA",
+                    "value": 0.0014600000000000001
+                },
+                {
+                    "name": "adc ch2 4-20mA",
+                    "value": 6.108720000000001
+                },
+                {
+                    "name": "adc ch3",
+                    "value": 360796
+                },
+                {
+                    "name": "adc ch4",
+                    "value": 504219
+                },
+                {
+                    "name": "counter ch 3",
+                    "value": 0
+                },
+                {
+                    "name": "counter ch 4",
+                    "value": 0
+                },
+                {
+                    "name": "counter ch 1",
+                    "value": 0
+                },
+                {
+                    "name": "c4e temperature",
+                    "value": 15.591
+                },
+                {
+                    "name": "c4e conductivity",
+                    "value": 0
+                },
+                {
+                    "name": "counter ch 2",
+                    "value": 0
+                },
+                {
+                    "name": "c4e salinity",
+                    "value": 0
+                },
+                {
+                    "name": "c4e TDS-Kcl",
+                    "value": 0
+                }
+            ],
+            "broker_correlation_id": "0eb7f653-c772-4cf5-b992-4ab03a0f0ef9"
+        },
+        "physical_location": null,
+        "mapping_start_time": "2023-04-12T11:26:28.562394+10:00",
+        "physical_last_seen": "2026-08-17T11:38:16+10:00",
+        "physical_source_ids": {
+            "sensor_group_id": "mncm2l309"
+        },
+        "logical_reading_names": [
+            "solV",
+            "battV",
+            "adc ch1 old 4-20mA",
+            "adc ch2 4-20mA",
+            "adc ch3",
+            "adc ch4",
+            "counter ch 3",
+            "counter ch 4",
+            "counter ch 1",
+            "c4e temperature",
+            "c4e conductivity",
+            "counter ch 2",
+            "c4e salinity",
+            "c4e TDS-Kcl"
+        ]
+    },
+    {
+        "logical_uid": 307,
+        "logical_name": "Merimbula Lake - mncm2l30a",
+        "physical_uid": 341,
+        "physical_name": "mncm2l30a",
+        "logical_last_msg": {
+            "l_uid": 307,
+            "p_uid": 341,
+            "timestamp": "2026-07-19T17:46:52+00:00",
+            "timeseries": [
+                {
+                    "name": "battV",
+                    "value": 4.136
+                },
+                {
+                    "name": "solV",
+                    "value": 0
+                },
+                {
+                    "name": "adc ch1 old 4-20mA",
+                    "value": 0.0011500000000000002
+                },
+                {
+                    "name": "adc ch2 4-20mA",
+                    "value": 6.27897
+                },
+                {
+                    "name": "adc ch4",
+                    "value": 354635
+                },
+                {
+                    "name": "adc ch3",
+                    "value": 19745
+                },
+                {
+                    "name": "counter ch 2",
+                    "value": 0
+                },
+                {
+                    "name": "c4e temperature",
+                    "value": 12.717
+                },
+                {
+                    "name": "c4e conductivity",
+                    "value": 59135
+                },
+                {
+                    "name": "counter ch 4",
+                    "value": 0
+                },
+                {
+                    "name": "c4e TDS-Kcl",
+                    "value": 38562
+                },
+                {
+                    "name": "c4e salinity",
+                    "value": 39.859001
+                },
+                {
+                    "name": "counter ch 3",
+                    "value": 0
+                },
+                {
+                    "name": "counter ch 1",
+                    "value": 0
+                }
+            ],
+            "broker_correlation_id": "e2a26770-918e-4217-9534-a89b493a25f6"
+        },
+        "physical_location": null,
+        "mapping_start_time": "2023-04-12T11:26:28.734486+10:00",
+        "physical_last_seen": "2026-07-20T03:46:52+10:00",
+        "physical_source_ids": {
+            "sensor_group_id": "mncm2l30a"
+        },
+        "logical_reading_names": [
+            "battV",
+            "solV",
+            "adc ch1 old 4-20mA",
+            "adc ch2 4-20mA",
+            "adc ch4",
+            "adc ch3",
+            "counter ch 2",
+            "c4e temperature",
+            "c4e conductivity",
+            "counter ch 4",
+            "c4e TDS-Kcl",
+            "c4e salinity",
+            "counter ch 3",
+            "counter ch 1"
+        ]
+    },
+    {
+        "logical_uid": 308,
+        "logical_name": "mncm2l30b - Pambula Lake - Water Level",
+        "physical_uid": 342,
+        "physical_name": "mncm2l30b",
+        "logical_last_msg": {
+            "l_uid": 308,
+            "p_uid": 342,
+            "timestamp": "2026-08-17T01:38:00+00:00",
+            "timeseries": [
+                {
+                    "name": "adc ch4",
+                    "value": 445775
+                },
+                {
+                    "name": "battV",
+                    "value": 4.187
+                },
+                {
+                    "name": "counter ch 4",
+                    "value": 0
+                },
+                {
+                    "name": "solV",
+                    "value": 22.080000000000002
+                },
+                {
+                    "name": "adc ch3",
+                    "value": 227469
+                },
+                {
+                    "name": "counter ch 3",
+                    "value": 0
+                },
+                {
+                    "name": "adc ch2 4-20mA",
+                    "value": 9.364410000000001
+                },
+                {
+                    "name": "counter ch 1",
+                    "value": 0
+                },
+                {
+                    "name": "adc ch1 old 4-20mA",
+                    "value": 0.0016400000000000002
+                },
+                {
+                    "name": "counter ch 2",
+                    "value": 0
+                }
+            ],
+            "broker_correlation_id": "aaa3ddba-d9e3-4893-bc05-c6227a025033"
+        },
+        "physical_location": null,
+        "mapping_start_time": "2023-04-12T11:26:28.848883+10:00",
+        "physical_last_seen": "2026-08-17T11:38:00+10:00",
+        "physical_source_ids": {
+            "sensor_group_id": "mncm2l30b"
+        },
+        "logical_reading_names": [
+            "adc ch4",
+            "battV",
+            "counter ch 4",
+            "solV",
+            "adc ch3",
+            "counter ch 3",
+            "adc ch2 4-20mA",
+            "counter ch 1",
+            "adc ch1 old 4-20mA",
+            "counter ch 2"
+        ]
+    },
+    {
+        "logical_uid": 310,
+        "logical_name": "mncm2l30c",
+        "physical_uid": 344,
+        "physical_name": "mncm2l30c",
+        "logical_last_msg": {
+            "l_uid": 310,
+            "p_uid": 344,
+            "timestamp": "2024-12-22T05:30:42+00:00",
+            "timeseries": [
+                {
+                    "name": "battV",
+                    "value": 4.221
+                },
+                {
+                    "name": "c4e conductivity",
+                    "value": 52448
+                },
+                {
+                    "name": "c4e temperature",
+                    "value": 22.540001
+                },
+                {
+                    "name": "c4e salinity",
+                    "value": 34.542999
+                },
+                {
+                    "name": "c4e TDS-Kcl",
+                    "value": 34201
+                }
+            ],
+            "broker_correlation_id": "f7f0fe36-21b0-42be-a28b-a471eaf037c2"
+        },
+        "physical_location": null,
+        "mapping_start_time": "2023-04-12T11:26:29.067977+10:00",
+        "physical_last_seen": "2024-12-22T16:30:42+11:00",
+        "physical_source_ids": {
+            "sensor_group_id": "mncm2l30c"
+        },
+        "logical_reading_names": [
+            "battV",
+            "c4e conductivity",
+            "c4e temperature",
+            "c4e salinity",
+            "c4e TDS-Kcl"
+        ]
+    },
+    {
+        "logical_uid": 309,
+        "logical_name": "mncm2l30d",
+        "physical_uid": 343,
+        "physical_name": "mncm2l30d",
+        "logical_last_msg": {
+            "l_uid": 309,
+            "p_uid": 343,
+            "timestamp": "2026-07-07T18:34:13+00:00",
+            "timeseries": [
+                {
+                    "name": "adc ch1",
+                    "value": 262
+                },
+                {
+                    "name": "c4e conductivity",
+                    "value": 33974
+                },
+                {
+                    "name": "solV",
+                    "value": 0.024
+                },
+                {
+                    "name": "battV",
+                    "value": 4.159
+                },
+                {
+                    "name": "adc ch3",
+                    "value": 30939
+                },
+                {
+                    "name": "c4e temperature",
+                    "value": 17.759001
+                },
+                {
+                    "name": "c4e TDS-Kcl",
+                    "value": 22154
+                },
+                {
+                    "name": "adc ch2 4-20mA",
+                    "value": 8.372670000000001
+                },
+                {
+                    "name": "adc ch4",
+                    "value": 322012
+                },
+                {
+                    "name": "c4e salinity",
+                    "value": 21.302
+                },
+                {
+                    "name": "adc ch1 old 4-20mA",
+                    "value": 0.00256,
+                    "timestamp": "2025-08-22T00:26:39+00:00"
+                },
+                {
+                    "name": "adc ch3",
+                    "value": 150987,
+                    "timestamp": "2025-08-22T00:26:39+00:00"
+                },
+                {
+                    "name": "adc ch2 4-20mA",
+                    "value": 3.9759100000000003,
+                    "timestamp": "2025-08-22T00:26:39+00:00"
+                },
+                {
+                    "name": "counter ch 2",
+                    "value": 0.0187,
+                    "timestamp": "2025-08-22T00:26:39+00:00"
+                },
+                {
+                    "name": "counter ch 1",
+                    "value": 17.681999,
+                    "timestamp": "2025-08-22T00:26:39+00:00"
+                },
+                {
+                    "name": "c4e salinity",
+                    "value": 0.7498,
+                    "timestamp": "2025-05-05T04:30:35+00:00"
+                },
+                {
+                    "name": "counter ch 3",
+                    "value": 35.027,
+                    "timestamp": "2025-08-22T00:26:39+00:00"
+                },
+                {
+                    "name": "counter ch 4",
+                    "value": 14.574,
+                    "timestamp": "2025-08-22T00:26:39+00:00"
+                },
+                {
+                    "name": "solV",
+                    "value": 14.312000000000001,
+                    "timestamp": "2025-08-22T00:26:39+00:00"
+                },
+                {
+                    "name": "c4e temperature",
+                    "value": 20.417,
+                    "timestamp": "2025-05-05T04:30:35+00:00"
+                },
+                {
+                    "name": "adc ch4",
+                    "value": 267588,
+                    "timestamp": "2025-08-22T00:26:39+00:00"
+                },
+                {
+                    "name": "c4e conductivity",
+                    "value": 1398.900024,
+                    "timestamp": "2025-05-05T04:30:35+00:00"
+                },
+                {
+                    "name": "battV",
+                    "value": 4.187,
+                    "timestamp": "2025-08-22T00:26:39+00:00"
+                },
+                {
+                    "name": "c4e TDS-Kcl",
+                    "value": 706.049988,
+                    "timestamp": "2025-05-05T04:30:35+00:00"
+                }
+            ],
+            "broker_correlation_id": "5ad5a3a6-1cee-4f5b-bed9-2cb8b852eaea"
+        },
+        "physical_location": null,
+        "mapping_start_time": "2023-04-12T11:26:28.957766+10:00",
+        "physical_last_seen": "2042-12-29T12:31:50+11:00",
+        "physical_source_ids": {
+            "sensor_group_id": "mncm2l30d"
+        },
+        "logical_reading_names": [
+            "adc ch1",
+            "c4e conductivity",
+            "solV",
+            "battV",
+            "adc ch3",
+            "c4e temperature",
+            "c4e TDS-Kcl",
+            "adc ch2 4-20mA",
+            "adc ch4",
+            "c4e salinity",
+            "adc ch1 old 4-20mA",
+            "adc ch3",
+            "adc ch2 4-20mA",
+            "counter ch 2",
+            "counter ch 1",
+            "c4e salinity",
+            "counter ch 3",
+            "counter ch 4",
+            "solV",
+            "c4e temperature",
+            "adc ch4",
+            "c4e conductivity",
+            "battV",
+            "c4e TDS-Kcl"
+        ]
+    },
+    {
+        "logical_uid": 291,
+        "logical_name": "North Arm Cove - Port Stephens mncm3lb0c",
+        "physical_uid": 325,
+        "physical_name": "mncm3lb0c",
+        "logical_last_msg": {
+            "l_uid": 291,
+            "p_uid": 325,
+            "timestamp": "2024-08-29T01:31:09+00:00",
+            "timeseries": [
+                {
+                    "name": "Solar",
+                    "value": 0
+                },
+                {
+                    "name": "Battery",
+                    "value": 4.155
+                },
+                {
+                    "name": "ADC-2",
+                    "value": 1322
+                },
+                {
+                    "name": "C4E Conductivity",
+                    "value": 0
+                },
+                {
+                    "name": "ADC-1",
+                    "value": 1278
+                },
+                {
+                    "name": "C4E Salinity",
+                    "value": 0
+                },
+                {
+                    "name": "North Windspeed",
+                    "value": 0.01
+                },
+                {
+                    "name": "Vapour Pressure",
+                    "value": 1.04
+                },
+                {
+                    "name": "Precipitation",
+                    "value": 0
+                },
+                {
+                    "name": "Gust Windspeed",
+                    "value": 0.26
+                },
+                {
+                    "name": "Wind Direction",
+                    "value": 281.2
+                },
+                {
+                    "name": "Windspeed",
+                    "value": 0.06
+                },
+                {
+                    "name": "ADC-4",
+                    "value": 1293
+                },
+                {
+                    "name": "Air Temperature",
+                    "value": 19
+                },
+                {
+                    "name": "Y Orientation",
+                    "value": 86.2
+                },
+                {
+                    "name": "C4E TDS",
+                    "value": 0
+                },
+                {
+                    "name": "ADC-3",
+                    "value": 1341
+                },
+                {
+                    "name": "X Orientation",
+                    "value": 83.3
+                },
+                {
+                    "name": "Solar Radiation",
+                    "value": 0
+                },
+                {
+                    "name": "C4E Temperature",
+                    "value": 19.048
+                },
+                {
+                    "name": "Strikes",
+                    "value": 3
+                },
+                {
+                    "name": "Avg Strike Distance",
+                    "value": 1
+                },
+                {
+                    "name": "Atmospheric Pressure",
+                    "value": 90.32
+                },
+                {
+                    "name": "Relative Humidity",
+                    "value": 0.472
+                },
+                {
+                    "name": "East Windspeed",
+                    "value": -0.06
+                }
+            ],
+            "broker_correlation_id": "c4202010-fded-4ec9-9438-6c59a7426b7e"
+        },
+        "physical_location": null,
+        "mapping_start_time": "2023-04-12T11:26:26.620241+10:00",
+        "physical_last_seen": "2024-08-29T11:31:09+10:00",
+        "physical_source_ids": {
+            "sensor_group_id": "mncm3lb0c"
+        },
+        "logical_reading_names": [
+            "Solar",
+            "Battery",
+            "ADC-2",
+            "C4E Conductivity",
+            "ADC-1",
+            "C4E Salinity",
+            "North Windspeed",
+            "Vapour Pressure",
+            "Precipitation",
+            "Gust Windspeed",
+            "Wind Direction",
+            "Windspeed",
+            "ADC-4",
+            "Air Temperature",
+            "Y Orientation",
+            "C4E TDS",
+            "ADC-3",
+            "X Orientation",
+            "Solar Radiation",
+            "C4E Temperature",
+            "Strikes",
+            "Avg Strike Distance",
+            "Atmospheric Pressure",
+            "Relative Humidity",
+            "East Windspeed"
+        ]
+    },
+    {
+        "logical_uid": 292,
+        "logical_name": "Port Stephens - Carrington Bay",
+        "physical_uid": 326,
+        "physical_name": "mncm3lb0d",
+        "logical_last_msg": {
+            "l_uid": 292,
+            "p_uid": 326,
+            "timestamp": "2026-08-17T01:54:03+00:00",
+            "timeseries": [
+                {
+                    "name": "C4E TDS",
+                    "value": 0.7037
+                },
+                {
+                    "name": "C4E Conductivity",
+                    "value": 1.3941
+                },
+                {
+                    "name": "C4E Salinity",
+                    "value": 0.0007
+                },
+                {
+                    "name": "Battery",
+                    "value": 4.244
+                },
+                {
+                    "name": "ADC-2",
+                    "value": 6154
+                },
+                {
+                    "name": "Solar",
+                    "value": 21.613
+                },
+                {
+                    "name": "ADC-3",
+                    "value": 2057444
+                },
+                {
+                    "name": "ADC-1",
+                    "value": 213323
+                },
+                {
+                    "name": "ADC-4",
+                    "value": 6
+                },
+                {
+                    "name": "C4E Temperature",
+                    "value": 16.502001
+                }
+            ],
+            "broker_correlation_id": "81f53c07-ef5d-4c56-8812-8fa2b30d3777"
+        },
+        "physical_location": null,
+        "mapping_start_time": "2023-04-12T11:26:26.715414+10:00",
+        "physical_last_seen": "2026-08-17T11:54:03+10:00",
+        "physical_source_ids": {
+            "sensor_group_id": "mncm3lb0d"
+        },
+        "logical_reading_names": [
+            "C4E TDS",
+            "C4E Conductivity",
+            "C4E Salinity",
+            "Battery",
+            "ADC-2",
+            "Solar",
+            "ADC-3",
+            "ADC-1",
+            "ADC-4",
+            "C4E Temperature"
+        ]
+    },
+    {
+        "logical_uid": 293,
+        "logical_name": "Port Stephens - Oyster Cove",
+        "physical_uid": 327,
+        "physical_name": "mncm3lb0e",
+        "logical_last_msg": {
+            "l_uid": 293,
+            "p_uid": 327,
+            "timestamp": "2026-07-07T20:05:57+00:00",
+            "timeseries": [
+                {
+                    "name": "ADC-4",
+                    "value": 824927
+                },
+                {
+                    "name": "ADC-1",
+                    "value": 1372
+                },
+                {
+                    "name": "ADC-2",
+                    "value": 6520
+                },
+                {
+                    "name": "Battery",
+                    "value": 4.118
+                },
+                {
+                    "name": "Solar",
+                    "value": 0
+                },
+                {
+                    "name": "C4E Temperature",
+                    "value": 18.881,
+                    "timestamp": "2026-05-18T18:05:32+00:00"
+                },
+                {
+                    "name": "C4E Conductivity",
+                    "value": 49200,
+                    "timestamp": "2026-05-18T18:05:32+00:00"
+                },
+                {
+                    "name": "C4E Salinity",
+                    "value": 32.151,
+                    "timestamp": "2026-05-18T18:05:32+00:00"
+                },
+                {
+                    "name": "ADC-3",
+                    "value": 1439
+                },
+                {
+                    "name": "C4E TDS",
+                    "value": 32083,
+                    "timestamp": "2026-05-18T18:05:32+00:00"
+                }
+            ],
+            "broker_correlation_id": "570d8b6e-7276-428a-b20d-78cf6e3c987d"
+        },
+        "physical_location": null,
+        "mapping_start_time": "2023-04-12T11:26:26.800376+10:00",
+        "physical_last_seen": "2026-07-08T06:05:57+10:00",
+        "physical_source_ids": {
+            "sensor_group_id": "mncm3lb0e"
+        },
+        "logical_reading_names": [
+            "ADC-4",
+            "ADC-1",
+            "ADC-2",
+            "Battery",
+            "Solar",
+            "C4E Temperature",
+            "C4E Conductivity",
+            "C4E Salinity",
+            "ADC-3",
+            "C4E TDS"
+        ]
+    },
+    {
+        "logical_uid": 294,
+        "logical_name": "Port Stephens - Lemon Tree",
+        "physical_uid": 328,
+        "physical_name": "mncm3lb0f",
+        "logical_last_msg": {
+            "l_uid": 294,
+            "p_uid": 328,
+            "timestamp": "2026-08-17T01:58:04+00:00",
+            "timeseries": [
+                {
+                    "name": "C4E TDS",
+                    "value": 8698.200195
+                },
+                {
+                    "name": "Solar",
+                    "value": 22.201
+                },
+                {
+                    "name": "ADC-4",
+                    "value": 1854
+                },
+                {
+                    "name": "C4E Salinity",
+                    "value": 7.6779
+                },
+                {
+                    "name": "ADC-2",
+                    "value": 5807
+                },
+                {
+                    "name": "C4E Temperature",
+                    "value": 15.272
+                },
+                {
+                    "name": "ADC-3",
+                    "value": 1531
+                },
+                {
+                    "name": "Battery",
+                    "value": 4.175
+                },
+                {
+                    "name": "ADC-1",
+                    "value": 203898
+                },
+                {
+                    "name": "C4E Conductivity",
+                    "value": 13338
+                },
+                {
+                    "name": "counter ch 4",
+                    "value": 0
+                },
+                {
+                    "name": "counter ch 3",
+                    "value": 0
+                },
+                {
+                    "name": "counter ch 2",
+                    "value": 0
+                },
+                {
+                    "name": "counter ch 1",
+                    "value": 3277
+                }
+            ],
+            "broker_correlation_id": "2b89ef59-2946-4af8-a721-a4e8c884f4a3"
+        },
+        "physical_location": null,
+        "mapping_start_time": "2023-04-12T11:26:26.907987+10:00",
+        "physical_last_seen": "2026-08-17T11:58:04+10:00",
+        "physical_source_ids": {
+            "sensor_group_id": "mncm3lb0f"
+        },
+        "logical_reading_names": [
+            "C4E TDS",
+            "Solar",
+            "ADC-4",
+            "C4E Salinity",
+            "ADC-2",
+            "C4E Temperature",
+            "ADC-3",
+            "Battery",
+            "ADC-1",
+            "C4E Conductivity",
+            "counter ch 4",
+            "counter ch 3",
+            "counter ch 2",
+            "counter ch 1"
+        ]
+    },
+    {
+        "logical_uid": 295,
+        "logical_name": "Manning River - Manning Point",
+        "physical_uid": 329,
+        "physical_name": "mncm3m805",
+        "logical_last_msg": {
+            "l_uid": 295,
+            "p_uid": 329,
+            "timestamp": "2025-06-28T03:49:54+00:00",
+            "timeseries": [
+                {
+                    "name": "battV",
+                    "value": 3.591
+                },
+                {
+                    "name": "solV",
+                    "value": 0
+                },
+                {
+                    "name": "adc ch1",
+                    "value": 158386
+                },
+                {
+                    "name": "adc ch3",
+                    "value": 1028423
+                },
+                {
+                    "name": "adc ch4",
+                    "value": 815167
+                },
+                {
+                    "name": "adc ch2",
+                    "value": 879900
+                },
+                {
+                    "name": "counter ch 4",
+                    "value": 1337
+                },
+                {
+                    "name": "counter ch 2",
+                    "value": 0
+                },
+                {
+                    "name": "counter ch 3",
+                    "value": 0
+                },
+                {
+                    "name": "AWQ-C4E salinity",
+                    "value": 29.067
+                },
+                {
+                    "name": "AWQ-C4E TDS-Kcl",
+                    "value": 29318
+                },
+                {
+                    "name": "AWQ-C4E conductivity",
+                    "value": 44959
+                },
+                {
+                    "name": "ATMOS-41 precipitation",
+                    "value": 0.017
+                },
+                {
+                    "name": "counter ch 1",
+                    "value": 818
+                },
+                {
+                    "name": "ATMOS-41 gust-windspeed",
+                    "value": 2.19
+                },
+                {
+                    "name": "AWQ-C4E temperature",
+                    "value": 17.952
+                },
+                {
+                    "name": "ATMOS-41 vapour-pressure",
+                    "value": 1.16
+                },
+                {
+                    "name": "ATMOS-41 strikes",
+                    "value": 0
+                },
+                {
+                    "name": "ATMOS-41 relative-humidity",
+                    "value": 55.400000000000006
+                },
+                {
+                    "name": "ATMOS-41 average-windspeed",
+                    "value": 2.19
+                },
+                {
+                    "name": "ATMOS-41 north-windspeed",
+                    "value": 1.61
+                },
+                {
+                    "name": "ATMOS-41 y-orientation",
+                    "value": 73.3
+                },
+                {
+                    "name": "ATMOS-41 atmospheric-pressure",
+                    "value": 102.59
+                },
+                {
+                    "name": "ATMOS-41 east-windspeed",
+                    "value": -1.49
+                },
+                {
+                    "name": "ATMOS-41 wind-direction",
+                    "value": 317.3
+                },
+                {
+                    "name": "ATMOS-41 average-strikeDistance",
+                    "value": 0
+                },
+                {
+                    "name": "ATMOS-41 air-temperature",
+                    "value": 18.2
+                },
+                {
+                    "name": "ATMOS-41 solar-irradiance",
+                    "value": 91
+                },
+                {
+                    "name": "ATMOS-41 x-orientation",
+                    "value": -72.5
+                }
+            ],
+            "broker_correlation_id": "a7069bdb-d770-4e90-a5ec-1791936ced0a"
+        },
+        "physical_location": null,
+        "mapping_start_time": "2023-04-12T11:26:27.097518+10:00",
+        "physical_last_seen": "2025-06-28T13:49:54+10:00",
+        "physical_source_ids": {
+            "sensor_group_id": "mncm3m805"
+        },
+        "logical_reading_names": [
+            "battV",
+            "solV",
+            "adc ch1",
+            "adc ch3",
+            "adc ch4",
+            "adc ch2",
+            "counter ch 4",
+            "counter ch 2",
+            "counter ch 3",
+            "AWQ-C4E salinity",
+            "AWQ-C4E TDS-Kcl",
+            "AWQ-C4E conductivity",
+            "ATMOS-41 precipitation",
+            "counter ch 1",
+            "ATMOS-41 gust-windspeed",
+            "AWQ-C4E temperature",
+            "ATMOS-41 vapour-pressure",
+            "ATMOS-41 strikes",
+            "ATMOS-41 relative-humidity",
+            "ATMOS-41 average-windspeed",
+            "ATMOS-41 north-windspeed",
+            "ATMOS-41 y-orientation",
+            "ATMOS-41 atmospheric-pressure",
+            "ATMOS-41 east-windspeed",
+            "ATMOS-41 wind-direction",
+            "ATMOS-41 average-strikeDistance",
+            "ATMOS-41 air-temperature",
+            "ATMOS-41 solar-irradiance",
+            "ATMOS-41 x-orientation"
+        ]
+    },
+    {
+        "logical_uid": 296,
+        "logical_name": "Manning River - Croki",
+        "physical_uid": 330,
+        "physical_name": "mncm3m806",
+        "logical_last_msg": {
+            "l_uid": 296,
+            "p_uid": 330,
+            "timestamp": "2025-06-29T19:12:35+00:00",
+            "timeseries": [
+                {
+                    "name": "AWQ-C4E salinity",
+                    "value": 0.091
+                },
+                {
+                    "name": "AWQ-C4E conductivity",
+                    "value": 170.53
+                },
+                {
+                    "name": "solV",
+                    "value": 0.032
+                },
+                {
+                    "name": "battV",
+                    "value": 3.619
+                },
+                {
+                    "name": "counter ch 4",
+                    "value": 0
+                },
+                {
+                    "name": "charge-fault",
+                    "value": 0
+                },
+                {
+                    "name": "adc ch4",
+                    "value": 8716
+                },
+                {
+                    "name": "adc ch2",
+                    "value": 62037
+                },
+                {
+                    "name": "counter ch 1",
+                    "value": 0
+                },
+                {
+                    "name": "AWQ-C4E temperature",
+                    "value": 11.353
+                },
+                {
+                    "name": "adc ch1",
+                    "value": 258225
+                },
+                {
+                    "name": "AWQ-C4E tds-kcl",
+                    "value": 86.087
+                },
+                {
+                    "name": "adc ch3",
+                    "value": 537959
+                },
+                {
+                    "name": "counter ch 3",
+                    "value": 0
+                },
+                {
+                    "name": "counter ch 2",
+                    "value": 0
+                }
+            ],
+            "broker_correlation_id": "e0ca8e1c-9dda-48d3-bc97-a5bd47c26370"
+        },
+        "physical_location": null,
+        "mapping_start_time": "2023-04-12T11:26:27.206249+10:00",
+        "physical_last_seen": "2025-06-30T05:12:35+10:00",
+        "physical_source_ids": {
+            "sensor_group_id": "mncm3m806"
+        },
+        "logical_reading_names": [
+            "AWQ-C4E salinity",
+            "AWQ-C4E conductivity",
+            "solV",
+            "battV",
+            "counter ch 4",
+            "charge-fault",
+            "adc ch4",
+            "adc ch2",
+            "counter ch 1",
+            "AWQ-C4E temperature",
+            "adc ch1",
+            "AWQ-C4E tds-kcl",
+            "adc ch3",
+            "counter ch 3",
+            "counter ch 2"
+        ]
+    },
+    {
+        "logical_uid": 297,
+        "logical_name": "Manning River - Farquhar",
+        "physical_uid": 331,
+        "physical_name": "mncm3m807",
+        "logical_last_msg": {
+            "l_uid": 297,
+            "p_uid": 331,
+            "timestamp": "2025-04-14T05:22:55+00:00",
+            "timeseries": [
+                {
+                    "name": "adc ch3",
+                    "value": 3117
+                },
+                {
+                    "name": "AWQ-C4E salinity",
+                    "value": 7.052,
+                    "timestamp": "2025-02-19T04:55:10+00:00"
+                },
+                {
+                    "name": "AWQ-C4E temperature",
+                    "value": 26.918,
+                    "timestamp": "2025-02-19T04:55:10+00:00"
+                },
+                {
+                    "name": "counter ch 2",
+                    "value": 0
+                },
+                {
+                    "name": "charge-fault",
+                    "value": 3
+                },
+                {
+                    "name": "adc ch4",
+                    "value": 1208031
+                },
+                {
+                    "name": "battV",
+                    "value": 4.222
+                },
+                {
+                    "name": "AWQ-C4E conductivity",
+                    "value": 12328,
+                    "timestamp": "2025-02-19T04:55:10+00:00"
+                },
+                {
+                    "name": "adc ch1",
+                    "value": 144210
+                },
+                {
+                    "name": "counter ch 3",
+                    "value": 0
+                },
+                {
+                    "name": "counter ch 4",
+                    "value": 0
+                },
+                {
+                    "name": "solV",
+                    "value": 18.913
+                },
+                {
+                    "name": "adc ch2",
+                    "value": 2101029
+                },
+                {
+                    "name": "AWQ-C4E tds-kcl",
+                    "value": 7128.1,
+                    "timestamp": "2025-02-19T04:55:10+00:00"
+                },
+                {
+                    "name": "counter ch 1",
+                    "value": 0
+                }
+            ],
+            "broker_correlation_id": "89f3293e-4d89-4b00-820b-ba8fb1277113"
+        },
+        "physical_location": null,
+        "mapping_start_time": "2023-04-12T11:26:27.321355+10:00",
+        "physical_last_seen": "2025-04-14T15:22:55+10:00",
+        "physical_source_ids": {
+            "sensor_group_id": "mncm3m807"
+        },
+        "logical_reading_names": [
+            "adc ch3",
+            "AWQ-C4E salinity",
+            "AWQ-C4E temperature",
+            "counter ch 2",
+            "charge-fault",
+            "adc ch4",
+            "battV",
+            "AWQ-C4E conductivity",
+            "adc ch1",
+            "counter ch 3",
+            "counter ch 4",
+            "solV",
+            "adc ch2",
+            "AWQ-C4E tds-kcl",
+            "counter ch 1"
+        ]
+    },
+    {
+        "logical_uid": 579,
+        "logical_name": "Hawkesbury River - Porto Bay - mncm3p101",
+        "physical_uid": 523,
+        "physical_name": "mncm3p101",
+        "logical_last_msg": {
+            "l_uid": 579,
+            "p_uid": 523,
+            "timestamp": "2026-08-17T01:52:26+00:00",
+            "timeseries": [
+                {
+                    "name": "solV",
+                    "value": 21.774
+                },
+                {
+                    "name": "awq-c4e temperature",
+                    "value": 15.857
+                },
+                {
+                    "name": "awq-c4e TDS-Kcl",
+                    "value": 23479
+                },
+                {
+                    "name": "battV",
+                    "value": 4.212000000000001
+                },
+                {
+                    "name": "awq-c4e conductivity",
+                    "value": 36005
+                },
+                {
+                    "name": "adc ch4 4-20mA",
+                    "value": 0.10168
+                },
+                {
+                    "name": "awq-c4e salinity",
+                    "value": 22.713
+                }
+            ],
+            "broker_correlation_id": "17a2e48d-8e5b-468a-a9c5-536a776d495e"
+        },
+        "physical_location": null,
+        "mapping_start_time": "2026-03-09T13:39:44.189029+11:00",
+        "physical_last_seen": "2026-08-17T11:52:26+10:00",
+        "physical_source_ids": {
+            "sensor_group_id": "mncm3p101"
+        },
+        "logical_reading_names": [
+            "solV",
+            "awq-c4e temperature",
+            "awq-c4e TDS-Kcl",
+            "battV",
+            "awq-c4e conductivity",
+            "adc ch4 4-20mA",
+            "awq-c4e salinity"
+        ]
+    },
+    {
+        "logical_uid": 583,
+        "logical_name": "mncm3p102",
+        "physical_uid": 525,
+        "physical_name": "mncm3p102",
+        "logical_last_msg": {
+            "l_uid": 583,
+            "p_uid": 525,
+            "timestamp": "2026-07-07T20:44:36+00:00",
+            "timeseries": [
+                {
+                    "name": "solV",
+                    "value": 1.458
+                },
+                {
+                    "name": "awq-c4e temperature",
+                    "value": 11.995
+                },
+                {
+                    "name": "awq-c4e TDS-Kcl",
+                    "value": 36180
+                },
+                {
+                    "name": "awq-c4e conductivity",
+                    "value": 55483
+                },
+                {
+                    "name": "adc ch4 4-20mA",
+                    "value": 5.323160000000001
+                },
+                {
+                    "name": "awq-c4e salinity",
+                    "value": 36.917
+                },
+                {
+                    "name": "battV",
+                    "value": 4.112
+                }
+            ],
+            "broker_correlation_id": "54bbb210-f634-4bcc-a80f-b42d22e62aec"
+        },
+        "physical_location": null,
+        "mapping_start_time": "2026-03-20T16:42:17.981509+11:00",
+        "physical_last_seen": "2026-07-08T06:44:36+10:00",
+        "physical_source_ids": {
+            "sensor_group_id": "mncm3p102"
+        },
+        "logical_reading_names": [
+            "solV",
+            "awq-c4e temperature",
+            "awq-c4e TDS-Kcl",
+            "awq-c4e conductivity",
+            "adc ch4 4-20mA",
+            "awq-c4e salinity",
+            "battV"
+        ]
+    },
+    {
+        "logical_uid": 582,
+        "logical_name": "mncm4lb0c",
+        "physical_uid": 503,
+        "physical_name": "mncm4lb0c",
+        "logical_last_msg": null,
+        "physical_location": null,
+        "mapping_start_time": "2026-03-20T16:41:25.519759+11:00",
+        "physical_last_seen": "2025-10-23T16:21:20+11:00",
+        "physical_source_ids": {
+            "sensor_group_id": "mncm4lb0c"
+        },
+        "logical_reading_names": [
+        ]
+    },
+    {
+        "logical_uid": 581,
+        "logical_name": "mncm4lb0e",
+        "physical_uid": 485,
+        "physical_name": "mncm4lb0e",
+        "logical_last_msg": null,
+        "physical_location": null,
+        "mapping_start_time": "2026-03-20T16:41:06.508224+11:00",
+        "physical_last_seen": "2024-08-29T17:12:10+10:00",
+        "physical_source_ids": {
+            "sensor_group_id": "mncm4lb0e"
+        },
+        "logical_reading_names": [
+        ]
+    },
+    {
+        "logical_uid": 580,
+        "logical_name": "Pambula Lake - mncm4p101",
+        "physical_uid": 527,
+        "physical_name": "mncm4p101",
+        "logical_last_msg": {
+            "l_uid": 580,
+            "p_uid": 527,
+            "timestamp": "2026-08-17T01:49:21+00:00",
+            "timeseries": [
+                {
+                    "name": "battV",
+                    "value": 4.203
+                },
+                {
+                    "name": "solV",
+                    "value": 21.089000000000002
+                },
+                {
+                    "name": "c4e conductivity",
+                    "value": 56777
+                },
+                {
+                    "name": "c4e temperature",
+                    "value": 15.208
+                },
+                {
+                    "name": "c4e salinity",
+                    "value": 37.953
+                },
+                {
+                    "name": "c4e TDS-Kcl",
+                    "value": 37024
+                }
+            ],
+            "broker_correlation_id": "dfc26af5-4417-4057-ba9b-4d9cc60ad9a6"
+        },
+        "physical_location": null,
+        "mapping_start_time": "2026-03-09T13:44:13.331309+11:00",
+        "physical_last_seen": "2026-08-17T11:49:21+10:00",
+        "physical_source_ids": {
+            "sensor_group_id": "mncm4p101"
+        },
+        "logical_reading_names": [
+            "battV",
+            "solV",
+            "c4e conductivity",
+            "c4e temperature",
+            "c4e salinity",
+            "c4e TDS-Kcl"
+        ]
+    }
+]

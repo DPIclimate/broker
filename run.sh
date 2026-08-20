@@ -14,8 +14,22 @@ cd compose/$MODE
 ./dc.sh down
 cd $BROKER_ROOT
 docker build -q -t broker/python-base -f images/restapi/Dockerfile .
-#docker build -q -t broker/ttn_decoder -f images/ttn_decoder/Dockerfile .
 docker build -q -t broker/mgmt-app -f src/www/Dockerfile .
+
+docker_arch=$(docker info --format '{{.Architecture}}')
+
+case "$docker_arch" in
+    amd64|x86_64)
+        ;;
+    arm64|aarch64)
+        docker build -q -t postgis/postgis:14-3.5 -f images/postgis_14-3.5/Dockerfile images/postgis_14-3.5
+        ;;
+    *)
+        echo "Unsupported Docker architecture: $docker_arch" >&2
+        exit 1
+        ;;
+esac
+
 cd compose/$MODE
 ./dc.sh up -d
 ./dc.sh logs -f

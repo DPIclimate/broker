@@ -109,5 +109,5 @@ create table if not exists version (
 
 create index if not exists pd_src_id_idx on physical_devices using GIN (source_ids);
 
-insert into sources values ('ttn'), ('greenbrain'), ('wombat'), ('ydoc'), ('ict_eagleio');
+insert into sources values ('ttn'), ('greenbrain'), ('wombat'), ('ydoc'), ('ict_eagleio'), ('dragino_json'), ('ict_mqtt');
 insert into version values (2);

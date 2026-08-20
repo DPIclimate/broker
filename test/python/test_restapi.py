@@ -93,7 +93,10 @@ class TestRESTAPI(unittest.TestCase):
         r = requests.get(url, headers=self._HEADERS)
         self.assertEqual(r.status_code, 200)
         sources = r.json()
-        self.assertEqual(sources, ['greenbrain', 'ict_eagleio', 'ttn', 'wombat', 'ydoc'])
+        self.assertCountEqual(
+            sources,
+            ['greenbrain', 'ict_eagleio', 'ttn', 'wombat', 'ydoc', 'dragino_json', 'ict_mqtt'],
+        )
 
         self._HEADERS['Authorization'] = ""
         r = requests.get(url, headers=self._HEADERS)
