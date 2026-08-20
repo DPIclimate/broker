@@ -212,7 +212,7 @@ def on_message(channel, method, properties, body):
         lu.cid_logger.debug('Acking message from ttn_raw.', extra=msg_with_cid)
     except dao.DAOException as e:
         logging.exception('Error while processing message.')
-        rx_channel._channel.basic_reject(delivery_tag)
+        rx_channel._channel.basic_reject(delivery_tag, requeue=False)
 
 
 if __name__ == '__main__':

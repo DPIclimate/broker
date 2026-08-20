@@ -14,4 +14,4 @@ fi
 
 export UID
 export GID=`id -g`
-exec docker compose --profile wombat --profile ubidots --profile ttn --profile ict -p $RUN_MODE -f ../docker-compose.yml -f ./$RUN_MODE.yml $*
+exec docker compose --profile wombat --profile ubidots --profile ttn --profile ict --profile dragino_json -p $RUN_MODE -f ../docker-compose.yml -f ./$RUN_MODE.yml $*
