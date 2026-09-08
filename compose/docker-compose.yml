@@ -6,7 +6,7 @@ services:
       options:
         max-file: "3"
     restart: unless-stopped
-    user: "${UID}:${GID}"
+      #user: "${UID}:${GID}"
     env_file:
       - .env
     volumes:
@@ -258,7 +258,7 @@ services:
     env_file:
       - .env
     profiles:
-      - frred-x
+      - frred
     depends_on:
       db:
         condition: "service_healthy"
