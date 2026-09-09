@@ -112,15 +112,13 @@ def process_msg(msg: Dict) -> None:
     _channel.basic_publish(BrokerConstants.PHYSICAL_TIMESERIES_EXCHANGE_NAME, 'physical_timeseries', json.dumps(msg).encode('UTF-8'))
     _connection.process_data_events(0)
 
-    # Update last seen here so if the publish fails and the process restarts, the message will be reprocessed because
-    # it is less than the device's last_seen time.
+    # Save progress only after publishing succeeds, so failed messages remain eligible for retry.
     pdev.last_seen = ts
     dao.update_physical_device(pdev)
+    _recent_msg_times[serial_no] = ts
 
 
 def get_messages(start: dt.datetime, end: dt.datetime) -> Optional[pd.DataFrame]:
-    global _recent_msg_times
-
     drop_cols = ['wind_dir_var_avg', 'uv_index_avg']
     """
     Columns in the AxisTech message that have no equivalent in the SCMN ATM-41 messages, so these get dropped.
@@ -131,6 +129,9 @@ def get_messages(start: dt.datetime, end: dt.datetime) -> Optional[pd.DataFrame]
     """
     The variable names to use to make the AxisTech message look like an SCMN ATM-41 message.
     """
+
+    # Track selection locally without advancing the successfully processed timestamps.
+    selected_times = _recent_msg_times.copy()
 
     try:
         url = f'https://data.exchange.axisstream.co/?token={_api_token}&startDate={z_ts(start)}&endDate={z_ts(end)}'
@@ -145,11 +146,13 @@ def get_messages(start: dt.datetime, end: dt.datetime) -> Optional[pd.DataFrame]
 
         frames = []
         counter = 0
-        for info in data['data']['bb5d4f86-6eaa-494d-abcc-8f2e9b66b214']['weather']:
+        weather = data['data']['bb5d4f86-6eaa-494d-abcc-8f2e9b66b214']['weather']
+        # Process oldest first so advancing the timestamp does not skip newer unseen records.
+        for info in sorted(weather, key=lambda info: dup.parse(info['time'])):
             code = info['code']
             ts = dup.parse(info['time'])
-            if code not in _recent_msg_times or ts > _recent_msg_times[code]:
-                _recent_msg_times[code] = ts
+            if code not in selected_times or ts > selected_times[code]:
+                selected_times[code] = ts
                 frame = pd.DataFrame(info, index=[counter])
                 frames.append(frame)
                 counter += 1
@@ -174,7 +177,7 @@ def get_messages(start: dt.datetime, end: dt.datetime) -> Optional[pd.DataFrame]
 
         # Use a MultiIndex to make grouping by code easy later on.
         df.set_index(['code', 'time'], inplace=True)
-        df.index = df.index.sort_values()
+        df.sort_index(inplace=True)
 
         # Apply column header changes
         df.drop(drop_cols, inplace=True, axis=1)
@@ -243,7 +246,8 @@ def main() -> None:
     # Initialise the most recent message timestamp cache. This is used to control the time window
     # used in the AxisTech API calls.
     for pdev in dao.get_physical_devices_from_source(BrokerConstants.AXISTECH):
-        _recent_msg_times[pdev.source_ids['serial_no']] = pdev.last_seen
+        if pdev.last_seen is not None:
+            _recent_msg_times[pdev.source_ids['serial_no']] = pdev.last_seen
 
     try:
         logging.info('Opening connection')
@@ -283,4 +287,3 @@ def main() -> None:
 
 if __name__ == '__main__':
     main()
-
