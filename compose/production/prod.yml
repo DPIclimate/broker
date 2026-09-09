@@ -3,7 +3,8 @@ services:
     ports:
       - "127.0.0.1:5444:5432"
     volumes:
-      - /data/volume/iota/db_data:/var/lib/postgresql/data
+      #- /data/volume/iota/db_data:/var/lib/postgresql/data
+      - /data/dpi-operational-data/Data/SCMN/iota/db_data:/var/lib/postgresql/data
 
   mq:
     ports:

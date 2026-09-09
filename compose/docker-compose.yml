@@ -229,6 +229,8 @@ services:
 
   tswriter:
     image: iota/python-base
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
     logging:
       driver: local
       options:
@@ -258,7 +260,7 @@ services:
     env_file:
       - .env
     profiles:
-      - frred-x
+      - frred
     depends_on:
       db:
         condition: "service_healthy"
