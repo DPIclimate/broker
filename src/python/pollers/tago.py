@@ -50,6 +50,19 @@ class InvalidRecord(ValueError):
     pass
 
 
+def tag_value(tags: Any, key: str, default: str | None = None) -> str | None:
+    """Return a non-empty string tag value, or the supplied default."""
+    if not isinstance(tags, list):
+        return default
+    for tag in tags:
+        if isinstance(tag, dict) and tag.get("key") == key:
+            value = tag.get("value")
+            if isinstance(value, str) and value.strip():
+                return value.strip()
+            return default
+    return default
+
+
 @dataclass(frozen=True)
 class DeviceColumns:
     """The device-specific CSV layout returned by Tago parameters."""
@@ -359,10 +372,11 @@ class TagoPoller:
         dao.add_physical_source(BrokerConstants.TAGO)
         for token in self.config.tokens:
             info = self.client.device_info(token)
-            device_id_value = info.get("device_id")
-            if not device_id_value:
+            tags = info.get("tags")
+            device_id = tag_value(tags, "device_id")
+            if device_id is None:
+                logging.error(json.dumps(info, indent=2))
                 raise TagoAPIError("Tago device information did not contain device_id")
-            device_id = str(device_id_value)
             self.token_device_ids[token] = device_id
             self.device_columns[device_id] = self.client.device_params(token)
             source_ids = {"device_id": device_id}
@@ -370,22 +384,11 @@ class TagoPoller:
             if devices:
                 device = devices[0]
             else:
-                tags = info.get("tags") if isinstance(info.get("tags"), list) else []
-                tagged_name = next(
-                    (tag.get("value") for tag in tags
-                     if isinstance(tag, dict) and tag.get("key") == "dev_name"),
-                    None,
-                )
-                device_name = str(tagged_name or info.get("name") or device_id).strip() or device_id
-                correlation_id = str(uuid.uuid5(UUID_NAMESPACE, f"device:{device_id}"))
-
+                device_name = tag_value(tags, "dev_name", device_id)
                 device = dao.create_physical_device(PhysicalDevice(
                     source_name=BrokerConstants.TAGO, name=device_name, location=None,
                     source_ids=source_ids,
-                    properties={
-                        BrokerConstants.TAGO: info,
-                        BrokerConstants.CREATION_CORRELATION_ID_KEY: correlation_id,
-                    },
+                    properties={},
                 ))
             self.devices[device_id] = device
         # Pending responses require the device-specific header and pump index.
@@ -464,7 +467,7 @@ class TagoPoller:
                     BrokerConstants.PHYSICAL_DEVICE_UID_KEY: device.uid,
                     BrokerConstants.TIMESTAMP_KEY: _iso_z(timestamp),
                     BrokerConstants.TIMESERIES_KEY: readings,
-                    "source_ids": {"device_id": device_id, "tago_record_id": record_id},
+                    "source_ids": {"device_id": device_id},
                 }
                 lu.cid_logger.info("Accepted Tago record %s from device %s",
                                    record_id, device_id, extra=message)

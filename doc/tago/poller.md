@@ -51,8 +51,8 @@ To avoid exposing the device API key, it must be mapped to a consistent
 value that cannot be used to derive the key and is not in any way sensitive. 
 This value can be used as the IoTa physical device source id.
 
-The Tago API device `info` endpoint provides two suitable values - `dev_eui` 
-and `device_id`. `device_id` will be used for the source id.
+The Tago API device `info` endpoint provides `device_id` in its `tags` array.
+This value will be used for the source ID.
 
 ## Implementation
 
@@ -61,7 +61,7 @@ and `device_id`. `device_id` will be used for the source id.
 #### Physical device creation and id mapping
 
 At startup, the poller calls the Tago `info` endpoint once for each device
-token. It reads the non-secret `device_id` from that response. The token is
+token. It reads the non-secret `device_id` tag from that response. The token is
 used only as an API credential and is never stored in the database, spool, or
 logs.
 
