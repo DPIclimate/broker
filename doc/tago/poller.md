@@ -21,6 +21,7 @@ Set these variables in `compose/.env`:
 | `TAGO_PAGE_SIZE` | No | `1000` | Records requested on each API page. |
 | `TAGO_REQUEST_TIMEOUT` | No | `30` | HTTP timeout in seconds. |
 | `TAGO_MAX_BACKOFF` | No | `900` | Maximum error retry delay in seconds. |
+| `TAGO_DATA_TIMEZONE` | No | `Australia/Sydney` | Time zone used for CSV timestamps that do not include an offset. |
 
 Start the service with the `tago` Compose profile.
 
@@ -72,9 +73,10 @@ source_ids = {"device_id": device_id}
 ```
 
 If no matching device exists, the poller creates one. Its name comes from the
-Tago device name, its source ID contains only `device_id`, and its properties
-contain the non-secret response from the `info` endpoint. A deterministic
-creation correlation UUID is derived from `device_id`.
+`dev_name` tag when present, then the Tago device name, and finally the
+`device_id`. Its source ID contains only `device_id`, and its properties contain
+the non-secret response from the `info` endpoint. A deterministic creation
+correlation UUID is derived from `device_id`.
 
 The poller keeps these runtime mappings:
 
@@ -100,17 +102,18 @@ The `params` API endpoint provides two important pieces of information:
   is not yet known how to map the pump number to an actual depth such as '1 
   metre'. 
 
-Existing devices can return this parameter as `active_index`. The poller accepts
-both names.
-
 These values can be different for each device so at each startup `params` must 
 be called to get this information and associate it with the device API key 
 or IoTa physical device id.
 
-The poller trims and uses each column heading as the corresponding timeseries
-name. It does not publish the first timestamp column as a reading because the
-Tago record timestamp is the IoTa message timestamp. The reading selected by
-`index` is named `pump_number`, regardless of its header text. If a payload has
-more values than the header defines, the poller retains them as `unknown_1`,
-`unknown_2`, and so on. A payload with fewer values than its header, or with an
-out-of-range pump index, is quarantined.
+The poller uses the first CSV column as the IoTa message timestamp because it is
+the sample time. The Tago record `time` remains in the stored raw message as the
+platform receipt time. A CSV timestamp without an offset is interpreted in
+`TAGO_DATA_TIMEZONE` and converted to UTC for publishing and checkpointing.
+
+The poller trims and uses each remaining column heading as the corresponding
+timeseries name. It does not publish the timestamp column as a reading. The
+reading selected by `index` is named `pump_number`, regardless of its header
+text. If a payload has more values than the header defines, the poller retains
+them as `unknown_1`, `unknown_2`, and so on. A payload with fewer values than its
+header, or with an out-of-range pump index, is quarantined.

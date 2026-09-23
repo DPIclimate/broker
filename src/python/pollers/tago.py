@@ -20,8 +20,9 @@ import time
 import uuid
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Any, Callable, Iterator
+from typing import Any, Callable, Iterator, Sequence
 from urllib.parse import quote
+from zoneinfo import ZoneInfo, ZoneInfoNotFoundError
 
 import dateutil.parser
 import pika
@@ -33,27 +34,7 @@ import api.client.DAO as dao
 from pdmodels.Models import PhysicalDevice
 import util.LoggingUtil as lu
 
-SOURCE = BrokerConstants.TAGO
-ROUTING_KEY = "physical_timeseries"
 UUID_NAMESPACE = uuid.UUID("79482d73-724b-4d9d-9957-cf7bdcd077d1")
-
-# The two active_output entries are present in the supplied specification.
-# Unknown fields are retained until their meanings are confirmed.
-CSV_FIELDS = (
-    "device_timestamp", "voltage", "temperature", "specific_conductivity", "pH", "turbidity", "TDS",
-    "do_sat", "do", "fdom", "chl", "BGA", "salinity", "wiper_pos",
-    "wiper_mA", "active_output", "active_output_2", "fill_time",
-    "unknown_1", "unknown_2", "unknown_3", "unknown_4", "drain_time",
-)
-
-UNITS = {
-    "voltage": "mV", "temp": "°C", "cond": "µS/cm", "pH": "pH",
-    "turb": "NTU", "TDS": "mg/L", "do_sat": "%", "do": "mg/L",
-    "fdom": "QSU", "chl": "µg/L", "BGA": "µg/L", "salinity": "psu",
-    "wiper_pos": "V", "wiper_volt": "mA", "fill_time": "s",
-    "drain_time": "s",
-}
-
 
 class ConfigurationError(RuntimeError):
     pass
@@ -70,6 +51,40 @@ class InvalidRecord(ValueError):
 
 
 @dataclass(frozen=True)
+class DeviceColumns:
+    """The device-specific CSV layout returned by Tago parameters."""
+
+    names: tuple[str, ...]
+    pump_index: int
+
+    @classmethod
+    def from_params(cls, params: Sequence[dict[str, Any]]) -> "DeviceColumns":
+        values = {
+            str(param.get("key")): param.get("value")
+            for param in params
+            if isinstance(param, dict) and param.get("key") is not None
+        }
+        header = values.get("header")
+        if not isinstance(header, str) or not header.strip():
+            raise TagoAPIError("Tago device parameters did not contain a header")
+        try:
+            names = tuple(name.strip() for name in next(csv.reader([header])))
+        except csv.Error as error:
+            raise TagoAPIError(f"Invalid Tago header parameter: {error}") from error
+        if not names or any(not name for name in names):
+            raise TagoAPIError("Tago header parameter contained an empty column name")
+
+        index = values.get("index")
+        try:
+            pump_index = int(index) - 1
+        except (TypeError, ValueError) as error:
+            raise TagoAPIError("Tago device parameters did not contain a valid index") from error
+        if pump_index < 1:
+            raise TagoAPIError("Tago index must identify a data column after the timestamp")
+        return cls(names=names, pump_index=pump_index)
+
+
+@dataclass(frozen=True)
 class Config:
     tokens: tuple[str, ...]
     spool_dir: Path
@@ -79,21 +94,28 @@ class Config:
     page_size: int = 1000
     request_timeout: int = 30
     max_backoff: int = 3600
+    data_timezone: str = "Australia/Sydney"
 
     @classmethod
     def from_environment(cls) -> "Config":
         tokens = tuple(token.strip() for token in os.getenv("TAGO_DEVICE_TOKENS", "").split(",") if token.strip())
         if not tokens:
             raise ConfigurationError("TAGO_DEVICE_TOKENS must contain at least one device token")
+        data_timezone = os.getenv("TAGO_DATA_TIMEZONE", "Australia/Sydney")
+        try:
+            ZoneInfo(data_timezone)
+        except ZoneInfoNotFoundError as error:
+            raise ConfigurationError(f"TAGO_DATA_TIMEZONE is not valid: {data_timezone}") from error
         return cls(
             tokens=tokens,
             spool_dir=Path(os.getenv("TAGO_SPOOL_DIR", "/var/spool/tago")),
-            api_base_url=os.getenv("TAGO_API_BASE_URL", "https://api.us-e1.tago.io").rstrip("/"),
+            api_base_url=os.getenv("TAGO_API_BASE_URL", "https://api.eu-w1.tago.io").rstrip("/"),
             poll_interval=_positive_int("TAGO_POLL_INTERVAL", 3600),
             initial_lookback=_positive_int("TAGO_INITIAL_LOOKBACK", 86400),
             page_size=_positive_int("TAGO_PAGE_SIZE", 1000),
             request_timeout=_positive_int("TAGO_REQUEST_TIMEOUT", 30),
             max_backoff=_positive_int("TAGO_MAX_BACKOFF", 3600),
+            data_timezone=data_timezone,
         )
 
 
@@ -143,9 +165,15 @@ class TagoClient:
 
     def device_info(self, token: str) -> dict[str, Any]:
         result = self.get(token, "/info").get("result")
-        if not isinstance(result, dict) or not result.get("id"):
-            raise TagoAPIError("Tago device information did not contain a device id")
+        if not isinstance(result, dict):
+            raise TagoAPIError("Tago device information was not an object")
         return result
+
+    def device_params(self, token: str) -> DeviceColumns:
+        result = self.get(token, "/device/params").get("result")
+        if not isinstance(result, list):
+            raise TagoAPIError("Tago device parameters did not contain a result list")
+        return DeviceColumns.from_params(result)
 
     def data_pages(self, token: str, start: dt.datetime, end: dt.datetime,
                    page_size: int) -> Iterator[dict[str, Any]]:
@@ -217,7 +245,8 @@ def _iso_z(value: dt.datetime) -> str:
     return value.astimezone(dt.timezone.utc).isoformat(timespec="milliseconds").replace("+00:00", "Z")
 
 
-def parse_record(record: dict[str, Any]) -> tuple[dt.datetime, list[dict[str, Any]]]:
+def parse_record(record: dict[str, Any], columns: DeviceColumns,
+                 data_timezone: str = "Australia/Sydney") -> tuple[dt.datetime, list[dict[str, Any]]]:
     if record.get("variable") != "export":
         raise InvalidRecord(f"unsupported variable {record.get('variable')!r}")
     value = record.get("value")
@@ -227,23 +256,37 @@ def parse_record(record: dict[str, Any]) -> tuple[dt.datetime, list[dict[str, An
         values = next(csv.reader([value]))
     except csv.Error as error:
         raise InvalidRecord(f"invalid CSV: {error}") from error
-    if len(values) != len(CSV_FIELDS):
-        raise InvalidRecord(f"expected {len(CSV_FIELDS)} CSV fields, received {len(values)}")
+    if len(values) < len(columns.names):
+        raise InvalidRecord(
+            f"device header defines {len(columns.names)} CSV fields, received {len(values)}"
+        )
+    if columns.pump_index >= len(values):
+        raise InvalidRecord(
+            f"pump index {columns.pump_index + 1} is outside the {len(values)} CSV fields"
+        )
     try:
-        timestamp = dateutil.parser.isoparse(record["time"])
-    except (KeyError, TypeError, ValueError) as error:
-        raise InvalidRecord("missing or invalid Tago time") from error
+        timestamp = dateutil.parser.parse(values[0])
+        if timestamp.tzinfo is None:
+            timestamp = timestamp.replace(tzinfo=ZoneInfo(data_timezone))
+        timestamp = timestamp.astimezone(dt.timezone.utc)
+    except (TypeError, ValueError, OverflowError, ZoneInfoNotFoundError) as error:
+        raise InvalidRecord("missing or invalid CSV timestamp") from error
 
     readings = []
-    for name, raw_value in zip(CSV_FIELDS[1:], values[1:]):
+    unnamed_count = 0
+    for index, raw_value in enumerate(values[1:], start=1):
+        if index < len(columns.names):
+            name = columns.names[index]
+        else:
+            unnamed_count += 1
+            name = f"unknown_{unnamed_count}"
+        if index == columns.pump_index:
+            name = "pump_number"
         try:
             value_number: int | float = int(raw_value) if re.fullmatch(r"[-+]?\d+", raw_value) else float(raw_value)
         except ValueError as error:
             raise InvalidRecord(f"{name} is not numeric: {raw_value!r}") from error
-        reading: dict[str, Any] = {"name": name, "value": value_number}
-        if name in UNITS:
-            reading["unit"] = UNITS[name]
-        readings.append(reading)
+        readings.append({"name": name, "value": value_number})
     return timestamp, readings
 
 
@@ -276,7 +319,7 @@ class ConfirmingPublisher:
         try:
             confirmed = self.channel.basic_publish(
                 exchange=BrokerConstants.PHYSICAL_TIMESERIES_EXCHANGE_NAME,
-                routing_key=ROUTING_KEY,
+                routing_key="physical_timeseries",
                 body=json.dumps(message, ensure_ascii=False).encode(),
                 properties=properties,
             )
@@ -309,27 +352,44 @@ class TagoPoller:
         self.sleep = sleep
         self.devices: dict[str, PhysicalDevice] = {}
         self.token_device_ids: dict[str, str] = {}
+        self.device_columns: dict[str, DeviceColumns] = {}
 
     def initialise(self) -> None:
         self.spool.prepare()
-        dao.add_physical_source(SOURCE)
-        self._drain_spool()
+        dao.add_physical_source(BrokerConstants.TAGO)
         for token in self.config.tokens:
             info = self.client.device_info(token)
-            device_id = str(info["id"])
+            device_id_value = info.get("device_id")
+            if not device_id_value:
+                raise TagoAPIError("Tago device information did not contain device_id")
+            device_id = str(device_id_value)
             self.token_device_ids[token] = device_id
+            self.device_columns[device_id] = self.client.device_params(token)
             source_ids = {"device_id": device_id}
-            devices = dao.get_pyhsical_devices_using_source_ids(SOURCE, source_ids)
+            devices = dao.get_pyhsical_devices_using_source_ids(BrokerConstants.TAGO, source_ids)
             if devices:
                 device = devices[0]
             else:
+                tags = info.get("tags") if isinstance(info.get("tags"), list) else []
+                tagged_name = next(
+                    (tag.get("value") for tag in tags
+                     if isinstance(tag, dict) and tag.get("key") == "dev_name"),
+                    None,
+                )
+                device_name = str(tagged_name or info.get("name") or device_id).strip() or device_id
                 correlation_id = str(uuid.uuid5(UUID_NAMESPACE, f"device:{device_id}"))
+
                 device = dao.create_physical_device(PhysicalDevice(
-                    source_name=SOURCE, name=info.get("name") or device_id, location=None,
+                    source_name=BrokerConstants.TAGO, name=device_name, location=None,
                     source_ids=source_ids,
-                    properties={SOURCE: info, BrokerConstants.CREATION_CORRELATION_ID_KEY: correlation_id},
+                    properties={
+                        BrokerConstants.TAGO: info,
+                        BrokerConstants.CREATION_CORRELATION_ID_KEY: correlation_id,
+                    },
                 ))
             self.devices[device_id] = device
+        # Pending responses require the device-specific header and pump index.
+        self._drain_spool()
 
     def poll_once(self) -> None:
         self._drain_spool()
@@ -350,12 +410,16 @@ class TagoPoller:
             device_id = str(document.get("device_id", ""))
             device = self.devices.get(device_id)
             if device is None:
-                devices = dao.get_pyhsical_devices_using_source_ids(SOURCE, {"device_id": device_id})
+                devices = dao.get_pyhsical_devices_using_source_ids(BrokerConstants.TAGO, {"device_id": device_id})
                 if not devices:
                     logging.warning("Leaving %s pending: physical device %s does not exist", path, device_id)
                     continue
                 device = devices[0]
                 self.devices[device_id] = device
+            columns = self.device_columns.get(device_id)
+            if columns is None:
+                logging.warning("Leaving %s pending: no column definition for device %s", path, device_id)
+                continue
             records = document.get("response", {}).get("result")
             if not isinstance(records, list):
                 self.spool.quarantine_record(path, document, "response result is not a list")
@@ -377,7 +441,7 @@ class TagoPoller:
                     BrokerConstants.RAW_MESSAGE_KEY: record,
                 }
                 try:
-                    timestamp, readings = parse_record(record)
+                    timestamp, readings = parse_record(record, columns, self.config.data_timezone)
                 except InvalidRecord as error:
                     lu.cid_logger.error("Quarantining Tago record %s: %s", record_id, error,
                                         extra=msg_with_cid)
@@ -405,7 +469,7 @@ class TagoPoller:
                 lu.cid_logger.info("Accepted Tago record %s from device %s",
                                    record_id, device_id, extra=message)
                 try:
-                    dao.add_raw_json_message(SOURCE, timestamp, correlation_id, record, device.uid)
+                    dao.add_raw_json_message(BrokerConstants.TAGO, timestamp, correlation_id, record, device.uid)
                     lu.cid_logger.info("Publishing physical timeseries message", extra=message)
                     self.publisher.publish(message)  # returns only after broker confirmation
                     lu.cid_logger.info("RabbitMQ acknowledged physical timeseries message", extra=message)
