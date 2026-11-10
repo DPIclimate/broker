@@ -117,24 +117,27 @@ def process_data(data):
             dot = {BrokerConstants.TIMESTAMP_KEY: d_ts.isoformat(), BrokerConstants.TIMESERIES_KEY: []}
 
             for i, var_defn in var_defns["timeseries_array"].items():
-                d_name = var_defn["name"]
-                d_value = data[t][i]
-                if "conversion_function" in var_defn:
-                    converted_value = var_defn["conversion_function"](d_value)
-                    logging.info(f"Converted value from {d_value} to {converted_value}")
-                    d_value = converted_value
+                try:
+                    d_name = var_defn["name"]
+                    d_value = data[t][i]
+                    if "conversion_function" in var_defn:
+                        converted_value = var_defn["conversion_function"](d_value)
+                        logging.info(f"Converted value from {d_value} to {converted_value}")
+                        d_value = converted_value
 
-                if "decumulate" in var_defn and var_defn["decumulate"] is True:
-                    if last_t is not None:
-                        d_value = decumulate(d_value, data[last_t][i], var_defns["counter_limit"])
-                    else:
-                        last_t = t
-                        continue
+                    if "decumulate" in var_defn and var_defn["decumulate"] is True:
+                        if last_t is not None:
+                            d_value = decumulate(d_value, data[last_t][i], var_defns["counter_limit"])
+                        else:
+                            last_t = t
+                            continue
 
-                d = {"name": d_name, "value": d_value}
-                dot[BrokerConstants.TIMESERIES_KEY].append(d)
+                    d = {"name": d_name, "value": d_value}
+                    dot[BrokerConstants.TIMESERIES_KEY].append(d)
 
-                last_t = t
+                    last_t = t
+                except:
+                    std_logger.error(f'Failed to parse value: {var_defn}')
 
             if len(dot[BrokerConstants.TIMESERIES_KEY]) > 0:
                 dots.append(dot)
@@ -313,4 +316,3 @@ if __name__ == '__main__':
     # Does not return until SIGTERM is received.
     asyncio.run(main())
     logging.info('Exiting.')
-
