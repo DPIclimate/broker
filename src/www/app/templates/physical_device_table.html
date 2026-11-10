@@ -1,4 +1,5 @@
 {% extends "base.html" %}
+{% from "device_link.html" import device_link %}
 {% block content%}
 
 <div class="command-bar">
@@ -15,11 +16,13 @@
         <table class="table table-striped data-table-multi">
             <thead>
                 <tr>
-                    <th>UID</th>
-                    <th>NAME</th>
-                    <th>SOURCE</th>
-                    <th>LAST SEEN</th>
-                    <th>CURRENT MAPPING</th>
+                    <th>Id</th>
+                    <th>Name</th>
+                    <th data-orderable="false">Source</th>
+                    <th>Last seen</th>
+                    <th>Current mapping</th>
+                    <th data-orderable="false">Links</th>
+                    <th data-orderable="false"></th>
                 </tr>
             </thead>
             <tbody id="device-table-body">
@@ -28,14 +31,12 @@
                     <td>{{ physicalDevice.uid }}</td>
                     <td><a href="{{ url_for('physical_device_form', uid=physicalDevice.uid) }}">{{ physicalDevice.name }}</a></td>
                     <td>{{ physicalDevice.source_name }}</td>
-                    <td>{{ physicalDevice.last_seen }}</td>
-                    <td>
-                        {% for mapping in dev_mappings %}
-                            {% if mapping.pd == physicalDevice.uid %}
-                                <a href="{{ url_for('logical_device_form', uid=mapping.ld.uid) }}">{{ mapping.ld.name }}</a>
-                            {% endif %}
-                        {% endfor %}
-                    </td>
+                    <td data-order="{{ physicalDevice.ts_sort }}">{{ physicalDevice.last_seen }}</td>
+                    <td>{% if physicalDevice.mapped_device %}
+                      <a target="_blank" href="{{ url_for('logical_device_form', uid=physicalDevice.mapped_device.uid) }}">{{ physicalDevice.mapped_device.name }}</a>
+                    {% endif %}</td>
+                    <td>{{ device_link(physicalDevice.link_url, physicalDevice.link_text) }}</td>
+                    <td>{{ device_link(physicalDevice.mapped_device.link_url, physicalDevice.mapped_device.link_text) }}</td>
                 </tr>
                 {% endfor %}
             </tbody>

@@ -1,0 +1,12 @@
+{% macro device_link(url, label) -%}
+    {%- if url -%}
+        {%- set icon = {'TTN': 'ttn-favicon.png', 'Ubidots': 'ubidots-favicon.ico'}.get(label) -%}
+        <a href="{{ url }}" target="_blank" rel="noopener" title="{{ label }}" aria-label="{{ label }}">
+            {%- if icon -%}
+                <img src="{{ url_for('static', filename=icon) }}" width="16" height="16" alt="">
+            {%- else -%}
+                {{ label }}
+            {%- endif -%}
+        </a>
+    {%- endif -%}
+{%- endmacro %}
