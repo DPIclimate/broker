@@ -17,14 +17,19 @@ import os
 from datetime import timedelta, datetime, timezone
 import re
 
+import BrokerConstants
 from utils.api import *
 
 from werkzeug.middleware.dispatcher import DispatcherMiddleware
 from werkzeug.wrappers import Response
 
 from pdmodels.Models import PhysicalDevice, LogicalDevice, PhysicalToLogicalMapping, Location
+from util.Timestamps import time_since
 
 from logging.config import dictConfig
+
+import api.client.DAO as dao
+
 
 dictConfig({
     'version': 1,
@@ -84,33 +89,6 @@ _warning_seconds = 3600 * 6 ### How many seconds ago a device was seen to show a
 _error_seconds = 3600 * 12 ### How many seconds ago a device was seen to show an error.
 _seconds_per_day = 3600 * 24
 
-def time_since(date: datetime) -> Dict[str, int|str]:
-    now = datetime.now(timezone.utc)
-    date_utc = date.astimezone(timezone.utc)
-    delta = now - date_utc
-    days = delta.days
-    hours = int(delta.seconds / 3600)
-    minutes = int((delta.seconds % 3600) / 60)
-    seconds = int(delta.seconds % 60)
-
-    ret_val = {
-        'days': days,
-        'hours': hours,
-        'minutes': minutes,
-        'delta_seconds': delta.seconds + (delta.days * _seconds_per_day)
-    }
-
-    if days > 0:
-        ret_val['desc'] = f'{days} days ago'
-    elif hours > 0:
-        ret_val['desc'] = f'{hours} hours ago'
-    elif minutes > 0:
-        ret_val['desc'] = f'{minutes} minutes ago'
-    else:
-        ret_val['desc'] = f'{seconds} seconds ago'
-
-    return ret_val
-
 
 #-------------
 # MQTT section
@@ -119,10 +97,12 @@ def time_since(date: datetime) -> Dict[str, int|str]:
 _mqtt_client = None
 _wombat_config_msgs = {}
 
+
 def mqtt_on_connect(client, userdata, flags, rc):
     global _mqtt_client
     app.logger.info('MQTT connected')
     _mqtt_client.subscribe(f'wombat/+')
+
 
 def mqtt_on_message(client, userdata, msg):
     tp = msg.topic.split('/')
@@ -167,7 +147,6 @@ def _send_mqtt_msg_via_uids(p_uids: str | List[int], msg: str | None) -> None:
                 serial_nos.append(pd.source_ids['serial_no'])
 
         _send_mqtt_msg_via_sn(serial_nos, msg)
-
 
 
 """
@@ -355,23 +334,22 @@ def physical_device_table():
 
         logical_devices = []
         if len(physical_devices) > 0:
-            logical_devices = get_logical_devices(session.get('token'))
+            logical_devices = dao.get_logical_devices()
 
-        mappings = get_current_mappings(session.get('token'))
+        logical_device_dict = {ld.uid: ld for ld in logical_devices}
 
-        mapping_obj: List[PhysicalToLogicalMapping] = []
+        mappings = dao.get_all_current_mappings()
+        mappings_dict = {m.pd: logical_device_dict[m.ld] for m in mappings}
 
         for dev in physical_devices:
-            for mapping in mappings:
-                if dev.uid != mapping.pd:
-                    continue
+            setattr(dev, 'ts_sort', dev.last_seen.timestamp())
+            dev.last_seen = time_since(dev.last_seen)['desc']
+            dev.link_text, dev.link_url = generate_link(dev)
+            dev.mapped_device = mappings_dict.get(dev.uid)
+            if dev.mapped_device is not None:
+                dev.mapped_device.link_text, dev.mapped_device.link_url = generate_link(dev.mapped_device)
 
-                # Replace the logical device id in the mapping with the logical device object.
-                mapping.ld = next(filter(lambda ld: ld.uid == mapping.ld, logical_devices), None)
-                mapping_obj.append(mapping)
-                break
-
-        return render_template('physical_device_table.html', title='Physical Devices', physicalDevices=physical_devices, dev_mappings=mapping_obj)
+        return render_template('physical_device_table.html', title='Physical Devices', physicalDevices=physical_devices)
 
     except requests.exceptions.HTTPError as e:
         return render_template('error_page.html', reason=e), e.response.status_code
@@ -386,15 +364,15 @@ def physical_device_form(uid):
         device.location = format_location_string(device.location)
         device.last_seen = format_time_stamp(device.last_seen)
         properties_formatted = format_json(device.properties)
-        ttn_link = generate_link(device)
+        link_text, ttn_link = generate_link(device)
         sources = get_sources(session.get('token'))
         mappings = get_all_mappings_for_physical_device(uid, session.get('token'))
 
-        logical_devices = get_logical_devices(session.get('token'))
+        logical_devices = dao.get_logical_devices()
 
         notes = get_physical_notes(uid, session.get('token'))
 
-        currentDeviceMapping = []
+        current_device_mapping = []
 
         if mappings is not None:
             for m in mappings:
@@ -404,7 +382,7 @@ def physical_device_form(uid):
                 if m.end_time is not None:
                     m.end_time = m.end_time.isoformat(' ', 'seconds')
 
-                currentDeviceMapping.append(m)
+                current_device_mapping.append(m)
 
         title = 'Physical Device ' + str(uid) + ' - ' + str(device.name)
         return render_template('physical_device_form.html',
@@ -413,8 +391,9 @@ def physical_device_form(uid):
                                ld_data=logical_devices,
                                sources=sources,
                                properties=properties_formatted,
+                               link_text=link_text,
                                ttn_link=ttn_link,
-                               currentMappings=currentDeviceMapping,
+                               currentMappings=current_device_mapping,
                                deviceNotes=notes)
 
     except requests.exceptions.HTTPError as e:
@@ -424,31 +403,35 @@ def physical_device_form(uid):
 @app.route('/logical-devices', methods=['GET'])
 def logical_device_table():
     try:
-        logical_devices: List[LogicalDevice] = get_logical_devices(session.get('token'))
+        logical_devices: List[LogicalDevice] = dao.get_logical_devices()
         if logical_devices is None:
             return render_template('error_page.html')
 
         physical_devices = []
         if len(logical_devices) > 0:
-            physical_devices = get_physical_devices(session.get('token'))
+            physical_devices = dao.get_all_physical_devices()
 
-        mappings = get_current_mappings(session.get('token'))
+        physical_device_dict = {pd.uid: pd for pd in physical_devices}
 
-        mapping_obj: List[PhysicalToLogicalMapping] = []
+        mappings = dao.get_all_current_mappings()
+        mappings_dict = {m.ld: physical_device_dict[m.pd] for m in mappings}
 
         for dev in logical_devices:
+            dev.link_text, dev.link_url = generate_link(dev)
+
             dev.location = format_location_string(dev.location)
-            for mapping in mappings:
-                if dev.uid != mapping.ld:
-                    continue
+            dev.mapped_device = mappings_dict.get(dev.uid)
+            if dev.mapped_device is not None:
+                dev.mapped_device.link_text, dev.mapped_device.link_url = generate_link(dev.mapped_device)
 
-                # Replace the physical device id in the mapping with the physical device object.
-                mapping.pd = next(filter(lambda pd: pd.uid == mapping.pd, physical_devices), None)
+            if dev.last_seen is not None:
+                setattr(dev, 'ts_sort', dev.last_seen.timestamp())
+                dev.last_seen = time_since(dev.last_seen)['desc']
+            else:
+                setattr(dev, 'ts_sort', 0)
+                dev.last_seen = 'Never'
 
-                mapping_obj.append(mapping)
-                break
-
-        return render_template('logical_device_table.html', title='Logical Devices', logicalDevices=logical_devices, dev_mappings=mapping_obj)
+        return render_template('logical_device_table.html', title='Logical Devices', logicalDevices=logical_devices)
     except requests.exceptions.HTTPError as e:
         return render_template('error_page.html', reason=e), e.response.status_code
 
@@ -460,7 +443,7 @@ def logical_device_form(uid):
         properties_formatted = format_json(device.properties)
         device_location = format_location_string(device.location)
         device_last_seen = format_time_stamp(device.last_seen)
-        ubidots_link = generate_link(device)
+        link_text, ubidots_link = generate_link(device)
         title = f'Logical Device {device.uid} - {device.name}'
         mappings = get_all_mappings_for_logical_device(uid, session.get('token'))
 
@@ -472,7 +455,7 @@ def logical_device_form(uid):
                 m.end_time = m.end_time.isoformat(' ', 'seconds')
 
         # The physical_devices list is used in the dialog shown when mapping a logical device.
-        physical_devices = get_physical_devices(session.get('token'))
+        physical_devices = dao.get_all_physical_devices()
 
         return render_template('logical_device_form.html',
                                title=title,
@@ -480,6 +463,7 @@ def logical_device_form(uid):
                                pd_data=physical_devices,
                                deviceLocation=device_location,
                                deviceLastSeen=device_last_seen,
+                               link_text=link_text,
                                ubidots_link=ubidots_link,
                                properties=properties_formatted,
                                deviceMappings=mappings)
@@ -834,21 +818,24 @@ def format_location_string(location: Location) -> str:
     return formatted_location
 
 
-def generate_link(data):
-    link = ''
+def generate_link(data) -> Tuple[str, str] | None:
+    text = None
+    link = None
 
     if isinstance(data, LogicalDevice):
         if 'ubidots' in data.properties and 'id' in data.properties['ubidots']:
+            text = 'Ubidots'
             link = 'https://industrial.ubidots.com.au/app/devices/'
             link += data.properties['ubidots']['id']
     elif isinstance(data, PhysicalDevice):
-        if data.source_name == 'ttn' and 'app_id' in data.properties and 'dev_id' in data.properties:
+        if data.source_name == BrokerConstants.TTN and 'app_id' in data.source_ids and 'dev_id' in data.source_ids:
+            text = 'TTN'
             link = 'https://au1.cloud.thethings.network/console/applications/'
             link += data.source_ids['app_id']
             link += '/devices/'
             link += data.source_ids['dev_id']
 
-    return link
+    return text, link
 
 
 def exit_handler():

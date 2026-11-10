@@ -1,4 +1,5 @@
 {% extends "base.html" %}
+{% from "device_link.html" import device_link %}
 {% block content%}
 
 	<div class="command-bar">
@@ -15,11 +16,13 @@
 			<table class="table table-striped data-table">
 				<thead>
 					<tr>
-						<th>UID</th>
-						<th>NAME</th>
-						<th>LOCATION</th>
-						<th>LAST SEEN</th>
-						<th>CURRENT MAPPING</th>
+						<th>Id</th>
+						<th>Name</th>
+						<th data-orderable="false">Location</th>
+						<th>Last seen</th>
+						<th>Current mapping</th>
+            <th data-orderable="false">Links</th>
+            <th data-orderable="false"></th>
 					</tr>
 					</tr>
 				</thead>
@@ -31,14 +34,12 @@
 							<a href="{{ url_for('logical_device_form', uid=logicalDevice.uid) }}">{{ logicalDevice.name }}</a>
 						</td>
 						<td>{{ logicalDevice.location }}</td>
-						<td>{{ logicalDevice.last_seen }}</td>
-						<td>
-							{% for mapping in dev_mappings %}
-								{% if mapping.ld == logicalDevice.uid %}
-									<a href="{{ url_for('physical_device_form', uid=mapping.pd.uid) }}">{{ mapping.pd.name }}</a>
-								{% endif %}
-							{% endfor %}
-						</td>
+            <td data-order="{{ logicalDevice.ts_sort }}">{{ logicalDevice.last_seen }}</td>
+            <td>{% if logicalDevice.mapped_device %}
+              <a href="{{ url_for('physical_device_form', uid=logicalDevice.mapped_device.uid) }}">{{ logicalDevice.mapped_device.name }}</a>
+            {% endif %}</td>
+            <td>{{ device_link(logicalDevice.mapped_device.link_url, logicalDevice.mapped_device.link_text) }}</td>
+            <td>{{ device_link(logicalDevice.link_url, logicalDevice.link_text) }}</td>
 					</tr>
 					{% endfor %}
 				</tbody>
