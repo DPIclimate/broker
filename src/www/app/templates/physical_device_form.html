@@ -40,10 +40,10 @@
 					</div>
 					<label id="form-last-seen" for="device-last-seen">Device Last Seen</label>
 					<input type="text" id="device-last-seen" name="device_last_seen" value="{{ pd_data.last_seen }}" readonly>
-					{% if ttn_link != "" %}
+					{% if link_url %}
 					<div>
-							<label id="form_link" for="form-link">TTN Link</label>
-							<a href="{{ ttn_link }}" target="_blank">Click here</a>
+							<label id="form_link" for="form-link">Source system</label>
+							<a href="{{ link_url }}" target="_blank">{{link_text}}</a>
 					</div>
 					{% endif %}
 					<input type="text" id="device-properties" class="hidden" hidden name="device_properties" value="{{ pd_data.properties }}" readyonly>

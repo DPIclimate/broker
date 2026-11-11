@@ -274,16 +274,18 @@ def clear_wombat_config_script():
 @app.route('/wombats', methods=['GET'])
 def wombats():
     try:
-        physical_devices = get_physical_devices(session.get('token'), source_name='wombat', include_properties=True)
-
+        physical_devices = dao.get_physical_devices_from_source(BrokerConstants.WOMBAT)
         if physical_devices is None:
             return render_template('error_page.html')
 
         logical_devices: List[LogicalDevice] = []
         if len(physical_devices) > 0:
-            logical_devices = get_logical_devices(session.get('token'), include_properties=True)
+            logical_devices = dao.get_logical_devices()
 
-        mappings = get_current_mappings(session.get('token'))
+        logical_device_dict = {ld.uid: ld for ld in logical_devices}
+
+        mappings = dao.get_all_current_mappings()
+        mappings_dict = {m.pd: logical_device_dict[m.ld] for m in mappings}
 
         for dev in physical_devices:
             sn = dev.source_ids["serial_no"]
@@ -303,21 +305,11 @@ def wombats():
             setattr(dev, 'sn', sn)
 
             setattr(dev, 'ts_sort', dev.last_seen.timestamp())
-            dev.last_seen = time_since(dev.last_seen)['desc']
+            dev.last_seen = time_since(dev.last_seen, True)['desc']
 
-            for mapping in mappings:
-                if dev.uid != mapping.pd:
-                    continue
-
-                # Replace the logical device id in the mapping with the logical device object.
-                mapping.ld = next(filter(lambda ld: ld.uid == mapping.ld, logical_devices), None)
-                setattr(dev, 'mapping', mapping)
-
-                link: str = generate_link(mapping.ld)
-                if link is not None and len(link.strip()) > 0:
-                    setattr(dev, 'ubidots_link', link)
-
-                break
+            dev.mapped_device = mappings_dict.get(dev.uid)
+            if dev.mapped_device is not None:
+                dev.mapped_device.link_text, dev.mapped_device.link_url = generate_link(dev.mapped_device)
 
         return render_template('wombats.html', title='Wombats', physicalDevices=physical_devices)
 
@@ -328,7 +320,7 @@ def wombats():
 @app.route('/physical-devices', methods=['GET'])
 def physical_device_table():
     try:
-        physical_devices = get_physical_devices(session.get('token'))
+        physical_devices = dao.get_all_physical_devices()
         if physical_devices is None:
             return render_template('error_page.html')
 
@@ -341,13 +333,19 @@ def physical_device_table():
         mappings = dao.get_all_current_mappings()
         mappings_dict = {m.pd: logical_device_dict[m.ld] for m in mappings}
 
+        uplink_stats = dao.get_uplink_stats_last_day()
+        uplink_stats_dict = {stats[0]: stats for stats in uplink_stats}
+
         for dev in physical_devices:
             setattr(dev, 'ts_sort', dev.last_seen.timestamp())
-            dev.last_seen = time_since(dev.last_seen)['desc']
+            dev.last_seen = time_since(dev.last_seen, True)['desc']
             dev.link_text, dev.link_url = generate_link(dev)
             dev.mapped_device = mappings_dict.get(dev.uid)
+
             if dev.mapped_device is not None:
                 dev.mapped_device.link_text, dev.mapped_device.link_url = generate_link(dev.mapped_device)
+
+            dev.uplink_stats = uplink_stats_dict.get(dev.uid)
 
         return render_template('physical_device_table.html', title='Physical Devices', physicalDevices=physical_devices)
 
@@ -359,28 +357,29 @@ def physical_device_table():
 def physical_device_form(uid):
 
     try:
-        device: PhysicalDevice = get_physical_device(uid, session.get('token'))
+        device: PhysicalDevice = dao.get_physical_device(uid)
 
         device.location = format_location_string(device.location)
         device.last_seen = format_time_stamp(device.last_seen)
         properties_formatted = format_json(device.properties)
-        link_text, ttn_link = generate_link(device)
-        sources = get_sources(session.get('token'))
-        mappings = get_all_mappings_for_physical_device(uid, session.get('token'))
+        mappings = dao.get_physical_device_mappings(uid)
+        notes = dao.get_physical_device_notes(uid)
+        if device.source_name == BrokerConstants.TTN:
+            link_text, link_url = generate_link(device)
+        else:
+            link_text = None
+            link_url = None
 
         logical_devices = dao.get_logical_devices()
-
-        notes = get_physical_notes(uid, session.get('token'))
-
         current_device_mapping = []
 
         if mappings is not None:
             for m in mappings:
                 if m.start_time is not None:
-                    m.start_time = m.start_time.isoformat(' ', 'seconds')
+                    m.start_time = m.start_time.isoformat(' ', 'minutes')
 
                 if m.end_time is not None:
-                    m.end_time = m.end_time.isoformat(' ', 'seconds')
+                    m.end_time = m.end_time.isoformat(' ', 'minutes')
 
                 current_device_mapping.append(m)
 
@@ -389,10 +388,9 @@ def physical_device_form(uid):
                                title=title,
                                pd_data=device,
                                ld_data=logical_devices,
-                               sources=sources,
                                properties=properties_formatted,
                                link_text=link_text,
-                               ttn_link=ttn_link,
+                               link_url=link_url,
                                currentMappings=current_device_mapping,
                                deviceNotes=notes)
 
@@ -426,7 +424,7 @@ def logical_device_table():
 
             if dev.last_seen is not None:
                 setattr(dev, 'ts_sort', dev.last_seen.timestamp())
-                dev.last_seen = time_since(dev.last_seen)['desc']
+                dev.last_seen = time_since(dev.last_seen, True)['desc']
             else:
                 setattr(dev, 'ts_sort', 0)
                 dev.last_seen = 'Never'
@@ -439,7 +437,7 @@ def logical_device_table():
 @app.route('/logical-device/<uid>', methods=['GET'])
 def logical_device_form(uid):
     try:
-        device = get_logical_device(uid, session.get('token'))
+        device = dao.get_logical_device(uid)
         properties_formatted = format_json(device.properties)
         device_location = format_location_string(device.location)
         device_last_seen = format_time_stamp(device.last_seen)
