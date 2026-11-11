@@ -12,14 +12,13 @@ def now_utc():
 _seconds_per_day = 3600 * 24
 
 
-def time_since(date: datetime) -> Dict[str, int|str]:
+def time_since(date: datetime, brief=False) -> Dict[str, int|str]:
     now = datetime.now(timezone.utc)
     date_utc = date.astimezone(timezone.utc)
     delta = now - date_utc
     days = delta.days
     hours = int(delta.seconds / 3600)
     minutes = int((delta.seconds % 3600) / 60)
-    seconds = int(delta.seconds % 60)
 
     ret_val = {
         'days': days,
@@ -28,13 +27,25 @@ def time_since(date: datetime) -> Dict[str, int|str]:
         'delta_seconds': delta.seconds + (delta.days * _seconds_per_day)
     }
 
-    if days > 0:
-        ret_val['desc'] = f'{days} days ago'
-    elif hours > 0:
-        ret_val['desc'] = f'{hours} hours ago'
-    elif minutes > 0:
-        ret_val['desc'] = f'{minutes} minutes ago'
+    if delta < timedelta(0):
+        # Force a longer string for future timestamps.
+        brief = False
+
+    direction = 'from now' if delta < timedelta(0) else 'ago'
+
+    days = 'd' if brief else f'days {direction}'
+    hrs = 'h' if brief else 'fhours {direction}'
+    mins = 'm' if brief else f'minutes {direction}'
+    secs = 's' if brief else f'seconds {direction}'
+
+    duration = abs(delta)
+    if duration.days > 0:
+        ret_val['desc'] = f'{duration.days} {days}'
+    elif duration.seconds >= 3600:
+        ret_val['desc'] = f'{duration.seconds // 3600} {hrs}'
+    elif duration.seconds >= 60:
+        ret_val['desc'] = f'{duration.seconds // 60} {mins}'
     else:
-        ret_val['desc'] = f'{seconds} seconds ago'
+        ret_val['desc'] = f'{duration.seconds} {secs}'
 
     return ret_val

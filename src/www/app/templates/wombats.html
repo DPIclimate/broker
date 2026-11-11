@@ -1,4 +1,5 @@
 {% extends "base.html" %}
+{% from "device_link.html" import device_link %}
 {% block content%}
 <script type="text/javascript">
     function clearConfigScript(sn) {
@@ -102,8 +103,8 @@
                 <th>Firmware</th>
                 <th></th>
                 <th>Current mapping</th>
-                <th>Ubidots</th>
-                <th></th>
+                <th data-orderable="false">Ubidots</th>
+                <th data-orderable="false"></th>
             </tr>
             </thead>
             <tbody id="device-table-body">
@@ -113,7 +114,10 @@
                     <td>
                         <a href="{{ url_for('physical_device_form', uid=physicalDevice.uid) }}" target="_blank">{{ physicalDevice.name }}</a>
                     </td>
-                    <td data-order="{{ physicalDevice.ts_sort }}">{{ physicalDevice.last_seen }}</td>
+                    {% set count, elapsed = physicalDevice.last_seen.split(' ', 1) %}
+                    <td class="last-seen" data-order="{{ physicalDevice.ts_sort }}" data-search="{{ physicalDevice.last_seen }}">
+                        <span class="last-seen-count">{{ '{:,}'.format(count | int) }}</span> <span>{{ elapsed }}</span>
+                    </td>
                     <td>
                         {% if physicalDevice.ccid is defined %}
                             {{ physicalDevice.ccid }}
@@ -129,17 +133,10 @@
                             {{ physicalDevice.mapping.ld.uid }}
                         {% endif %}
                     </td>
-                    <td>
-                        {% if physicalDevice.mapping is defined %}
-                            <a href="{{ url_for('logical_device_form', uid=physicalDevice.mapping.ld.uid) }}" target="_blank">{{ physicalDevice.mapping.ld.name }}</a>
-                        {% endif %}
-                    </td>
-                    <td>
-                        {% if physicalDevice.ubidots_link is defined %}
-                            <a href="{{ physicalDevice.ubidots_link }}" target="_blank"><span
-                                    class="material-icons">open_in_new</span></a>
-                        {% endif %}
-                    </td>
+                    <td>{% if physicalDevice.mapped_device %}
+                      <a target="_blank" href="{{ url_for('logical_device_form', uid=physicalDevice.mapped_device.uid) }}">{{ physicalDevice.mapped_device.name }}</a>
+                    {% endif %}</td>
+                    <td>{{ device_link(physicalDevice.mapped_device.link_url, physicalDevice.mapped_device.link_text) }}</td>
                     <td>
                         {% if physicalDevice.script is defined %}
                             <span class="material-icons" title="{{ physicalDevice.script }}" onclick="clearConfigScript('{{ physicalDevice.sn }}')">install_desktop</span>

@@ -19,7 +19,8 @@
                     <th>Id</th>
                     <th>Name</th>
                     <th data-orderable="false">Source</th>
-                    <th>Last seen</th>
+                    <th data-type="num">Last seen</th>
+                    <th>Msgs in last 24 hours</th>
                     <th>Current mapping</th>
                     <th data-orderable="false">Links</th>
                     <th data-orderable="false"></th>
@@ -31,7 +32,11 @@
                     <td>{{ physicalDevice.uid }}</td>
                     <td><a href="{{ url_for('physical_device_form', uid=physicalDevice.uid) }}">{{ physicalDevice.name }}</a></td>
                     <td>{{ physicalDevice.source_name }}</td>
-                    <td data-order="{{ physicalDevice.ts_sort }}">{{ physicalDevice.last_seen }}</td>
+                    {% set count, elapsed = physicalDevice.last_seen.split(' ', 1) %}
+                    <td class="last-seen" data-order="{{ physicalDevice.ts_sort }}" data-search="{{ physicalDevice.last_seen }}">
+                        <span class="last-seen-count">{{ '{:,}'.format(count | int) }}</span> <span>{{ elapsed }}</span>
+                    </td>
+                    <td class="message-count">{% if physicalDevice.uplink_stats %} {{ physicalDevice.uplink_stats[1] }} {% endif %}</td>
                     <td>{% if physicalDevice.mapped_device %}
                       <a target="_blank" href="{{ url_for('logical_device_form', uid=physicalDevice.mapped_device.uid) }}">{{ physicalDevice.mapped_device.name }}</a>
                     {% endif %}</td>

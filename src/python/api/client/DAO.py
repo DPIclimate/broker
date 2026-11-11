@@ -1107,6 +1107,48 @@ def add_raw_text_message(source_name: str, ts: datetime, correlation_uuid: str, 
             free_conn(conn)
 
 
+def get_uplink_stats_last_day():
+    query = """
+WITH message_gaps AS (
+    SELECT
+        physical_uid,
+        ts - LAG(ts) OVER (
+            PARTITION BY physical_uid
+            ORDER BY ts, uid
+        ) AS message_interval
+    FROM raw_messages
+    WHERE ts >= now() - INTERVAL '24 hours'
+      AND ts <= now()
+      AND physical_uid IS NOT NULL
+)
+SELECT
+    physical_uid,
+    COUNT(*) AS message_count,
+    TO_CHAR(
+        ROUND(EXTRACT(EPOCH FROM AVG(message_interval)) / 60)
+            * INTERVAL '1 minute',
+        'HH24:MI'
+    ) AS avg_interval,
+    TO_CHAR(
+        ROUND(EXTRACT(EPOCH FROM MAX(message_interval)) / 60)
+            * INTERVAL '1 minute',
+        'HH24:MI'
+    ) AS max_interval,
+    EXTRACT(EPOCH FROM MIN(message_interval)) AS min_interval_seconds,
+    TO_CHAR(
+        ROUND(EXTRACT(EPOCH FROM MIN(message_interval)) / 60)
+            * INTERVAL '1 minute',
+        'HH24:MI'
+    ) AS min_interval
+FROM message_gaps
+GROUP BY physical_uid
+ORDER BY physical_uid;
+"""
+    with get_connection() as conn, conn.cursor() as cursor:
+        cursor.execute(query)
+        return cursor.fetchall()
+
+
 """
 User and authentication CRUD methods
 """

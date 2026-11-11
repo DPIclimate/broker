@@ -349,3 +349,18 @@ text-align: center;
 .mapping-header {
     display: flex;
 }
+
+.last-seen {
+    white-space: nowrap;
+}
+
+.last-seen-count {
+    display: inline-block;
+    inline-size: 6ch;
+}
+
+.last-seen-count,
+.message-count {
+    text-align: right;
+    font-variant-numeric: tabular-nums;
+}
