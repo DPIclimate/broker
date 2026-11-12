@@ -144,7 +144,8 @@ def process_sensor_node(node_name, node_sensors) -> None:
         pd.properties[BrokerConstants.LAST_MESSAGE_HASH_KEY] = hash
         pd = dao.update_physical_device(pd)
 
-    dao.update_raw_messages_puid(raw_msg_uid, pd.uid)
+    if raw_msg_uid is not None:
+        dao.update_raw_messages_puid(raw_msg_uid, pd.uid)
 
     #
     # Publish a message to the physical_timeseries queue.

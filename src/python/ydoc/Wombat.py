@@ -139,7 +139,8 @@ def on_message(channel, method, properties, body):
             return
 
         lu.cid_logger.info(f'Using device id {pd.uid}', extra=msg_with_cid)
-        dao.update_raw_messages_puid(raw_msg_uid, pd.uid)
+        if raw_msg_uid is not None:
+            dao.update_raw_messages_puid(raw_msg_uid, pd.uid)
 
         msg[BrokerConstants.CORRELATION_ID_KEY] = correlation_id
         msg[BrokerConstants.PHYSICAL_DEVICE_UID_KEY] = pd.uid

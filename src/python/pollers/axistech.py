@@ -107,7 +107,9 @@ def process_msg(msg: Dict) -> None:
         pdev = pds[0]
         pdev.properties[BrokerConstants.LAST_MSG] = json.dumps(msg)
 
-    dao.update_raw_messages_puid(raw_msg_uid, pdev.uid)
+    if raw_msg_uid is not None:
+        dao.update_raw_messages_puid(raw_msg_uid, pdev.uid)
+
     msg[BrokerConstants.PHYSICAL_DEVICE_UID_KEY] = pdev.uid
     lu.cid_logger.info(f'Posting msg: {msg}', extra=msg)
     _channel.basic_publish(BrokerConstants.PHYSICAL_TIMESERIES_EXCHANGE_NAME, 'physical_timeseries', json.dumps(msg).encode('UTF-8'))

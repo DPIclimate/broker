@@ -186,7 +186,8 @@ def on_message(channel, method, properties, body):
             rx_channel._channel.basic_ack(delivery_tag)
             return
 
-        dao.update_raw_messages_puid(raw_msg_uid, pd.uid)
+        if raw_msg_uid is not None:
+            dao.update_raw_messages_puid(raw_msg_uid, pd.uid)
 
         uplink_message = msg['uplink_message'] if 'uplink_message' in msg else None
         if uplink_message is not None:
