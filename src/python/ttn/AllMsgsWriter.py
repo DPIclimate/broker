@@ -138,7 +138,7 @@ def on_message(channel, method, properties, body):
 
         # Record the message to the all messages table before doing anything else to ensure it
         # is saved. Attempts to add duplicate messages are ignored in the DAO.
-        dao.add_raw_json_message(BrokerConstants.TTN, last_seen, correlation_id, msg)
+        raw_msg_uid = dao.add_raw_json_message(BrokerConstants.TTN, last_seen, correlation_id, msg)
 
         source_ids = {
             'app_id': app_id,
@@ -185,6 +185,8 @@ def on_message(channel, method, properties, body):
             lu.cid_logger.error(f'Physical device not found, message processing ends now. {correlation_id}', extra=msg_with_cid)
             rx_channel._channel.basic_ack(delivery_tag)
             return
+
+        dao.update_raw_messages_puid(raw_msg_uid, pd.uid)
 
         uplink_message = msg['uplink_message'] if 'uplink_message' in msg else None
         if uplink_message is not None:

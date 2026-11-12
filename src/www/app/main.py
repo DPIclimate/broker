@@ -278,14 +278,13 @@ def wombats():
         if physical_devices is None:
             return render_template('error_page.html')
 
-        logical_devices: List[LogicalDevice] = []
         if len(physical_devices) > 0:
             logical_devices = dao.get_logical_devices()
 
-        logical_device_dict = {ld.uid: ld for ld in logical_devices}
+            logical_device_dict = {ld.uid: ld for ld in logical_devices}
 
-        mappings = dao.get_all_current_mappings()
-        mappings_dict = {m.pd: logical_device_dict[m.ld] for m in mappings}
+            mappings = dao.get_all_current_mappings()
+            mappings_dict = {m.pd: logical_device_dict[m.ld] for m in mappings}
 
         for dev in physical_devices:
             sn = dev.source_ids["serial_no"]
@@ -441,16 +440,16 @@ def logical_device_form(uid):
         properties_formatted = format_json(device.properties)
         device_location = format_location_string(device.location)
         device_last_seen = format_time_stamp(device.last_seen)
-        link_text, ubidots_link = generate_link(device)
+        link_text, link_url = generate_link(device)
         title = f'Logical Device {device.uid} - {device.name}'
-        mappings = get_all_mappings_for_logical_device(uid, session.get('token'))
+        mappings = dao.get_logical_device_mappings(ld=uid)
 
         for m in mappings:
             if m.start_time is not None:
-                m.start_time = m.start_time.isoformat(' ', 'seconds')
+                m.start_time = m.start_time.isoformat(' ', 'minutes')
 
             if m.end_time is not None:
-                m.end_time = m.end_time.isoformat(' ', 'seconds')
+                m.end_time = m.end_time.isoformat(' ', 'minutes')
 
         # The physical_devices list is used in the dialog shown when mapping a logical device.
         physical_devices = dao.get_all_physical_devices()
@@ -462,7 +461,7 @@ def logical_device_form(uid):
                                deviceLocation=device_location,
                                deviceLastSeen=device_last_seen,
                                link_text=link_text,
-                               ubidots_link=ubidots_link,
+                               link_url=link_url,
                                properties=properties_formatted,
                                deviceMappings=mappings)
     except requests.exceptions.HTTPError as e:

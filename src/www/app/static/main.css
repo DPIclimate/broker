@@ -255,6 +255,11 @@ header a:hover .logical-device-white-icon {
     margin: 5px;
 }
 
+#device-form input[type="text"] {
+    width: 22rem;
+    box-sizing: border-box;
+}
+
 form select {
     display: table-cell;
     width: 95%;
@@ -363,4 +368,9 @@ text-align: center;
 .message-count {
     text-align: right;
     font-variant-numeric: tabular-nums;
+}
+
+.properties-textarea {
+    width: 100%;
+    box-sizing: border-box;
 }

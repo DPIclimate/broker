@@ -108,7 +108,7 @@ def process_sensor_node(node_name, node_sensors) -> None:
     #
 
     correlation_id = str(uuid.uuid4())
-    dao.add_raw_json_message(BrokerConstants.ICT_EAGLEIO, max_ts, correlation_id, node_sensors)
+    raw_msg_uid = dao.add_raw_json_message(BrokerConstants.ICT_EAGLEIO, max_ts, correlation_id, node_sensors)
     msg_with_cid = {BrokerConstants.CORRELATION_ID_KEY: correlation_id, BrokerConstants.RAW_MESSAGE_KEY: node_sensors}
 
     #
@@ -144,6 +144,7 @@ def process_sensor_node(node_name, node_sensors) -> None:
         pd.properties[BrokerConstants.LAST_MESSAGE_HASH_KEY] = hash
         pd = dao.update_physical_device(pd)
 
+    dao.update_raw_messages_puid(raw_msg_uid, pd.uid)
 
     #
     # Publish a message to the physical_timeseries queue.
@@ -287,4 +288,3 @@ if __name__ == '__main__':
         # Does not return until SIGTERM is received.
         asyncio.run(main())
         logging.info('Exiting.')
-
