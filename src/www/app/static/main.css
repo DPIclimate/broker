@@ -239,6 +239,7 @@ header a:hover .logical-device-white-icon {
 
 #device-form {
     display: table;
+    border-spacing: 8px;
 }
 
 #device-form div {
@@ -247,17 +248,23 @@ header a:hover .logical-device-white-icon {
 
 #device-form label {
     display: table-cell;
-    margin: 5px;
+    padding: 4px;
 }
 
 #device-form input {
     display: table-cell;
-    margin: 5px;
+    padding: 4px;
 }
 
 #device-form input[type="text"] {
     width: 22rem;
     box-sizing: border-box;
+    border: 1px solid #888;
+    border-radius: 4px;
+}
+
+#device-form input[type="text"][readonly] {
+    background-color: #f8f8f8;
 }
 
 form select {
@@ -373,4 +380,5 @@ text-align: center;
 .properties-textarea {
     width: 100%;
     box-sizing: border-box;
+    padding: 8px;
 }
