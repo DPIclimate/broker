@@ -103,7 +103,7 @@ def on_message(channel, method, properties, body):
         # Record the message to the all messages table before doing anything else to ensure it
         # is saved. Attempts to add duplicate messages are ignored in the DAO.
         msg_ts = dateutil.parser.isoparse(msg[BrokerConstants.TIMESTAMP_KEY])
-        dao.add_raw_json_message(BrokerConstants.WOMBAT, msg_ts, correlation_id, msg)
+        raw_msg_uid = dao.add_raw_json_message(BrokerConstants.WOMBAT, msg_ts, correlation_id, msg)
 
         source_ids = msg['source_ids']
         serial_no = source_ids['serial_no']
@@ -139,6 +139,8 @@ def on_message(channel, method, properties, body):
             return
 
         lu.cid_logger.info(f'Using device id {pd.uid}', extra=msg_with_cid)
+        if raw_msg_uid is not None:
+            dao.update_raw_messages_puid(raw_msg_uid, pd.uid)
 
         msg[BrokerConstants.CORRELATION_ID_KEY] = correlation_id
         msg[BrokerConstants.PHYSICAL_DEVICE_UID_KEY] = pd.uid

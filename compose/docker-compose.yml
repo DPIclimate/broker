@@ -166,7 +166,7 @@ services:
       mq:
         condition: "service_healthy"
     volumes:
-      - ../src/python:/home/broker/python
+      - ../src/python:/home/broker/python:ro
     working_dir: "/home/broker/python"
     entrypoint: [ "python", "-m", "ydoc.Dragino_JSON" ]
 
