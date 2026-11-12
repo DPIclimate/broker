@@ -63,6 +63,9 @@ JSON_SPEC = {
         "timeseries_array": {
             0: {"name": "par", "conversion_function": get_par_value},
         },
+        "current_vars": {
+            "Payload": {"name": "par", "conversion_function": get_par_value},
+        }
     }
 }
 
@@ -114,7 +117,7 @@ def process_data(data):
             if d_ts.year <= 1970:
                 continue
 
-            dot = {BrokerConstants.TIMESTAMP_KEY: d_ts.isoformat(), BrokerConstants.TIMESERIES_KEY: []}
+            # dot = {BrokerConstants.TIMESTAMP_KEY: d_ts.isoformat(), BrokerConstants.TIMESERIES_KEY: []}
 
             for i, var_defn in var_defns["timeseries_array"].items():
                 try:
@@ -132,15 +135,32 @@ def process_data(data):
                             last_t = t
                             continue
 
-                    d = {"name": d_name, "value": d_value}
-                    dot[BrokerConstants.TIMESERIES_KEY].append(d)
+                    d = {BrokerConstants.TIMESTAMP_KEY: d_ts.isoformat(), "name": d_name, "value": d_value}
+                    system_dot[BrokerConstants.TIMESERIES_KEY].append(d)
+                    # dot[BrokerConstants.TIMESERIES_KEY].append(d)
 
                     last_t = t
                 except:
                     std_logger.error(f'Failed to parse value: {var_defn}')
 
-            if len(dot[BrokerConstants.TIMESERIES_KEY]) > 0:
-                dots.append(dot)
+            # if len(dot[BrokerConstants.TIMESERIES_KEY]) > 0:
+            #     dots.append(dot)
+
+    if "current_vars" in var_defns:
+        for v_name, var_defn in var_defns["current_vars"].items():
+            if not v_name in data:
+                continue
+
+            d_name = var_defn["name"]
+            d_value = data[v_name]
+            if "conversion_function" in var_defn:
+                converted_value = var_defn["conversion_function"](d_value)
+                logging.info(f"Converted value from {d_value} to {converted_value}")
+                d_value = converted_value
+
+            # These dots get the uplink timestamp so don't need a timestamp in the dot itself.
+            d = {"name": d_name, "value": d_value}
+            system_dot[BrokerConstants.TIMESERIES_KEY].append(d)
 
     for i in var_defns["timeseries_array"].keys():
         if "decumulate_system_var" in var_defns["timeseries_array"][i]:
@@ -237,7 +257,7 @@ def on_message(channel, method, properties, body):
         # Record the message to the all messages table before doing anything else to ensure it
         # is saved. Attempts to add duplicate messages are ignored in the DAO.
         msg_ts = dateutil.parser.isoparse(msg["time"])
-        dao.add_raw_json_message(BrokerConstants.DRAGINO_JSON, msg_ts, correlation_id, msg)
+        raw_msg_uid = dao.add_raw_json_message(BrokerConstants.DRAGINO_JSON, msg_ts, correlation_id, msg)
 
         imei = msg['IMEI']
         lu.cid_logger.info(f'Accepted message from {imei}', extra=msg_with_cid)
@@ -262,7 +282,6 @@ def on_message(channel, method, properties, body):
 
             pd = PhysicalDevice(uid=1, source_name=BrokerConstants.DRAGINO_JSON, name=device_name, location=None,
                                 last_seen=msg_ts, source_ids=source_ids, properties=props)
-            # pd = PhysicalDevice(source_name=BrokerConstants.DRAGINO_JSON, name=device_name, source_ids=source_ids)
             pd = dao.create_physical_device(pd)
 
         else:
@@ -278,18 +297,16 @@ def on_message(channel, method, properties, body):
             return
 
         lu.cid_logger.info(f'Using device id {pd.uid}', extra=msg_with_cid)
+        dao.update_raw_messages_puid(raw_msg_uid, pd.uid)
 
         # Process the JSON message
         dots = process_data(msg)
         lu.cid_logger.info(dots, extra=msg_with_cid)
         # Publish each time series
         for d in dots:
-            p_ts_msg = {BrokerConstants.CORRELATION_ID_KEY: correlation_id,
-                BrokerConstants.PHYSICAL_DEVICE_UID_KEY: pd.uid,
-                BrokerConstants.TIMESTAMP_KEY: d[BrokerConstants.TIMESTAMP_KEY],
-                BrokerConstants.TIMESERIES_KEY: d[BrokerConstants.TIMESERIES_KEY]}
-
-            tx_channel.publish_message('physical_timeseries', p_ts_msg)
+            d[BrokerConstants.PHYSICAL_DEVICE_UID_KEY] = pd.uid
+            d[BrokerConstants.CORRELATION_ID_KEY] = correlation_id
+            tx_channel.publish_message('physical_timeseries', d)
 
         # This tells RabbitMQ the message is handled and can be deleted from the queue.
         rx_channel._channel.basic_ack(delivery_tag)
