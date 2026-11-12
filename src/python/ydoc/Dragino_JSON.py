@@ -55,7 +55,12 @@ JSON_SPEC = {
         "timeseries_array": {
             0: {"name": "temperature"},
             1: {"name": "humidity"}
+        },
+        "current_vars": {
+            "temperature": {"name": "temperature"},
+            "humidity": {"name": "humidity"},
         }
+
     },
     "RS485-CS": {
         "system_vars_ts_name": "time",
@@ -117,8 +122,6 @@ def process_data(data):
             if d_ts.year <= 1970:
                 continue
 
-            # dot = {BrokerConstants.TIMESTAMP_KEY: d_ts.isoformat(), BrokerConstants.TIMESERIES_KEY: []}
-
             for i, var_defn in var_defns["timeseries_array"].items():
                 try:
                     d_name = var_defn["name"]
@@ -137,18 +140,14 @@ def process_data(data):
 
                     d = {BrokerConstants.TIMESTAMP_KEY: d_ts.isoformat(), "name": d_name, "value": d_value}
                     system_dot[BrokerConstants.TIMESERIES_KEY].append(d)
-                    # dot[BrokerConstants.TIMESERIES_KEY].append(d)
 
                     last_t = t
                 except:
                     std_logger.error(f'Failed to parse value: {var_defn}')
 
-            # if len(dot[BrokerConstants.TIMESERIES_KEY]) > 0:
-            #     dots.append(dot)
-
     if "current_vars" in var_defns:
         for v_name, var_defn in var_defns["current_vars"].items():
-            if not v_name in data:
+            if v_name not in data:
                 continue
 
             d_name = var_defn["name"]
