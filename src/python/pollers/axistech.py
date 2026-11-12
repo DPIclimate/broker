@@ -90,7 +90,7 @@ def process_msg(msg: Dict) -> None:
     serial_no = msg["source_ids"]["serial_no"]
     source_ids = msg['source_ids']
 
-    dao.add_raw_json_message(BrokerConstants.AXISTECH, ts, msg[BrokerConstants.CORRELATION_ID_KEY], msg)
+    raw_msg_uid = dao.add_raw_json_message(BrokerConstants.AXISTECH, ts, msg[BrokerConstants.CORRELATION_ID_KEY], msg)
 
     pds = dao.get_pyhsical_devices_using_source_ids(BrokerConstants.AXISTECH, source_ids)
     if len(pds) < 1:
@@ -106,6 +106,9 @@ def process_msg(msg: Dict) -> None:
         lu.cid_logger.info(f'Accepted message from {serial_no}, updating last seen time to {ts}.', extra=msg)
         pdev = pds[0]
         pdev.properties[BrokerConstants.LAST_MSG] = json.dumps(msg)
+
+    if raw_msg_uid is not None:
+        dao.update_raw_messages_puid(raw_msg_uid, pdev.uid)
 
     msg[BrokerConstants.PHYSICAL_DEVICE_UID_KEY] = pdev.uid
     lu.cid_logger.info(f'Posting msg: {msg}', extra=msg)
@@ -283,4 +286,3 @@ def main() -> None:
 
 if __name__ == '__main__':
     main()
-

@@ -23,7 +23,7 @@
 				<h3 id="form-heading">Form</h3>
 				<form id="device-form" action="{{ url_for('UpdatePhysicalDevice') }}" target="hidden-frame">
 					<div>
-						<label for="form-uid">UID</label>
+						<label for="form-uid">Id</label>
 						<input type="text" id="form-uid" name="form_uid" value="{{ pd_data.uid }}" readonly>
 					</div>
 					<div>
@@ -42,7 +42,7 @@
 					<input type="text" id="device-last-seen" name="device_last_seen" value="{{ pd_data.last_seen }}" readonly>
 					{% if link_url %}
 					<div>
-							<label id="form_link" for="form-link">Source system</label>
+							<label id="form_link" for="form-link">External system</label>
 							<a href="{{ link_url }}" target="_blank">{{link_text}}</a>
 					</div>
 					{% endif %}
@@ -51,7 +51,7 @@
 			</div>
 			<div class="form-section">
 				<h3 id="properties-heading">Properties</h3>
-				<textarea rows="10" cols="50" readonly>{{ properties }}</textarea>
+				<textarea class="properties-textarea" rows="20">{{ properties }}</textarea>
 			</div>
 		</div>
 		<div class="column">

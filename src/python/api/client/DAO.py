@@ -980,15 +980,32 @@ def get_all_current_mappings(return_uids: bool = True) -> List[PhysicalToLogical
             free_conn(conn)
 
 
-def add_raw_json_message(source_name: str, ts: datetime, correlation_uuid: str, msg, uid: int=None):
+def add_raw_json_message(source_name: str, ts: datetime, correlation_uuid: str, msg, uid: int=None) -> int | None:
     conn = None
     try:
         with _get_connection() as conn, conn.cursor() as cursor:
-            cursor.execute('insert into raw_messages (source_name, physical_uid, correlation_id, ts, json_msg) values (%s, %s, %s, %s, %s)', (source_name, uid, correlation_uuid, ts, Json(msg)))
+            cursor.execute('insert into raw_messages (source_name, physical_uid, correlation_id, ts, json_msg) values (%s, %s, %s, %s, %s) returning uid', (source_name, uid, correlation_uuid, ts, Json(msg)))
+            return cursor.fetchone()[0]
     except psycopg2.errors.UniqueViolation as err:
         warnings.warn(f'Tried to add duplicate raw message: {source_name} {ts} {correlation_uuid} {msg}')
+        return None
     except Exception as err:
         raise DAOException('add_raw_json_message failed.', err)
+    finally:
+        if conn is not None:
+            free_conn(conn)
+
+
+def update_raw_messages_puid(uid: int, physical_uid: int) -> None:
+    conn = None
+    try:
+        with _get_connection() as conn, conn.cursor() as cursor:
+            cursor.execute(
+                'UPDATE raw_messages SET physical_uid = %s WHERE uid = %s',
+                (physical_uid, uid),
+            )
+    except Exception as err:
+        raise DAOException('update_raw_messages_puid failed.', err)
     finally:
         if conn is not None:
             free_conn(conn)
