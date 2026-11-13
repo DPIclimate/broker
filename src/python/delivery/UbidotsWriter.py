@@ -2,7 +2,7 @@
 This program receives logical device timeseries messages and forwards them
 on to Ubidots.
 """
-
+import json
 import time
 from typing import Any
 import dateutil.parser
@@ -75,14 +75,20 @@ class UbidotsWriter(BaseWriter):
                         pass
 
                 try:
+                    var_name = v['name']
+                    if var_name not in ubidots_payload:
+                        ubidots_payload[var_name] = []
+
                     value = float(v['value'])
-                    ubidots_payload[v['name']] = {
-                        'value': value,
-                        'timestamp': dot_ts,
-                        'context': {
-                            BrokerConstants.CORRELATION_ID_KEY: msg[BrokerConstants.CORRELATION_ID_KEY]
+                    ubidots_payload[v['name']].append(
+                        {
+                            'value': value,
+                            'timestamp': dot_ts,
+                            'context': {
+                                BrokerConstants.CORRELATION_ID_KEY: msg[BrokerConstants.CORRELATION_ID_KEY]
+                            }
                         }
-                    }
+                    )
                 except (ValueError, TypeError):
                     # Ubidots will not accept values that are not floats, so skip this value.
                     pass
