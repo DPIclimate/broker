@@ -93,6 +93,9 @@ class UbidotsWriter(BaseWriter):
                     # Ubidots will not accept values that are not floats, so skip this value.
                     pass
 
+            # Remove empty dot lists in case the cause trouble for Ubidots.
+            ubidots_payload = {key: value for key, value in ubidots_payload.items() if value != []}
+
             #
             # TODO: Add some way to abstract the source-specific details of creating the Ubidots device.
             # Anywhere this code has something like 'if pd.source_name...' it should be handled better.
